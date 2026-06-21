@@ -91,3 +91,18 @@ The current architecture supports attachment metadata linked to canonical entiti
 ## Documentation Rule
 
 Planning documents should be updated when architecture, scope, data model or domain boundaries change.
+
+## Geographic Architecture
+
+Maps are implemented as views over the entity and relationship system, not as a separate data store.
+
+- Location entities own address and coordinate fields.
+- People and Organisations reference Location entities through `located_at` relationships.
+- `app/geo.py` assembles map payloads from canonical entities and relationships.
+- The map layer registry initially exposes Locations, Organisations and People.
+- Future layers should be added by registering a new layer and deriving markers from canonical records, not by creating map-only persistence.
+- Locations without valid coordinates remain valid records and are omitted from marker payloads until coordinates are added.
+
+Address lookup is behind a small geocoder boundary. The current provider uses OpenStreetMap Nominatim and returns normalised address fields, coordinates and source metadata. Manual address and coordinate editing remains authoritative.
+
+Architectural correction: Organisation address fields were removed from the active entity definition. Organisation geography now comes from Location relationships so there is one canonical place record per real-world address or place.

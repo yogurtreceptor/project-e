@@ -1,93 +1,36 @@
-# Architecture
+# UI Principles
 
-Operation Eddy uses a simple local-first architecture for Stage 1.
+Operation Eddy's Stage 1 UI should stay quiet, structured and useful for repeated information work.
 
-## Shape
+## Navigation
 
-The system is organised around three practical layers:
+- Entity types are first-class navigation items.
+- Relationships, Search and Map are global views over the same entity system.
+- Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
-- Local UI for browsing, editing, searching and navigating information.
-- Local application layer for validation, persistence rules and view logic.
-- Embedded SQLite database for durable local storage.
+## Entity Pages
 
-No external runtime dependencies are required for the current foundation.
+Entity pages should expose reusable sections rather than one-off layouts:
 
-## Current Implementation
+- Overview
+- Geography where relevant
+- Relationships
+- Related Entities
+- Notes
+- Attachments
+- Timeline
+- Metadata
 
-- `run.py` starts a local HTTP server.
-- `app/web.py` handles HTTP routing and request/response concerns.
-- `app/views.py` owns reusable page layouts, navigation, entity profiles, relationship views and forms.
-- `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
-- `app/entities.py` defines the common entity model, metadata and supported entity types.
-- `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
-- `app/static/styles.css` provides the shared UI styling.
+People and Organisations show geographic context through linked Location entities. Location pages show their own address, coordinates, geocoding source and map jump.
 
-## Boundaries
+## Forms
 
-Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.
+Forms should keep manual entry available. Helpful lookup tools may prefill fields, but users must be able to override structured fields, addresses and coordinates.
 
-The application should not depend on WAN access for normal operation.
+Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 
-## Entity Architecture
+## Map View
 
-Current domains inherit from a common entity architecture:
+The map should behave like a view, not a separate workspace. Markers link back to canonical entity pages, and layer controls filter visible entity-derived markers without changing stored data.
 
-- `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
-- `FieldDefinition` describes reusable field metadata, including overview visibility and input type.
-- `EntityRecord` is the shared runtime model for all entity instances.
-- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
-- Domain-specific data is exposed as metadata on the same record object.
-- Entity profile pages are generated from entity definitions and shared page sections.
-
-Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. This prevents future entity field additions from breaking existing local databases.
-
-## Entity Page Architecture
-
-Entity pages are the primary interaction surface. Opening any entity should feel like opening a complete profile of a real-world object.
-
-Reusable entity pages include:
-
-- Header with name, type, summary and quick actions.
-- Overview with concise structured fields from the entity definition.
-- Relationships grouped by connected entity type.
-- Related Entities for graph exploration.
-- Notes for free-text information.
-- Attachments section backed by attachment table architecture.
-- Timeline placeholder for created, modified and relationship events.
-- Metadata with system information.
-
-Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
-
-## Relationship Architecture
-
-Relationships are a central application model:
-
-- `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
-- `RelationshipType` centralises labels, inverse labels and direction semantics.
-- Entity-page relationship panels are the primary relationship creation and editing surface.
-- The relationship browser remains a global browse/audit view.
-- Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.
-
-Date uncertainty is represented as metadata beside structured calendar date values.
-
-## Discovery Architecture
-
-Discovery uses shared entity and relationship query primitives:
-
-- Global search matches canonical entity fields, typed profile fields, notes and relationship context.
-- Entity list pages support text filtering and favourites-only filtering.
-- Favourites are persisted as shared entity metadata.
-- Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
-- Dashboard discovery panels read from the same reusable queries as search and filters.
-
-Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
-
-## Attachments Architecture
-
-Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.
-
-The current architecture supports attachment metadata linked to canonical entities. Later milestones can add file selection, storage rules, previews and indexing without redesigning entity pages.
-
-## Documentation Rule
-
-Planning documents should be updated when architecture, scope, data model or domain boundaries change.
+The app should remain useful when map tiles or address lookup are unavailable.

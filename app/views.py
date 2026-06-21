@@ -1,3 +1,4 @@
+import json
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord
@@ -15,7 +16,8 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     )
     relationship_class = "active" if active_slug == "relationships" else ""
     search_class = "active" if active_slug == "search" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{search_class}" href="/search">Search</a>'
+    map_class = "active" if active_slug == "map" else ""
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{search_class}" href="/search">Search</a><a class="{map_class}" href="/map">Map</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -190,6 +192,7 @@ def entity_detail_page(
         <div class="profile-grid">
             <div class="profile-main">
                 {entity_overview_section(record)}
+                {entity_geography_section(record, relationships)}
                 {entity_relationships_panel(record, relationships)}
                 {related_entities_section(record, relationships)}
                 {entity_notes_section(record)}
@@ -241,6 +244,81 @@ def entity_overview_section(record: EntityRecord) -> str:
     </section>
     """
 
+
+
+def entity_geography_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    if record.type == "location":
+        latitude = record.metadata.get("latitude", "")
+        longitude = record.metadata.get("longitude", "")
+        coordinates = f"{escape(latitude)}, {escape(longitude)}" if latitude and longitude else "Not recorded"
+        address = record.metadata.get("formatted_address") or ", ".join(
+            part
+            for part in (
+                record.metadata.get("address_line_1", ""),
+                record.metadata.get("locality", ""),
+                record.metadata.get("region", ""),
+                record.metadata.get("country", ""),
+            )
+            if part
+        )
+        map_href = f"/map?entity_id={record.id}"
+        return f"""
+        <section class="panel profile-section geography-section">
+            <div class="section-heading split">
+                <h2>Geography</h2>
+                <a href="{map_href}">View on map</a>
+            </div>
+            <dl>
+                <dt>Address</dt><dd>{escape(address) if address else 'Not recorded'}</dd>
+                <dt>Coordinates</dt><dd>{coordinates}</dd>
+                <dt>Geocoding source</dt><dd>{escape(record.metadata.get('geocoding_source', '')) if record.metadata.get('geocoding_source') else 'Not recorded'}</dd>
+            </dl>
+        </section>
+        """
+
+    location_relationships = [
+        relationship
+        for relationship in relationships
+        if relationship.type_key == "located_at" and relationship.other_entity(record.id).type == "location"
+    ]
+    if not location_relationships:
+        return f"""
+        <section class="panel profile-section geography-section">
+            <div class="section-heading split">
+                <h2>Geography</h2>
+                <a href="/relationships/new?source_entity_id={record.id}&target_type=location&context_entity_id={record.id}">Link location</a>
+            </div>
+            <p class="empty">No linked location yet.</p>
+        </section>
+        """
+
+    rows = []
+    for relationship in location_relationships:
+        location = relationship.other_entity(record.id)
+        latitude = location.metadata.get("latitude", "")
+        longitude = location.metadata.get("longitude", "")
+        coordinate_status = f"{escape(latitude)}, {escape(longitude)}" if latitude and longitude else "No coordinates"
+        rows.append(
+            f"""
+            <tr>
+                <td><a href="/{location.slug}/{location.id}">{escape(location.title)}</a></td>
+                <td>{coordinate_status}</td>
+                <td><a href="/map?entity_id={record.id}">View on map</a></td>
+            </tr>
+            """
+        )
+    return f"""
+    <section class="panel profile-section geography-section">
+        <div class="section-heading split">
+            <h2>Geography</h2>
+            <a href="/relationships/new?source_entity_id={record.id}&target_type=location&context_entity_id={record.id}">Link location</a>
+        </div>
+        <table>
+            <thead><tr><th>Location</th><th>Coordinates</th><th></th></tr></thead>
+            <tbody>{''.join(rows)}</tbody>
+        </table>
+    </section>
+    """
 
 def entity_relationships_panel(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
     sections = []
@@ -431,18 +509,24 @@ def entity_form_page(
         input_field("display_name", f"{definition.singular} name", values),
         input_field("summary", "Summary", values),
     ]
+    if definition.type == "location":
+        fields.append(address_lookup_field())
     for field in definition.fields:
         fields.append(input_field(field.name, field.label, values, field.multiline, field.input_type))
     fields.append(input_field("notes", "Notes", values, multiline=True))
 
+    location_class = " location-form" if definition.type == "location" else ""
     return f"""
-    <section class="page-heading">
-        <p class="eyebrow">{escape(definition.singular)}</p>
-        <h1>{escape(action)} {escape(definition.singular)}</h1>
+    <section class="page-heading split">
+        <div>
+            <p class="eyebrow">{escape(definition.singular)}</p>
+            <h1>{escape(action)} {escape(definition.singular)}</h1>
+        </div>
+        {existing_location_action(definition)}
     </section>
     <section class="panel">
         {error_html}
-        <form class="record-form" method="post" action="{form_action}">
+        <form class="record-form{location_class}" method="post" action="{form_action}">
             {''.join(fields)}
             <div class="actions">
                 <a class="button secondary" href="/{definition.slug}">Cancel</a>
@@ -450,6 +534,7 @@ def entity_form_page(
             </div>
         </form>
     </section>
+    {address_lookup_script() if definition.type == "location" else ""}
     """
 
 
@@ -675,7 +760,8 @@ def input_field(
     if multiline:
         control = f'<textarea id="{name}" name="{name}" rows="5">{value}</textarea>'
     else:
-        control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}">'
+        number_attrs = ' step="any"' if input_type == "number" else ""
+        control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}"{number_attrs}>'
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
 
 
@@ -690,3 +776,190 @@ def select_field(
             f'<option value="{escape(value)}"{selected}>{escape(text)}</option>'
         )
     return f'<label for="{name}"><span>{escape(label)}</span><select id="{name}" name="{name}">{"".join(option_html)}</select></label>'
+
+
+def existing_location_action(definition: EntityDefinition) -> str:
+    if definition.type != "location":
+        return ""
+    return '<a class="button secondary" href="/locations">Existing Locations</a>'
+
+
+def address_lookup_field() -> str:
+    return """
+    <div class="address-lookup-field">
+        <label for="address_search"><span>Address lookup</span>
+            <input id="address_search" name="address_search" type="search" autocomplete="off" placeholder="Enter a full or near-full address">
+        </label>
+        <div class="address-lookup-actions">
+            <button class="button secondary" id="address_search_button" type="button">Search Address</button>
+            <span class="address-lookup-status" id="address_lookup_status" role="status"></span>
+        </div>
+        <div class="address-results" id="address_results"></div>
+    </div>
+    """
+
+
+def address_lookup_script() -> str:
+    return """
+    <script>
+    (() => {
+        const search = document.getElementById('address_search');
+        const button = document.getElementById('address_search_button');
+        const resultsList = document.getElementById('address_results');
+        const status = document.getElementById('address_lookup_status');
+        if (!search || !button || !resultsList || !status) return;
+        const fields = ['formatted_address', 'address_line_1', 'address_line_2', 'locality', 'region', 'postal_code', 'country', 'latitude', 'longitude', 'geocoding_source'];
+        const setStatus = (message) => {
+            status.textContent = message;
+        };
+        const fill = (result) => {
+            fields.forEach((name) => {
+                const input = document.getElementById(name);
+                if (input && result[name] !== undefined) input.value = result[name];
+            });
+            if (result.label) search.value = result.label;
+            setStatus('Address fields filled. You can still edit them manually.');
+        };
+        const renderResults = (results) => {
+            resultsList.innerHTML = '';
+            if (!results.length) {
+                resultsList.innerHTML = '<p class="empty">No matching addresses found. Try a fuller address, nearby suburb, or enter details manually.</p>';
+                return;
+            }
+            const list = document.createElement('ul');
+            results.forEach((result) => {
+                const item = document.createElement('li');
+                const choose = document.createElement('button');
+                choose.type = 'button';
+                choose.className = 'link-button address-result-button';
+                choose.textContent = result.label || result.formatted_address || 'Unnamed result';
+                choose.addEventListener('click', () => fill(result));
+                item.appendChild(choose);
+                if (result.latitude && result.longitude) {
+                    const coordinates = document.createElement('span');
+                    coordinates.textContent = `${result.latitude}, ${result.longitude}`;
+                    item.appendChild(coordinates);
+                }
+                list.appendChild(item);
+            });
+            resultsList.appendChild(list);
+        };
+        const lookup = async () => {
+            const query = search.value.trim();
+            if (query.length < 3) {
+                setStatus('Enter at least 3 characters.');
+                return;
+            }
+            button.disabled = true;
+            setStatus('Searching...');
+            resultsList.innerHTML = '';
+            try {
+                const response = await fetch(`/geocoding/search?q=${encodeURIComponent(query)}`);
+                const payload = await response.json();
+                renderResults(payload.results || []);
+                if (payload.error) setStatus('Lookup unavailable. You can enter the address manually.');
+                else setStatus((payload.results || []).length ? 'Choose a result to fill the address fields.' : 'No results found.');
+            } catch (error) {
+                renderResults([]);
+                setStatus('Lookup unavailable. You can enter the address manually.');
+            } finally {
+                button.disabled = false;
+            }
+        };
+        button.addEventListener('click', lookup);
+        search.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                lookup();
+            }
+        });
+    })();
+    </script>
+    """
+
+
+def map_page(payload: dict[str, object], focused_entity_id: str = "") -> str:
+    data_json = json.dumps(payload).replace("</", "<\\/")
+    focused_json = json.dumps(str(focused_entity_id))
+    layer_controls = "".join(
+        f'<label class="inline-check"><input type="checkbox" data-layer-toggle="{escape(layer["id"])}"{" checked" if layer.get("enabled") else ""}> {escape(layer["label"])}</label>'
+        for layer in payload["layers"]
+    )
+    marker_count = len(payload["markers"])
+    empty = '<p class="empty map-empty">No entities with coordinates yet.</p>' if marker_count == 0 else ""
+    marker_links = "".join(
+        f'<li><a href="{escape(marker["url"])}">{escape(marker["title"])}</a><span>{escape(marker["entityLabel"])} at {escape(marker["locationTitle"])}</span></li>'
+        for marker in payload["markers"]
+    )
+    marker_list = f'<section class="panel map-marker-list"><h2>Mapped entities</h2><ul>{marker_links}</ul></section>' if marker_links else ""
+    return f"""
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <section class="page-heading split">
+        <div>
+            <h1>Map</h1>
+            <p>{marker_count} mapped entities from canonical records and location relationships.</p>
+        </div>
+        <a class="button" href="/locations/new">Create Location</a>
+    </section>
+    <section class="panel map-toolbar">
+        <div class="map-layers">{layer_controls}</div>
+    </section>
+    <section class="map-shell">
+        <div id="eddy-map" class="eddy-map" aria-label="Entity map"></div>
+        {empty}
+    </section>
+    {marker_list}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    (() => {{
+        const payload = {data_json};
+        const focusedEntityId = {focused_json};
+        const mapElement = document.getElementById('eddy-map');
+        if (!mapElement || !window.L) return;
+        const center = payload.defaultCenter;
+        const map = L.map(mapElement).setView([center.latitude, center.longitude], center.zoom);
+        L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }}).addTo(map);
+        const layerGroups = new Map();
+        payload.layers.forEach((layer) => {{
+            const group = L.layerGroup();
+            if (layer.enabled) group.addTo(map);
+            layerGroups.set(layer.id, group);
+        }});
+        const bounds = [];
+        const visibleBounds = [];
+        payload.markers.forEach((item) => {{
+            const marker = L.marker([item.latitude, item.longitude]);
+            marker.bindPopup(`
+                <strong>${{escapeHtml(item.title)}}</strong><br>
+                <span>${{escapeHtml(item.entityLabel)}} at ${{escapeHtml(item.locationTitle)}}</span><br>
+                <small>${{escapeHtml(item.address || '')}}</small><br>
+                <a href="${{item.url}}">Open entity</a>
+            `);
+            const group = layerGroups.get(item.layerId);
+            if (group) group.addLayer(marker);
+            bounds.push([item.latitude, item.longitude]);
+            const layer = payload.layers.find((candidate) => candidate.id === item.layerId);
+            if (!layer || layer.enabled) visibleBounds.push([item.latitude, item.longitude]);
+            if (focusedEntityId && String(item.entityId) === focusedEntityId) marker.openPopup();
+        }});
+        if (visibleBounds.length) map.fitBounds(visibleBounds, {{ padding: [28, 28], maxZoom: 15 }});
+        else if (bounds.length) map.fitBounds(bounds, {{ padding: [28, 28], maxZoom: 15 }});
+        document.querySelectorAll('[data-layer-toggle]').forEach((control) => {{
+            control.addEventListener('change', () => {{
+                const group = layerGroups.get(control.dataset.layerToggle);
+                if (!group) return;
+                if (control.checked) group.addTo(map);
+                else map.removeLayer(group);
+            }});
+        }});
+        function escapeHtml(value) {{
+            return String(value).replace(/[&<>'"]/g, (char) => ({{
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }}[char]));
+        }}
+    }})();
+    </script>
+    """

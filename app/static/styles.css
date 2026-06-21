@@ -554,3 +554,140 @@ dd {
         min-width: 0;
     }
 }
+
+
+.geography-section table {
+    margin-top: 8px;
+}
+
+.location-form input[type="number"] {
+    max-width: 260px;
+}
+
+.address-lookup-field {
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 10px;
+    padding-bottom: 16px;
+}
+
+.address-lookup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.address-lookup-status {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.address-results ul {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.address-results li {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 10px 12px;
+}
+
+.address-results span {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.address-result-button {
+    color: var(--accent);
+    text-align: left;
+}
+
+.map-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.map-layers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.map-shell {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-height: 620px;
+    overflow: hidden;
+    position: relative;
+}
+
+.eddy-map {
+    height: 620px;
+    width: 100%;
+}
+
+.map-empty {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    left: 20px;
+    margin: 0;
+    padding: 10px 12px;
+    position: absolute;
+    top: 20px;
+    z-index: 500;
+}
+
+.leaflet-popup-content a {
+    font-weight: 700;
+}
+
+@media (max-width: 720px) {
+    .map-shell {
+        min-height: 460px;
+    }
+
+    .eddy-map {
+        height: 460px;
+    }
+}
+
+
+.map-marker-list ul {
+    display: grid;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.map-marker-list li {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.map-marker-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.map-marker-list span {
+    color: var(--muted);
+    font-size: 13px;
+}

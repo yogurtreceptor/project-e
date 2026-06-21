@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -34,6 +35,7 @@ from app.db import (
     validate_relationship_values,
 )
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
+from app.geo import build_map_payload, geocoder
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -66,6 +68,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "search":
             self.handle_search(query)
+            return
+
+        if parts[0] == "map":
+            self.handle_map(query)
+            return
+
+        if parts[0] == "geocoding" and len(parts) == 2 and parts[1] == "search":
+            self.handle_geocoding_search(query)
             return
 
         if parts[0] == "relationships":
@@ -128,6 +138,26 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             views.search_page(search_query, entity_type, favourites_only, results),
             active_slug="search",
         )
+
+
+    def handle_map(self, query: dict[str, str]) -> None:
+        with connect(self.database_path) as connection:
+            payload = build_map_payload(connection)
+        self.respond_page(
+            "Map",
+            views.map_page(payload, query.get("entity_id", "")),
+            active_slug="map",
+        )
+
+    def handle_geocoding_search(self, query: dict[str, str]) -> None:
+        if self.command != "GET":
+            self.respond_not_found()
+            return
+        try:
+            results = geocoder().search(query.get("q", ""))
+            self.respond_json({"results": results})
+        except Exception as error:
+            self.respond_json({"results": [], "error": str(error)}, status=HTTPStatus.OK)
 
     def handle_list(self, definition: EntityDefinition, query: dict[str, str]) -> None:
         filter_query = query.get("q", "")
@@ -428,6 +458,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         encoded = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def respond_json(self, payload: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
+        encoded = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)

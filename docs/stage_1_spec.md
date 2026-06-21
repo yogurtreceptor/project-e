@@ -60,3 +60,18 @@ Maps are a later Stage 1 view over Location data. Search and relationship naviga
 
 Relationship creation and navigation remain planned Stage 1 work, but are not part of the initial application foundation.
 
+## Maps Acceptance
+
+The Maps milestone adds a geographic view without changing the Stage 1 boundaries.
+
+Implemented scope:
+
+- interactive Leaflet/OpenStreetMap map page
+- Location, Organisation and People layer controls
+- markers generated from Location coordinates and `located_at` relationships
+- marker popups linking back to canonical entity pages
+- address lookup for Location forms through a replaceable geocoding boundary
+- manual address and coordinate editing
+- graceful omission of records without valid coordinates
+
+Out of scope remains routing, journey planning, traffic analysis, public transport, AI, decision support and automation.

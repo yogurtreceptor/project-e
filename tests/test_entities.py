@@ -28,6 +28,7 @@ from app.db import (
     validate_relationship_values,
 )
 from app.entities import DEFINITIONS_BY_SLUG, ENTITY_DEFINITIONS
+from app.geo import build_map_payload
 
 
 class EntityDatabaseTests(unittest.TestCase):
@@ -316,6 +317,161 @@ class EntityDatabaseTests(unittest.TestCase):
         values = normalise_form_values(self.definition, {"display_name": "  "})
         errors = validate_entity_values(self.definition, values)
         self.assertEqual(errors, ["Person name is required."])
+
+    def test_map_payload_uses_location_entities_and_relationships(self) -> None:
+        location_definition = DEFINITIONS_BY_SLUG["locations"]
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            location_id = create_entity(
+                connection,
+                location_definition,
+                {
+                    "display_name": "Brisbane City Hall",
+                    "summary": "Civic landmark",
+                    "notes": "",
+                    "formatted_address": "64 Adelaide St, Brisbane City QLD 4000, Australia",
+                    "address_line_1": "64 Adelaide St",
+                    "address_line_2": "",
+                    "locality": "Brisbane City",
+                    "region": "Queensland",
+                    "postal_code": "4000",
+                    "country": "Australia",
+                    "latitude": "-27.4689",
+                    "longitude": "153.0235",
+                    "geocoding_source": "manual",
+                },
+            )
+            unmapped_location_id = create_entity(
+                connection,
+                location_definition,
+                {
+                    "display_name": "Unplaced archive",
+                    "summary": "",
+                    "notes": "",
+                    "formatted_address": "",
+                    "address_line_1": "",
+                    "address_line_2": "",
+                    "locality": "",
+                    "region": "",
+                    "postal_code": "",
+                    "country": "",
+                    "latitude": "",
+                    "longitude": "",
+                    "geocoding_source": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "City Records Office",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Office",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
+                    "birthday": "",
+                    "occupation": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(organisation_id),
+                    "target_entity_id": str(location_id),
+                    "type": "located_at",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+            create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(person_id),
+                    "target_entity_id": str(unmapped_location_id),
+                    "type": "located_at",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+
+            payload = build_map_payload(connection)
+
+        layers = {layer["id"] for layer in payload["layers"]}
+        marker_titles = {marker["title"] for marker in payload["markers"]}
+        marker_layers = {marker["title"]: marker["layerId"] for marker in payload["markers"]}
+        enabled_layers = {layer["id"] for layer in payload["layers"] if layer["enabled"]}
+        self.assertEqual(layers, {"locations", "organisations", "people"})
+        self.assertEqual(enabled_layers, {"locations"})
+        self.assertIn("Brisbane City Hall", marker_titles)
+        self.assertIn("City Records Office", marker_titles)
+        self.assertNotIn("Unplaced archive", marker_titles)
+        self.assertNotIn("Ada Lovelace", marker_titles)
+        self.assertEqual(marker_layers["Brisbane City Hall"], "locations")
+        self.assertEqual(marker_layers["City Records Office"], "organisations")
+
+    def test_map_page_contains_layer_controls_and_marker_links(self) -> None:
+        payload = {
+            "defaultCenter": {"latitude": -27.4698, "longitude": 153.0251, "zoom": 11},
+            "layers": [
+                {"id": "locations", "label": "Locations", "entity_type": "location", "enabled": True},
+                {"id": "organisations", "label": "Organisations", "entity_type": "organisation", "enabled": False},
+            ],
+            "markers": [
+                {
+                    "id": "locations-1",
+                    "layerId": "locations",
+                    "entityId": 1,
+                    "entityType": "location",
+                    "title": "Brisbane City Hall",
+                    "entityLabel": "Location",
+                    "locationTitle": "Brisbane City Hall",
+                    "address": "64 Adelaide St",
+                    "latitude": -27.4689,
+                    "longitude": 153.0235,
+                    "url": "/locations/1",
+                }
+            ],
+        }
+
+        html = views.map_page(payload)
+
+        self.assertIn('data-layer-toggle="locations" checked', html)
+        self.assertIn('data-layer-toggle="organisations">', html)
+        self.assertIn("Brisbane City Hall", html)
+        self.assertIn("/locations/1", html)
+
+    def test_location_form_uses_explicit_address_lookup(self) -> None:
+        location_definition = DEFINITIONS_BY_SLUG["locations"]
+
+        html = views.entity_form_page(location_definition, {}, [], "Create")
+
+        self.assertIn('id="address_search_button"', html)
+        self.assertIn('id="address_results"', html)
+        self.assertIn("Search Address", html)
+        self.assertNotIn("address_suggestions", html)
 
 
 if __name__ == "__main__":

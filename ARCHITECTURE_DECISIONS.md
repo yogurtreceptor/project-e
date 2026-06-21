@@ -42,3 +42,18 @@ Explain what this enables, limits or changes.
 New decisions should be added to the bottom of this file.
 
 If a decision is replaced later, do not delete the old decision. Mark it as superseded and add a new decision below it.
+
+## ADR-001: Map as an entity view
+
+Status: Accepted
+
+Date: 2026-06-21
+
+Decision:
+The map is a view over canonical entities and relationships. Location entities own address and coordinate data; People and Organisations connect to Locations with `located_at` relationships instead of duplicating address fields.
+
+Reason:
+Operation Eddy is entity-first and relationship-first. A separate map data store would create duplicate records, make address quality harder to maintain and make future layers harder to extend consistently.
+
+Consequences:
+The initial map can display Locations, Organisations and People through the same entity graph. Future geographic layers must derive markers from canonical records or relationships. Organisation address columns from earlier local schemas are ignored by the active model rather than extended.

@@ -103,3 +103,42 @@ What changed:
 Architectural correction:
 
 - Discovery is implemented through reusable data-layer query primitives rather than dashboard-specific logic. This keeps future entity types discoverable through the same search, filtering, favourite and recent-entity paths.
+
+Geographic foundation milestone completed.
+
+What changed:
+
+- Added Location address fields for formatted address, structured address parts, latitude, longitude and geocoding source.
+- Removed Organisation address fields from the active model so Organisations reference Location entities through relationships.
+- Added `app/geo.py` for map layer definitions, marker payload assembly and replaceable geocoding provider logic.
+- Added `/map` with Leaflet/OpenStreetMap rendering, pan/zoom, layer toggles, markers, popups and entity links.
+- Added `/geocoding/search` using OpenStreetMap Nominatim through a provider boundary.
+- Added address lookup on Location forms while preserving manual address and coordinate editing.
+- Added Geography sections to entity pages with map jumps and Location relationship links.
+- Added tests for map payload generation and map page marker/layer rendering.
+
+Architectural correction:
+
+- Corrected the remaining documentation drift in `database_design.md` and `ui_principles.md` before completing the milestone.
+- Confirmed the map architecture is not a separate data store. It is a configurable view over canonical entities and `located_at` relationships.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+- Local smoke test: `/`, `/map` and `/geocoding/search?q=Brisbane` returned HTTP 200.
+
+Map and address lookup UX adjustment completed.
+
+What changed:
+
+- Changed Location address lookup from autocomplete-style typing to explicit Search Address results selection.
+- Kept manual address and coordinate editing available when lookup results are incomplete or unavailable.
+- Changed map layer defaults so only Locations are enabled initially; People and Organisations remain available as optional layers.
+- Adjusted initial map fitting to prefer enabled layers.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+- Local smoke test: `/map`, `/locations/new` and `/geocoding/search?q=Casino%20Drive%20Brisbane` returned HTTP 200.

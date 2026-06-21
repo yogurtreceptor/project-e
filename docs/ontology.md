@@ -86,3 +86,17 @@ Current certainty values are:
 - unknown
 
 This preserves uncertainty without blocking structured date entry.
+
+## Geographic Ontology
+
+A Location is the canonical geographic entity for a place, address or meaningful area. It may have a human-readable address, structured address fields, optional latitude/longitude and a geocoding source.
+
+People and Organisations should be connected to Locations with `located_at` relationships when place information is known. They should not duplicate address fields.
+
+The Map is a view over these canonical entities:
+
+- Location markers represent Location entities with valid coordinates.
+- Organisation markers represent Organisations connected to a coordinate-bearing Location.
+- Person markers represent People connected to a coordinate-bearing Location.
+
+Missing coordinates do not invalidate a Location. They only prevent that record, and entities relying on it, from appearing as markers.

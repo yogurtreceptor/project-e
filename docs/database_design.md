@@ -1,93 +1,55 @@
-# Architecture
+# Database Design
 
-Operation Eddy uses a simple local-first architecture for Stage 1.
+Operation Eddy uses SQLite as the embedded local database for Stage 1.
 
-## Shape
+## Core Tables
 
-The system is organised around three practical layers:
+- `entities` stores shared identity and metadata for every canonical record.
+- `people`, `organisations` and `locations` store type-specific fields keyed by `entity_id`.
+- `relationships` stores first-class links between any two entities.
+- `attachments` stores attachment metadata linked to entities; binary/file handling is deferred.
 
-- Local UI for browsing, editing, searching and navigating information.
-- Local application layer for validation, persistence rules and view logic.
-- Embedded SQLite database for durable local storage.
+## Entity Storage
 
-No external runtime dependencies are required for the current foundation.
+Every real-world object starts in `entities` with:
 
-## Current Implementation
+- `id`
+- `type`
+- `display_name`
+- `summary`
+- `notes`
+- timestamps
+- discovery metadata such as favourite and last viewed state
 
-- `run.py` starts a local HTTP server.
-- `app/web.py` handles HTTP routing and request/response concerns.
-- `app/views.py` owns reusable page layouts, navigation, entity profiles, relationship views and forms.
-- `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
-- `app/entities.py` defines the common entity model, metadata and supported entity types.
-- `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
-- `app/static/styles.css` provides the shared UI styling.
+Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, and missing typed columns are added during startup so local databases can evolve additively.
 
-## Boundaries
+## Location Storage
 
-Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.
+Locations are the canonical place/address records. The active `locations` table fields include:
 
-The application should not depend on WAN access for normal operation.
+- `formatted_address`
+- `address_line_1`
+- `address_line_2`
+- `locality`
+- `region`
+- `postal_code`
+- `country`
+- `latitude`
+- `longitude`
+- `geocoding_source`
 
-## Entity Architecture
+Coordinates are optional text fields at this stage so users can save incomplete locations and manually enter coordinates without a migration-heavy geospatial dependency. Validation for map display happens in the application layer.
 
-Current domains inherit from a common entity architecture:
+## Address Ownership
 
-- `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
-- `FieldDefinition` describes reusable field metadata, including overview visibility and input type.
-- `EntityRecord` is the shared runtime model for all entity instances.
-- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
-- Domain-specific data is exposed as metadata on the same record object.
-- Entity profile pages are generated from entity definitions and shared page sections.
+People and Organisations do not own address columns. They reference Location entities through `located_at` relationships where appropriate. This keeps one canonical record per real-world place and avoids duplicate address data.
 
-Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. This prevents future entity field additions from breaking existing local databases.
+Older local databases may still contain previously-created Organisation address columns. They are no longer part of the active entity definition and are ignored by the application.
 
-## Entity Page Architecture
+## Relationship Storage
 
-Entity pages are the primary interaction surface. Opening any entity should feel like opening a complete profile of a real-world object.
+Relationships store source and target entity IDs, type, status, optional dates, date certainty and notes. The database stores one row per relationship; inverse navigation is derived from relationship metadata.
 
-Reusable entity pages include:
+## Map Storage
 
-- Header with name, type, summary and quick actions.
-- Overview with concise structured fields from the entity definition.
-- Relationships grouped by connected entity type.
-- Related Entities for graph exploration.
-- Notes for free-text information.
-- Attachments section backed by attachment table architecture.
-- Timeline placeholder for created, modified and relationship events.
-- Metadata with system information.
-
-Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
-
-## Relationship Architecture
-
-Relationships are a central application model:
-
-- `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
-- `RelationshipType` centralises labels, inverse labels and direction semantics.
-- Entity-page relationship panels are the primary relationship creation and editing surface.
-- The relationship browser remains a global browse/audit view.
-- Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.
-
-Date uncertainty is represented as metadata beside structured calendar date values.
-
-## Discovery Architecture
-
-Discovery uses shared entity and relationship query primitives:
-
-- Global search matches canonical entity fields, typed profile fields, notes and relationship context.
-- Entity list pages support text filtering and favourites-only filtering.
-- Favourites are persisted as shared entity metadata.
-- Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
-- Dashboard discovery panels read from the same reusable queries as search and filters.
-
-Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
-
-## Attachments Architecture
-
-Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.
-
-The current architecture supports attachment metadata linked to canonical entities. Later milestones can add file selection, storage rules, previews and indexing without redesigning entity pages.
-
-## Documentation Rule
-
-Planning documents should be updated when architecture, scope, data model or domain boundaries change.
+The map has no separate persistence table. It is built as a view over existing `locations`, `entities` and `relationships` data. Future map layers should add canonical entity/relationship data first, then expose that data through the map layer registry.
