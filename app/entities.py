@@ -34,6 +34,7 @@ class EntityRecord:
     notes: str
     created_at: str
     updated_at: str
+    last_viewed_at: str
     is_favourite: bool
     metadata: dict[str, str]
 
@@ -130,6 +131,7 @@ def to_entity_record(definition: EntityDefinition, row: Any) -> EntityRecord:
         notes=row["notes"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        last_viewed_at=row["last_viewed_at"],
         is_favourite=bool(row["is_favourite"]),
         metadata={field.name: row[field.name] for field in definition.fields},
     )

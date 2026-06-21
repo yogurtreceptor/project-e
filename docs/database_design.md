@@ -1,89 +1,93 @@
-# Database Design
+# Architecture
 
-Stage 1 uses SQLite through Python's standard library.
+Operation Eddy uses a simple local-first architecture for Stage 1.
 
-The design keeps canonical identity, typed domain data, relationships and future attachments clear enough to maintain.
+## Shape
 
-## Core Tables
+The system is organised around three practical layers:
 
-Current tables:
+- Local UI for browsing, editing, searching and navigating information.
+- Local application layer for validation, persistence rules and view logic.
+- Embedded SQLite database for durable local storage.
 
-- `entities`: canonical identity for every entity.
-- `people`: Person-specific fields keyed by `entity_id`.
-- `organisations`: Organisation-specific fields keyed by `entity_id`.
-- `locations`: Location-specific fields keyed by `entity_id`.
-- `relationships`: first-class links between any two canonical entities.
-- `attachments`: attachment metadata linked to canonical entities.
+No external runtime dependencies are required for the current foundation.
 
-Planned later tables:
+## Current Implementation
 
-- `aliases`: alternate names for entities.
-- `imports`: optional records for simple import runs.
+- `run.py` starts a local HTTP server.
+- `app/web.py` handles HTTP routing and request/response concerns.
+- `app/views.py` owns reusable page layouts, navigation, entity profiles, relationship views and forms.
+- `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
+- `app/entities.py` defines the common entity model, metadata and supported entity types.
+- `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
+- `app/static/styles.css` provides the shared UI styling.
 
-## Entities
+## Boundaries
 
-`entities` holds shared fields:
+Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.
 
-- `id`
-- `type`
-- `display_name`
-- `summary`
-- `notes`
-- `created_at`
-- `updated_at`
+The application should not depend on WAN access for normal operation.
 
-Entity type is constrained to the configured Stage 1 entity definitions unless a later architecture decision expands the ontology.
+## Entity Architecture
 
-## Typed Profile Tables
+Current domains inherit from a common entity architecture:
 
-Typed tables contain fields specific to each entity type while preserving the canonical entity record.
+- `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
+- `FieldDefinition` describes reusable field metadata, including overview visibility and input type.
+- `EntityRecord` is the shared runtime model for all entity instances.
+- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
+- Domain-specific data is exposed as metadata on the same record object.
+- Entity profile pages are generated from entity definitions and shared page sections.
 
-Typed tables are generated from `EntityDefinition` entries. Missing field columns are added during schema initialisation so future fields can be introduced without deleting the local database.
+Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. This prevents future entity field additions from breaking existing local databases.
 
-## Relationships
+## Entity Page Architecture
 
-`relationships` holds:
+Entity pages are the primary interaction surface. Opening any entity should feel like opening a complete profile of a real-world object.
 
-- `id`
-- `source_entity_id`
-- `target_entity_id`
-- `type`
-- `status`
-- `started_at`
-- `started_at_precision`
-- `ended_at`
-- `ended_at_precision`
-- `notes`
-- `created_at`
-- `updated_at`
+Reusable entity pages include:
 
-Both endpoints reference `entities` and use `ON DELETE CASCADE`. A check constraint prevents a relationship from connecting an entity to itself.
+- Header with name, type, summary and quick actions.
+- Overview with concise structured fields from the entity definition.
+- Relationships grouped by connected entity type.
+- Related Entities for graph exploration.
+- Notes for free-text information.
+- Attachments section backed by attachment table architecture.
+- Timeline placeholder for created, modified and relationship events.
+- Metadata with system information.
 
-The database stores one canonical relationship row rather than duplicating inverse rows.
+Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
 
-## Attachments
+## Relationship Architecture
 
-`attachments` currently holds metadata only:
+Relationships are a central application model:
 
-- `id`
-- `entity_id`
-- `file_name`
-- `file_path`
-- `notes`
-- `created_at`
+- `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
+- `RelationshipType` centralises labels, inverse labels and direction semantics.
+- Entity-page relationship panels are the primary relationship creation and editing surface.
+- The relationship browser remains a global browse/audit view.
+- Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.
 
-Upload, file storage and preview behaviour are future work. The table exists so entity pages can be designed around attachments now.
+Date uncertainty is represented as metadata beside structured calendar date values.
 
-## Search
+## Discovery Architecture
 
-Search should be planned early and implemented before maps.
+Discovery uses shared entity and relationship query primitives:
 
-Search-ready data may come from:
+- Global search matches canonical entity fields, typed profile fields, notes and relationship context.
+- Entity list pages support text filtering and favourites-only filtering.
+- Favourites are persisted as shared entity metadata.
+- Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
+- Dashboard discovery panels read from the same reusable queries as search and filters.
 
-- entity display names
-- aliases
-- typed profile fields
-- relationship labels or notes
-- attachment metadata
+Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
 
-SQLite full-text search can be considered when simple indexed queries are no longer enough.
+## Attachments Architecture
+
+Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.
+
+The current architecture supports attachment metadata linked to canonical entities. Later milestones can add file selection, storage rules, previews and indexing without redesigning entity pages.
+
+## Documentation Rule
+
+Planning documents should be updated when architecture, scope, data model or domain boundaries change.

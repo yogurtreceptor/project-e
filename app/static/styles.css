@@ -416,3 +416,141 @@ dd {
         flex-direction: column;
     }
 }
+
+.global-search {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    min-width: 280px;
+}
+
+.global-search input {
+    min-height: 36px;
+}
+
+.global-search button {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    min-height: 36px;
+    padding: 6px 10px;
+}
+
+.dashboard-search form,
+.filter-panel form,
+.search-panel form {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(220px, 1fr) auto auto auto;
+}
+
+.dashboard-search form {
+    grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.dashboard-discovery {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin-top: 16px;
+}
+
+.entity-link-list {
+    display: grid;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.entity-link-list li {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.entity-link-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.entity-link-list span,
+.result-meta {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.inline-check {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.inline-check input {
+    width: auto;
+}
+
+.search-results {
+    display: grid;
+    gap: 14px;
+}
+
+.search-result-card {
+    display: grid;
+    gap: 12px;
+}
+
+.search-result-card h2 {
+    margin-bottom: 6px;
+}
+
+.result-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pill {
+    background: #eaf5f1;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--accent-dark);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 750;
+    padding: 2px 8px;
+}
+
+.matched-relationships ul {
+    margin-bottom: 0;
+}
+
+.button.favourite.active {
+    border-color: #b58d24;
+    color: #7a5b11;
+}
+
+@media (max-width: 920px) {
+    .site-header {
+        align-items: stretch;
+    }
+
+    .global-search,
+    .dashboard-search form,
+    .filter-panel form,
+    .search-panel form {
+        grid-template-columns: 1fr;
+    }
+
+    .global-search {
+        min-width: 0;
+    }
+}

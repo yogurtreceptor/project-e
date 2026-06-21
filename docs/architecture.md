@@ -70,6 +70,18 @@ Relationships are a central application model:
 
 Date uncertainty is represented as metadata beside structured calendar date values.
 
+## Discovery Architecture
+
+Discovery uses shared entity and relationship query primitives:
+
+- Global search matches canonical entity fields, typed profile fields, notes and relationship context.
+- Entity list pages support text filtering and favourites-only filtering.
+- Favourites are persisted as shared entity metadata.
+- Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
+- Dashboard discovery panels read from the same reusable queries as search and filters.
+
+Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
+
 ## Attachments Architecture
 
 Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.

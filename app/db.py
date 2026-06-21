@@ -48,18 +48,29 @@ def create_schema(connection: sqlite3.Connection) -> None:
             summary TEXT NOT NULL DEFAULT '',
             notes TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            last_viewed_at TEXT NOT NULL DEFAULT '',
+            is_favourite INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE INDEX IF NOT EXISTS idx_entities_type_name
             ON entities (type, display_name);
         """
     )
+    ensure_entity_columns(connection)
     for definition in ENTITY_DEFINITIONS:
         create_typed_table(connection, definition)
         ensure_typed_columns(connection, definition)
     create_relationship_table(connection)
     create_attachment_table(connection)
+
+
+def ensure_entity_columns(connection: sqlite3.Connection) -> None:
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
+    if "last_viewed_at" not in columns:
+        connection.execute("ALTER TABLE entities ADD COLUMN last_viewed_at TEXT NOT NULL DEFAULT ''")
+    if "is_favourite" not in columns:
+        connection.execute("ALTER TABLE entities ADD COLUMN is_favourite INTEGER NOT NULL DEFAULT 0")
 
 
 def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinition) -> None:
@@ -146,7 +157,12 @@ def create_attachment_table(connection: sqlite3.Connection) -> None:
     )
 
 
-def list_entities(connection: sqlite3.Connection, definition: EntityDefinition) -> list[EntityRecord]:
+def list_entities(
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    query: str = "",
+    favourites_only: bool = False,
+) -> list[EntityRecord]:
     rows = connection.execute(
         """
         SELECT entities.*, typed.*
@@ -157,7 +173,12 @@ def list_entities(connection: sqlite3.Connection, definition: EntityDefinition) 
         """.format(table=sql_identifier(definition.table)),
         (definition.type,),
     ).fetchall()
-    return [to_entity_record(definition, row) for row in rows]
+    records = [to_entity_record(definition, row) for row in rows]
+    if favourites_only:
+        records = [record for record in records if record.is_favourite]
+    if query:
+        records = [record for record in records if entity_matches_query(record, query)]
+    return records
 
 
 def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
@@ -488,6 +509,111 @@ def to_relationship_record(
         updated_at=row["updated_at"],
     )
 
+
+
+def list_recent_entities(connection: sqlite3.Connection, limit: int = 8) -> list[EntityRecord]:
+    rows = connection.execute(
+        """
+        SELECT id
+        FROM entities
+        WHERE last_viewed_at <> ''
+        ORDER BY last_viewed_at DESC, id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [entity for row in rows if (entity := get_entity_by_id(connection, int(row["id"]))) is not None]
+
+
+def mark_entity_viewed(connection: sqlite3.Connection, entity_id: int) -> None:
+    connection.execute(
+        "UPDATE entities SET last_viewed_at = ? WHERE id = ?",
+        (utc_now(), entity_id),
+    )
+    connection.commit()
+
+
+def list_favourite_entities(connection: sqlite3.Connection, limit: int = 8) -> list[EntityRecord]:
+    rows = connection.execute(
+        """
+        SELECT id
+        FROM entities
+        WHERE is_favourite = 1
+        ORDER BY lower(display_name), id
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [entity for row in rows if (entity := get_entity_by_id(connection, int(row["id"]))) is not None]
+
+
+def set_entity_favourite(connection: sqlite3.Connection, entity_id: int, is_favourite: bool) -> None:
+    connection.execute(
+        "UPDATE entities SET is_favourite = ?, updated_at = ? WHERE id = ?",
+        (1 if is_favourite else 0, utc_now(), entity_id),
+    )
+    connection.commit()
+
+
+def search_entities(
+    connection: sqlite3.Connection,
+    query: str = "",
+    entity_type: str = "",
+    favourites_only: bool = False,
+) -> list[dict[str, object]]:
+    query = query.strip()
+    records = list_all_entities(connection)
+    if entity_type:
+        records = [record for record in records if record.type == entity_type]
+    if favourites_only:
+        records = [record for record in records if record.is_favourite]
+
+    results = []
+    for record in records:
+        direct_match = not query or entity_matches_query(record, query)
+        relationship_matches = matching_relationships_for_entity(connection, record.id, query) if query else []
+        if direct_match or relationship_matches:
+            results.append(
+                {
+                    "entity": record,
+                    "matched_relationships": relationship_matches,
+                    "relationship_count": len(list_relationships_for_entity(connection, record.id)),
+                }
+            )
+    return sorted(results, key=lambda result: (result["entity"].display_name.lower(), result["entity"].id))
+
+
+def entity_matches_query(record: EntityRecord, query: str) -> bool:
+    haystack = " ".join(
+        [record.display_name, record.summary, record.notes, record.definition.singular, record.definition.plural]
+        + list(record.metadata.values())
+    ).lower()
+    return query.lower() in haystack
+
+
+def matching_relationships_for_entity(
+    connection: sqlite3.Connection, entity_id: int, query: str
+) -> list[RelationshipRecord]:
+    matches = []
+    lowered = query.lower()
+    for relationship in list_relationships_for_entity(connection, entity_id):
+        other = relationship.other_entity(entity_id)
+        haystack = " ".join(
+            [
+                relationship.label_from(entity_id),
+                relationship.type.inverse_label,
+                relationship.status,
+                relationship.notes,
+                other.display_name,
+                other.summary,
+                other.definition.singular,
+                other.definition.plural,
+            ]
+            + list(other.metadata.values())
+        ).lower()
+        if lowered in haystack:
+            matches.append(relationship)
+    return matches
 
 def list_attachments_for_entity(connection: sqlite3.Connection, entity_id: int) -> list[dict[str, str]]:
     rows = connection.execute(

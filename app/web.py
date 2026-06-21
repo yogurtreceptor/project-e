@@ -19,10 +19,15 @@ from app.db import (
     list_all_entities,
     list_attachments_for_entity,
     list_entities,
+    list_favourite_entities,
+    list_recent_entities,
     list_relationships,
     list_relationships_for_entity,
+    mark_entity_viewed,
     normalise_form_values,
     normalise_relationship_values,
+    search_entities,
+    set_entity_favourite,
     update_entity,
     update_relationship,
     validate_entity_values,
@@ -59,6 +64,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_dashboard()
             return
 
+        if parts[0] == "search":
+            self.handle_search(query)
+            return
+
         if parts[0] == "relationships":
             self.route_relationship_request(parts, query)
             return
@@ -69,7 +78,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
 
         if len(parts) == 1:
-            self.handle_list(definition)
+            self.handle_list(definition, query)
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_new(definition)
         elif len(parts) == 2:
@@ -78,6 +87,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_edit(definition, parts[1])
         elif len(parts) == 3 and parts[2] == "delete":
             self.handle_delete(definition, parts[1])
+        elif len(parts) == 3 and parts[2] == "favourite":
+            self.handle_favourite(definition, parts[1])
         else:
             self.respond_not_found()
 
@@ -99,14 +110,33 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         with connect(self.database_path) as connection:
             counts = count_entities(connection)
             relationship_count = len(list_relationships(connection))
-        self.respond_page("Dashboard", views.dashboard_page(counts, relationship_count))
+            recent_entities = list_recent_entities(connection)
+            favourite_entities = list_favourite_entities(connection)
+        self.respond_page(
+            "Dashboard",
+            views.dashboard_page(counts, relationship_count, recent_entities, favourite_entities),
+        )
 
-    def handle_list(self, definition: EntityDefinition) -> None:
+    def handle_search(self, query: dict[str, str]) -> None:
+        search_query = query.get("q", "")
+        entity_type = query.get("type", "")
+        favourites_only = query.get("favourites") == "1"
         with connect(self.database_path) as connection:
-            records = list_entities(connection, definition)
+            results = search_entities(connection, search_query, entity_type, favourites_only)
+        self.respond_page(
+            "Search",
+            views.search_page(search_query, entity_type, favourites_only, results),
+            active_slug="search",
+        )
+
+    def handle_list(self, definition: EntityDefinition, query: dict[str, str]) -> None:
+        filter_query = query.get("q", "")
+        favourites_only = query.get("favourites") == "1"
+        with connect(self.database_path) as connection:
+            records = list_entities(connection, definition, filter_query, favourites_only)
         self.respond_page(
             definition.plural,
-            views.entity_list_page(definition, records),
+            views.entity_list_page(definition, records, filter_query, favourites_only),
             active_slug=definition.slug,
         )
 
@@ -118,6 +148,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         with connect(self.database_path) as connection:
             record = get_entity(connection, definition, entity_id)
+            if record is not None:
+                mark_entity_viewed(connection, entity_id)
+                record = get_entity(connection, definition, entity_id)
             relationships = list_relationships_for_entity(connection, entity_id) if record else []
             attachments = list_attachments_for_entity(connection, entity_id) if record else []
         if record is None:
@@ -168,6 +201,23 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
 
         self.respond_form(definition, record.to_form_values(), [], "Edit", entity_id)
+
+    def handle_favourite(self, definition: EntityDefinition, raw_id: str) -> None:
+        if self.command != "POST":
+            self.respond_not_found()
+            return
+        entity_id = self.parse_entity_id(raw_id)
+        if entity_id is None:
+            self.respond_not_found()
+            return
+        is_favourite = self.read_form().get("is_favourite") == "1"
+        with connect(self.database_path) as connection:
+            record = get_entity(connection, definition, entity_id)
+            if record is None:
+                self.respond_not_found()
+                return
+            set_entity_favourite(connection, entity_id, is_favourite)
+        self.redirect(f"/{definition.slug}/{entity_id}")
 
     def handle_delete(self, definition: EntityDefinition, raw_id: str) -> None:
         if self.command != "POST":

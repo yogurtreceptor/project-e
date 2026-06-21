@@ -1,68 +1,93 @@
-# UI Principles
+# Architecture
 
-The Stage 1 UI should make structured information easy to enter, inspect and navigate.
+Operation Eddy uses a simple local-first architecture for Stage 1.
 
-## Core Experience
+## Shape
 
-- Entity pages are the primary way users interact with Operation Eddy.
-- Relationships should be visible, editable and navigable from entity pages.
-- Search comes before map-based exploration.
-- Forms should stay practical and understandable.
-- Pages should feel like profiles of real-world objects, not database rows.
+The system is organised around three practical layers:
 
-## Reusable Entity Pages
+- Local UI for browsing, editing, searching and navigating information.
+- Local application layer for validation, persistence rules and view logic.
+- Embedded SQLite database for durable local storage.
 
-Every entity page should use the same profile architecture:
+No external runtime dependencies are required for the current foundation.
 
-- Header: name, type, summary and quick actions.
-- Overview: concise structured fields from the entity definition.
-- Relationships: direct relationships grouped by connected entity type.
-- Related Entities: easy graph navigation to connected records.
-- Notes: free-text user information.
-- Attachments: file metadata placeholder and future upload surface.
-- Timeline: created, modified and relationship-event placeholders.
-- Metadata: entity ID, type, relationship count, attachment count and timestamps.
+## Current Implementation
 
-Future domains should inherit this page structure by defining fields and labels, not by creating custom page layouts.
+- `run.py` starts a local HTTP server.
+- `app/web.py` handles HTTP routing and request/response concerns.
+- `app/views.py` owns reusable page layouts, navigation, entity profiles, relationship views and forms.
+- `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
+- `app/entities.py` defines the common entity model, metadata and supported entity types.
+- `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
+- `app/static/styles.css` provides the shared UI styling.
 
-## Overview
+## Boundaries
 
-Overview sections should be short and scannable.
+Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.
 
-Examples:
+The application should not depend on WAN access for normal operation.
 
-- Person: birthday, phone, email, occupation.
-- Organisation: address, phone, website.
-- Location: address, coordinates.
+## Entity Architecture
 
-Only fields with meaningful values should dominate the page. Empty fields should not make the overview noisy.
+Current domains inherit from a common entity architecture:
 
-## Relationships And Navigation
+- `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
+- `FieldDefinition` describes reusable field metadata, including overview visibility and input type.
+- `EntityRecord` is the shared runtime model for all entity instances.
+- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
+- Domain-specific data is exposed as metadata on the same record object.
+- Entity profile pages are generated from entity definitions and shared page sections.
 
-Relationships should not be hidden as secondary metadata.
+Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. This prevents future entity field additions from breaking existing local databases.
 
-Entity pages should let users:
+## Entity Page Architecture
 
-- create relationships from the current entity
-- edit and delete relationships from the current entity context
-- navigate directly to connected entities
-- understand relationship direction through labels
-- record exact or approximate relationship dates
+Entity pages are the primary interaction surface. Opening any entity should feel like opening a complete profile of a real-world object.
 
-Navigation should encourage graph exploration without repeatedly returning to the dashboard.
+Reusable entity pages include:
 
-## Attachments
+- Header with name, type, summary and quick actions.
+- Overview with concise structured fields from the entity definition.
+- Relationships grouped by connected entity type.
+- Related Entities for graph exploration.
+- Notes for free-text information.
+- Attachments section backed by attachment table architecture.
+- Timeline placeholder for created, modified and relationship events.
+- Metadata with system information.
 
-Attachment upload may remain basic or placeholder during early Stage 1, but entity pages should reserve a consistent place for attached files.
+Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
 
-Attachment UI should later support file name, notes, storage location and previews where useful.
+## Relationship Architecture
 
-## Timeline
+Relationships are a central application model:
 
-Timeline starts as a placeholder showing created, modified and relationship-added events.
+- `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
+- `RelationshipType` centralises labels, inverse labels and direction semantics.
+- Entity-page relationship panels are the primary relationship creation and editing surface.
+- The relationship browser remains a global browse/audit view.
+- Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.
 
-The structure should support richer history later without redesigning entity pages.
+Date uncertainty is represented as metadata beside structured calendar date values.
 
-## Exclusions
+## Discovery Architecture
 
-The Stage 1 UI should not include chat, AI prompts, dispatcher controls, scheduling surfaces, login flows or automation dashboards.
+Discovery uses shared entity and relationship query primitives:
+
+- Global search matches canonical entity fields, typed profile fields, notes and relationship context.
+- Entity list pages support text filtering and favourites-only filtering.
+- Favourites are persisted as shared entity metadata.
+- Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
+- Dashboard discovery panels read from the same reusable queries as search and filters.
+
+Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
+
+## Attachments Architecture
+
+Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.
+
+The current architecture supports attachment metadata linked to canonical entities. Later milestones can add file selection, storage rules, previews and indexing without redesigning entity pages.
+
+## Documentation Rule
+
+Planning documents should be updated when architecture, scope, data model or domain boundaries change.

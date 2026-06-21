@@ -87,3 +87,19 @@ Architectural corrections:
 
 - Documentation drift was corrected after `architecture.md`, `database_design.md` and `ui_principles.md` were found to contain ontology content. These documents were restored before completing the milestone.
 - Typed entity tables now add missing definition-driven columns during schema initialisation. This corrects the previous assumption that `CREATE TABLE IF NOT EXISTS` was enough for evolving local schemas.
+
+Discovery milestone completed.
+
+What changed:
+
+- Added global search across entity names, summaries, notes, typed fields and relationship context.
+- Added entity list filtering by text and favourites.
+- Added persisted favourite support on canonical entities.
+- Added persisted recent-entity tracking through `last_viewed_at`.
+- Added dashboard discovery sections for search, recent entities and favourites.
+- Added relationship-aware search results that surface matching relationship context.
+- Added tests for discovery, favourites, recent entities and relationship-aware search.
+
+Architectural correction:
+
+- Discovery is implemented through reusable data-layer query primitives rather than dashboard-specific logic. This keeps future entity types discoverable through the same search, filtering, favourite and recent-entity paths.

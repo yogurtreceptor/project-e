@@ -10,6 +10,9 @@ from app.db import (
     get_entity,
     initialise_database,
     list_entities,
+    list_favourite_entities,
+    list_recent_entities,
+    mark_entity_viewed,
     normalise_form_values,
     update_entity,
     create_relationship,
@@ -18,6 +21,8 @@ from app.db import (
     list_relationships,
     list_relationships_for_entity,
     normalise_relationship_values,
+    search_entities,
+    set_entity_favourite,
     update_relationship,
     validate_entity_values,
     validate_relationship_values,
@@ -212,6 +217,71 @@ class EntityDatabaseTests(unittest.TestCase):
 
             delete_relationship(connection, relationship_id)
             self.assertIsNone(get_relationship(connection, relationship_id))
+
+    def test_discovery_supports_favourites_recent_and_relationship_search(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "Computing pioneer",
+                    "notes": "Worked on analytical machinery.",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
+                    "birthday": "1815-12-10",
+                    "occupation": "Mathematician",
+                    "email": "ada@example.test",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "Research group",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "address_line_1": "",
+                    "locality": "",
+                    "region": "",
+                    "country": "",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(person_id),
+                    "target_entity_id": str(organisation_id),
+                    "type": "works_for",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "collaboration on computation",
+                },
+            )
+
+            set_entity_favourite(connection, person_id, True)
+            mark_entity_viewed(connection, organisation_id)
+
+            favourites = list_favourite_entities(connection)
+            recent = list_recent_entities(connection)
+            filtered_people = list_entities(connection, self.definition, "math", True)
+            relationship_results = search_entities(connection, "guild")
+
+        self.assertEqual([record.id for record in favourites], [person_id])
+        self.assertEqual([record.id for record in recent], [organisation_id])
+        self.assertEqual([record.id for record in filtered_people], [person_id])
+        result_ids = {result["entity"].id for result in relationship_results}
+        self.assertIn(person_id, result_ids)
+        self.assertIn(organisation_id, result_ids)
 
     def test_relationship_validation_rejects_same_or_missing_entities(self) -> None:
         with connect(self.database_path) as connection:

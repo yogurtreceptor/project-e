@@ -14,7 +14,8 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
         for definition in ENTITY_DEFINITIONS
     )
     relationship_class = "active" if active_slug == "relationships" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a>'
+    search_class = "active" if active_slug == "search" else ""
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{search_class}" href="/search">Search</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -27,13 +28,17 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     <header class="site-header">
         <a class="brand" href="/">Operation Eddy</a>
         <nav>{nav_items}</nav>
+        <form class="global-search" method="get" action="/search">
+            <input name="q" placeholder="Search entities and relationships">
+            <button type="submit">Search</button>
+        </form>
     </header>
     <main>{content}</main>
 </body>
 </html>"""
 
 
-def dashboard_page(counts: dict[str, int], relationship_count: int) -> str:
+def dashboard_page(counts: dict[str, int], relationship_count: int, recent_entities: list[EntityRecord], favourite_entities: list[EntityRecord]) -> str:
     cards = []
     for definition in ENTITY_DEFINITIONS:
         count = counts.get(definition.type, 0)
@@ -70,10 +75,59 @@ def dashboard_page(counts: dict[str, int], relationship_count: int) -> str:
         <h1>Operation Eddy</h1>
         <p>Local-first structured information centred on entities and relationships.</p>
     </section>
-    <div class="grid">""" + "".join(cards) + "</div>"
+    <section class="panel dashboard-search">
+        <form method="get" action="/search">
+            <input name="q" placeholder="Search people, organisations, locations, notes and relationships">
+            <button class="button" type="submit">Search</button>
+        </form>
+    </section>
+    <div class="grid">""" + "".join(cards) + "</div>" + dashboard_discovery_sections(recent_entities, favourite_entities)
 
 
-def entity_list_page(definition: EntityDefinition, records: list[EntityRecord]) -> str:
+
+def dashboard_discovery_sections(recent_entities: list[EntityRecord], favourite_entities: list[EntityRecord]) -> str:
+    return f"""
+    <div class="dashboard-discovery">
+        <section class="panel">
+            <div class="section-heading split">
+                <h2>Recent Entities</h2>
+                <a href="/search">Browse all</a>
+            </div>
+            {entity_link_list(recent_entities, 'No recently viewed entities yet.')}
+        </section>
+        <section class="panel">
+            <div class="section-heading split">
+                <h2>Favourites</h2>
+                <a href="/search?favourites=1">View favourites</a>
+            </div>
+            {entity_link_list(favourite_entities, 'No favourites yet.')}
+        </section>
+    </div>
+    """
+
+
+def entity_link_list(records: list[EntityRecord], empty_text: str) -> str:
+    if not records:
+        return f'<p class="empty">{escape(empty_text)}</p>'
+    items = "".join(
+        f'<li><a href="/{record.slug}/{record.id}">{escape(record.title)}</a><span>{escape(record.definition.singular)}</span></li>'
+        for record in records
+    )
+    return f'<ul class="entity-link-list">{items}</ul>'
+
+
+def favourite_form(record: EntityRecord) -> str:
+    next_value = "0" if record.is_favourite else "1"
+    label = "Unfavourite" if record.is_favourite else "Favourite"
+    button_class = "button secondary favourite active" if record.is_favourite else "button secondary favourite"
+    return f"""
+    <form method="post" action="/{record.slug}/{record.id}/favourite">
+        <input type="hidden" name="is_favourite" value="{next_value}">
+        <button class="{button_class}" type="submit">{label}</button>
+    </form>
+    """
+
+def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], query: str = "", favourites_only: bool = False) -> str:
     rows = []
     for record in records:
         summary = escape(record.summary) if record.summary else "No summary yet."
@@ -104,13 +158,22 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord]) 
         else ""
     )
 
+    favourite_checked = " checked" if favourites_only else ""
     return f"""
     <section class="page-heading split">
         <div>
             <h1>{escape(definition.plural)}</h1>
-            <p>Browse canonical {escape(definition.plural.lower())} records.</p>
+            <p>Browse and filter canonical {escape(definition.plural.lower())} records.</p>
         </div>
         <a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a>
+    </section>
+    <section class="panel filter-panel">
+        <form method="get" action="/{definition.slug}">
+            <input name="q" value="{escape(query)}" placeholder="Filter {escape(definition.plural.lower())}">
+            <label class="inline-check"><input type="checkbox" name="favourites" value="1"{favourite_checked}> Favourites only</label>
+            <button class="button" type="submit">Apply</button>
+            <a class="button secondary" href="/{definition.slug}">Clear</a>
+        </form>
     </section>
     <section class="panel">{empty}{table}</section>
     """
@@ -152,6 +215,7 @@ def entity_profile_header(record: EntityRecord) -> str:
         </div>
         <div class="actions">
             <a class="button secondary" href="/{definition.slug}">Back</a>
+            {favourite_form(record)}
             <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
             <form method="post" action="/{definition.slug}/{record.id}/delete">
@@ -324,8 +388,10 @@ def metadata_section(
             <dt>Type</dt><dd>{escape(record.definition.singular)}</dd>
             <dt>Relationships</dt><dd>{len(relationships)}</dd>
             <dt>Attachments</dt><dd>{len(attachments)}</dd>
+            <dt>Favourite</dt><dd>{'Yes' if record.is_favourite else 'No'}</dd>
             <dt>Created</dt><dd>{escape(record.created_at)}</dd>
             <dt>Updated</dt><dd>{escape(record.updated_at)}</dd>
+            <dt>Last viewed</dt><dd>{escape(record.last_viewed_at) if record.last_viewed_at else 'Not recorded'}</dd>
         </dl>
     </section>
     """
@@ -530,6 +596,59 @@ def relationship_type_options() -> list[tuple[str, str]]:
 def date_precision_options() -> list[tuple[str, str]]:
     return [(precision, precision.replace("_", " ").title()) for precision in DATE_PRECISIONS]
 
+
+
+def search_page(query: str, entity_type: str, favourites_only: bool, results: list[dict[str, object]]) -> str:
+    type_options = ['<option value="">All entity types</option>']
+    for definition in ENTITY_DEFINITIONS:
+        selected = " selected" if definition.type == entity_type else ""
+        type_options.append(f'<option value="{definition.type}"{selected}>{escape(definition.plural)}</option>')
+    checked = " checked" if favourites_only else ""
+    if results:
+        cards = "".join(search_result_card(result) for result in results)
+    else:
+        cards = '<p class="empty">No matching entities yet.</p>'
+    return f"""
+    <section class="page-heading">
+        <h1>Search</h1>
+        <p>Find entities by their fields, notes and relationship context.</p>
+    </section>
+    <section class="panel search-panel">
+        <form method="get" action="/search">
+            <input name="q" value="{escape(query)}" placeholder="Search entities and relationships">
+            <select name="type">{''.join(type_options)}</select>
+            <label class="inline-check"><input type="checkbox" name="favourites" value="1"{checked}> Favourites only</label>
+            <button class="button" type="submit">Search</button>
+            <a class="button secondary" href="/search">Clear</a>
+        </form>
+    </section>
+    <section class="search-results">{cards}</section>
+    """
+
+
+def search_result_card(result: dict[str, object]) -> str:
+    entity = result["entity"]
+    matched_relationships = result["matched_relationships"]
+    relationship_count = result["relationship_count"]
+    relationship_html = ""
+    if matched_relationships:
+        relationship_items = "".join(
+            f'<li><a href="/relationships/{relationship.id}">{escape(relationship.label_from(entity.id))}</a> <a href="/{relationship.other_entity(entity.id).slug}/{relationship.other_entity(entity.id).id}">{escape(relationship.other_entity(entity.id).title)}</a></li>'
+            for relationship in matched_relationships[:4]
+        )
+        relationship_html = f'<div class="matched-relationships"><strong>Relationship matches</strong><ul>{relationship_items}</ul></div>'
+    favourite = '<span class="pill">Favourite</span>' if entity.is_favourite else ""
+    return f"""
+    <article class="panel search-result-card">
+        <div>
+            <p class="eyebrow">{escape(entity.definition.singular)}</p>
+            <h2><a href="/{entity.slug}/{entity.id}">{escape(entity.title)}</a></h2>
+            <p>{escape(entity.summary) if entity.summary else 'No summary yet.'}</p>
+            <div class="result-meta">{favourite}<span>{relationship_count} relationships</span></div>
+        </div>
+        {relationship_html}
+    </article>
+    """
 
 def not_found_page() -> str:
     return '<section class="panel"><h1>Not found</h1><p>The requested page does not exist.</p></section>'
