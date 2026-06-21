@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from app import views
 from app.db import (
     connect,
     create_entity,
@@ -101,6 +102,40 @@ class EntityDatabaseTests(unittest.TestCase):
 
                 delete_entity(connection, definition, entity_id)
                 self.assertIsNone(get_entity(connection, definition, entity_id))
+
+    def test_entity_profile_page_has_reusable_sections(self) -> None:
+        with connect(self.database_path) as connection:
+            entity_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "Computing pioneer",
+                    "notes": "Profile notes.",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
+                    "birthday": "1815-12-10",
+                    "occupation": "Mathematician",
+                    "email": "ada@example.test",
+                    "phone": "",
+                },
+            )
+            record = get_entity(connection, self.definition, entity_id)
+
+        html = views.entity_detail_page(record, [], [])
+
+        for heading in (
+            "Overview",
+            "Relationships",
+            "Related Entities",
+            "Notes",
+            "Attachments",
+            "Timeline",
+            "Metadata",
+        ):
+            self.assertIn(heading, html)
+        self.assertIn("1815-12-10", html)
+        self.assertIn("Mathematician", html)
 
     def test_relationships_connect_any_entity_types_bidirectionally(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]

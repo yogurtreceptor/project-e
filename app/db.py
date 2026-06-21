@@ -57,7 +57,9 @@ def create_schema(connection: sqlite3.Connection) -> None:
     )
     for definition in ENTITY_DEFINITIONS:
         create_typed_table(connection, definition)
+        ensure_typed_columns(connection, definition)
     create_relationship_table(connection)
+    create_attachment_table(connection)
 
 
 def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinition) -> None:
@@ -74,6 +76,16 @@ def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinit
         );
         """
     )
+
+
+def ensure_typed_columns(connection: sqlite3.Connection, definition: EntityDefinition) -> None:
+    table = sql_identifier(definition.table)
+    columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+    for field in definition.fields:
+        if field.name not in columns:
+            connection.execute(
+                f"ALTER TABLE {table} ADD COLUMN {sql_identifier(field.name)} TEXT NOT NULL DEFAULT ''"
+            )
 
 
 def create_relationship_table(connection: sqlite3.Connection) -> None:
@@ -114,6 +126,24 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN started_at_precision TEXT NOT NULL DEFAULT 'exact'")
     if "ended_at_precision" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN ended_at_precision TEXT NOT NULL DEFAULT 'exact'")
+
+
+def create_attachment_table(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_attachments_entity
+            ON attachments (entity_id);
+        """
+    )
 
 
 def list_entities(connection: sqlite3.Connection, definition: EntityDefinition) -> list[EntityRecord]:
@@ -457,6 +487,19 @@ def to_relationship_record(
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
+
+
+def list_attachments_for_entity(connection: sqlite3.Connection, entity_id: int) -> list[dict[str, str]]:
+    rows = connection.execute(
+        """
+        SELECT id, entity_id, file_name, file_path, notes, created_at
+        FROM attachments
+        WHERE entity_id = ?
+        ORDER BY created_at DESC, id DESC
+        """,
+        (entity_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def parse_int(value: str) -> int | None:

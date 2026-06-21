@@ -7,6 +7,8 @@ class FieldDefinition:
     name: str
     label: str
     multiline: bool = False
+    overview: bool = True
+    input_type: str = "text"
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,7 @@ class EntityRecord:
     notes: str
     created_at: str
     updated_at: str
+    is_favourite: bool
     metadata: dict[str, str]
 
     @property
@@ -72,6 +75,8 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         fields=(
             FieldDefinition("given_name", "Given name"),
             FieldDefinition("family_name", "Family name"),
+            FieldDefinition("birthday", "Birthday", input_type="date"),
+            FieldDefinition("occupation", "Occupation"),
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),
         ),
@@ -84,6 +89,10 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         table="organisations",
         fields=(
             FieldDefinition("organisation_type", "Organisation type"),
+            FieldDefinition("address_line_1", "Address line 1"),
+            FieldDefinition("locality", "Locality"),
+            FieldDefinition("region", "Region"),
+            FieldDefinition("country", "Country"),
             FieldDefinition("website", "Website"),
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),
@@ -101,6 +110,8 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("locality", "Locality"),
             FieldDefinition("region", "Region"),
             FieldDefinition("country", "Country"),
+            FieldDefinition("latitude", "Latitude"),
+            FieldDefinition("longitude", "Longitude"),
         ),
     ),
 )
@@ -119,5 +130,6 @@ def to_entity_record(definition: EntityDefinition, row: Any) -> EntityRecord:
         notes=row["notes"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        is_favourite=bool(row["is_favourite"]),
         metadata={field.name: row[field.name] for field in definition.fields},
     )

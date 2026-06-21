@@ -17,6 +17,7 @@ from app.db import (
     get_relationship,
     initialise_database,
     list_all_entities,
+    list_attachments_for_entity,
     list_entities,
     list_relationships,
     list_relationships_for_entity,
@@ -118,13 +119,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         with connect(self.database_path) as connection:
             record = get_entity(connection, definition, entity_id)
             relationships = list_relationships_for_entity(connection, entity_id) if record else []
+            attachments = list_attachments_for_entity(connection, entity_id) if record else []
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships),
+            views.entity_detail_page(record, relationships, attachments),
             active_slug=definition.slug,
         )
 

@@ -71,3 +71,19 @@ What changed:
 Decision captured:
 
 - Relationships remain centrally stored as first-class records, but the user workflow is entity-first. This keeps the data model correct while matching how users naturally add knowledge.
+
+Reusable entity profile milestone completed.
+
+What changed:
+
+- Reworked entity detail pages into reusable profile pages rather than database-record views.
+- Added shared profile sections: header, overview, relationships, related entities, notes, attachments, timeline and metadata.
+- Added richer overview fields for People, Organisations and Locations through `FieldDefinition` metadata.
+- Added additive schema evolution for typed entity tables so future fields can be introduced without deleting the local database.
+- Added attachment metadata table architecture and an entity-page attachments placeholder.
+- Added a regression test for reusable entity profile sections.
+
+Architectural corrections:
+
+- Documentation drift was corrected after `architecture.md`, `database_design.md` and `ui_principles.md` were found to contain ontology content. These documents were restored before completing the milestone.
+- Typed entity tables now add missing definition-driven columns during schema initialisation. This corrects the previous assumption that `CREATE TABLE IF NOT EXISTS` was enough for evolving local schemas.

@@ -327,3 +327,92 @@ dd {
     font-size: 13px;
     font-weight: 700;
 }
+
+.entity-profile {
+    display: grid;
+    gap: 18px;
+}
+
+.entity-hero {
+    align-items: flex-start;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.entity-hero h1 {
+    font-size: 34px;
+    line-height: 1.12;
+    margin-bottom: 8px;
+}
+
+.entity-hero form {
+    margin: 0;
+}
+
+.profile-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.profile-main,
+.profile-side {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+}
+
+.profile-section h2 {
+    margin-bottom: 14px;
+}
+
+.button.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.related-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 16px;
+}
+
+.related-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 2px;
+    padding: 12px;
+}
+
+.related-card span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.timeline-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.timeline-list span {
+    color: var(--muted);
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 920px) {
+    .entity-hero,
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .entity-hero {
+        flex-direction: column;
+    }
+}

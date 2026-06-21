@@ -92,11 +92,7 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord]) 
             """
         )
 
-    empty = (
-        f'<p class="empty">No {escape(definition.plural.lower())} yet.</p>'
-        if not rows
-        else ""
-    )
+    empty = f'<p class="empty">No {escape(definition.plural.lower())} yet.</p>' if not rows else ""
     table = (
         """
         <table>
@@ -120,15 +116,35 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord]) 
     """
 
 
-def entity_detail_page(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
-    definition = record.definition
-    fields = []
-    for field, raw_value in record.field_items():
-        value = raw_value or "Not recorded"
-        fields.append(f"<dt>{escape(field.label)}</dt><dd>{escape(value)}</dd>")
-
+def entity_detail_page(
+    record: EntityRecord,
+    relationships: list[RelationshipRecord],
+    attachments: list[dict[str, str]],
+) -> str:
     return f"""
-    <section class="page-heading split">
+    <article class="entity-profile">
+        {entity_profile_header(record)}
+        <div class="profile-grid">
+            <div class="profile-main">
+                {entity_overview_section(record)}
+                {entity_relationships_panel(record, relationships)}
+                {related_entities_section(record, relationships)}
+                {entity_notes_section(record)}
+            </div>
+            <aside class="profile-side">
+                {attachments_section(attachments)}
+                {timeline_section(record, relationships)}
+                {metadata_section(record, relationships, attachments)}
+            </aside>
+        </div>
+    </article>
+    """
+
+
+def entity_profile_header(record: EntityRecord) -> str:
+    definition = record.definition
+    return f"""
+    <section class="entity-hero panel">
         <div>
             <p class="eyebrow">{escape(definition.singular)}</p>
             <h1>{escape(record.title)}</h1>
@@ -136,24 +152,28 @@ def entity_detail_page(record: EntityRecord, relationships: list[RelationshipRec
         </div>
         <div class="actions">
             <a class="button secondary" href="/{definition.slug}">Back</a>
+            <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
+            <form method="post" action="/{definition.slug}/{record.id}/delete">
+                <button class="button danger" type="submit">Delete</button>
+            </form>
         </div>
     </section>
-    <section class="panel">
-        <h2>Details</h2>
-        <dl>{''.join(fields)}</dl>
-    </section>
-    {entity_relationships_panel(record, relationships)}
-    <section class="panel">
-        <h2>Notes</h2>
-        <p class="notes">{escape(record.notes) if record.notes else 'No notes yet.'}</p>
-    </section>
-    <section class="panel metadata">
-        <h2>Metadata</h2>
-        <dl>
-            <dt>Created</dt><dd>{escape(record.created_at)}</dd>
-            <dt>Updated</dt><dd>{escape(record.updated_at)}</dd>
-        </dl>
+    """
+
+
+def entity_overview_section(record: EntityRecord) -> str:
+    fields = [field for field in record.definition.fields if field.overview]
+    items = []
+    for field in fields:
+        value = record.field_value(field)
+        if value:
+            items.append(f"<dt>{escape(field.label)}</dt><dd>{escape(value)}</dd>")
+    content = f"<dl>{''.join(items)}</dl>" if items else '<p class="empty">No structured overview yet.</p>'
+    return f"""
+    <section class="panel profile-section">
+        <h2>Overview</h2>
+        {content}
     </section>
     """
 
@@ -207,12 +227,106 @@ def entity_relationships_panel(record: EntityRecord, relationships: list[Relatio
             """
         )
     return f"""
-    <section class="panel relationships-panel">
+    <section class="panel relationships-panel profile-section">
         <div class="section-heading split">
             <h2>Relationships</h2>
             <a href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Add relationship</a>
         </div>
         {''.join(sections)}
+    </section>
+    """
+
+
+def related_entities_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    groups = []
+    for definition in ENTITY_DEFINITIONS:
+        related = [
+            relationship.other_entity(record.id)
+            for relationship in relationships
+            if relationship.other_entity(record.id).definition.type == definition.type
+        ]
+        if not related:
+            continue
+        cards = "".join(
+            f"""
+            <a class="related-card" href="/{entity.slug}/{entity.id}">
+                <strong>{escape(entity.title)}</strong>
+                <span>{escape(entity.definition.singular)}</span>
+            </a>
+            """
+            for entity in related
+        )
+        groups.append(f"<h3>{escape(definition.plural)}</h3><div class=\"related-grid\">{cards}</div>")
+    content = "".join(groups) if groups else '<p class="empty">No related entities yet.</p>'
+    return f"""
+    <section class="panel profile-section">
+        <h2>Related Entities</h2>
+        {content}
+    </section>
+    """
+
+
+def entity_notes_section(record: EntityRecord) -> str:
+    return f"""
+    <section class="panel profile-section">
+        <h2>Notes</h2>
+        <p class="notes">{escape(record.notes) if record.notes else 'No notes yet.'}</p>
+    </section>
+    """
+
+
+def attachments_section(attachments: list[dict[str, str]]) -> str:
+    if attachments:
+        rows = "".join(
+            f"<tr><td>{escape(item['file_name'])}</td><td>{escape(item['notes'])}</td></tr>"
+            for item in attachments
+        )
+        content = f"<table><thead><tr><th>File</th><th>Notes</th></tr></thead><tbody>{rows}</tbody></table>"
+    else:
+        content = '<p class="empty">No attachments yet. Attachment records are ready; file upload comes later.</p>'
+    return f"""
+    <section class="panel profile-section">
+        <h2>Attachments</h2>
+        {content}
+    </section>
+    """
+
+
+def timeline_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    relationship_events = "".join(
+        f"<li><span>{escape(relationship.created_at)}</span> Relationship added: {escape(relationship.label)}</li>"
+        for relationship in relationships[:5]
+    )
+    if not relationship_events:
+        relationship_events = '<li><span>Not yet</span> No relationship events recorded.</li>'
+    return f"""
+    <section class="panel profile-section">
+        <h2>Timeline</h2>
+        <ol class="timeline-list">
+            <li><span>{escape(record.created_at)}</span> Entity created.</li>
+            <li><span>{escape(record.updated_at)}</span> Entity modified.</li>
+            {relationship_events}
+        </ol>
+    </section>
+    """
+
+
+def metadata_section(
+    record: EntityRecord,
+    relationships: list[RelationshipRecord],
+    attachments: list[dict[str, str]],
+) -> str:
+    return f"""
+    <section class="panel profile-section metadata">
+        <h2>Metadata</h2>
+        <dl>
+            <dt>Entity ID</dt><dd>{record.id}</dd>
+            <dt>Type</dt><dd>{escape(record.definition.singular)}</dd>
+            <dt>Relationships</dt><dd>{len(relationships)}</dd>
+            <dt>Attachments</dt><dd>{len(attachments)}</dd>
+            <dt>Created</dt><dd>{escape(record.created_at)}</dd>
+            <dt>Updated</dt><dd>{escape(record.updated_at)}</dd>
+        </dl>
     </section>
     """
 
@@ -234,6 +348,7 @@ def format_date_with_precision(value: str, precision: str) -> str:
         return f"date uncertain: {value}"
     return value
 
+
 def entity_form_page(
     definition: EntityDefinition,
     values: dict[str, str],
@@ -251,7 +366,7 @@ def entity_form_page(
         input_field("summary", "Summary", values),
     ]
     for field in definition.fields:
-        fields.append(input_field(field.name, field.label, values, field.multiline))
+        fields.append(input_field(field.name, field.label, values, field.multiline, field.input_type))
     fields.append(input_field("notes", "Notes", values, multiline=True))
 
     return f"""
@@ -308,7 +423,6 @@ def relationship_list_page(relationships: list[RelationshipRecord]) -> str:
             <h1>Relationships</h1>
             <p>Browse first-class links between any entity types.</p>
         </div>
-
     </section>
     <section class="panel">{content}</section>
     """
@@ -432,7 +546,11 @@ def error_block(errors: list[str]) -> str:
 
 
 def input_field(
-    name: str, label: str, values: dict[str, str], multiline: bool = False, input_type: str = "text"
+    name: str,
+    label: str,
+    values: dict[str, str],
+    multiline: bool = False,
+    input_type: str = "text",
 ) -> str:
     value = escape(str(values.get(name, "")))
     if multiline:

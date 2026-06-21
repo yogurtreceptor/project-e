@@ -1,88 +1,68 @@
-# Ontology
+# UI Principles
 
-Operation Eddy models real-world information as entities and relationships.
+The Stage 1 UI should make structured information easy to enter, inspect and navigate.
 
-## Entities
+## Core Experience
 
-An entity is the canonical record for one real-world object.
+- Entity pages are the primary way users interact with Operation Eddy.
+- Relationships should be visible, editable and navigable from entity pages.
+- Search comes before map-based exploration.
+- Forms should stay practical and understandable.
+- Pages should feel like profiles of real-world objects, not database rows.
 
-Every entity has:
+## Reusable Entity Pages
 
-- a stable identifier
-- an entity type
-- a display name
-- notes or descriptive fields where useful
-- creation and update timestamps
+Every entity page should use the same profile architecture:
 
-Stage 1 entity types are:
+- Header: name, type, summary and quick actions.
+- Overview: concise structured fields from the entity definition.
+- Relationships: direct relationships grouped by connected entity type.
+- Related Entities: easy graph navigation to connected records.
+- Notes: free-text user information.
+- Attachments: file metadata placeholder and future upload surface.
+- Timeline: created, modified and relationship-event placeholders.
+- Metadata: entity ID, type, relationship count, attachment count and timestamps.
 
-- Person
-- Organisation
-- Location
+Future domains should inherit this page structure by defining fields and labels, not by creating custom page layouts.
 
-Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
+## Overview
 
-## People
+Overview sections should be short and scannable.
 
-A Person represents a real person.
+Examples:
 
-Current fields include name parts, email, phone, summary and notes. The first priority is maintainable entity identity.
+- Person: birthday, phone, email, occupation.
+- Organisation: address, phone, website.
+- Location: address, coordinates.
 
-## Organisations
+Only fields with meaningful values should dominate the page. Empty fields should not make the overview noisy.
 
-An Organisation represents a company, institution, group, team or other organisation.
+## Relationships And Navigation
 
-Current fields include organisation type, website, email, phone, summary and notes.
+Relationships should not be hidden as secondary metadata.
 
-## Locations
+Entity pages should let users:
 
-A Location represents a place, address or meaningful area.
+- create relationships from the current entity
+- edit and delete relationships from the current entity context
+- navigate directly to connected entities
+- understand relationship direction through labels
+- record exact or approximate relationship dates
 
-Current fields include address lines, locality, region, country, summary and notes.
+Navigation should encourage graph exploration without repeatedly returning to the dashboard.
 
-Maps are a later view over Location data, not the foundation of the Location model.
+## Attachments
 
-## Relationships
+Attachment upload may remain basic or placeholder during early Stage 1, but entity pages should reserve a consistent place for attached files.
 
-A relationship is a first-class record connecting two canonical entities.
+Attachment UI should later support file name, notes, storage location and previews where useful.
 
-Relationships support:
+## Timeline
 
-- source entity
-- target entity
-- relationship type
-- direction semantics through type labels and inverse labels
-- optional start and end dates
-- date certainty for start and end dates
-- status
-- notes
-- creation and update timestamps
+Timeline starts as a placeholder showing created, modified and relationship-added events.
 
-Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
+The structure should support richer history later without redesigning entity pages.
 
-The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
+## Exclusions
 
-## Relationship Types
-
-Implemented relationship types include:
-
-- associated with
-- knows
-- works for / has worker
-- located at / has location
-- member of / has member
-- related to
-
-These types are intentionally generic enough for People, Organisations, Locations and future entity domains. More specific types can be added through the central relationship type definitions.
-
-## Relationship Dates
-
-Relationship dates support exact calendar dates plus certainty metadata.
-
-Current certainty values are:
-
-- exact
-- approximate
-- unknown
-
-This preserves uncertainty without blocking structured date entry.
+The Stage 1 UI should not include chat, AI prompts, dispatcher controls, scheduling surfaces, login flows or automation dashboards.
