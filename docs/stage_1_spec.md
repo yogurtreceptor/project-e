@@ -6,7 +6,7 @@ Stage 1 establishes Operation Eddy as a local-first structured information platf
 
 - Create a durable foundation for People, Organisations and Locations.
 - Treat relationships as first-class records.
-- Support creation, editing, viewing, navigation and search of structured information.
+- Support creation, editing, deletion, viewing and browsing of core entity records.
 - Keep data local by default.
 - Prefer simple, free and open-source technology.
 - Produce a useful UI early without expanding scope into later stages.
@@ -54,8 +54,9 @@ Maps are a later Stage 1 view over Location data. Search and relationship naviga
 ## Acceptance Criteria
 
 - Users can maintain one canonical record per real-world person, organisation or location.
-- Users can create and navigate relationships between entities.
-- Users can search across core entity records.
+- Users can create, edit, delete, browse and view detail pages for People, Organisations and Locations.
 - The platform remains usable without WAN access.
 - Stage 1 features do not require AI, automation, login or scheduling.
+
+Relationship creation and navigation remain planned Stage 1 work, but are not part of the initial application foundation.
 

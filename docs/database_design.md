@@ -1,17 +1,22 @@
 # Database Design
 
-Stage 1 should use SQLite or an equivalent embedded local database.
+Stage 1 uses SQLite through Python's standard library.
 
 The design should keep identity, typed domain data and relationships clear enough to maintain.
 
 ## Core Tables
 
-Recommended starting tables:
+Current foundation tables are created from the central entity definitions.
+
+Current foundation tables:
 
 - `entities`: canonical identity for every Person, Organisation and Location.
 - `people`: Person-specific fields keyed by `entity_id`.
 - `organisations`: Organisation-specific fields keyed by `entity_id`.
 - `locations`: Location-specific fields keyed by `entity_id`.
+
+Planned later tables:
+
 - `relationships`: first-class links between two entities.
 - `aliases`: alternate names for entities.
 - `imports`: optional records for simple import runs.
@@ -27,7 +32,6 @@ Recommended starting tables:
 - `notes`
 - `created_at`
 - `updated_at`
-- `archived_at`
 
 Entity type should be constrained to the Stage 1 domain types unless a later ADR expands the ontology.
 
@@ -41,9 +45,13 @@ Typed tables should contain fields specific to each entity type while preserving
 
 The implementation should avoid duplicating canonical names or identity fields across typed tables unless there is a clear search or display reason.
 
+Typed tables are generated from `EntityDefinition` entries so future domains can be added with minimal schema and UI duplication. Existing databases may need explicit migrations when definitions change after data exists.
+
 ## Relationships
 
-`relationships` should hold:
+Relationships are not implemented in the initial application foundation.
+
+When added, `relationships` should hold:
 
 - `id`
 - `source_entity_id`
