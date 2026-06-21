@@ -99,6 +99,14 @@ Older local databases may still contain previously-created Organisation address 
 
 Relationships store source and target entity IDs, type, status, optional dates, date certainty and notes. The database stores one row per relationship; inverse navigation is derived from relationship metadata.
 
+Relationship category, subtype, option labels, valid entity-type pairs and bidirectional display labels live in the central application relationship definitions rather than separate lookup tables. This is the Stage 1 balance: the row stays lightweight and local databases avoid taxonomy migrations, while validation and forms can still offer context-aware relationship choices.
+
+Relationship validation checks that the selected type is valid for the two endpoint entity types. The UI uses the same relationship definitions to show only relevant options after the connected entity type is known.
+
+Relationship saves may normalise source/target direction for types with clear semantic direction. For example, `works_for` is stored as Person -> Organisation even when the user begins from an Organisation page and creates the connected Person inline. The original entity context is preserved in the redirect, and bidirectional labels are derived from the normalised row.
+
+Inline relationship creation can create Person, Organisation and Location entities inside the relationship workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
+
 ## Map Storage
 
 The map has no separate persistence table. It is built as a view over existing `locations`, `entities` and `relationships` data. Future map layers should add canonical entity/relationship data first, then expose that data through the map layer registry.

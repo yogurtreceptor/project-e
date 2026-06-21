@@ -16,6 +16,7 @@ from app.relationships import (
     RELATIONSHIP_STATUSES,
     RELATIONSHIP_TYPES_BY_KEY,
     RelationshipRecord,
+    relationship_type_is_valid_for_pair,
 )
 
 
@@ -291,7 +292,10 @@ def get_entity_by_id(connection: sqlite3.Connection, entity_id: int) -> EntityRe
 
 
 def create_entity(
-    connection: sqlite3.Connection, definition: EntityDefinition, values: dict[str, str]
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    values: dict[str, str],
+    commit: bool = True,
 ) -> int:
     now = utc_now()
     cursor = connection.execute(
@@ -310,7 +314,8 @@ def create_entity(
     )
     entity_id = int(cursor.lastrowid)
     insert_typed_row(connection, definition, entity_id, values)
-    connection.commit()
+    if commit:
+        connection.commit()
     return entity_id
 
 
@@ -454,6 +459,7 @@ def get_relationship(
 
 
 def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) -> int:
+    normalise_relationship_direction(connection, values)
     now = utc_now()
     cursor = connection.execute(
         """
@@ -484,6 +490,7 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
 def update_relationship(
     connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
 ) -> None:
+    normalise_relationship_direction(connection, values)
     connection.execute(
         """
         UPDATE relationships
@@ -549,6 +556,13 @@ def validate_relationship_values(
 
     if values.get("type") not in RELATIONSHIP_TYPES_BY_KEY:
         errors.append("Relationship type is required.")
+    elif source_id is not None and target_id is not None and source_id != target_id:
+        source = get_entity_by_id(connection, source_id)
+        target = get_entity_by_id(connection, target_id)
+        if source is not None and target is not None and not relationship_type_is_valid_for_pair(
+            values["type"], source.type, target.type
+        ):
+            errors.append("Relationship type is not valid for these entity types.")
 
     if values.get("status") not in RELATIONSHIP_STATUSES:
         errors.append("Relationship status is invalid.")
@@ -560,6 +574,26 @@ def validate_relationship_values(
         errors.append("End date certainty is invalid.")
 
     return errors
+
+
+def normalise_relationship_direction(connection: sqlite3.Connection, values: dict[str, str]) -> None:
+    relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(values.get("type", ""))
+    if relationship_type is None or not relationship_type.pairs:
+        return
+    source_id = parse_int(values.get("source_entity_id", ""))
+    target_id = parse_int(values.get("target_entity_id", ""))
+    if source_id is None or target_id is None:
+        return
+    source = get_entity_by_id(connection, source_id)
+    target = get_entity_by_id(connection, target_id)
+    if source is None or target is None:
+        return
+    for source_type, target_type in relationship_type.pairs:
+        if source.type == source_type and target.type == target_type:
+            return
+        if source.type == target_type and target.type == source_type:
+            values["source_entity_id"], values["target_entity_id"] = values["target_entity_id"], values["source_entity_id"]
+            return
 
 
 def to_relationship_record(

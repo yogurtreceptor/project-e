@@ -1,5 +1,47 @@
 # Build Log
 
+## 2026-06-22
+
+Entity-first relationship creation redesign completed.
+
+What changed:
+
+- Reworked relationship creation so the connected entity is chosen before the relationship category/type.
+- Added pair-aware relationship definitions with category, subtype, option label, valid entity-type pairs and bidirectional labels.
+- Added context-aware relationship type filtering for Person-Person, Person-Organisation, Organisation-Location, Asset-Location and Document links to Person, Organisation, Asset or Project.
+- Added inline connected-entity creation for Person, Organisation and Location records from the relationship workflow.
+- Added existing-entity filtering inside the relationship form.
+- Added relationship direction normalisation so workflows can start from either side while display labels remain semantically correct.
+- Kept the relationship database row lightweight: source, target, type key, status, dates, date certainty and notes.
+- Updated Geography and Map relationship handling so all location-category relationship types can contribute to location display, not only `located_at`.
+
+Architectural correction:
+
+- Relationship types were previously a flat global list, which allowed irrelevant options to appear for unrelated entity pairs. Relationship definitions now own pair applicability and category/subtype metadata, and validation rejects relationship types that are not valid for the selected endpoints.
+
+Decision captured:
+
+- Phone numbers, emails and websites remain simple direct fields for Stage 1.
+- The recommended future path is a lightweight Contact Method model linked to entities when multiple contact points, preference flags or validity dates become necessary. A full Communications domain remains out of scope.
+
+Manual testing steps:
+
+1. Open an Organisation page and choose Add person relationship.
+2. Confirm the form starts with the connected entity choice before relationship type.
+3. Select an existing Person and confirm relationship options include Work: Employee/Manager/Director and do not include Family options.
+4. Open a Person page, add a Person relationship and confirm Family, Work, Education, Health and Friend / social options appear.
+5. Open an Organisation page, add a Location relationship and confirm location-related options such as Located at, Headquartered at, Branch at and Operates at appear.
+6. From an Organisation relationship workflow, choose Create new entity, create a new Person, choose Work: Employee and save.
+7. Confirm the new Person record and relationship both save, then the app returns to the original Organisation page.
+8. Open both connected entity pages and confirm the relationship appears on both sides with correct labels.
+9. Open the global Relationships page and confirm existing relationships still load.
+10. Confirm irrelevant relationship types, such as Family options for Person-Organisation, are not offered.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
 ## 2026-06-21
 
 Entity form standardisation milestone completed.

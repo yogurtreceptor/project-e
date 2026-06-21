@@ -38,11 +38,12 @@ from app.db import (
     validate_entity_values,
     validate_relationship_values,
 )
-from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
+from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EntityDefinition
 from app.geo import build_map_payload, geocoder
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+INLINE_RELATIONSHIP_ENTITY_TYPES = ("person", "organisation", "location")
 
 
 @dataclass(frozen=True)
@@ -329,14 +330,18 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def handle_relationship_new(self, query: dict[str, str]) -> None:
         if self.command == "POST":
-            values = normalise_relationship_values(self.read_form())
+            raw_form = self.read_form()
+            values = normalise_relationship_values(raw_form)
             with connect(self.database_path) as connection:
+                inline_errors = self.create_inline_relationship_target(connection, values, raw_form, query)
                 errors = validate_relationship_values(connection, values)
+                errors = inline_errors + errors
                 entities = list_all_entities(connection)
                 if not errors:
                     relationship_id = create_relationship(connection, values)
                     self.redirect(self.relationship_redirect(values, relationship_id, query))
                     return
+                connection.rollback()
                 context_entity = self.relationship_context_entity(connection, query, values)
             self.respond_relationship_form(values, errors, entities, "Create", context_entity=context_entity, target_type=query.get("target_type"))
             return
@@ -448,6 +453,48 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if entity_id is None:
             return None
         return get_entity_by_id(connection, entity_id)
+
+    def create_inline_relationship_target(
+        self,
+        connection,
+        values: dict[str, str],
+        raw_form: dict[str, str],
+        query: dict[str, str],
+    ) -> list[str]:
+        if values.get("target_entity_id"):
+            return []
+        if raw_form.get("target_mode") != "create_new":
+            return []
+
+        entity_type = raw_form.get("new_entity_type", "").strip()
+        forced_target_type = query.get("target_type", "").strip()
+        if forced_target_type:
+            entity_type = forced_target_type
+        if entity_type not in INLINE_RELATIONSHIP_ENTITY_TYPES:
+            return ["Choose Person, Organisation or Location for inline creation."]
+
+        definition = DEFINITIONS_BY_TYPE.get(entity_type)
+        if definition is None:
+            return ["Connected entity type is invalid."]
+
+        entity_values = self.inline_entity_values(definition, raw_form)
+        errors = validate_entity_values(definition, entity_values)
+        if errors:
+            return [f"New {definition.singular.lower()}: {error}" for error in errors]
+
+        target_id = create_entity(connection, definition, entity_values, commit=False)
+        values["target_entity_id"] = str(target_id)
+        return []
+
+    @staticmethod
+    def inline_entity_values(definition: EntityDefinition, raw_form: dict[str, str]) -> dict[str, str]:
+        raw_values = {
+            "display_name": raw_form.get("new_display_name", ""),
+            "notes": raw_form.get("new_notes", ""),
+        }
+        for field in definition.fields:
+            raw_values[field.name] = raw_form.get(f"new_{field.name}", "")
+        return normalise_form_values(definition, raw_values)
 
     def relationship_redirect(
         self,

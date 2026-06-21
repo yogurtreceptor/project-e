@@ -328,6 +328,27 @@ dd {
     font-weight: 700;
 }
 
+.relationship-step {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 14px;
+}
+
+.relationship-step legend {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0 6px;
+}
+
+.inline-entity-fields {
+    display: grid;
+    gap: 12px;
+}
+
 .entity-profile {
     display: grid;
     gap: 18px;

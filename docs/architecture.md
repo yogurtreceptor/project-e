@@ -67,10 +67,12 @@ Future domains should inherit this structure by adding an `EntityDefinition` and
 Relationships are a central application model:
 
 - `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
-- `RelationshipType` centralises labels, inverse labels and direction semantics.
+- `RelationshipType` centralises category, subtype, valid entity-type pairs, option labels, inverse labels and direction semantics.
 - Entity-page relationship panels are the primary relationship creation and editing surface.
 - The relationship browser remains a global browse/audit view.
 - Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.
+- Relationship creation is entity-first and context-aware: the connected entity is chosen or created before the relationship type, and type options are filtered by the two endpoint entity types.
+- Directional relationship types can normalise source/target storage during save while preserving the user's original page context for redirects.
 
 Date uncertainty is represented as metadata beside structured calendar date values.
 

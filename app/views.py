@@ -2,7 +2,10 @@ import json
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord
-from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES, RELATIONSHIP_TYPES, RelationshipRecord
+from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES, RELATIONSHIP_TYPES, RelationshipRecord, relationship_types_for_pair
+
+
+INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
 
 def layout(title: str, content: str, active_slug: str | None = None) -> str:
@@ -298,7 +301,7 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
     location_relationships = [
         relationship
         for relationship in relationships
-        if relationship.type_key == "located_at" and relationship.other_entity(record.id).type == "location"
+        if relationship.type.category == "Location" and relationship.other_entity(record.id).type == "location"
     ]
     if not location_relationships:
         return f"""
@@ -691,6 +694,11 @@ def relationship_form_page(
     query_string = "?" + "&".join(query) if query else ""
     form_action = f"/relationships/{relationship_id}/edit{query_string}" if relationship_id else f"/relationships/new{query_string}"
     target_entities = [entity for entity in entities if not target_type or entity.type == target_type]
+    source_entity = context_entity
+    if source_entity is None and values.get("source_entity_id"):
+        source_entity = next((entity for entity in entities if str(entity.id) == str(values.get("source_entity_id"))), None)
+    selected_target = next((entity for entity in entities if str(entity.id) == str(values.get("target_entity_id"))), None)
+    target_type_for_options = selected_target.type if selected_target else target_type
     fields = []
     if context_entity is not None:
         fields.append(f'<div class="readonly-field"><span>Current entity</span><strong>{escape(context_entity.title)}</strong></div>')
@@ -699,8 +707,9 @@ def relationship_form_page(
     else:
         fields.append(select_field("source_entity_id", "Source entity", entity_options(entities), values))
     fields.extend([
-        select_field("type", "Relationship type", relationship_type_options(), values),
-        select_field("target_entity_id", "Connected entity", entity_options(target_entities), values),
+        connected_entity_field(target_entities, values),
+        relationship_inline_entity_section(target_type),
+        select_field("type", "Relationship category / type", relationship_type_options(source_entity, target_type_for_options), values),
         select_field("status", "Status", [(status, status.title()) for status in RELATIONSHIP_STATUSES], values),
         input_field("started_at", "Started", values, input_type="date"),
         select_field("started_at_precision", "Start date certainty", date_precision_options(), values),
@@ -723,15 +732,206 @@ def relationship_form_page(
             </div>
         </form>
     </section>
+    {relationship_form_script(entities, target_type)}
     """
+
+
+def connected_entity_field(entities: list[EntityRecord], values: dict[str, str]) -> str:
+    search = input_field(
+        "connected_entity_search",
+        "Search existing connected entities",
+        {},
+        input_type="search",
+        attrs=' placeholder="Type to filter existing entities"',
+    )
+    select = select_field("target_entity_id", "Choose existing connected entity", entity_options(entities), values)
+    return f"""
+    <fieldset class="relationship-step">
+        <legend>Connected entity</legend>
+        <label class="inline-check"><input type="radio" name="target_mode" value="existing" checked> Use existing entity</label>
+        {search}
+        {select}
+    </fieldset>
+    """
+
+
+def relationship_inline_entity_section(target_type: str | None = None) -> str:
+    definitions = [
+        definition
+        for definition in ENTITY_DEFINITIONS
+        if definition.type in INLINE_RELATIONSHIP_ENTITY_TYPES and (not target_type or definition.type == target_type)
+    ]
+    type_options = [(definition.type, definition.singular) for definition in definitions]
+    selected_type = target_type or (definitions[0].type if definitions else "")
+    values = {"new_entity_type": selected_type}
+    fieldsets = []
+    for definition in definitions:
+        fields = [input_field("new_display_name", f"{definition.singular} name", {})]
+        compact_fields = inline_fields_for_definition(definition)
+        for field in compact_fields:
+            fields.append(input_field(f"new_{field.name}", field.label, {}, multiline=field.multiline, input_type=field.input_type))
+        fields.append(input_field("new_notes", "Notes", {}, multiline=True))
+        fieldsets.append(
+            f"""
+            <div class="inline-entity-fields" data-inline-entity-type="{escape(definition.type)}">
+                {''.join(fields)}
+            </div>
+            """
+        )
+    if not definitions:
+        return ""
+    return f"""
+    <fieldset class="relationship-step inline-create">
+        <legend>Create connected entity inline</legend>
+        <label class="inline-check"><input type="radio" name="target_mode" value="create_new"> Create new entity</label>
+        {select_field("new_entity_type", "New entity type", type_options, values)}
+        {''.join(fieldsets)}
+    </fieldset>
+    """
+
+
+def inline_fields_for_definition(definition: EntityDefinition):
+    if definition.type == "person":
+        return [field for field in definition.fields if field.name in {"given_name", "family_name", "email", "phone"}]
+    if definition.type == "organisation":
+        return [field for field in definition.fields if field.name in {"organisation_type", "website", "email", "phone"}]
+    if definition.type == "location":
+        return [field for field in definition.fields if field.name in {"formatted_address", "city", "state", "country"}]
+    return []
 
 
 def entity_options(entities: list[EntityRecord]) -> list[tuple[str, str]]:
     return [(str(entity.id), f"{entity.title} ({entity.definition.singular})") for entity in entities]
 
 
-def relationship_type_options() -> list[tuple[str, str]]:
-    return [(relationship_type.key, relationship_type.label) for relationship_type in RELATIONSHIP_TYPES]
+def relationship_type_options(
+    source_entity: EntityRecord | None = None,
+    target_type: str | None = None,
+) -> list[tuple[str, str]]:
+    if source_entity is not None and target_type:
+        relationship_types = relationship_types_for_pair(source_entity.type, target_type)
+    else:
+        relationship_types = RELATIONSHIP_TYPES
+    return [
+        (relationship_type.key, relationship_option_text(relationship_type))
+        for relationship_type in relationship_types
+    ]
+
+
+def relationship_option_text(relationship_type) -> str:
+    subtype = relationship_type.display_label
+    if relationship_type.category and subtype and relationship_type.category != subtype:
+        return f"{relationship_type.category}: {subtype}"
+    return subtype or relationship_type.label
+
+
+def relationship_form_script(entities: list[EntityRecord], target_type: str | None = None) -> str:
+    entity_data = [
+        {"id": str(entity.id), "type": entity.type, "label": f"{entity.title} ({entity.definition.singular})"}
+        for entity in entities
+    ]
+    type_data = [
+        {
+            "key": relationship_type.key,
+            "label": relationship_option_text(relationship_type),
+            "pairs": relationship_type.pairs,
+        }
+        for relationship_type in RELATIONSHIP_TYPES
+    ]
+    return f"""
+    <script>
+    (() => {{
+        const entities = {json.dumps(entity_data).replace("</", "<\\/")};
+        const relationshipTypes = {json.dumps(type_data).replace("</", "<\\/")};
+        const forcedTargetType = {json.dumps(target_type or "")};
+        const source = document.getElementById('source_entity_id');
+        const target = document.getElementById('target_entity_id');
+        const type = document.getElementById('type');
+        const search = document.getElementById('connected_entity_search');
+        const newType = document.getElementById('new_entity_type');
+        const targetModes = Array.from(document.querySelectorAll('input[name="target_mode"]'));
+        const entityTypeById = new Map(entities.map((entity) => [entity.id, entity.type]));
+
+        const selectedMode = () => {{
+            const selected = targetModes.find((item) => item.checked);
+            return selected ? selected.value : 'existing';
+        }};
+        const currentSourceType = () => {{
+            if (!source) return '';
+            return entityTypeById.get(source.value) || '';
+        }};
+        const currentTargetType = () => {{
+            if (selectedMode() === 'create_new') return newType ? newType.value : '';
+            if (!target) return forcedTargetType || '';
+            return entityTypeById.get(target.value) || forcedTargetType || '';
+        }};
+        const supportsPair = (relationshipType, sourceType, targetType) => {{
+            if (!sourceType || !targetType) return true;
+            if (!relationshipType.pairs.length) return true;
+            return relationshipType.pairs.some((pair) =>
+                (pair[0] === sourceType && pair[1] === targetType) ||
+                (pair[0] === targetType && pair[1] === sourceType)
+            );
+        }};
+        const refreshTypes = () => {{
+            if (!type) return;
+            const current = type.value;
+            const sourceType = currentSourceType();
+            const targetType = currentTargetType();
+            let valid = relationshipTypes;
+            if (sourceType && targetType) {{
+                const specific = relationshipTypes.filter((relationshipType) => relationshipType.pairs.length && supportsPair(relationshipType, sourceType, targetType));
+                valid = specific.length ? specific : relationshipTypes.filter((relationshipType) => !relationshipType.pairs.length);
+            }}
+            type.innerHTML = '<option value="">Select...</option>';
+            valid.forEach((relationshipType) => {{
+                const option = document.createElement('option');
+                option.value = relationshipType.key;
+                option.textContent = relationshipType.label;
+                if (relationshipType.key === current) option.selected = true;
+                type.appendChild(option);
+            }});
+            if (current && !valid.some((relationshipType) => relationshipType.key === current)) type.value = '';
+        }};
+        const filterTargets = () => {{
+            if (!target || !search) return;
+            const current = target.value;
+            const term = search.value.trim().toLowerCase();
+            target.innerHTML = '<option value="">Select...</option>';
+            entities
+                .filter((entity) => (!forcedTargetType || entity.type === forcedTargetType) && (!term || entity.label.toLowerCase().includes(term)))
+                .forEach((entity) => {{
+                    const option = document.createElement('option');
+                    option.value = entity.id;
+                    option.textContent = entity.label;
+                    if (entity.id === current) option.selected = true;
+                    target.appendChild(option);
+                }});
+            refreshTypes();
+        }};
+        const refreshInlineFields = () => {{
+            const activeType = newType ? newType.value : '';
+            document.querySelectorAll('[data-inline-entity-type]').forEach((section) => {{
+                const active = section.dataset.inlineEntityType === activeType && selectedMode() === 'create_new';
+                section.hidden = section.dataset.inlineEntityType !== activeType;
+                section.querySelectorAll('input, textarea, select').forEach((field) => {{
+                    field.disabled = !active;
+                }});
+            }});
+            if (target) target.disabled = selectedMode() === 'create_new';
+            if (search) search.disabled = selectedMode() === 'create_new';
+            refreshTypes();
+        }};
+        if (search) search.addEventListener('input', filterTargets);
+        if (source) source.addEventListener('change', refreshTypes);
+        if (target) target.addEventListener('change', refreshTypes);
+        if (newType) newType.addEventListener('change', refreshInlineFields);
+        targetModes.forEach((item) => item.addEventListener('change', refreshInlineFields));
+        filterTargets();
+        refreshInlineFields();
+    }})();
+    </script>
+    """
 
 
 def date_precision_options() -> list[tuple[str, str]]:

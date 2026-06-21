@@ -35,6 +35,17 @@ Controlled fields use dropdowns when the value must be one of the known statuses
 
 People and Organisations keep phone/email as simple direct fields for now. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
 
+Relationship creation should be entity-first:
+
+- Start from the known entity page.
+- Choose the connected entity before choosing the relationship type.
+- Let users filter existing connected entities.
+- Let users create a missing Person, Organisation or Location inline without leaving the workflow.
+- Show only relationship categories/types valid for the selected entity pair.
+- Save back to the original entity page so context is not lost.
+
+The relationship type selector should use category/subtype wording where it helps scanning, such as Family: Mother or Work: Employee, without turning the form into a complex ontology editor.
+
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 
 Location address lookup should fill suburb, city, state, post code, country, coordinates and source when the provider returns those parts, while leaving all fields manually editable.

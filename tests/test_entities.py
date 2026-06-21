@@ -30,6 +30,8 @@ from app.db import (
 )
 from app.entities import DEFINITIONS_BY_SLUG, ENTITY_DEFINITIONS
 from app.geo import build_map_payload
+from app.relationships import relationship_types_for_pair
+from app.web import EddyRequestHandler
 
 
 class EntityDatabaseTests(unittest.TestCase):
@@ -322,6 +324,131 @@ class EntityDatabaseTests(unittest.TestCase):
                 },
             )
             self.assertEqual(errors, ["A relationship must connect two different entities."])
+
+    def test_relationship_type_options_are_context_aware(self) -> None:
+        person_person = {relationship_type.key for relationship_type in relationship_types_for_pair("person", "person")}
+        person_organisation = {relationship_type.key for relationship_type in relationship_types_for_pair("person", "organisation")}
+        organisation_location = {relationship_type.key for relationship_type in relationship_types_for_pair("organisation", "location")}
+
+        self.assertIn("mother_of", person_person)
+        self.assertIn("friend_of", person_person)
+        self.assertNotIn("mother_of", person_organisation)
+        self.assertIn("works_for", person_organisation)
+        self.assertIn("manager_at", person_organisation)
+        self.assertIn("headquartered_at", organisation_location)
+        self.assertNotIn("works_for", organisation_location)
+
+    def test_relationship_validation_rejects_irrelevant_pair_type(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Ada",
+                    "middle_name": "",
+                    "family_name": "Lovelace",
+                    "preferred_name": "",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+
+            errors = validate_relationship_values(
+                connection,
+                {
+                    "source_entity_id": str(person_id),
+                    "target_entity_id": str(organisation_id),
+                    "type": "mother_of",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+
+        self.assertEqual(errors, ["Relationship type is not valid for these entity types."])
+
+    def test_inline_person_creation_can_feed_relationship_workflow(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        handler = object.__new__(EddyRequestHandler)
+        with connect(self.database_path) as connection:
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            values = normalise_relationship_values(
+                {
+                    "source_entity_id": str(organisation_id),
+                    "target_entity_id": "",
+                    "type": "works_for",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "Joined from the organisation workflow.",
+                }
+            )
+            errors = handler.create_inline_relationship_target(
+                connection,
+                values,
+                {
+                    "target_mode": "create_new",
+                    "new_entity_type": "person",
+                    "new_display_name": "Grace Hopper",
+                    "new_given_name": "Grace",
+                    "new_family_name": "Hopper",
+                    "new_email": "grace@example.test",
+                    "new_phone": "",
+                    "new_notes": "",
+                },
+                {"target_type": "person"},
+            )
+            self.assertEqual(errors, [])
+            self.assertNotEqual(values["target_entity_id"], "")
+            new_person_id = int(values["target_entity_id"])
+            self.assertEqual(validate_relationship_values(connection, values), [])
+            relationship_id = create_relationship(connection, values)
+
+            relationship = get_relationship(connection, relationship_id)
+            new_person = get_entity(connection, self.definition, new_person_id)
+
+        self.assertEqual(new_person.display_name, "Grace Hopper")
+        self.assertEqual(new_person.metadata["given_name"], "Grace")
+        self.assertEqual(relationship.source.id, new_person.id)
+        self.assertEqual(relationship.target.id, organisation_id)
+        self.assertEqual(relationship.label_from(new_person.id), "works for")
+        self.assertEqual(relationship.label_from(organisation_id), "has worker")
 
     def test_display_name_is_required(self) -> None:
         values = normalise_form_values(self.definition, {"display_name": "  "})

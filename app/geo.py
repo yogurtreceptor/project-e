@@ -5,6 +5,7 @@ from urllib.request import Request, urlopen
 
 from app.db import list_entities, list_relationships
 from app.entities import DEFINITIONS_BY_SLUG, EntityRecord
+from app.relationships import RELATIONSHIP_TYPES_BY_KEY
 
 
 DEFAULT_CENTER = {"latitude": -27.4698, "longitude": 153.0251, "zoom": 11}
@@ -46,7 +47,8 @@ def build_map_payload(connection) -> dict[str, object]:
         markers.append(marker_payload(asset, asset, coordinates, "assets"))
 
     for relationship in list_relationships(connection):
-        if relationship.type_key != "located_at":
+        relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(relationship.type_key)
+        if relationship_type is None or relationship_type.category != "Location":
             continue
         linked_entity, location = relationship_location_pair(relationship.source, relationship.target)
         if linked_entity is None or location is None:
