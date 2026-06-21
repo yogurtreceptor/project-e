@@ -53,3 +53,11 @@ Implementation Preferences
 Documentation
 -------------
 Keep all planning documents current when architecture changes.
+
+Workspace Tool Notes
+--------------------
+- In this workspace, sandboxed shell commands have often failed to start with `No such file or directory`.
+- If that happens, retry ordinary read/test/run commands with `sandbox_permissions="require_escalated"` and a short justification.
+- `sed`, `find`, `git status`, `python3 -m unittest discover -s tests`, and `python3 -m compileall app run.py tests` have worked well when run this way.
+- `apply_patch` has sometimes failed to see workspace files; use it first for small edits, but a tightly scoped Python edit script has been the reliable fallback.
+- For local app checks, start `python3 run.py` on a temporary port, smoke-test with `urllib.request`, then stop it with Ctrl+C through the running command session.
