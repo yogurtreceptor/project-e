@@ -21,7 +21,7 @@ Entity pages should expose reusable sections rather than one-off layouts:
 - Timeline
 - Metadata
 
-People, Organisations and Assets show geographic context through linked Location entities where appropriate. Assets may also show direct coordinate metadata. Location pages show their own address, coordinates, geocoding source and map jump.
+People, Organisations and Assets show geographic context through linked Location entities where appropriate. Assets may also show direct coordinate metadata. Location pages show their own address, coordinates, source and map jump.
 
 Document pages show file metadata and a download link when a file has been uploaded. Other entity pages link to Documents through the relationship system.
 
@@ -29,9 +29,19 @@ Document pages show file metadata and a download link when a file has been uploa
 
 Forms should keep manual entry available. Helpful lookup tools may prefill fields, but users must be able to override structured fields, addresses and coordinates.
 
+Entity forms should avoid generic `summary` fields. Notes are the flexible free-text area; important categories and statuses should be captured through controlled inputs.
+
+Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
+
+People and Organisations keep phone/email as simple direct fields for now. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
+
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 
+Location address lookup should fill suburb, city, state, post code, country, coordinates and source when the provider returns those parts, while leaving all fields manually editable.
+
 Document forms include a file upload control, but Document records remain normal entities with editable metadata and relationships.
+
+Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 
 ## Map View
 

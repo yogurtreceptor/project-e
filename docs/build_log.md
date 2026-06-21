@@ -2,6 +2,38 @@
 
 ## 2026-06-21
 
+Entity form standardisation milestone completed.
+
+What changed:
+
+- Removed the generic `summary` control from entity creation and edit forms.
+- Kept `notes` as the flexible free-text area and retained the database `summary` column only as legacy compatibility/search fallback.
+- Added structured Person fields for title, middle name and preferred name while keeping simple phone/email fields for Stage 1.
+- Added controlled preset-backed Organisation, Project, Document and Asset category fields, with custom values allowed where useful.
+- Made Project status controlled with Active, Paused, Completed and Abandoned.
+- Renamed Location fields from locality/region/postal code/geocoding source to city/state/post code/source, and added suburb.
+- Updated address lookup normalisation and form fill logic so suburb can be populated when available.
+- Removed Project and Document reference fields from active forms.
+- Renamed Asset purchase date to acquisition date and serial number label to serial number / asset number.
+- Made Asset value whole-number-only in validation and display it with a dollar sign on detail pages.
+
+Architectural correction:
+
+- Field definitions now own controlled options, custom-value support, defaults, display prefixes and previous field aliases. This keeps form rendering, read formatting and additive migrations in one reusable definition path instead of scattering one-off behavior across views and database code.
+- Renamed fields are migrated by copying legacy column values into new active columns on startup while leaving old columns in place. This protects existing local databases without destructive rewrites.
+- Legacy controlled values can be normalised with field-level value aliases; existing lowercase Project status `active` becomes `Active`, and existing Asset status `active` becomes `Owned`.
+
+Decision captured:
+
+- Phone/email and website fields remain simple direct fields for Stage 1.
+- Contact methods may later become first-class related records, but no Communications domain is introduced in this milestone.
+- Controlled custom values are stored in the same typed table text column as preset values rather than in separate lookup tables.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
 Architecture foundation documentation created for Operation Eddy.
 
 Decisions captured:

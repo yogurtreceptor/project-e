@@ -132,12 +132,12 @@ def favourite_form(record: EntityRecord) -> str:
 def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], query: str = "", favourites_only: bool = False) -> str:
     rows = []
     for record in records:
-        summary = escape(record.summary) if record.summary else "No summary yet."
+        description = escape(record.notes) if record.notes else "No notes yet."
         rows.append(
             f"""
             <tr>
                 <td><a href="/{definition.slug}/{record.id}">{escape(record.title)}</a></td>
-                <td>{summary}</td>
+                <td>{description}</td>
                 <td class="row-actions">
                     <a href="/{definition.slug}/{record.id}/edit">Edit</a>
                     <form method="post" action="/{definition.slug}/{record.id}/delete">
@@ -152,7 +152,7 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], 
     table = (
         """
         <table>
-            <thead><tr><th>Name</th><th>Summary</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Notes</th><th></th></tr></thead>
             <tbody>"""
         + "".join(rows)
         + "</tbody></table>"
@@ -214,7 +214,6 @@ def entity_profile_header(record: EntityRecord) -> str:
         <div>
             <p class="eyebrow">{escape(definition.singular)}</p>
             <h1>{escape(record.title)}</h1>
-            <p>{escape(record.summary) if record.summary else 'No summary yet.'}</p>
         </div>
         <div class="actions">
             <a class="button secondary" href="/{definition.slug}">Back</a>
@@ -233,7 +232,7 @@ def entity_overview_section(record: EntityRecord) -> str:
     fields = [field for field in record.definition.fields if field.overview]
     items = []
     for field in fields:
-        value = record.field_value(field)
+        value = record.display_field_value(field)
         if value:
             items.append(f"<dt>{escape(field.label)}</dt><dd>{escape(value)}</dd>")
     content = f"<dl>{''.join(items)}</dl>" if items else '<p class="empty">No structured overview yet.</p>'
@@ -274,8 +273,9 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
             part
             for part in (
                 record.metadata.get("address_line_1", ""),
-                record.metadata.get("locality", ""),
-                record.metadata.get("region", ""),
+                record.metadata.get("suburb", ""),
+                record.metadata.get("city", ""),
+                record.metadata.get("state", ""),
                 record.metadata.get("country", ""),
             )
             if part
@@ -290,7 +290,7 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
             <dl>
                 <dt>Address</dt><dd>{escape(address) if address else 'Not recorded'}</dd>
                 <dt>Coordinates</dt><dd>{coordinates}</dd>
-                <dt>Geocoding source</dt><dd>{escape(record.metadata.get('geocoding_source', '')) if record.metadata.get('geocoding_source') else 'Not recorded'}</dd>
+                <dt>Source</dt><dd>{escape(record.metadata.get('source', '')) if record.metadata.get('source') else 'Not recorded'}</dd>
             </dl>
         </section>
         """
@@ -558,13 +558,12 @@ def entity_form_page(
 
     fields = [
         input_field("display_name", f"{definition.singular} name", values),
-        input_field("summary", "Summary", values),
     ]
     if definition.type == "location":
         fields.append(address_lookup_field())
     for field in definition.fields:
         if field.editable:
-            fields.append(input_field(field.name, field.label, values, field.multiline, field.input_type))
+            fields.append(entity_field_control(field, values))
         else:
             fields.append(hidden_field(field.name, values))
     if definition.type == "document":
@@ -785,7 +784,7 @@ def search_result_card(result: dict[str, object]) -> str:
         <div>
             <p class="eyebrow">{escape(entity.definition.singular)}</p>
             <h2><a href="/{entity.slug}/{entity.id}">{escape(entity.title)}</a></h2>
-            <p>{escape(entity.summary) if entity.summary else 'No summary yet.'}</p>
+            <p>{escape(entity.notes) if entity.notes else 'No notes yet.'}</p>
             <div class="result-meta">{favourite}<span>{relationship_count} relationships</span></div>
         </div>
         {relationship_html}
@@ -812,13 +811,42 @@ def input_field(
     values: dict[str, str],
     multiline: bool = False,
     input_type: str = "text",
+    attrs: str = "",
 ) -> str:
     value = escape(str(values.get(name, "")))
     if multiline:
         control = f'<textarea id="{name}" name="{name}" rows="5">{value}</textarea>'
     else:
-        number_attrs = ' step="any"' if input_type == "number" else ""
-        control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}"{number_attrs}>'
+        control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}"{attrs}>'
+    return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
+
+
+def entity_field_control(field, values: dict[str, str]) -> str:
+    field_values = values
+    if field.default and not str(values.get(field.name, "")):
+        field_values = {**values, field.name: field.default}
+    if field.options and field.allow_custom:
+        return custom_value_field(field.name, field.label, field.options, field_values)
+    if field.options:
+        return select_field(field.name, field.label, [(option, option) for option in field.options], field_values)
+    attrs = ""
+    if field.name == "value":
+        attrs = ' min="0" step="1" inputmode="numeric" pattern="[0-9]*"'
+    elif field.input_type == "number":
+        attrs = ' step="any"'
+    return input_field(field.name, field.label, field_values, field.multiline, field.input_type, attrs)
+
+
+def custom_value_field(
+    name: str,
+    label: str,
+    options: tuple[str, ...],
+    values: dict[str, str],
+) -> str:
+    value = escape(str(values.get(name, "")))
+    list_id = f"{name}_options"
+    option_html = "".join(f'<option value="{escape(option)}"></option>' for option in options)
+    control = f'<input id="{name}" name="{name}" list="{list_id}" value="{value}"><datalist id="{list_id}">{option_html}</datalist>'
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
 
 
@@ -878,7 +906,7 @@ def address_lookup_script() -> str:
         const resultsList = document.getElementById('address_results');
         const status = document.getElementById('address_lookup_status');
         if (!search || !button || !resultsList || !status) return;
-        const fields = ['formatted_address', 'address_line_1', 'address_line_2', 'locality', 'region', 'postal_code', 'country', 'latitude', 'longitude', 'geocoding_source'];
+        const fields = ['formatted_address', 'address_line_1', 'address_line_2', 'suburb', 'city', 'state', 'post_code', 'country', 'latitude', 'longitude', 'source'];
         const setStatus = (message) => {
             status.textContent = message;
         };

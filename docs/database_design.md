@@ -15,23 +15,31 @@ Every real-world object starts in `entities` with:
 - `id`
 - `type`
 - `display_name`
-- `summary`
 - `notes`
 - timestamps
 - discovery metadata such as favourite and last viewed state
 
 Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, missing typed columns are added during startup and the central entity type constraint is rebuilt when new entity domains are introduced so local databases can evolve additively.
 
+The `entities.summary` column remains in existing and new databases as a legacy compatibility/search field, but it is no longer part of active creation or edit forms. Notes are the flexible free-text area.
+
+Field renames are handled additively. New columns are created and existing values are copied from configured legacy columns when the new column is empty. Legacy columns are left in place so local databases are not destructively rewritten.
+
+Controlled field value aliases are applied during startup where needed. For example, legacy Project status `active` is normalised to `Active`, and legacy Asset status `active` is normalised to `Owned`.
+
 ## Additional Domain Storage
 
-Projects store lightweight organising metadata such as project type, status, start date and reference.
+Projects store lightweight organising metadata:
+
+- `project_type`
+- `status`
+- `started_at`
 
 Documents store document metadata plus local file metadata:
 
 - `document_type`
 - `document_date`
 - `issuer`
-- `reference`
 - `file_name`
 - `file_path`
 - `mime_type`
@@ -39,7 +47,20 @@ Documents store document metadata plus local file metadata:
 
 Uploaded files are stored in `instance/documents/`. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
 
-Assets store useful item metadata such as asset type, status, serial number, purchase date, value and optional direct coordinates.
+Assets store useful item metadata such as asset type, status, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
+
+## Controlled Field Storage
+
+Controlled dropdown values are stored as text in the relevant typed table column. Preset-backed custom values use the same column rather than a separate lookup table in Stage 1.
+
+Current controlled fields are:
+
+- `organisations.organisation_type`, custom allowed.
+- `projects.project_type`, custom allowed.
+- `projects.status`, presets only.
+- `documents.document_type`, custom allowed.
+- `assets.asset_type`, custom allowed.
+- `assets.status`, custom allowed.
 
 ## Location Storage
 
@@ -48,15 +69,25 @@ Locations are the canonical place/address records. The active `locations` table 
 - `formatted_address`
 - `address_line_1`
 - `address_line_2`
-- `locality`
-- `region`
-- `postal_code`
+- `suburb`
+- `city`
+- `state`
+- `post_code`
 - `country`
 - `latitude`
 - `longitude`
-- `geocoding_source`
+- `source`
 
 Coordinates are optional text fields at this stage so users can save incomplete locations and manually enter coordinates without a migration-heavy geospatial dependency. Validation for map display happens in the application layer.
+
+Legacy Location columns are copied forward on startup:
+
+- `locality` -> `city`
+- `region` -> `state`
+- `postal_code` -> `post_code`
+- `geocoding_source` -> `source`
+
+Legacy Asset `purchase_date` is copied to `acquisition_date`.
 
 ## Address Ownership
 

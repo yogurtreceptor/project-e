@@ -34,15 +34,16 @@ The application should not depend on WAN access for normal operation.
 Current domains inherit from a common entity architecture:
 
 - `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
-- `FieldDefinition` describes reusable field metadata, including overview visibility and input type.
+- `FieldDefinition` describes reusable field metadata, including overview visibility, input type, controlled options, custom-value support, default values, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup.
 - `EntityRecord` is the shared runtime model for all entity instances.
-- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
+- Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`.
+- `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.
 - Domain-specific data is exposed as metadata on the same record object.
 - Entity profile pages are generated from entity definitions and shared page sections.
 
 People, Organisations, Locations, Projects, Documents and Assets all use this structure.
 
-Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. The central `entities.type` SQLite `CHECK` constraint is also rebuilt when entity definitions add new types. This prevents future entity field or domain additions from breaking existing local databases.
+Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. The central `entities.type` SQLite `CHECK` constraint is also rebuilt when entity definitions add new types. Field renames use `FieldDefinition.previous_names` so data from old columns can be copied into renamed active columns without deleting the legacy column. Controlled fields can use value aliases to clean up legacy values such as lowercase statuses. This prevents future entity field or domain additions from breaking existing local databases.
 
 ## Entity Page Architecture
 
@@ -50,7 +51,7 @@ Entity pages are the primary interaction surface. Opening any entity should feel
 
 Reusable entity pages include:
 
-- Header with name, type, summary and quick actions.
+- Header with name, type and quick actions.
 - Overview with concise structured fields from the entity definition.
 - Relationships grouped by connected entity type.
 - Related Entities for graph exploration.

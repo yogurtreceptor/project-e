@@ -142,6 +142,47 @@ def ensure_typed_columns(connection: sqlite3.Connection, definition: EntityDefin
             connection.execute(
                 f"ALTER TABLE {table} ADD COLUMN {sql_identifier(field.name)} TEXT NOT NULL DEFAULT ''"
             )
+            columns.add(field.name)
+        migrate_previous_field_values(connection, definition, field, columns)
+        migrate_field_value_aliases(connection, definition, field, columns)
+
+
+def migrate_previous_field_values(
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    field,
+    columns: set[str],
+) -> None:
+    table = sql_identifier(definition.table)
+    target = sql_identifier(field.name)
+    for previous_name in field.previous_names:
+        if previous_name not in columns:
+            continue
+        previous = sql_identifier(previous_name)
+        connection.execute(
+            f"""
+            UPDATE {table}
+            SET {target} = {previous}
+            WHERE {target} = '' AND {previous} <> ''
+            """
+        )
+
+
+def migrate_field_value_aliases(
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    field,
+    columns: set[str],
+) -> None:
+    if field.name not in columns:
+        return
+    table = sql_identifier(definition.table)
+    column = sql_identifier(field.name)
+    for old_value, new_value in field.value_aliases:
+        connection.execute(
+            f"UPDATE {table} SET {column} = ? WHERE {column} = ?",
+            (new_value, old_value),
+        )
 
 
 def create_relationship_table(connection: sqlite3.Connection) -> None:
@@ -313,6 +354,14 @@ def validate_entity_values(
     errors = []
     if not values.get("display_name", "").strip():
         errors.append(f"{definition.singular} name is required.")
+    for field in definition.fields:
+        value = values.get(field.name, "").strip()
+        if field.options and not field.allow_custom and value and value not in field.options:
+            errors.append(f"{field.label} is invalid.")
+    if definition.type == "asset":
+        value = values.get("value", "").strip()
+        if value and not value.isdecimal():
+            errors.append("Value must be a whole number without a dollar sign.")
     return errors
 
 
@@ -321,11 +370,10 @@ def normalise_form_values(
 ) -> dict[str, str]:
     values = {
         "display_name": str(raw_values.get("display_name", "")).strip(),
-        "summary": str(raw_values.get("summary", "")).strip(),
         "notes": str(raw_values.get("notes", "")).strip(),
     }
     for field in definition.fields:
-        values[field.name] = str(raw_values.get(field.name, "")).strip()
+        values[field.name] = str(raw_values.get(field.name, field.default)).strip() or field.default
     return values
 
 

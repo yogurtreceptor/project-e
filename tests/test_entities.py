@@ -51,8 +51,11 @@ class EntityDatabaseTests(unittest.TestCase):
                     "display_name": "Ada Lovelace",
                     "summary": "Mathematician",
                     "notes": "Known for early computing work.",
+                    "title": "",
                     "given_name": "Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "Ada",
                     "email": "",
                     "phone": "",
                 },
@@ -61,7 +64,7 @@ class EntityDatabaseTests(unittest.TestCase):
             created = get_entity(connection, self.definition, entity_id)
             self.assertIsNotNone(created)
             self.assertEqual(created.display_name, "Ada Lovelace")
-            self.assertEqual(created.field_value(self.definition.fields[0]), "Ada")
+            self.assertEqual(created.metadata["given_name"], "Ada")
 
             update_entity(
                 connection,
@@ -71,8 +74,11 @@ class EntityDatabaseTests(unittest.TestCase):
                     "display_name": "Augusta Ada Lovelace",
                     "summary": "Computing pioneer",
                     "notes": "",
+                    "title": "Countess",
                     "given_name": "Augusta Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "Ada",
                     "email": "ada@example.test",
                     "phone": "",
                 },
@@ -104,7 +110,7 @@ class EntityDatabaseTests(unittest.TestCase):
                 self.assertIsNotNone(record)
                 self.assertEqual(record.definition, definition)
                 self.assertEqual(record.display_name, f"Example {definition.singular}")
-                self.assertEqual(record.to_form_values()["summary"], "Shared flow")
+                self.assertNotIn("summary", record.to_form_values())
                 self.assertEqual(len(list_entities(connection, definition)), 1)
 
                 delete_entity(connection, definition, entity_id)
@@ -119,10 +125,12 @@ class EntityDatabaseTests(unittest.TestCase):
                     "display_name": "Ada Lovelace",
                     "summary": "Computing pioneer",
                     "notes": "Profile notes.",
+                    "title": "",
                     "given_name": "Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "",
                     "birthday": "1815-12-10",
-                    "occupation": "Mathematician",
                     "email": "ada@example.test",
                     "phone": "",
                 },
@@ -142,7 +150,7 @@ class EntityDatabaseTests(unittest.TestCase):
         ):
             self.assertIn(heading, html)
         self.assertIn("1815-12-10", html)
-        self.assertIn("Mathematician", html)
+        self.assertNotIn("Summary", html)
 
     def test_relationships_connect_any_entity_types_bidirectionally(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -154,8 +162,11 @@ class EntityDatabaseTests(unittest.TestCase):
                     "display_name": "Ada Lovelace",
                     "summary": "",
                     "notes": "",
+                    "title": "",
                     "given_name": "Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "",
                     "email": "",
                     "phone": "",
                 },
@@ -229,11 +240,13 @@ class EntityDatabaseTests(unittest.TestCase):
                 {
                     "display_name": "Ada Lovelace",
                     "summary": "Computing pioneer",
-                    "notes": "Worked on analytical machinery.",
+                    "notes": "Mathematician who worked on analytical machinery.",
+                    "title": "",
                     "given_name": "Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "",
                     "birthday": "1815-12-10",
-                    "occupation": "Mathematician",
                     "email": "ada@example.test",
                     "phone": "",
                 },
@@ -246,10 +259,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "summary": "Research group",
                     "notes": "",
                     "organisation_type": "Group",
-                    "address_line_1": "",
-                    "locality": "",
-                    "region": "",
-                    "country": "",
                     "website": "",
                     "email": "",
                     "phone": "",
@@ -319,6 +328,134 @@ class EntityDatabaseTests(unittest.TestCase):
         errors = validate_entity_values(self.definition, values)
         self.assertEqual(errors, ["Person name is required."])
 
+    def test_summary_is_not_rendered_on_entity_forms(self) -> None:
+        for definition in ENTITY_DEFINITIONS:
+            html = views.entity_form_page(definition, {}, [], "Create")
+            self.assertNotIn('name="summary"', html)
+            self.assertNotIn(">Summary<", html)
+
+    def test_controlled_entity_fields_and_custom_values(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        project_definition = DEFINITIONS_BY_SLUG["projects"]
+        asset_definition = DEFINITIONS_BY_SLUG["assets"]
+
+        organisation_html = views.entity_form_page(organisation_definition, {}, [], "Create")
+        project_html = views.entity_form_page(project_definition, {}, [], "Create")
+        asset_html = views.entity_form_page(asset_definition, {}, [], "Create")
+
+        self.assertIn('list="organisation_type_options"', organisation_html)
+        self.assertIn('<option value="Government agency"></option>', organisation_html)
+        self.assertIn('<option value="Active" selected>Active</option>', project_html)
+        self.assertIn('value="Owned"', asset_html)
+        self.assertIn('pattern="[0-9]*"', asset_html)
+
+        custom_values = normalise_form_values(
+            organisation_definition,
+            {
+                "display_name": "Analytical Engine Guild",
+                "organisation_type": "Research collective",
+            },
+        )
+        self.assertEqual(custom_values["organisation_type"], "Research collective")
+
+    def test_asset_value_must_be_whole_number_and_displays_as_currency(self) -> None:
+        asset_definition = DEFINITIONS_BY_SLUG["assets"]
+
+        for raw_value in ("$1200", "1200.50"):
+            values = normalise_form_values(
+                asset_definition,
+                {"display_name": "Field Laptop", "value": raw_value},
+            )
+            self.assertEqual(
+                validate_entity_values(asset_definition, values),
+                ["Value must be a whole number without a dollar sign."],
+            )
+
+        with connect(self.database_path) as connection:
+            entity_id = create_entity(
+                connection,
+                asset_definition,
+                {
+                    "display_name": "Field Laptop",
+                    "notes": "",
+                    "asset_type": "Computer",
+                    "status": "Owned",
+                    "serial_number": "ABC123",
+                    "acquisition_date": "",
+                    "value": "1200",
+                    "latitude": "",
+                    "longitude": "",
+                },
+            )
+            record = get_entity(connection, asset_definition, entity_id)
+
+        html = views.entity_detail_page(record, [])
+        self.assertIn("$1200", html)
+
+    def test_renamed_location_and_asset_fields_migrate_from_legacy_columns(self) -> None:
+        legacy_path = Path(self.temp_dir.name) / "legacy-renames.sqlite3"
+        with sqlite3.connect(legacy_path) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE entities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL CHECK (type IN ('location', 'asset')),
+                    display_name TEXT NOT NULL,
+                    summary TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_viewed_at TEXT NOT NULL DEFAULT '',
+                    is_favourite INTEGER NOT NULL DEFAULT 0
+                );
+                INSERT INTO entities (id, type, display_name, summary, notes, created_at, updated_at)
+                VALUES
+                    (1, 'location', 'Legacy Place', '', '', 'now', 'now'),
+                    (2, 'asset', 'Legacy Laptop', '', '', 'now', 'now');
+                CREATE TABLE locations (
+                    entity_id INTEGER PRIMARY KEY,
+                    formatted_address TEXT NOT NULL DEFAULT '',
+                    address_line_1 TEXT NOT NULL DEFAULT '',
+                    address_line_2 TEXT NOT NULL DEFAULT '',
+                    locality TEXT NOT NULL DEFAULT '',
+                    region TEXT NOT NULL DEFAULT '',
+                    postal_code TEXT NOT NULL DEFAULT '',
+                    country TEXT NOT NULL DEFAULT '',
+                    latitude TEXT NOT NULL DEFAULT '',
+                    longitude TEXT NOT NULL DEFAULT '',
+                    geocoding_source TEXT NOT NULL DEFAULT ''
+                );
+                INSERT INTO locations (
+                    entity_id, locality, region, postal_code, geocoding_source
+                )
+                VALUES (1, 'Brisbane', 'Queensland', '4000', 'manual');
+                CREATE TABLE assets (
+                    entity_id INTEGER PRIMARY KEY,
+                    asset_type TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT '',
+                    serial_number TEXT NOT NULL DEFAULT '',
+                    purchase_date TEXT NOT NULL DEFAULT '',
+                    value TEXT NOT NULL DEFAULT '',
+                    latitude TEXT NOT NULL DEFAULT '',
+                    longitude TEXT NOT NULL DEFAULT ''
+                );
+                INSERT INTO assets (entity_id, status, purchase_date, value)
+                VALUES (2, 'active', '2026-06-21', '1200');
+                """
+            )
+
+        initialise_database(legacy_path)
+        with connect(legacy_path) as connection:
+            location = get_entity(connection, DEFINITIONS_BY_SLUG["locations"], 1)
+            asset = get_entity(connection, DEFINITIONS_BY_SLUG["assets"], 2)
+
+        self.assertEqual(location.metadata["city"], "Brisbane")
+        self.assertEqual(location.metadata["state"], "Queensland")
+        self.assertEqual(location.metadata["post_code"], "4000")
+        self.assertEqual(location.metadata["source"], "manual")
+        self.assertEqual(asset.metadata["status"], "Owned")
+        self.assertEqual(asset.metadata["acquisition_date"], "2026-06-21")
+
     def test_map_payload_uses_location_entities_and_relationships(self) -> None:
         location_definition = DEFINITIONS_BY_SLUG["locations"]
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -333,13 +470,14 @@ class EntityDatabaseTests(unittest.TestCase):
                     "formatted_address": "64 Adelaide St, Brisbane City QLD 4000, Australia",
                     "address_line_1": "64 Adelaide St",
                     "address_line_2": "",
-                    "locality": "Brisbane City",
-                    "region": "Queensland",
-                    "postal_code": "4000",
+                    "suburb": "Brisbane City",
+                    "city": "Brisbane",
+                    "state": "Queensland",
+                    "post_code": "4000",
                     "country": "Australia",
                     "latitude": "-27.4689",
                     "longitude": "153.0235",
-                    "geocoding_source": "manual",
+                    "source": "manual",
                 },
             )
             unmapped_location_id = create_entity(
@@ -352,13 +490,14 @@ class EntityDatabaseTests(unittest.TestCase):
                     "formatted_address": "",
                     "address_line_1": "",
                     "address_line_2": "",
-                    "locality": "",
-                    "region": "",
-                    "postal_code": "",
+                    "suburb": "",
+                    "city": "",
+                    "state": "",
+                    "post_code": "",
                     "country": "",
                     "latitude": "",
                     "longitude": "",
-                    "geocoding_source": "",
+                    "source": "",
                 },
             )
             organisation_id = create_entity(
@@ -381,10 +520,12 @@ class EntityDatabaseTests(unittest.TestCase):
                     "display_name": "Ada Lovelace",
                     "summary": "",
                     "notes": "",
+                    "title": "",
                     "given_name": "Ada",
+                    "middle_name": "",
                     "family_name": "Lovelace",
+                    "preferred_name": "",
                     "birthday": "",
-                    "occupation": "",
                     "email": "",
                     "phone": "",
                 },
@@ -447,9 +588,8 @@ class EntityDatabaseTests(unittest.TestCase):
                     "summary": "Local-first information platform",
                     "notes": "",
                     "project_type": "Software",
-                    "status": "active",
+                    "status": "Active",
                     "started_at": "2026-06-21",
-                    "reference": "EDDY",
                 },
             )
             document_id = create_entity(
@@ -462,7 +602,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "document_type": "Note",
                     "document_date": "2026-06-21",
                     "issuer": "",
-                    "reference": "ADR",
                     "file_name": "architecture.txt",
                     "file_path": "documents/example.txt",
                     "mime_type": "text/plain",
@@ -477,9 +616,9 @@ class EntityDatabaseTests(unittest.TestCase):
                     "summary": "Work asset",
                     "notes": "",
                     "asset_type": "Laptop",
-                    "status": "active",
+                    "status": "Owned",
                     "serial_number": "ABC123",
-                    "purchase_date": "2026-06-21",
+                    "acquisition_date": "2026-06-21",
                     "value": "1200",
                     "latitude": "-27.4700",
                     "longitude": "153.0200",
@@ -495,13 +634,14 @@ class EntityDatabaseTests(unittest.TestCase):
                     "formatted_address": "Brisbane QLD, Australia",
                     "address_line_1": "",
                     "address_line_2": "",
-                    "locality": "Brisbane",
-                    "region": "Queensland",
-                    "postal_code": "",
+                    "suburb": "",
+                    "city": "Brisbane",
+                    "state": "Queensland",
+                    "post_code": "",
                     "country": "Australia",
                     "latitude": "-27.4689",
                     "longitude": "153.0235",
-                    "geocoding_source": "manual",
+                    "source": "manual",
                 },
             )
             create_relationship(
@@ -574,9 +714,8 @@ class EntityDatabaseTests(unittest.TestCase):
                     "summary": "",
                     "notes": "",
                     "project_type": "Personal",
-                    "status": "active",
+                    "status": "Active",
                     "started_at": "",
-                    "reference": "",
                 },
             )
             project = get_entity(connection, DEFINITIONS_BY_SLUG["projects"], project_id)

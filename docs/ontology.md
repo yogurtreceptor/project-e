@@ -29,19 +29,21 @@ Each real-world object should have one canonical entity record. Duplicate preven
 
 A Person represents a real person.
 
-Current fields include name parts, email, phone, summary and notes. The first priority is maintainable entity identity.
+Current fields include display name, title, given name, middle name, family name, preferred name, birthday, email, phone and notes. Email and phone remain direct Person fields for Stage 1 simplicity; contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
 
 ## Organisations
 
 An Organisation represents a company, institution, group, team or other organisation.
 
-Current fields include organisation type, website, email, phone, summary and notes.
+Current fields include organisation name, organisation type, website, phone, email and notes. Organisation type is a controlled value with sensible presets and custom values when the preset list is too narrow.
+
+Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
 
 ## Locations
 
 A Location represents a place, address or meaningful area.
 
-Current fields include address lines, locality, region, country, summary and notes.
+Current fields include location name, address lookup, address, address line 1, address line 2, suburb, city, state, post code, country, latitude, longitude, source and notes.
 
 Maps are a later view over Location data, not the foundation of the Location model.
 
@@ -51,17 +53,36 @@ A Project represents ongoing work or an area of responsibility. Projects organis
 
 Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
 
+Current fields include project name, project type, status, started date and notes. Project type is controlled with custom values allowed. Status is controlled and uses Active, Paused, Completed or Abandoned.
+
 ## Documents
 
 A Document represents a first-class document record, optionally backed by a locally uploaded file.
 
 Documents should be linked to other entities through relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
 
+Current fields include document name, document type, document date, issuer / created by, notes and optional local file metadata. Document type is controlled with custom values allowed.
+
 ## Assets
 
 An Asset represents a physical or digital item such as a vehicle, laptop, phone, passport, appliance or smart device.
 
 Assets can relate to People, Organisations, Locations, Projects and Documents. Assets may also carry direct coordinates when that is the most accurate available geographic information.
+
+Current fields include asset name, asset type, status, serial number / asset number, acquisition date, value, latitude, longitude and notes. Asset type and status are controlled with custom values allowed. Value is stored as whole-number text and displayed with a dollar sign on read pages.
+
+## Controlled Values
+
+Controlled category fields are stored directly in their typed table columns as text. Preset-backed custom fields use the same column as preset values, so a custom organisation type or asset type is not a separate lookup-table record in Stage 1.
+
+Current controlled fields are:
+
+- Organisation `organisation_type`: Business, Government agency, School, University, Medical practice, Employer, Bank, Utility, Club, Charity, Political party, Other, or custom.
+- Project `project_type`: Personal, Work, Education, Health, Finance, Home, Vehicle, Travel, Civic, Other, or custom.
+- Project `status`: Active, Paused, Completed, Abandoned.
+- Document `document_type`: Identification, Certificate, Contract, Receipt, Invoice, Manual, Medical, Government, Letter, Image, PDF, Other, or custom.
+- Asset `asset_type`: Vehicle, Appliance, Tool, Electronic device, Computer, Phone, Document-like asset, Smart device, Furniture, Other, or custom.
+- Asset `status`: Owned, Sold, Lost, Destroyed, In disrepair, Loaned out, Other, or custom.
 
 ## Relationships
 

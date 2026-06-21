@@ -94,8 +94,9 @@ def marker_payload(
         part
         for part in (
             location.metadata.get("address_line_1", ""),
-            location.metadata.get("locality", ""),
-            location.metadata.get("region", ""),
+            location.metadata.get("suburb", ""),
+            location.metadata.get("city", ""),
+            location.metadata.get("state", ""),
             location.metadata.get("country", ""),
         )
         if part
@@ -169,25 +170,31 @@ def normalise_nominatim_result(result: dict[str, object]) -> dict[str, str]:
         str(address.get("road") or address.get("pedestrian") or address.get("footway") or "").strip(),
     ]
     address_line_1 = " ".join(part for part in road_parts if part)
-    locality = str(
+    suburb = str(
+        address.get("suburb")
+        or address.get("city_district")
+        or address.get("neighbourhood")
+        or ""
+    )
+    city = str(
         address.get("city")
         or address.get("town")
         or address.get("village")
-        or address.get("suburb")
         or ""
     )
     return {
         "label": str(result.get("display_name", "")),
         "formatted_address": str(result.get("display_name", "")),
         "address_line_1": address_line_1,
-        "address_line_2": str(address.get("neighbourhood", "")),
-        "locality": locality,
-        "region": str(address.get("state") or address.get("region") or ""),
-        "postal_code": str(address.get("postcode", "")),
+        "address_line_2": "",
+        "suburb": suburb,
+        "city": city,
+        "state": str(address.get("state") or address.get("region") or ""),
+        "post_code": str(address.get("postcode", "")),
         "country": str(address.get("country", "")),
         "latitude": str(result.get("lat", "")),
         "longitude": str(result.get("lon", "")),
-        "geocoding_source": "OpenStreetMap Nominatim",
+        "source": "OpenStreetMap Nominatim",
     }
 
 
