@@ -1,11 +1,16 @@
 import json
+import re
+import uuid
+from dataclasses import dataclass
+from email.parser import BytesParser
+from email.policy import default
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import DATABASE_PATH
+from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR
 from app.db import (
     connect,
     count_entities,
@@ -18,7 +23,6 @@ from app.db import (
     get_relationship,
     initialise_database,
     list_all_entities,
-    list_attachments_for_entity,
     list_entities,
     list_favourite_entities,
     list_recent_entities,
@@ -39,6 +43,13 @@ from app.geo import build_map_payload, geocoder
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+@dataclass(frozen=True)
+class UploadedFile:
+    file_name: str
+    content_type: str
+    data: bytes
 
 
 class EddyRequestHandler(BaseHTTPRequestHandler):
@@ -93,6 +104,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_new(definition)
         elif len(parts) == 2:
             self.handle_detail(definition, parts[1])
+        elif len(parts) == 3 and parts[2] == "download" and definition.type == "document":
+            self.handle_document_download(parts[1])
         elif len(parts) == 3 and parts[2] == "edit":
             self.handle_edit(definition, parts[1])
         elif len(parts) == 3 and parts[2] == "delete":
@@ -182,22 +195,23 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 mark_entity_viewed(connection, entity_id)
                 record = get_entity(connection, definition, entity_id)
             relationships = list_relationships_for_entity(connection, entity_id) if record else []
-            attachments = list_attachments_for_entity(connection, entity_id) if record else []
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, attachments),
+            views.entity_detail_page(record, relationships),
             active_slug=definition.slug,
         )
 
     def handle_new(self, definition: EntityDefinition) -> None:
         if self.command == "POST":
-            values = normalise_form_values(definition, self.read_form())
+            values, upload = self.read_entity_form(definition)
             errors = validate_entity_values(definition, values)
             if not errors:
+                if upload is not None:
+                    values.update(self.store_document_upload(upload))
                 with connect(self.database_path) as connection:
                     entity_id = create_entity(connection, definition, values)
                 self.redirect(f"/{definition.slug}/{entity_id}")
@@ -220,9 +234,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
 
         if self.command == "POST":
-            values = normalise_form_values(definition, self.read_form())
+            values, upload = self.read_entity_form(definition)
             errors = validate_entity_values(definition, values)
             if not errors:
+                if upload is not None:
+                    values.update(self.store_document_upload(upload))
                 with connect(self.database_path) as connection:
                     update_entity(connection, definition, entity_id, values)
                 self.redirect(f"/{definition.slug}/{entity_id}")
@@ -231,6 +247,31 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
 
         self.respond_form(definition, record.to_form_values(), [], "Edit", entity_id)
+
+    def handle_document_download(self, raw_id: str) -> None:
+        entity_id = self.parse_entity_id(raw_id)
+        if entity_id is None:
+            self.respond_not_found()
+            return
+        definition = DEFINITIONS_BY_SLUG["documents"]
+        with connect(self.database_path) as connection:
+            record = get_entity(connection, definition, entity_id)
+        if record is None:
+            self.respond_not_found()
+            return
+        file_path = self.stored_document_path(record.metadata.get("file_path", ""))
+        if file_path is None or not file_path.exists():
+            self.respond_not_found()
+            return
+        content = file_path.read_bytes()
+        file_name = record.metadata.get("file_name", file_path.name)
+        content_type = record.metadata.get("mime_type", "") or "application/octet-stream"
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Content-Disposition", f'attachment; filename="{file_name.replace(chr(34), "")}"')
+        self.end_headers()
+        self.wfile.write(content)
 
     def handle_favourite(self, definition: EntityDefinition, raw_id: str) -> None:
         if self.command != "POST":
@@ -447,6 +488,71 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         parsed = parse_qs(body, keep_blank_values=True)
         return {key: values[0] for key, values in parsed.items()}
 
+    def read_entity_form(self, definition: EntityDefinition) -> tuple[dict[str, str], UploadedFile | None]:
+        if definition.type != "document" or not self.headers.get("Content-Type", "").startswith("multipart/form-data"):
+            return normalise_form_values(definition, self.read_form()), None
+        raw_values, upload = self.read_multipart_form()
+        values = normalise_form_values(definition, raw_values)
+        if upload is not None:
+            values["file_name"] = upload.file_name
+            values["mime_type"] = upload.content_type
+            values["file_size"] = format_file_size(len(upload.data))
+            if not values.get("display_name"):
+                values["display_name"] = Path(upload.file_name).stem or upload.file_name
+        return values, upload
+
+    def read_multipart_form(self) -> tuple[dict[str, str], UploadedFile | None]:
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length)
+        content_type = self.headers.get("Content-Type", "")
+        message = BytesParser(policy=default).parsebytes(
+            f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode("utf-8") + body
+        )
+        values: dict[str, str] = {}
+        upload = None
+        for item in message.iter_parts():
+            key = item.get_param("name", header="content-disposition")
+            if not key:
+                continue
+            file_name = item.get_filename()
+            data = item.get_payload(decode=True) or b""
+            if key == "upload" and file_name:
+                upload = UploadedFile(
+                    file_name=Path(file_name).name,
+                    content_type=item.get_content_type() or "application/octet-stream",
+                    data=data,
+                )
+            elif not file_name:
+                charset = item.get_content_charset() or "utf-8"
+                values[key] = data.decode(charset, errors="replace")
+        return values, upload
+
+    def store_document_upload(self, upload: UploadedFile) -> dict[str, str]:
+        DOCUMENT_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+        safe_name = safe_file_name(upload.file_name)
+        stored_name = f"{uuid.uuid4().hex}-{safe_name}"
+        stored_path = DOCUMENT_STORAGE_DIR / stored_name
+        stored_path.write_bytes(upload.data)
+        return {
+            "file_name": upload.file_name,
+            "file_path": f"documents/{stored_name}",
+            "mime_type": upload.content_type,
+            "file_size": format_file_size(len(upload.data)),
+        }
+
+    @staticmethod
+    def stored_document_path(value: str) -> Path | None:
+        if not value:
+            return None
+        relative = Path(value)
+        if relative.is_absolute() or ".." in relative.parts:
+            return None
+        path = (DOCUMENT_STORAGE_DIR.parent / relative).resolve()
+        storage_root = DOCUMENT_STORAGE_DIR.resolve()
+        if storage_root not in (path, *path.parents):
+            return None
+        return path
+
     def respond_page(
         self,
         title: str,
@@ -484,6 +590,19 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return int(raw_id)
         except ValueError:
             return None
+
+
+def safe_file_name(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(value).name).strip(".-")
+    return cleaned or "document"
+
+
+def format_file_size(size: int) -> str:
+    if size < 1024:
+        return f"{size} B"
+    if size < 1024 * 1024:
+        return f"{size / 1024:.1f} KB"
+    return f"{size / (1024 * 1024):.1f} MB"
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:

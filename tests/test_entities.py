@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+import sqlite3
 
 from app import views
 from app.db import (
@@ -128,14 +129,14 @@ class EntityDatabaseTests(unittest.TestCase):
             )
             record = get_entity(connection, self.definition, entity_id)
 
-        html = views.entity_detail_page(record, [], [])
+        html = views.entity_detail_page(record, [])
 
         for heading in (
             "Overview",
             "Relationships",
             "Related Entities",
             "Notes",
-            "Attachments",
+            "Documents",
             "Timeline",
             "Metadata",
         ):
@@ -423,7 +424,7 @@ class EntityDatabaseTests(unittest.TestCase):
         marker_titles = {marker["title"] for marker in payload["markers"]}
         marker_layers = {marker["title"]: marker["layerId"] for marker in payload["markers"]}
         enabled_layers = {layer["id"] for layer in payload["layers"] if layer["enabled"]}
-        self.assertEqual(layers, {"locations", "organisations", "people"})
+        self.assertEqual(layers, {"locations", "organisations", "people", "assets"})
         self.assertEqual(enabled_layers, {"locations"})
         self.assertIn("Brisbane City Hall", marker_titles)
         self.assertIn("City Records Office", marker_titles)
@@ -431,6 +432,156 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertNotIn("Ada Lovelace", marker_titles)
         self.assertEqual(marker_layers["Brisbane City Hall"], "locations")
         self.assertEqual(marker_layers["City Records Office"], "organisations")
+
+    def test_new_domains_share_entity_relationship_search_and_map_architecture(self) -> None:
+        project_definition = DEFINITIONS_BY_SLUG["projects"]
+        document_definition = DEFINITIONS_BY_SLUG["documents"]
+        asset_definition = DEFINITIONS_BY_SLUG["assets"]
+        location_definition = DEFINITIONS_BY_SLUG["locations"]
+        with connect(self.database_path) as connection:
+            project_id = create_entity(
+                connection,
+                project_definition,
+                {
+                    "display_name": "Operation Eddy",
+                    "summary": "Local-first information platform",
+                    "notes": "",
+                    "project_type": "Software",
+                    "status": "active",
+                    "started_at": "2026-06-21",
+                    "reference": "EDDY",
+                },
+            )
+            document_id = create_entity(
+                connection,
+                document_definition,
+                {
+                    "display_name": "Architecture Note",
+                    "summary": "Documents are entities",
+                    "notes": "",
+                    "document_type": "Note",
+                    "document_date": "2026-06-21",
+                    "issuer": "",
+                    "reference": "ADR",
+                    "file_name": "architecture.txt",
+                    "file_path": "documents/example.txt",
+                    "mime_type": "text/plain",
+                    "file_size": "12 B",
+                },
+            )
+            asset_id = create_entity(
+                connection,
+                asset_definition,
+                {
+                    "display_name": "Field Laptop",
+                    "summary": "Work asset",
+                    "notes": "",
+                    "asset_type": "Laptop",
+                    "status": "active",
+                    "serial_number": "ABC123",
+                    "purchase_date": "2026-06-21",
+                    "value": "1200",
+                    "latitude": "-27.4700",
+                    "longitude": "153.0200",
+                },
+            )
+            location_id = create_entity(
+                connection,
+                location_definition,
+                {
+                    "display_name": "Project Office",
+                    "summary": "",
+                    "notes": "",
+                    "formatted_address": "Brisbane QLD, Australia",
+                    "address_line_1": "",
+                    "address_line_2": "",
+                    "locality": "Brisbane",
+                    "region": "Queensland",
+                    "postal_code": "",
+                    "country": "Australia",
+                    "latitude": "-27.4689",
+                    "longitude": "153.0235",
+                    "geocoding_source": "manual",
+                },
+            )
+            create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(document_id),
+                    "target_entity_id": str(project_id),
+                    "type": "references",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "architecture milestone",
+                },
+            )
+            create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(asset_id),
+                    "target_entity_id": str(location_id),
+                    "type": "located_at",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+
+            relationship_results = search_entities(connection, "architecture milestone")
+            payload = build_map_payload(connection)
+
+        result_ids = {result["entity"].id for result in relationship_results}
+        self.assertIn(project_id, result_ids)
+        self.assertIn(document_id, result_ids)
+        marker_layers = {marker["title"]: marker["layerId"] for marker in payload["markers"]}
+        self.assertEqual(marker_layers["Field Laptop"], "assets")
+        self.assertEqual(marker_layers["Project Office"], "locations")
+        self.assertNotIn("Operation Eddy", marker_layers)
+        self.assertNotIn("Architecture Note", marker_layers)
+
+    def test_entity_type_constraint_migrates_for_new_domains(self) -> None:
+        legacy_path = Path(self.temp_dir.name) / "legacy.sqlite3"
+        with sqlite3.connect(legacy_path) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE entities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL CHECK (type IN ('person', 'organisation', 'location')),
+                    display_name TEXT NOT NULL,
+                    summary TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_viewed_at TEXT NOT NULL DEFAULT '',
+                    is_favourite INTEGER NOT NULL DEFAULT 0
+                );
+                """
+            )
+
+        initialise_database(legacy_path)
+        with connect(legacy_path) as connection:
+            project_id = create_entity(
+                connection,
+                DEFINITIONS_BY_SLUG["projects"],
+                {
+                    "display_name": "House Purchase",
+                    "summary": "",
+                    "notes": "",
+                    "project_type": "Personal",
+                    "status": "active",
+                    "started_at": "",
+                    "reference": "",
+                },
+            )
+            project = get_entity(connection, DEFINITIONS_BY_SLUG["projects"], project_id)
+
+        self.assertIsNotNone(project)
 
     def test_map_page_contains_layer_controls_and_marker_links(self) -> None:
         payload = {
@@ -476,4 +627,3 @@ class EntityDatabaseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

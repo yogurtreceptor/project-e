@@ -9,6 +9,7 @@ class FieldDefinition:
     multiline: bool = False
     overview: bool = True
     input_type: str = "text"
+    editable: bool = True
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,52 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("latitude", "Latitude", input_type="number"),
             FieldDefinition("longitude", "Longitude", input_type="number"),
             FieldDefinition("geocoding_source", "Geocoding source"),
+        ),
+    ),
+    EntityDefinition(
+        type="project",
+        slug="projects",
+        singular="Project",
+        plural="Projects",
+        table="projects",
+        fields=(
+            FieldDefinition("project_type", "Project type"),
+            FieldDefinition("status", "Status"),
+            FieldDefinition("started_at", "Started", input_type="date"),
+            FieldDefinition("reference", "Reference"),
+        ),
+    ),
+    EntityDefinition(
+        type="document",
+        slug="documents",
+        singular="Document",
+        plural="Documents",
+        table="documents",
+        fields=(
+            FieldDefinition("document_type", "Document type"),
+            FieldDefinition("document_date", "Document date", input_type="date"),
+            FieldDefinition("issuer", "Issuer"),
+            FieldDefinition("reference", "Reference"),
+            FieldDefinition("file_name", "File name", editable=False),
+            FieldDefinition("file_path", "Stored file path", overview=False, editable=False),
+            FieldDefinition("mime_type", "MIME type", editable=False),
+            FieldDefinition("file_size", "File size", editable=False),
+        ),
+    ),
+    EntityDefinition(
+        type="asset",
+        slug="assets",
+        singular="Asset",
+        plural="Assets",
+        table="assets",
+        fields=(
+            FieldDefinition("asset_type", "Asset type"),
+            FieldDefinition("status", "Status"),
+            FieldDefinition("serial_number", "Serial number"),
+            FieldDefinition("purchase_date", "Purchase date", input_type="date"),
+            FieldDefinition("value", "Value"),
+            FieldDefinition("latitude", "Latitude", input_type="number"),
+            FieldDefinition("longitude", "Longitude", input_type="number"),
         ),
     ),
 )

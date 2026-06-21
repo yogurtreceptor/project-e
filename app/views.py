@@ -184,7 +184,6 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], 
 def entity_detail_page(
     record: EntityRecord,
     relationships: list[RelationshipRecord],
-    attachments: list[dict[str, str]],
 ) -> str:
     return f"""
     <article class="entity-profile">
@@ -198,9 +197,10 @@ def entity_detail_page(
                 {entity_notes_section(record)}
             </div>
             <aside class="profile-side">
-                {attachments_section(attachments)}
+                {document_file_section(record)}
+                {linked_documents_section(record, relationships)}
                 {timeline_section(record, relationships)}
-                {metadata_section(record, relationships, attachments)}
+                {metadata_section(record, relationships)}
             </aside>
         </div>
     </article>
@@ -247,6 +247,25 @@ def entity_overview_section(record: EntityRecord) -> str:
 
 
 def entity_geography_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    if record.type in {"project", "document"}:
+        return ""
+
+    if record.type == "asset":
+        latitude = record.metadata.get("latitude", "")
+        longitude = record.metadata.get("longitude", "")
+        if latitude and longitude:
+            return f"""
+            <section class="panel profile-section geography-section">
+                <div class="section-heading split">
+                    <h2>Geography</h2>
+                    <a href="/map?entity_id={record.id}">View on map</a>
+                </div>
+                <dl>
+                    <dt>Coordinates</dt><dd>{escape(latitude)}, {escape(longitude)}</dd>
+                </dl>
+            </section>
+            """
+
     if record.type == "location":
         latitude = record.metadata.get("latitude", "")
         longitude = record.metadata.get("longitude", "")
@@ -417,18 +436,52 @@ def entity_notes_section(record: EntityRecord) -> str:
     """
 
 
-def attachments_section(attachments: list[dict[str, str]]) -> str:
-    if attachments:
-        rows = "".join(
-            f"<tr><td>{escape(item['file_name'])}</td><td>{escape(item['notes'])}</td></tr>"
-            for item in attachments
-        )
-        content = f"<table><thead><tr><th>File</th><th>Notes</th></tr></thead><tbody>{rows}</tbody></table>"
+def document_file_section(record: EntityRecord) -> str:
+    if record.type != "document":
+        return ""
+    file_name = record.metadata.get("file_name", "")
+    file_size = record.metadata.get("file_size", "")
+    mime_type = record.metadata.get("mime_type", "")
+    if file_name:
+        content = f"""
+        <dl>
+            <dt>File</dt><dd><a href="/documents/{record.id}/download">{escape(file_name)}</a></dd>
+            <dt>Size</dt><dd>{escape(file_size) if file_size else 'Not recorded'}</dd>
+            <dt>MIME type</dt><dd>{escape(mime_type) if mime_type else 'Not recorded'}</dd>
+        </dl>
+        """
     else:
-        content = '<p class="empty">No attachments yet. Attachment records are ready; file upload comes later.</p>'
+        content = '<p class="empty">No uploaded file recorded.</p>'
     return f"""
     <section class="panel profile-section">
-        <h2>Attachments</h2>
+        <h2>File</h2>
+        {content}
+    </section>
+    """
+
+
+def linked_documents_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    if record.type == "document":
+        return ""
+    documents = [
+        relationship.other_entity(record.id)
+        for relationship in relationships
+        if relationship.other_entity(record.id).type == "document"
+    ]
+    if documents:
+        items = "".join(
+            f'<li><a href="/{document.slug}/{document.id}">{escape(document.title)}</a><span>{escape(document.metadata.get("document_type", "") or "Document")}</span></li>'
+            for document in documents
+        )
+        content = f'<ul class="entity-link-list">{items}</ul>'
+    else:
+        content = '<p class="empty">No linked documents yet.</p>'
+    return f"""
+    <section class="panel profile-section">
+        <div class="section-heading split">
+            <h2>Documents</h2>
+            <a href="/relationships/new?source_entity_id={record.id}&target_type=document&context_entity_id={record.id}">Link document</a>
+        </div>
         {content}
     </section>
     """
@@ -456,7 +509,6 @@ def timeline_section(record: EntityRecord, relationships: list[RelationshipRecor
 def metadata_section(
     record: EntityRecord,
     relationships: list[RelationshipRecord],
-    attachments: list[dict[str, str]],
 ) -> str:
     return f"""
     <section class="panel profile-section metadata">
@@ -465,7 +517,6 @@ def metadata_section(
             <dt>Entity ID</dt><dd>{record.id}</dd>
             <dt>Type</dt><dd>{escape(record.definition.singular)}</dd>
             <dt>Relationships</dt><dd>{len(relationships)}</dd>
-            <dt>Attachments</dt><dd>{len(attachments)}</dd>
             <dt>Favourite</dt><dd>{'Yes' if record.is_favourite else 'No'}</dd>
             <dt>Created</dt><dd>{escape(record.created_at)}</dd>
             <dt>Updated</dt><dd>{escape(record.updated_at)}</dd>
@@ -512,10 +563,16 @@ def entity_form_page(
     if definition.type == "location":
         fields.append(address_lookup_field())
     for field in definition.fields:
-        fields.append(input_field(field.name, field.label, values, field.multiline, field.input_type))
+        if field.editable:
+            fields.append(input_field(field.name, field.label, values, field.multiline, field.input_type))
+        else:
+            fields.append(hidden_field(field.name, values))
+    if definition.type == "document":
+        fields.append(file_upload_field(values))
     fields.append(input_field("notes", "Notes", values, multiline=True))
 
     location_class = " location-form" if definition.type == "location" else ""
+    enctype = ' enctype="multipart/form-data"' if definition.type == "document" else ""
     return f"""
     <section class="page-heading split">
         <div>
@@ -526,7 +583,7 @@ def entity_form_page(
     </section>
     <section class="panel">
         {error_html}
-        <form class="record-form{location_class}" method="post" action="{form_action}">
+        <form class="record-form{location_class}" method="post" action="{form_action}"{enctype}>
             {''.join(fields)}
             <div class="actions">
                 <a class="button secondary" href="/{definition.slug}">Cancel</a>
@@ -763,6 +820,19 @@ def input_field(
         number_attrs = ' step="any"' if input_type == "number" else ""
         control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}"{number_attrs}>'
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
+
+
+def hidden_field(name: str, values: dict[str, str]) -> str:
+    return f'<input type="hidden" name="{escape(name)}" value="{escape(str(values.get(name, "")))}">'
+
+
+def file_upload_field(values: dict[str, str]) -> str:
+    current_file = values.get("file_name", "")
+    current = f'<p class="empty">Current file: {escape(current_file)}</p>' if current_file else ""
+    return f"""
+    <label for="upload"><span>Upload file</span><input id="upload" name="upload" type="file"></label>
+    {current}
+    """
 
 
 def select_field(

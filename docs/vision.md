@@ -15,11 +15,14 @@ The platform is built around:
 - multiple views over the same local data
 - simple, maintainable implementation choices
 
-The first domains are:
+The Stage 1 domains are:
 
 - People
 - Organisations
 - Locations
+- Projects
+- Documents
+- Assets
 
 ## Product Principles
 
@@ -34,4 +37,3 @@ The first domains are:
 Stage 1 does not include AI, chat, dispatcher behaviour, decision support, scheduling, login, WAN features or automation.
 
 Simple import and export tools are allowed when they directly help populate, migrate or protect local data.
-

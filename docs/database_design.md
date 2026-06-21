@@ -5,9 +5,8 @@ Operation Eddy uses SQLite as the embedded local database for Stage 1.
 ## Core Tables
 
 - `entities` stores shared identity and metadata for every canonical record.
-- `people`, `organisations` and `locations` store type-specific fields keyed by `entity_id`.
+- `people`, `organisations`, `locations`, `projects`, `documents` and `assets` store type-specific fields keyed by `entity_id`.
 - `relationships` stores first-class links between any two entities.
-- `attachments` stores attachment metadata linked to entities; binary/file handling is deferred.
 
 ## Entity Storage
 
@@ -21,7 +20,26 @@ Every real-world object starts in `entities` with:
 - timestamps
 - discovery metadata such as favourite and last viewed state
 
-Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, and missing typed columns are added during startup so local databases can evolve additively.
+Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, missing typed columns are added during startup and the central entity type constraint is rebuilt when new entity domains are introduced so local databases can evolve additively.
+
+## Additional Domain Storage
+
+Projects store lightweight organising metadata such as project type, status, start date and reference.
+
+Documents store document metadata plus local file metadata:
+
+- `document_type`
+- `document_date`
+- `issuer`
+- `reference`
+- `file_name`
+- `file_path`
+- `mime_type`
+- `file_size`
+
+Uploaded files are stored in `instance/documents/`. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
+
+Assets store useful item metadata such as asset type, status, serial number, purchase date, value and optional direct coordinates.
 
 ## Location Storage
 
@@ -53,3 +71,5 @@ Relationships store source and target entity IDs, type, status, optional dates, 
 ## Map Storage
 
 The map has no separate persistence table. It is built as a view over existing `locations`, `entities` and `relationships` data. Future map layers should add canonical entity/relationship data first, then expose that data through the map layer registry.
+
+Assets may appear on the map when they have valid direct coordinates or a `located_at` relationship to a coordinate-bearing Location. Projects and Documents never appear as map markers.

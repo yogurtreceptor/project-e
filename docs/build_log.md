@@ -153,3 +153,32 @@ Decision captured:
 - Nominatim remains the current lightweight lookup and future fallback for places, non-Australian addresses and cases where G-NAF is unavailable or does not match.
 
 No code changes were made for this decision.
+
+Additional domains milestone completed.
+
+What changed:
+
+- Added Projects, Documents and Assets as definition-driven entity domains.
+- Added typed tables for `projects`, `documents` and `assets` through the existing schema creation path.
+- Added local Document upload handling with files stored under `instance/documents/` and file metadata stored on Document entities.
+- Replaced the active attachment UI concept with relationship-driven Document links.
+- Added reusable relationship types for `belongs_to` and `references`.
+- Added Assets to the map layer registry, including markers from direct coordinates and `located_at` Location relationships.
+- Kept Projects and Documents out of map marker payloads.
+- Confirmed dashboard cards, navigation, entity lists, forms, detail pages, search and relationships use the existing shared architecture.
+
+Architectural correction:
+
+- Existing SQLite databases created before new domains would reject new entity types because `entities.type` used a generated `CHECK` constraint. Startup now rebuilds the `entities` table constraint when entity definitions add new types.
+- The old attachment table path is no longer created by active schema initialisation because Documents are now first-class entities.
+
+Decision captured:
+
+- Projects, Documents and Assets are normal entity domains.
+- Documents are file-bearing entities, not nested attachments.
+- Assets are the only new domain that can appear on the map.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`

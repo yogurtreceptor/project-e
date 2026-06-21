@@ -71,6 +71,8 @@ RELATIONSHIP_TYPES: tuple[RelationshipType, ...] = (
     RelationshipType("works_for", "works for", "has worker"),
     RelationshipType("located_at", "located at", "has location"),
     RelationshipType("member_of", "member of", "has member"),
+    RelationshipType("belongs_to", "belongs to", "has item"),
+    RelationshipType("references", "references", "referenced by"),
     RelationshipType("related_to", "related to", "related to", directional=False),
 )
 

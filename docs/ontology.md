@@ -19,6 +19,9 @@ Stage 1 entity types are:
 - Person
 - Organisation
 - Location
+- Project
+- Document
+- Asset
 
 Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
 
@@ -41,6 +44,24 @@ A Location represents a place, address or meaningful area.
 Current fields include address lines, locality, region, country, summary and notes.
 
 Maps are a later view over Location data, not the foundation of the Location model.
+
+## Projects
+
+A Project represents ongoing work or an area of responsibility. Projects organise information and relationships; they are not task-management records.
+
+Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
+
+## Documents
+
+A Document represents a first-class document record, optionally backed by a locally uploaded file.
+
+Documents should be linked to other entities through relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
+
+## Assets
+
+An Asset represents a physical or digital item such as a vehicle, laptop, phone, passport, appliance or smart device.
+
+Assets can relate to People, Organisations, Locations, Projects and Documents. Assets may also carry direct coordinates when that is the most accurate available geographic information.
 
 ## Relationships
 
@@ -71,6 +92,8 @@ Implemented relationship types include:
 - works for / has worker
 - located at / has location
 - member of / has member
+- belongs to / has item
+- references / referenced by
 - related to
 
 These types are intentionally generic enough for People, Organisations, Locations and future entity domains. More specific types can be added through the central relationship type definitions.
@@ -98,5 +121,8 @@ The Map is a view over these canonical entities:
 - Location markers represent Location entities with valid coordinates.
 - Organisation markers represent Organisations connected to a coordinate-bearing Location.
 - Person markers represent People connected to a coordinate-bearing Location.
+- Asset markers represent Assets with valid direct coordinates or Assets connected to a coordinate-bearing Location.
 
 Missing coordinates do not invalidate a Location. They only prevent that record, and entities relying on it, from appearing as markers.
+
+Projects and Documents never appear as map markers.

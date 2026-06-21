@@ -38,12 +38,11 @@ def initialise_database(database_path: Path | str) -> None:
 
 
 def create_schema(connection: sqlite3.Connection) -> None:
-    allowed_types = ", ".join(sql_literal(definition.type) for definition in ENTITY_DEFINITIONS)
     connection.executescript(
         f"""
         CREATE TABLE IF NOT EXISTS entities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT NOT NULL CHECK (type IN ({allowed_types})),
+            type TEXT NOT NULL CHECK (type IN ({allowed_entity_type_sql()})),
             display_name TEXT NOT NULL,
             summary TEXT NOT NULL DEFAULT '',
             notes TEXT NOT NULL DEFAULT '',
@@ -58,11 +57,11 @@ def create_schema(connection: sqlite3.Connection) -> None:
         """
     )
     ensure_entity_columns(connection)
+    ensure_entity_type_constraint(connection)
     for definition in ENTITY_DEFINITIONS:
         create_typed_table(connection, definition)
         ensure_typed_columns(connection, definition)
     create_relationship_table(connection)
-    create_attachment_table(connection)
 
 
 def ensure_entity_columns(connection: sqlite3.Connection) -> None:
@@ -71,6 +70,52 @@ def ensure_entity_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE entities ADD COLUMN last_viewed_at TEXT NOT NULL DEFAULT ''")
     if "is_favourite" not in columns:
         connection.execute("ALTER TABLE entities ADD COLUMN is_favourite INTEGER NOT NULL DEFAULT 0")
+
+
+def ensure_entity_type_constraint(connection: sqlite3.Connection) -> None:
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entities'"
+    ).fetchone()
+    create_sql = row["sql"] if row else ""
+    if all(sql_literal(definition.type) in create_sql for definition in ENTITY_DEFINITIONS):
+        return
+
+    connection.commit()
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        connection.executescript(
+            f"""
+            CREATE TABLE entities_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL CHECK (type IN ({allowed_entity_type_sql()})),
+                display_name TEXT NOT NULL,
+                summary TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                last_viewed_at TEXT NOT NULL DEFAULT '',
+                is_favourite INTEGER NOT NULL DEFAULT 0
+            );
+
+            INSERT INTO entities_new (
+                id, type, display_name, summary, notes,
+                created_at, updated_at, last_viewed_at, is_favourite
+            )
+            SELECT
+                id, type, display_name, summary, notes,
+                created_at, updated_at, last_viewed_at, is_favourite
+            FROM entities;
+
+            DROP TABLE entities;
+            ALTER TABLE entities_new RENAME TO entities;
+
+            CREATE INDEX IF NOT EXISTS idx_entities_type_name
+                ON entities (type, display_name);
+            """
+        )
+        connection.commit()
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
 
 
 def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinition) -> None:
@@ -137,24 +182,6 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN started_at_precision TEXT NOT NULL DEFAULT 'exact'")
     if "ended_at_precision" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN ended_at_precision TEXT NOT NULL DEFAULT 'exact'")
-
-
-def create_attachment_table(connection: sqlite3.Connection) -> None:
-    connection.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS attachments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
-            file_name TEXT NOT NULL,
-            file_path TEXT NOT NULL DEFAULT '',
-            notes TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_attachments_entity
-            ON attachments (entity_id);
-        """
-    )
 
 
 def list_entities(
@@ -615,19 +642,6 @@ def matching_relationships_for_entity(
             matches.append(relationship)
     return matches
 
-def list_attachments_for_entity(connection: sqlite3.Connection, entity_id: int) -> list[dict[str, str]]:
-    rows = connection.execute(
-        """
-        SELECT id, entity_id, file_name, file_path, notes, created_at
-        FROM attachments
-        WHERE entity_id = ?
-        ORDER BY created_at DESC, id DESC
-        """,
-        (entity_id,),
-    ).fetchall()
-    return [dict(row) for row in rows]
-
-
 def parse_int(value: str) -> int | None:
     try:
         return int(value)
@@ -643,3 +657,7 @@ def sql_identifier(value: str) -> str:
 
 def sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
+
+
+def allowed_entity_type_sql() -> str:
+    return ", ".join(sql_literal(definition.type) for definition in ENTITY_DEFINITIONS)

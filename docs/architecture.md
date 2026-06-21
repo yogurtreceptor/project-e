@@ -20,6 +20,7 @@ No external runtime dependencies are required for the current foundation.
 - `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
+- `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 
 ## Boundaries
@@ -39,7 +40,9 @@ Current domains inherit from a common entity architecture:
 - Domain-specific data is exposed as metadata on the same record object.
 - Entity profile pages are generated from entity definitions and shared page sections.
 
-Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. This prevents future entity field additions from breaking existing local databases.
+People, Organisations, Locations, Projects, Documents and Assets all use this structure.
+
+Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. The central `entities.type` SQLite `CHECK` constraint is also rebuilt when entity definitions add new types. This prevents future entity field or domain additions from breaking existing local databases.
 
 ## Entity Page Architecture
 
@@ -52,7 +55,7 @@ Reusable entity pages include:
 - Relationships grouped by connected entity type.
 - Related Entities for graph exploration.
 - Notes for free-text information.
-- Attachments section backed by attachment table architecture.
+- Documents section backed by first-class Document entity relationships.
 - Timeline placeholder for created, modified and relationship events.
 - Metadata with system information.
 
@@ -82,11 +85,16 @@ Discovery uses shared entity and relationship query primitives:
 
 Architectural correction: discovery is not implemented as dashboard-only shortcuts. It lives in the data layer so every current and future entity type participates without custom code.
 
-## Attachments Architecture
+## Document Architecture
 
-Attachments are prepared as first-class entity-adjacent records, but full upload handling is deferred.
+Documents are first-class entities rather than attachments stored inside another entity.
 
-The current architecture supports attachment metadata linked to canonical entities. Later milestones can add file selection, storage rules, previews and indexing without redesigning entity pages.
+- Document records use the same entity, form, search, dashboard, relationship and detail-page architecture as other domains.
+- Uploaded files are stored locally under `instance/documents/`.
+- File metadata such as original file name, MIME type, stored path and file size lives on the Document entity.
+- Documents link to People, Organisations, Locations, Projects, Assets or other Documents through relationships.
+
+Older local databases may still contain an unused `attachments` table. It is no longer created or rendered by the active application because file-bearing records should be Documents.
 
 ## Documentation Rule
 
@@ -99,9 +107,11 @@ Maps are implemented as views over the entity and relationship system, not as a 
 - Location entities own address and coordinate fields.
 - People and Organisations reference Location entities through `located_at` relationships.
 - `app/geo.py` assembles map payloads from canonical entities and relationships.
-- The map layer registry initially exposes Locations, Organisations and People.
+- The map layer registry exposes Locations, Organisations, People and Assets.
 - Future layers should be added by registering a new layer and deriving markers from canonical records, not by creating map-only persistence.
 - Locations without valid coordinates remain valid records and are omitted from marker payloads until coordinates are added.
+- Assets can appear when they have valid direct coordinates or a `located_at` relationship to a coordinate-bearing Location.
+- Projects and Documents do not appear as map markers, even when related to Locations.
 
 Address lookup is behind a small geocoder boundary. The current provider uses OpenStreetMap Nominatim and returns normalised address fields, coordinates and source metadata. Manual address and coordinate editing remains authoritative.
 

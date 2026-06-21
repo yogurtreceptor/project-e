@@ -22,6 +22,7 @@ MAP_LAYERS: tuple[MapLayerDefinition, ...] = (
     MapLayerDefinition("locations", "Locations", "location", enabled=True),
     MapLayerDefinition("organisations", "Organisations", "organisation", enabled=False),
     MapLayerDefinition("people", "People", "person", enabled=False),
+    MapLayerDefinition("assets", "Assets", "asset", enabled=False),
 )
 
 
@@ -36,6 +37,13 @@ def build_map_payload(connection) -> dict[str, object]:
         if coordinates is None:
             continue
         markers.append(marker_payload(location, location, coordinates, "locations"))
+
+    asset_definition = DEFINITIONS_BY_SLUG["assets"]
+    for asset in list_entities(connection, asset_definition):
+        coordinates = entity_coordinates(asset)
+        if coordinates is None:
+            continue
+        markers.append(marker_payload(asset, asset, coordinates, "assets"))
 
     for relationship in list_relationships(connection):
         if relationship.type_key != "located_at":
