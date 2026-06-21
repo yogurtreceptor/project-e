@@ -72,6 +72,15 @@ p {
     margin-bottom: 24px;
 }
 
+.section-heading {
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.section-heading h2 {
+    margin-bottom: 0;
+}
+
 .page-heading h1 {
     font-size: 32px;
     line-height: 1.15;
@@ -201,7 +210,8 @@ dt {
 }
 
 input,
-textarea {
+textarea,
+select {
     border: 1px solid var(--line);
     border-radius: 6px;
     color: var(--text);
@@ -212,6 +222,10 @@ textarea {
 
 textarea {
     resize: vertical;
+}
+
+select {
+    background: #ffffff;
 }
 
 dl {
@@ -278,3 +292,38 @@ dd {
     }
 }
 
+
+.relationships-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.relationship-group {
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+}
+
+.relationship-group:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.relationship-group h3 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.readonly-field {
+    background: #f7faf8;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+}
+
+.readonly-field span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}

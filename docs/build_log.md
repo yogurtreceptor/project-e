@@ -42,3 +42,32 @@ What changed:
 Architectural correction:
 
 - Raw SQLite rows are no longer passed through route rendering as the domain model. This was corrected so future entity types can share behaviour, metadata and UI without copying route code.
+
+Relationship-centred platform milestone completed.
+
+What changed:
+
+- Added first-class `RelationshipType` and `RelationshipRecord` models.
+- Added SQLite `relationships` table referencing canonical `entities` at both endpoints.
+- Added relationship CRUD, relationship browser, relationship detail pages and reusable relationship forms.
+- Added bidirectional relationship panels on entity detail pages.
+- Added central relationship type definitions with inverse labels.
+- Added tests for cross-domain relationships and validation.
+
+Architectural correction:
+
+- Relationships are implemented as their own central model rather than domain-specific fields or duplicated inverse records. This keeps future entity domains relationship-capable without redesign.
+
+Entity-first relationship UX completed.
+
+What changed:
+
+- Relationship creation is now primarily launched from entity detail pages.
+- Entity pages group relationships by connected entity type: People, Organisations and Locations.
+- Relationship rows can be edited or deleted from the entity context.
+- The global relationship browser remains available for browsing and audit, but is no longer the main creation path.
+- Relationship start and end fields now use calendar date inputs with date certainty metadata for exact, approximate or unknown dates.
+
+Decision captured:
+
+- Relationships remain centrally stored as first-class records, but the user workflow is entity-first. This keeps the data model correct while matching how users naturally add knowledge.

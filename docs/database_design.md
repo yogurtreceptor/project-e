@@ -1,90 +1,88 @@
-# Database Design
+# Ontology
 
-Stage 1 uses SQLite through Python's standard library.
-
-The design should keep identity, typed domain data and relationships clear enough to maintain.
-
-## Core Tables
-
-Current foundation tables are created from the central entity definitions.
-
-Current foundation tables:
-
-- `entities`: canonical identity for every Person, Organisation and Location.
-- `people`: Person-specific fields keyed by `entity_id`.
-- `organisations`: Organisation-specific fields keyed by `entity_id`.
-- `locations`: Location-specific fields keyed by `entity_id`.
-
-Planned later tables:
-
-- `relationships`: first-class links between two entities.
-- `aliases`: alternate names for entities.
-- `imports`: optional records for simple import runs.
+Operation Eddy models real-world information as entities and relationships.
 
 ## Entities
 
-`entities` should hold shared fields:
+An entity is the canonical record for one real-world object.
 
-- `id`
-- `type`
-- `display_name`
-- `summary`
-- `notes`
-- `created_at`
-- `updated_at`
+Every entity has:
 
-Entity type should be constrained to the Stage 1 domain types unless a later ADR expands the ontology.
+- a stable identifier
+- an entity type
+- a display name
+- notes or descriptive fields where useful
+- creation and update timestamps
 
-## Typed Profile Tables
+Stage 1 entity types are:
 
-Typed tables should contain fields specific to each entity type while preserving the canonical entity record.
+- Person
+- Organisation
+- Location
 
-- `people` stores person-specific profile fields.
-- `organisations` stores organisation-specific profile fields.
-- `locations` stores place and address fields.
+Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
 
-The implementation should avoid duplicating canonical names or identity fields across typed tables unless there is a clear search or display reason.
+## People
 
-Typed tables are generated from `EntityDefinition` entries so future domains can be added with minimal schema and UI duplication. Existing databases may need explicit migrations when definitions change after data exists.
+A Person represents a real person.
+
+Current fields include name parts, email, phone, summary and notes. The first priority is maintainable entity identity.
+
+## Organisations
+
+An Organisation represents a company, institution, group, team or other organisation.
+
+Current fields include organisation type, website, email, phone, summary and notes.
+
+## Locations
+
+A Location represents a place, address or meaningful area.
+
+Current fields include address lines, locality, region, country, summary and notes.
+
+Maps are a later view over Location data, not the foundation of the Location model.
 
 ## Relationships
 
-Relationships are not implemented in the initial application foundation.
+A relationship is a first-class record connecting two canonical entities.
 
-When added, `relationships` should hold:
+Relationships support:
 
-- `id`
-- `source_entity_id`
-- `target_entity_id`
-- `type`
-- `direction`
-- `status`
-- `started_at`
-- `ended_at`
-- `notes`
-- `created_at`
-- `updated_at`
+- source entity
+- target entity
+- relationship type
+- direction semantics through type labels and inverse labels
+- optional start and end dates
+- date certainty for start and end dates
+- status
+- notes
+- creation and update timestamps
 
-Both endpoints should reference `entities`.
+Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
-Relationship records should support navigation in both directions, even when the relationship type has directional meaning.
+The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
-## Search
+## Relationship Types
 
-Search should be planned early and implemented before maps.
+Implemented relationship types include:
 
-Search-ready data may come from:
+- associated with
+- knows
+- works for / has worker
+- located at / has location
+- member of / has member
+- related to
 
-- entity display names
-- aliases
-- typed profile fields
-- relationship labels or notes
+These types are intentionally generic enough for People, Organisations, Locations and future entity domains. More specific types can be added through the central relationship type definitions.
 
-SQLite full-text search can be considered when simple indexed queries are no longer enough.
+## Relationship Dates
 
-## Imports
+Relationship dates support exact calendar dates plus certainty metadata.
 
-Import support should remain simple in Stage 1.
+Current certainty values are:
 
-Imports may record source filename, import time, row counts and notes. Import logic should create or update canonical entities and relationships rather than maintaining a separate imported-data model.
+- exact
+- approximate
+- unknown
 
+This preserves uncertainty without blocking structured date entry.

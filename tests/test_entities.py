@@ -11,7 +11,15 @@ from app.db import (
     list_entities,
     normalise_form_values,
     update_entity,
+    create_relationship,
+    delete_relationship,
+    get_relationship,
+    list_relationships,
+    list_relationships_for_entity,
+    normalise_relationship_values,
+    update_relationship,
     validate_entity_values,
+    validate_relationship_values,
 )
 from app.entities import DEFINITIONS_BY_SLUG, ENTITY_DEFINITIONS
 
@@ -93,6 +101,111 @@ class EntityDatabaseTests(unittest.TestCase):
 
                 delete_entity(connection, definition, entity_id)
                 self.assertIsNone(get_entity(connection, definition, entity_id))
+
+    def test_relationships_connect_any_entity_types_bidirectionally(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+
+            values = normalise_relationship_values(
+                {
+                    "source_entity_id": str(person_id),
+                    "target_entity_id": str(organisation_id),
+                    "type": "works_for",
+                    "status": "active",
+                    "started_at": "1843-01-01",
+                    "started_at_precision": "approximate",
+                    "notes": "Shared relationship model.",
+                }
+            )
+            self.assertEqual(validate_relationship_values(connection, values), [])
+            relationship_id = create_relationship(connection, values)
+
+            relationship = get_relationship(connection, relationship_id)
+            self.assertIsNotNone(relationship)
+            self.assertEqual(relationship.source.display_name, "Ada Lovelace")
+            self.assertEqual(relationship.target.display_name, "Analytical Engine Guild")
+            self.assertEqual(relationship.label_from(person_id), "works for")
+            self.assertEqual(relationship.label_from(organisation_id), "has worker")
+            self.assertEqual(relationship.other_entity(person_id).id, organisation_id)
+            self.assertEqual(relationship.started_at, "1843-01-01")
+            self.assertEqual(relationship.started_at_precision, "approximate")
+
+            self.assertEqual(len(list_relationships(connection)), 1)
+            self.assertEqual(len(list_relationships_for_entity(connection, person_id)), 1)
+            self.assertEqual(len(list_relationships_for_entity(connection, organisation_id)), 1)
+
+            update_relationship(
+                connection,
+                relationship_id,
+                {
+                    **relationship.to_form_values(),
+                    "status": "former",
+                    "ended_at": "1852-11-27",
+                    "ended_at_precision": "exact",
+                },
+            )
+            updated = get_relationship(connection, relationship_id)
+            self.assertEqual(updated.status, "former")
+            self.assertEqual(updated.ended_at, "1852-11-27")
+            self.assertEqual(updated.ended_at_precision, "exact")
+
+            delete_relationship(connection, relationship_id)
+            self.assertIsNone(get_relationship(connection, relationship_id))
+
+    def test_relationship_validation_rejects_same_or_missing_entities(self) -> None:
+        with connect(self.database_path) as connection:
+            entity_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            errors = validate_relationship_values(
+                connection,
+                {
+                    "source_entity_id": str(entity_id),
+                    "target_entity_id": str(entity_id),
+                    "type": "works_for",
+                    "status": "active",
+                    "started_at": "",
+                    "ended_at": "",
+                    "notes": "",
+                },
+            )
+            self.assertEqual(errors, ["A relationship must connect two different entities."])
 
     def test_display_name_is_required(self) -> None:
         values = normalise_form_values(self.definition, {"display_name": "  "})

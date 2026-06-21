@@ -4,7 +4,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord, to_entity_record
+from app.entities import (
+    DEFINITIONS_BY_TYPE,
+    ENTITY_DEFINITIONS,
+    EntityDefinition,
+    EntityRecord,
+    to_entity_record,
+)
+from app.relationships import (
+    DATE_PRECISIONS,
+    RELATIONSHIP_STATUSES,
+    RELATIONSHIP_TYPES_BY_KEY,
+    RelationshipRecord,
+)
 
 
 def utc_now() -> str:
@@ -45,6 +57,7 @@ def create_schema(connection: sqlite3.Connection) -> None:
     )
     for definition in ENTITY_DEFINITIONS:
         create_typed_table(connection, definition)
+    create_relationship_table(connection)
 
 
 def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinition) -> None:
@@ -63,6 +76,46 @@ def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinit
     )
 
 
+def create_relationship_table(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS relationships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            target_entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            started_at TEXT NOT NULL DEFAULT '',
+            started_at_precision TEXT NOT NULL DEFAULT 'exact',
+            ended_at TEXT NOT NULL DEFAULT '',
+            ended_at_precision TEXT NOT NULL DEFAULT 'exact',
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (source_entity_id <> target_entity_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_relationships_source
+            ON relationships (source_entity_id);
+
+        CREATE INDEX IF NOT EXISTS idx_relationships_target
+            ON relationships (target_entity_id);
+
+        CREATE INDEX IF NOT EXISTS idx_relationships_type
+            ON relationships (type);
+        """
+    )
+    ensure_relationship_columns(connection)
+
+
+def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(relationships)")}
+    if "started_at_precision" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN started_at_precision TEXT NOT NULL DEFAULT 'exact'")
+    if "ended_at_precision" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN ended_at_precision TEXT NOT NULL DEFAULT 'exact'")
+
+
 def list_entities(connection: sqlite3.Connection, definition: EntityDefinition) -> list[EntityRecord]:
     rows = connection.execute(
         """
@@ -75,6 +128,13 @@ def list_entities(connection: sqlite3.Connection, definition: EntityDefinition) 
         (definition.type,),
     ).fetchall()
     return [to_entity_record(definition, row) for row in rows]
+
+
+def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+    records: list[EntityRecord] = []
+    for definition in ENTITY_DEFINITIONS:
+        records.extend(list_entities(connection, definition))
+    return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
 
 
 def count_entities(connection: sqlite3.Connection) -> dict[str, int]:
@@ -99,6 +159,16 @@ def get_entity(
     if row is None:
         return None
     return to_entity_record(definition, row)
+
+
+def get_entity_by_id(connection: sqlite3.Connection, entity_id: int) -> EntityRecord | None:
+    row = connection.execute("SELECT id, type FROM entities WHERE id = ?", (entity_id,)).fetchone()
+    if row is None:
+        return None
+    definition = DEFINITIONS_BY_TYPE.get(row["type"])
+    if definition is None:
+        return None
+    return get_entity(connection, definition, entity_id)
 
 
 def create_entity(
@@ -218,6 +288,182 @@ def update_typed_row(
         ),
         [*[values.get(field.name, "") for field in definition.fields], entity_id],
     )
+
+
+def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecord]:
+    rows = connection.execute(
+        """
+        SELECT *
+        FROM relationships
+        ORDER BY updated_at DESC, id DESC
+        """
+    ).fetchall()
+    return [to_relationship_record(connection, row) for row in rows]
+
+
+def list_relationships_for_entity(
+    connection: sqlite3.Connection, entity_id: int
+) -> list[RelationshipRecord]:
+    rows = connection.execute(
+        """
+        SELECT *
+        FROM relationships
+        WHERE source_entity_id = ? OR target_entity_id = ?
+        ORDER BY updated_at DESC, id DESC
+        """,
+        (entity_id, entity_id),
+    ).fetchall()
+    return [to_relationship_record(connection, row) for row in rows]
+
+
+def get_relationship(
+    connection: sqlite3.Connection, relationship_id: int
+) -> RelationshipRecord | None:
+    row = connection.execute(
+        "SELECT * FROM relationships WHERE id = ?", (relationship_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    return to_relationship_record(connection, row)
+
+
+def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) -> int:
+    now = utc_now()
+    cursor = connection.execute(
+        """
+        INSERT INTO relationships (
+            source_entity_id, target_entity_id, type, status,
+            started_at, started_at_precision, ended_at, ended_at_precision, notes, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            int(values["source_entity_id"]),
+            int(values["target_entity_id"]),
+            values["type"],
+            values.get("status", "active"),
+            values.get("started_at", ""),
+            values.get("started_at_precision", "exact"),
+            values.get("ended_at", ""),
+            values.get("ended_at_precision", "exact"),
+            values.get("notes", ""),
+            now,
+            now,
+        ),
+    )
+    connection.commit()
+    return int(cursor.lastrowid)
+
+
+def update_relationship(
+    connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
+) -> None:
+    connection.execute(
+        """
+        UPDATE relationships
+        SET source_entity_id = ?, target_entity_id = ?, type = ?, status = ?,
+            started_at = ?, started_at_precision = ?, ended_at = ?, ended_at_precision = ?, notes = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (
+            int(values["source_entity_id"]),
+            int(values["target_entity_id"]),
+            values["type"],
+            values.get("status", "active"),
+            values.get("started_at", ""),
+            values.get("started_at_precision", "exact"),
+            values.get("ended_at", ""),
+            values.get("ended_at_precision", "exact"),
+            values.get("notes", ""),
+            utc_now(),
+            relationship_id,
+        ),
+    )
+    connection.commit()
+
+
+def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
+    connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
+    connection.commit()
+
+
+def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
+    return {
+        "source_entity_id": str(raw_values.get("source_entity_id", "")).strip(),
+        "target_entity_id": str(raw_values.get("target_entity_id", "")).strip(),
+        "type": str(raw_values.get("type", "")).strip(),
+        "status": str(raw_values.get("status", "active")).strip() or "active",
+        "started_at": str(raw_values.get("started_at", "")).strip(),
+        "started_at_precision": str(raw_values.get("started_at_precision", "exact")).strip() or "exact",
+        "ended_at": str(raw_values.get("ended_at", "")).strip(),
+        "ended_at_precision": str(raw_values.get("ended_at_precision", "exact")).strip() or "exact",
+        "notes": str(raw_values.get("notes", "")).strip(),
+    }
+
+
+def validate_relationship_values(
+    connection: sqlite3.Connection, values: dict[str, str]
+) -> list[str]:
+    errors = []
+    source_id = parse_int(values.get("source_entity_id", ""))
+    target_id = parse_int(values.get("target_entity_id", ""))
+
+    if source_id is None:
+        errors.append("Source entity is required.")
+    elif get_entity_by_id(connection, source_id) is None:
+        errors.append("Source entity does not exist.")
+
+    if target_id is None:
+        errors.append("Target entity is required.")
+    elif get_entity_by_id(connection, target_id) is None:
+        errors.append("Target entity does not exist.")
+
+    if source_id is not None and target_id is not None and source_id == target_id:
+        errors.append("A relationship must connect two different entities.")
+
+    if values.get("type") not in RELATIONSHIP_TYPES_BY_KEY:
+        errors.append("Relationship type is required.")
+
+    if values.get("status") not in RELATIONSHIP_STATUSES:
+        errors.append("Relationship status is invalid.")
+
+    if values.get("started_at_precision", "exact") not in DATE_PRECISIONS:
+        errors.append("Start date certainty is invalid.")
+
+    if values.get("ended_at_precision", "exact") not in DATE_PRECISIONS:
+        errors.append("End date certainty is invalid.")
+
+    return errors
+
+
+def to_relationship_record(
+    connection: sqlite3.Connection, row: sqlite3.Row
+) -> RelationshipRecord:
+    source = get_entity_by_id(connection, int(row["source_entity_id"]))
+    target = get_entity_by_id(connection, int(row["target_entity_id"]))
+    if source is None or target is None:
+        raise ValueError(f"Relationship {row['id']} references a missing entity")
+    return RelationshipRecord(
+        id=int(row["id"]),
+        type_key=row["type"],
+        source=source,
+        target=target,
+        status=row["status"],
+        started_at=row["started_at"],
+        started_at_precision=row["started_at_precision"],
+        ended_at=row["ended_at"],
+        ended_at_precision=row["ended_at_precision"],
+        notes=row["notes"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def parse_int(value: str) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def sql_identifier(value: str) -> str:

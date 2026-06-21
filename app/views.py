@@ -1,10 +1,11 @@
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord
+from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES, RELATIONSHIP_TYPES, RelationshipRecord
 
 
 def layout(title: str, content: str, active_slug: str | None = None) -> str:
-    nav_items = "".join(
+    entity_nav = "".join(
         '<a class="{class_name}" href="/{slug}">{label}</a>'.format(
             class_name="active" if definition.slug == active_slug else "",
             slug=definition.slug,
@@ -12,6 +13,8 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
         )
         for definition in ENTITY_DEFINITIONS
     )
+    relationship_class = "active" if active_slug == "relationships" else ""
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -30,7 +33,7 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
 </html>"""
 
 
-def dashboard_page(counts: dict[str, int]) -> str:
+def dashboard_page(counts: dict[str, int], relationship_count: int) -> str:
     cards = []
     for definition in ENTITY_DEFINITIONS:
         count = counts.get(definition.type, 0)
@@ -48,11 +51,24 @@ def dashboard_page(counts: dict[str, int]) -> str:
             </section>
             """
         )
+    cards.append(
+        f"""
+        <section class="panel entity-card">
+            <div>
+                <h2>Relationships</h2>
+                <p>{relationship_count} records</p>
+            </div>
+            <div class="actions">
+                <a class="button secondary" href="/relationships">Browse</a>
+            </div>
+        </section>
+        """
+    )
 
     return """
     <section class="page-heading">
         <h1>Operation Eddy</h1>
-        <p>Local-first structured information for people, organisations and locations.</p>
+        <p>Local-first structured information centred on entities and relationships.</p>
     </section>
     <div class="grid">""" + "".join(cards) + "</div>"
 
@@ -104,7 +120,7 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord]) 
     """
 
 
-def entity_detail_page(record: EntityRecord) -> str:
+def entity_detail_page(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
     definition = record.definition
     fields = []
     for field, raw_value in record.field_items():
@@ -127,6 +143,7 @@ def entity_detail_page(record: EntityRecord) -> str:
         <h2>Details</h2>
         <dl>{''.join(fields)}</dl>
     </section>
+    {entity_relationships_panel(record, relationships)}
     <section class="panel">
         <h2>Notes</h2>
         <p class="notes">{escape(record.notes) if record.notes else 'No notes yet.'}</p>
@@ -141,6 +158,82 @@ def entity_detail_page(record: EntityRecord) -> str:
     """
 
 
+def entity_relationships_panel(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    sections = []
+    for definition in ENTITY_DEFINITIONS:
+        grouped = [
+            relationship
+            for relationship in relationships
+            if relationship.other_entity(record.id).definition.type == definition.type
+        ]
+        rows = []
+        for relationship in grouped:
+            other = relationship.other_entity(record.id)
+            rows.append(
+                f"""
+                <tr>
+                    <td><a href="/{other.slug}/{other.id}">{escape(other.title)}</a></td>
+                    <td><a href="/relationships/{relationship.id}">{escape(relationship.label_from(record.id))}</a></td>
+                    <td>{escape(relationship.status)}</td>
+                    <td>{format_relationship_dates(relationship)}</td>
+                    <td class="row-actions">
+                        <a href="/relationships/{relationship.id}/edit?context_entity_id={record.id}">Edit</a>
+                        <form method="post" action="/relationships/{relationship.id}/delete?context_entity_id={record.id}">
+                            <button class="link-button" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                """
+            )
+        content = (
+            """
+            <table>
+                <thead><tr><th>Entity</th><th>Relationship</th><th>Status</th><th>Dates</th><th></th></tr></thead>
+                <tbody>"""
+            + "".join(rows)
+            + "</tbody></table>"
+            if rows
+            else f'<p class="empty">No {escape(definition.plural.lower())} relationships yet.</p>'
+        )
+        sections.append(
+            f"""
+            <section class="relationship-group">
+                <div class="section-heading split">
+                    <h3>{escape(definition.plural)}</h3>
+                    <a href="/relationships/new?source_entity_id={record.id}&target_type={definition.type}&context_entity_id={record.id}">Add {escape(definition.singular.lower())} relationship</a>
+                </div>
+                {content}
+            </section>
+            """
+        )
+    return f"""
+    <section class="panel relationships-panel">
+        <div class="section-heading split">
+            <h2>Relationships</h2>
+            <a href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Add relationship</a>
+        </div>
+        {''.join(sections)}
+    </section>
+    """
+
+
+def format_relationship_dates(relationship: RelationshipRecord) -> str:
+    started = format_date_with_precision(relationship.started_at, relationship.started_at_precision)
+    ended = format_date_with_precision(relationship.ended_at, relationship.ended_at_precision)
+    if started == "Not recorded" and ended == "Not recorded":
+        return "Not recorded"
+    return f"{escape(started)} to {escape(ended)}"
+
+
+def format_date_with_precision(value: str, precision: str) -> str:
+    if not value:
+        return "Not recorded"
+    if precision == "approximate":
+        return f"approx. {value}"
+    if precision == "unknown":
+        return f"date uncertain: {value}"
+    return value
+
 def entity_form_page(
     definition: EntityDefinition,
     values: dict[str, str],
@@ -151,13 +244,7 @@ def entity_form_page(
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
     )
-    error_html = ""
-    if errors:
-        error_html = (
-            '<div class="errors"><strong>Check the form</strong><ul>'
-            + "".join(f"<li>{escape(error)}</li>" for error in errors)
-            + "</ul></div>"
-        )
+    error_html = error_block(errors)
 
     fields = [
         input_field("display_name", f"{definition.singular} name", values),
@@ -185,16 +272,184 @@ def entity_form_page(
     """
 
 
+def relationship_list_page(relationships: list[RelationshipRecord]) -> str:
+    if not relationships:
+        content = '<p class="empty">No relationships yet.</p>'
+    else:
+        rows = []
+        for relationship in relationships:
+            rows.append(
+                f"""
+                <tr>
+                    <td><a href="/relationships/{relationship.id}">{escape(relationship.label)}</a></td>
+                    <td><a href="/{relationship.source.slug}/{relationship.source.id}">{escape(relationship.source.title)}</a></td>
+                    <td><a href="/{relationship.target.slug}/{relationship.target.id}">{escape(relationship.target.title)}</a></td>
+                    <td>{escape(relationship.status)}</td>
+                    <td class="row-actions">
+                        <a href="/relationships/{relationship.id}/edit">Edit</a>
+                        <form method="post" action="/relationships/{relationship.id}/delete">
+                            <button class="link-button" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                """
+            )
+        content = (
+            """
+            <table>
+                <thead><tr><th>Type</th><th>Source</th><th>Target</th><th>Status</th><th></th></tr></thead>
+                <tbody>"""
+            + "".join(rows)
+            + "</tbody></table>"
+        )
+    return f"""
+    <section class="page-heading split">
+        <div>
+            <h1>Relationships</h1>
+            <p>Browse first-class links between any entity types.</p>
+        </div>
+
+    </section>
+    <section class="panel">{content}</section>
+    """
+
+
+def relationship_detail_page(relationship: RelationshipRecord) -> str:
+    return f"""
+    <section class="page-heading split">
+        <div>
+            <p class="eyebrow">Relationship</p>
+            <h1>{escape(relationship.source.title)} {escape(relationship.label)} {escape(relationship.target.title)}</h1>
+            <p>{escape(relationship.status)}</p>
+        </div>
+        <div class="actions">
+            <a class="button secondary" href="/relationships">Back</a>
+            <a class="button" href="/relationships/{relationship.id}/edit">Edit</a>
+        </div>
+    </section>
+    <section class="panel">
+        <h2>Connected entities</h2>
+        <dl>
+            <dt>Source</dt><dd><a href="/{relationship.source.slug}/{relationship.source.id}">{escape(relationship.source.title)}</a></dd>
+            <dt>Target</dt><dd><a href="/{relationship.target.slug}/{relationship.target.id}">{escape(relationship.target.title)}</a></dd>
+            <dt>Type</dt><dd>{escape(relationship.label)}</dd>
+            <dt>Inverse</dt><dd>{escape(relationship.type.inverse_label)}</dd>
+            <dt>Status</dt><dd>{escape(relationship.status)}</dd>
+            <dt>Started</dt><dd>{escape(format_date_with_precision(relationship.started_at, relationship.started_at_precision))}</dd>
+            <dt>Ended</dt><dd>{escape(format_date_with_precision(relationship.ended_at, relationship.ended_at_precision))}</dd>
+        </dl>
+    </section>
+    <section class="panel">
+        <h2>Notes</h2>
+        <p class="notes">{escape(relationship.notes) if relationship.notes else 'No notes yet.'}</p>
+    </section>
+    <section class="panel metadata">
+        <h2>Metadata</h2>
+        <dl>
+            <dt>Created</dt><dd>{escape(relationship.created_at)}</dd>
+            <dt>Updated</dt><dd>{escape(relationship.updated_at)}</dd>
+        </dl>
+    </section>
+    """
+
+
+def relationship_form_page(
+    values: dict[str, str],
+    errors: list[str],
+    entities: list[EntityRecord],
+    action: str,
+    relationship_id: int | None = None,
+    context_entity: EntityRecord | None = None,
+    target_type: str | None = None,
+) -> str:
+    query = []
+    if context_entity is not None:
+        query.append(f"context_entity_id={context_entity.id}")
+    if target_type:
+        query.append(f"target_type={target_type}")
+    query_string = "?" + "&".join(query) if query else ""
+    form_action = f"/relationships/{relationship_id}/edit{query_string}" if relationship_id else f"/relationships/new{query_string}"
+    target_entities = [entity for entity in entities if not target_type or entity.type == target_type]
+    fields = []
+    if context_entity is not None:
+        fields.append(f'<div class="readonly-field"><span>Current entity</span><strong>{escape(context_entity.title)}</strong></div>')
+        source_value = escape(str(values.get("source_entity_id", context_entity.id)))
+        fields.append(f'<input type="hidden" name="source_entity_id" value="{source_value}">')
+    else:
+        fields.append(select_field("source_entity_id", "Source entity", entity_options(entities), values))
+    fields.extend([
+        select_field("type", "Relationship type", relationship_type_options(), values),
+        select_field("target_entity_id", "Connected entity", entity_options(target_entities), values),
+        select_field("status", "Status", [(status, status.title()) for status in RELATIONSHIP_STATUSES], values),
+        input_field("started_at", "Started", values, input_type="date"),
+        select_field("started_at_precision", "Start date certainty", date_precision_options(), values),
+        input_field("ended_at", "Ended", values, input_type="date"),
+        select_field("ended_at_precision", "End date certainty", date_precision_options(), values),
+        input_field("notes", "Notes", values, multiline=True),
+    ])
+    return f"""
+    <section class="page-heading">
+        <p class="eyebrow">Relationship</p>
+        <h1>{escape(action)} Relationship</h1>
+    </section>
+    <section class="panel">
+        {error_block(errors)}
+        <form class="record-form" method="post" action="{form_action}">
+            {''.join(fields)}
+            <div class="actions">
+                <a class="button secondary" href="{'/' + context_entity.slug + '/' + str(context_entity.id) if context_entity else '/relationships'}">Cancel</a>
+                <button class="button" type="submit">Save</button>
+            </div>
+        </form>
+    </section>
+    """
+
+
+def entity_options(entities: list[EntityRecord]) -> list[tuple[str, str]]:
+    return [(str(entity.id), f"{entity.title} ({entity.definition.singular})") for entity in entities]
+
+
+def relationship_type_options() -> list[tuple[str, str]]:
+    return [(relationship_type.key, relationship_type.label) for relationship_type in RELATIONSHIP_TYPES]
+
+
+def date_precision_options() -> list[tuple[str, str]]:
+    return [(precision, precision.replace("_", " ").title()) for precision in DATE_PRECISIONS]
+
+
 def not_found_page() -> str:
     return '<section class="panel"><h1>Not found</h1><p>The requested page does not exist.</p></section>'
 
 
+def error_block(errors: list[str]) -> str:
+    if not errors:
+        return ""
+    return (
+        '<div class="errors"><strong>Check the form</strong><ul>'
+        + "".join(f"<li>{escape(error)}</li>" for error in errors)
+        + "</ul></div>"
+    )
+
+
 def input_field(
-    name: str, label: str, values: dict[str, str], multiline: bool = False
+    name: str, label: str, values: dict[str, str], multiline: bool = False, input_type: str = "text"
 ) -> str:
     value = escape(str(values.get(name, "")))
     if multiline:
         control = f'<textarea id="{name}" name="{name}" rows="5">{value}</textarea>'
     else:
-        control = f'<input id="{name}" name="{name}" value="{value}">'
+        control = f'<input id="{name}" name="{name}" type="{escape(input_type)}" value="{value}">'
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
+
+
+def select_field(
+    name: str, label: str, options: list[tuple[str, str]], values: dict[str, str]
+) -> str:
+    current = str(values.get(name, ""))
+    option_html = ['<option value="">Select...</option>']
+    for value, text in options:
+        selected = " selected" if value == current else ""
+        option_html.append(
+            f'<option value="{escape(value)}"{selected}>{escape(text)}</option>'
+        )
+    return f'<label for="{name}"><span>{escape(label)}</span><select id="{name}" name="{name}">{"".join(option_html)}</select></label>'

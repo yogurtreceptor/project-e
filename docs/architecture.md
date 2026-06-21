@@ -1,64 +1,88 @@
-# Architecture
+# Ontology
 
-Operation Eddy should use a simple local-first architecture for Stage 1.
+Operation Eddy models real-world information as entities and relationships.
 
-## Shape
+## Entities
 
-The system should be organised around three practical layers:
+An entity is the canonical record for one real-world object.
 
-- Local UI for browsing, editing, searching and navigating information.
-- Local application layer for validation, persistence rules and view logic.
-- Embedded local database for durable storage.
+Every entity has:
 
-SQLite or an equivalent embedded local database is the default persistence choice unless superseded by an ADR.
+- a stable identifier
+- an entity type
+- a display name
+- notes or descriptive fields where useful
+- creation and update timestamps
 
-## Current Implementation
+Stage 1 entity types are:
 
-The initial application foundation is a Python standard library web app:
+- Person
+- Organisation
+- Location
 
-- `run.py` starts a local HTTP server.
-- `app/web.py` handles HTTP routing and request/response concerns.
-- `app/views.py` owns reusable page layouts, navigation, detail pages and forms.
-- `app/db.py` owns SQLite connection, definition-driven schema creation and CRUD operations.
-- `app/entities.py` defines the common entity model, metadata and supported entity types.
-- `app/static/styles.css` provides the shared UI styling.
+Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
 
-No external runtime dependencies are required for the initial foundation.
+## People
 
-## Boundaries
+A Person represents a real person.
 
-Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.
+Current fields include name parts, email, phone, summary and notes. The first priority is maintainable entity identity.
 
-The application should not depend on WAN access for normal operation. External access may be considered later only through explicit architecture decisions.
+## Organisations
 
-## Entity Architecture
+An Organisation represents a company, institution, group, team or other organisation.
 
-Current domains inherit from a common entity architecture:
+Current fields include organisation type, website, email, phone, summary and notes.
 
-- `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
-- `EntityRecord` is the shared runtime model for all entity instances.
-- Shared fields are `display_name`, `summary`, `notes`, `created_at` and `updated_at`.
-- Domain-specific data is exposed as metadata on the same record object.
-- List, detail and form pages are generated from entity definitions.
+## Locations
 
-This corrected an early architectural issue where raw SQLite rows were passed directly into route rendering. The shared model keeps database shape, UI rendering and future domain additions aligned.
+A Location represents a place, address or meaningful area.
 
-## Data Model Direction
+Current fields include address lines, locality, region, country, summary and notes.
 
-The architecture is entity-first and relationship-first.
+Maps are a later view over Location data, not the foundation of the Location model.
 
-- Core entity records provide shared identity, naming and lifecycle fields.
-- Typed profile data extends entities into People, Organisations and Locations.
-- Relationships will connect entities and be stored as records with their own metadata in a later milestone.
-- Views should read from the same canonical records instead of creating duplicate data paths.
+## Relationships
 
-## Import and Export
+A relationship is a first-class record connecting two canonical entities.
 
-Simple import and export tools are allowed when they support population, migration or backup of local data.
+Relationships support:
 
-Imports should feed the same canonical entity and relationship model as manual entry. They should not become background automation or external integrations during Stage 1.
+- source entity
+- target entity
+- relationship type
+- direction semantics through type labels and inverse labels
+- optional start and end dates
+- date certainty for start and end dates
+- status
+- notes
+- creation and update timestamps
 
-## Documentation Rule
+Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
-Planning documents should be updated when architecture, scope, data model or domain boundaries change.
+The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
+## Relationship Types
+
+Implemented relationship types include:
+
+- associated with
+- knows
+- works for / has worker
+- located at / has location
+- member of / has member
+- related to
+
+These types are intentionally generic enough for People, Organisations, Locations and future entity domains. More specific types can be added through the central relationship type definitions.
+
+## Relationship Dates
+
+Relationship dates support exact calendar dates plus certainty metadata.
+
+Current certainty values are:
+
+- exact
+- approximate
+- unknown
+
+This preserves uncertainty without blocking structured date entry.

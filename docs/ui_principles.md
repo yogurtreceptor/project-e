@@ -1,52 +1,88 @@
-# UI Principles
+# Ontology
 
-The Stage 1 UI should make structured information easy to enter, inspect and navigate.
+Operation Eddy models real-world information as entities and relationships.
 
-## Core Experience
+## Entities
 
-- Start with useful entity pages for People, Organisations and Locations.
-- Make relationships visible and navigable from entity pages.
-- Provide search before map-based exploration.
-- Keep forms practical and understandable.
-- Prefer dense, clear information layouts over decorative screens.
+An entity is the canonical record for one real-world object.
 
-## Entity Pages
+Every entity has:
 
-Each entity page should show:
+- a stable identifier
+- an entity type
+- a display name
+- notes or descriptive fields where useful
+- creation and update timestamps
 
-- canonical name and type
-- important typed profile fields
-- aliases or alternate names
-- relationship list or relationship panel
+Stage 1 entity types are:
+
+- Person
+- Organisation
+- Location
+
+Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
+
+## People
+
+A Person represents a real person.
+
+Current fields include name parts, email, phone, summary and notes. The first priority is maintainable entity identity.
+
+## Organisations
+
+An Organisation represents a company, institution, group, team or other organisation.
+
+Current fields include organisation type, website, email, phone, summary and notes.
+
+## Locations
+
+A Location represents a place, address or meaningful area.
+
+Current fields include address lines, locality, region, country, summary and notes.
+
+Maps are a later view over Location data, not the foundation of the Location model.
+
+## Relationships
+
+A relationship is a first-class record connecting two canonical entities.
+
+Relationships support:
+
+- source entity
+- target entity
+- relationship type
+- direction semantics through type labels and inverse labels
+- optional start and end dates
+- date certainty for start and end dates
+- status
 - notes
-- timestamps or provenance where useful
+- creation and update timestamps
 
-Entity pages should help users notice likely duplicates and related records.
+Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
-## Relationship Views
+The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
-Relationships should not be hidden as secondary metadata.
+## Relationship Types
 
-The UI should allow users to:
+Implemented relationship types include:
 
-- create relationships from entity pages
-- inspect relationship details
-- navigate to either connected entity
-- understand direction or role semantics where they matter
+- associated with
+- knows
+- works for / has worker
+- located at / has location
+- member of / has member
+- related to
 
-## Search First
+These types are intentionally generic enough for People, Organisations, Locations and future entity domains. More specific types can be added through the central relationship type definitions.
 
-Search should be a primary navigation path for Stage 1.
+## Relationship Dates
 
-Search should cover core entity names and enough profile data to find records quickly. Relationship-aware search can be added after the relationship model is stable.
+Relationship dates support exact calendar dates plus certainty metadata.
 
-## Maps Later
+Current certainty values are:
 
-Maps are a later Stage 1 view over Location data.
+- exact
+- approximate
+- unknown
 
-Map UI should wait until Locations, relationships and search are useful without it. The map should reveal existing data; it should not drive the base architecture.
-
-## Exclusions
-
-The Stage 1 UI should not include chat, AI prompts, dispatcher controls, scheduling surfaces, login flows or automation dashboards.
-
+This preserves uncertainty without blocking structured date entry.
