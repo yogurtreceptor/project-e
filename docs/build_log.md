@@ -142,3 +142,14 @@ Verification:
 - `python3 -m compileall app run.py tests`
 - `python3 -m unittest discover -s tests`
 - Local smoke test: `/map`, `/locations/new` and `/geocoding/search?q=Casino%20Drive%20Brisbane` returned HTTP 200.
+
+G-NAF geocoding architecture decision documented.
+
+Decision captured:
+
+- G-NAF is the preferred future path for Australian house-level address coordinates.
+- G-NAF will be treated as an optional local address index or plugin-style data pack rather than a mandatory Stage 1 dependency.
+- The main Operation Eddy database should store selected Location records only, not the full G-NAF dataset.
+- Nominatim remains the current lightweight lookup and future fallback for places, non-Australian addresses and cases where G-NAF is unavailable or does not match.
+
+No code changes were made for this decision.
