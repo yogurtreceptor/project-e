@@ -556,6 +556,78 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertIn('[hidden]', css)
         self.assertIn('display: none !important', css)
 
+    def test_relationship_question_uses_entity_names_and_updates_new_name(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Test3",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Test3",
+                    "middle_name": "",
+                    "family_name": "",
+                    "preferred_name": "",
+                    "sex": "Unknown",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Test4",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            person = get_entity(connection, self.definition, person_id)
+            organisation = get_entity(connection, organisation_definition, organisation_id)
+
+        existing_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(organisation_id),
+                "target_entity_id": str(person_id),
+                "type": "",
+                "status": "active",
+            },
+            [],
+            [person, organisation],
+            "Create",
+            context_entity=organisation,
+            target_type="person",
+        )
+        new_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(organisation_id),
+                "workflow_mode": "create_new",
+                "new_display_name": "Jane Smith",
+                "type": "",
+                "status": "active",
+            },
+            [],
+            [person, organisation],
+            "Create",
+            context_entity=organisation,
+            target_type="person",
+        )
+
+        self.assertIn("What is Test3 in relation to Test4?", existing_html)
+        self.assertNotIn("What is this entity", existing_html)
+        self.assertIn("What is Jane Smith in relation to Test4?", new_html)
+        self.assertIn("newDisplayNames.forEach((field) => field.addEventListener('input', refreshRelationshipChoices))", existing_html)
+        self.assertIn("activeNewDisplayName", existing_html)
+        self.assertIn("question.textContent = `What is", existing_html)
+
     def test_family_relationship_labels_are_gender_aware_and_neutral(self) -> None:
         with connect(self.database_path) as connection:
             father_id = create_entity(

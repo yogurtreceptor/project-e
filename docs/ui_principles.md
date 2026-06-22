@@ -42,11 +42,11 @@ Relationship creation should be entity-first and perspective-based:
 - Show only the selected workflow so users do not scroll through irrelevant fields.
 - Existing entity workflow shows entity selection, relationship selection, dates, notes and save. A searchable selector can be added later without changing the workflow split.
 - New entity workflow shows entity type, compact creation fields, relationship selection, dates, notes and save.
-- Ask what the connected entity is in relation to the current entity.
+- Ask what the named connected entity is in relation to the named current entity; avoid ambiguous wording such as "this entity" once an entity name is available.
 - Show only relationship roles valid for the selected entity pair.
 - Save back to the original entity page so context is not lost.
 
-The relationship selector should use plain role labels from the user's perspective, such as Daughter, Father, Employee or Employer. Family choices should use neutral relationship definitions underneath; sex-specific labels are display output, not separate required relationship types.
+The relationship selector should use short plain role labels from the user's perspective, such as Daughter, Father, Employee or Employer. Family choices should use neutral relationship definitions underneath; sex-specific labels are display output, not separate required relationship types. When creating a new entity, the relationship question should update live as the new entity name changes.
 
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 

@@ -801,8 +801,9 @@ def relationship_metadata_fields(
 ) -> str:
     options = relationship_type_options(source_entity, connected_type, connected_sex)
     current_name = source_entity.title if source_entity else "the current entity"
-    connected_name = selected_target.title if selected_target else "this entity"
-    prompt = f"What is {connected_name} in relation to {current_name}?"
+    connected_name = selected_target.title if selected_target else values.get("new_display_name", "").strip()
+    connected_label = connected_name or "the connected entity"
+    prompt = f"What is {connected_label} in relation to {current_name}?"
     return f"""
     <fieldset class="relationship-step relationship-metadata">
         <legend>Relationship details</legend>
@@ -896,6 +897,7 @@ def relationship_form_script(
         const question = document.getElementById('relationship_question');
         const type = document.getElementById('type');
         const newType = document.getElementById('new_entity_type');
+        const newDisplayNames = Array.from(document.querySelectorAll('[name="new_display_name"]'));
         const workflowModes = Array.from(document.querySelectorAll('input[name="workflow_mode"]'));
         const panels = Array.from(document.querySelectorAll('[data-workflow-panel]'));
         const entityById = new Map(entities.map((entity) => [entity.id, entity]));
@@ -928,13 +930,28 @@ def relationship_form_script(
             }});
             if (current && !(choices || []).some(([value]) => value === current)) type.value = '';
         }};
+        const connectedNameFromLabel = (label) => (label || '').replace(/ \\([^)]*\\)$/, '');
+        const updateQuestion = (connectedName) => {{
+            if (!question) return;
+            const name = connectedName || 'the connected entity';
+            const currentName = question.dataset.currentName || 'the current entity';
+            question.textContent = `What is ${{name}} in relation to ${{currentName}}?`;
+        }};
+        const activeNewDisplayName = () => {{
+            const activeType = newType ? newType.value : '';
+            const activeSection = document.querySelector(`[data-inline-entity-type="${{activeType}}"]`);
+            return activeSection ? activeSection.querySelector('[name="new_display_name"]') : null;
+        }};
         const refreshRelationshipChoices = () => {{
             if (selectedMode() === 'create_new') {{
                 fillRelationshipChoices(choicesByType[newType ? newType.value : ''] || []);
+                const displayName = activeNewDisplayName();
+                updateQuestion(displayName ? displayName.value.trim() : '');
                 return;
             }}
             const selectedEntity = target ? entityById.get(target.value) : null;
             fillRelationshipChoices(selectedEntity ? selectedEntity.choices : (choicesByType[forcedTargetType] || []));
+            updateQuestion(selectedEntity ? connectedNameFromLabel(selectedEntity.label) : '');
         }};
         const filterTargets = () => {{
             if (!target) return;
@@ -963,6 +980,7 @@ def relationship_form_script(
         }};
         if (target) target.addEventListener('change', refreshRelationshipChoices);
         if (newType) newType.addEventListener('change', refreshPanels);
+        newDisplayNames.forEach((field) => field.addEventListener('input', refreshRelationshipChoices));
         document.querySelectorAll("[id^=\'new_sex\']").forEach((field) => field.addEventListener('change', refreshRelationshipChoices));
         workflowModes.forEach((item) => item.addEventListener('change', refreshPanels));
         filterTargets();

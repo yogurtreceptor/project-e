@@ -2,6 +2,26 @@
 
 ## 2026-06-22
 
+Relationship question wording clarified.
+
+What changed:
+
+- Replaced ambiguous relationship prompt fallback wording with explicit entity names whenever a connected entity name is available.
+- Existing-entity relationship prompts now render as `What is Test3 in relation to Test4?` when both entities are known.
+- New-entity relationship prompts use the typed name on re-render and update live in the browser as the active new entity name changes, even when multiple inline entity forms are available.
+- Kept relationship choices as short role nouns such as Employee, Daughter, Parent and Sibling; inverse relationship storage/display remains unchanged.
+
+Architectural correction:
+
+- The perspective-based relationship model was sound, but the UI still used the phrase `this entity` when no selected target name had been injected into the prompt. That phrasing made users remember which workflow side was being described. The prompt now treats the connected entity name as first-class display state and updates it from either the selected existing entity or the new entity name field.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
+## 2026-06-22
+
 Relationship workflow toggle regression fixed.
 
 What changed:

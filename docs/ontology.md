@@ -106,7 +106,7 @@ Relationships are editable and directly navigable from entity pages and the rela
 
 The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
-Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question: what is the connected entity in relation to the current entity? Saving returns to the original entity page and the relationship appears from both connected entities with the inverse label derived automatically.
+Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities with the inverse label derived automatically.
 
 ## Relationship Types
 
@@ -122,7 +122,7 @@ Relationship types are ordered definitions, not free-floating labels. Each defin
 - optional usage notes
 - whether the type is selectable for new relationships
 
-The UI filters relationship options from these definitions after it knows the two endpoint entity types. Creation happens from the current entity page and asks what the connected entity is in relation to the current entity. The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
+The UI filters relationship options from these definitions after it knows the two endpoint entity types. Creation happens from the current entity page and asks what the named connected entity is in relation to the named current entity. The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
 
 Current pair-aware groups include:
 
