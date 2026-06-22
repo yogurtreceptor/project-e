@@ -749,18 +749,10 @@ def relationship_workflow_selector(workflow_mode: str) -> str:
 
 def existing_entity_workflow(entities: list[EntityRecord], values: dict[str, str], workflow_mode: str) -> str:
     hidden = " hidden" if workflow_mode == "create_new" else ""
-    search = input_field(
-        "connected_entity_search",
-        "Search existing entity",
-        {},
-        input_type="search",
-        attrs=' placeholder="Type to filter existing entities"',
-    )
     select = select_field("target_entity_id", "Existing entity", entity_options(entities), values)
     return f"""
     <fieldset class="relationship-step relationship-workflow-panel" data-workflow-panel="existing"{hidden}>
         <legend>Existing entity</legend>
-        {search}
         {select}
     </fieldset>
     """
@@ -903,7 +895,6 @@ def relationship_form_script(
         const target = document.getElementById('target_entity_id');
         const question = document.getElementById('relationship_question');
         const type = document.getElementById('type');
-        const search = document.getElementById('connected_entity_search');
         const newType = document.getElementById('new_entity_type');
         const workflowModes = Array.from(document.querySelectorAll('input[name="workflow_mode"]'));
         const panels = Array.from(document.querySelectorAll('[data-workflow-panel]'));
@@ -946,12 +937,11 @@ def relationship_form_script(
             fillRelationshipChoices(selectedEntity ? selectedEntity.choices : (choicesByType[forcedTargetType] || []));
         }};
         const filterTargets = () => {{
-            if (!target || !search) return;
+            if (!target) return;
             const current = target.value;
-            const term = search.value.trim().toLowerCase();
             target.innerHTML = '<option value="">Select...</option>';
             entities
-                .filter((entity) => (!forcedTargetType || entity.type === forcedTargetType) && (!term || entity.label.toLowerCase().includes(term)))
+                .filter((entity) => !forcedTargetType || entity.type === forcedTargetType)
                 .forEach((entity) => {{
                     const option = document.createElement('option');
                     option.value = entity.id;
@@ -971,7 +961,6 @@ def relationship_form_script(
                 }});
             }});
         }};
-        if (search) search.addEventListener('input', filterTargets);
         if (target) target.addEventListener('change', refreshRelationshipChoices);
         if (newType) newType.addEventListener('change', refreshPanels);
         document.querySelectorAll('[id^=\'new_sex\']').forEach((field) => field.addEventListener('change', refreshRelationshipChoices));

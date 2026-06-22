@@ -481,6 +481,78 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertIn(">Daughter</option>", person_to_person_html)
         self.assertIn(">Sister</option>", person_to_person_html)
 
+    def test_relationship_workflows_are_mutually_exclusive_in_markup_and_css(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Ada",
+                    "middle_name": "",
+                    "family_name": "Lovelace",
+                    "preferred_name": "",
+                    "sex": "Female",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            person = get_entity(connection, self.definition, person_id)
+            organisation = get_entity(connection, organisation_definition, organisation_id)
+            entities = [person, organisation]
+
+        existing_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(organisation_id),
+                "target_entity_id": str(person_id),
+                "type": "",
+                "status": "active",
+            },
+            [],
+            entities,
+            "Create",
+            context_entity=organisation,
+            target_type="person",
+        )
+        new_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(organisation_id),
+                "workflow_mode": "create_new",
+                "type": "",
+                "status": "active",
+            },
+            [],
+            entities,
+            "Create",
+            context_entity=organisation,
+            target_type="person",
+        )
+        css = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
+
+        self.assertIn('data-workflow-panel="create_new" hidden', existing_html)
+        self.assertIn('data-workflow-panel="existing" hidden', new_html)
+        self.assertNotIn('connected_entity_search', existing_html)
+        self.assertIn('[hidden]', css)
+        self.assertIn('display: none !important', css)
+
     def test_family_relationship_labels_are_gender_aware_and_neutral(self) -> None:
         with connect(self.database_path) as connection:
             father_id = create_entity(

@@ -377,7 +377,6 @@ def normalise_form_values(
     values = {
         "display_name": str(raw_values.get("display_name", "")).strip(),
         "notes": str(raw_values.get("notes", "")).strip(),
-        "workflow_mode": str(raw_values.get("workflow_mode", "existing")).strip() or "existing",
     }
     for field in definition.fields:
         values[field.name] = str(raw_values.get(field.name, field.default)).strip() or field.default

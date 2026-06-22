@@ -2,6 +2,27 @@
 
 ## 2026-06-22
 
+Relationship workflow visibility cleanup completed.
+
+What changed:
+
+- Made Existing Entity the default relationship workflow.
+- Ensured only the selected workflow panel is visible at a time.
+- Removed the search input from the Existing Entity workflow for now, leaving a reliable entity selector plus relationship fields.
+- Kept relationship role, dates, date certainty and notes available in both Existing Entity and New Entity workflows.
+- Added regression coverage for mutual workflow visibility and hidden-panel CSS behavior.
+
+Architectural correction:
+
+- The inactive workflow panels used the HTML `hidden` attribute, but `.relationship-step { display: grid; }` could override the browser default hidden styling. Added an explicit `[hidden] { display: none !important; }` rule so inactive workflow panels are truly hidden and users never scroll through fields from the other workflow.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
+## 2026-06-22
+
 Relationship creation workflow simplification completed.
 
 What changed:
