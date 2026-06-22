@@ -1,44 +1,34 @@
-Stage 1
-Information Platform
+# Roadmap
 
-Milestone 0
-Architecture
+## Stage 1: Information Platform
 
-Milestone 1
-Foundation
+Done:
 
-Milestone 2
-Entity Model
+* Architecture
+* Foundation
+* Entity model
+* Relationships
+* Entity pages
+* Search
+* Maps
+* Additional domains: Projects, Documents and Assets
 
-Milestone 3
-Relationships
+Active:
 
-Milestone 4
-Entity Pages
+* Documentation and handoff clarity
+* Maintainability cleanup planning
+* Polish for dashboard, navigation, forms and relationships
 
-Milestone 5
-Search
+Next:
 
-Milestone 6
-Maps
+* Schema governance
+* Duplicate/canonical-record safeguards
+* Import/export tools that protect local data quality
+* Derived timeline improvements
 
-Milestone 7
-Import
+Deferred:
 
-Milestone 8
-Timeline
-
-Milestone 9
-Additional Domains
-
-Milestone 10
-Polish
-
-Stage 2
-Decision Support
-
-Stage 3
-Automation
-
-Stage 4
-Artificial Intelligence
+* Decision support
+* Automation
+* Artificial Intelligence
+* Login, WAN/mobile access and complex integrations

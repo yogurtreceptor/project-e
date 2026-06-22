@@ -54,6 +54,16 @@ Documentation
 -------------
 Keep all planning documents current when architecture changes.
 
+Mixed Agent Workflow
+--------------------
+- Codex and Claude Code may both work on this repository.
+- Both agents should rely on repository docs and current code, not assumptions from previous sessions.
+- `docs/reviews/claude_handoff.md` is the compact handoff document for Claude Code.
+- Codex-specific sandbox/workspace notes should remain clearly marked as Codex-specific and should not be treated as universal Claude Code instructions.
+- When committing, use lightweight commit message trailers: `Agent: Codex` or `Agent: Claude`.
+- Do not add per-file signatures or "written by" banners.
+- Do not create separate duplicate instructions for each agent unless a workflow difference actually matters.
+
 Workspace Tool Notes
 --------------------
 - In this workspace, sandboxed shell commands have often failed to start with `No such file or directory`.

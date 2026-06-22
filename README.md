@@ -2,6 +2,14 @@
 
 Local-first Personal Operational Intelligence Platform.
 
+## Stage 1
+
+Stage 1 stores and navigates structured local information for People, Organisations, Locations, Projects, Documents, Assets and Relationships.
+
+Stage 1 excludes AI, chat, dispatcher architecture, automation, scheduling, decision support, WAN/mobile access and login.
+
+For mixed Codex + Claude Code work, use [docs/reviews/claude_handoff.md](docs/reviews/claude_handoff.md) as the compact handoff brief.
+
 ## Run
 
 ```bash

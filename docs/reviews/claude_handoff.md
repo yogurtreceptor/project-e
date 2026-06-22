@@ -1,0 +1,94 @@
+# Claude Code Handoff
+
+Date: 2026-06-22
+
+## Project Purpose
+
+Operation Eddy is a local-first Personal Information Platform / Personal Operational Intelligence Platform. Stage 1 exists to store, organise, search, display and navigate structured information about real-world entities and relationships.
+
+## Current Stage
+
+Stage 1 only.
+
+Active entity domains are People, Organisations, Locations, Projects, Documents and Assets. Relationships are first-class records connecting any two canonical entities.
+
+## Hard Exclusions
+
+Do not build AI, chat, dispatcher architecture, automation, scheduling, decision support, login, multi-user accounts, WAN/mobile access or complex integrations during Stage 1.
+
+## Architecture Principles
+
+- Entity-first: one canonical record per real-world object.
+- Relationship-first: relationships are stored, edited and navigated directly.
+- Local-first: SQLite and local files are the source of truth.
+- Multiple views over the same data: dashboard, search, maps and entity pages should derive from canonical entities/relationships.
+- Prefer maintainable, lightweight, free/open-source solutions.
+- Keep documentation current when architecture changes.
+
+## Current Known Issues
+
+- `app/views.py` is too large and contains page rendering, relationship UI, map rendering and inline JavaScript.
+- `app/db.py` mixes schema creation, migrations, CRUD, validation, search and discovery.
+- `app/web.py` mixes route dispatch, form parsing, upload storage and relationship workflow orchestration.
+- `app/relationships.py` has a large hard-coded taxonomy and label logic that will be hard to extend safely.
+- All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
+- No duplicate/canonical-record warning exists yet.
+- Relationship taxonomy is strong enough for current domains but should be made easier to review before many new relationship types are added.
+- Optional map/address lookup uses network resources; normal app operation should remain useful without them.
+
+## Recommended First Claude Task
+
+Refactor for maintainability without changing behaviour:
+
+Split the largest modules into smaller responsibility-focused files, starting with `app/views.py` and `app/relationships.py`. Preserve public functions used by routes/tests or update imports surgically. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each small step.
+
+## Inspect First
+
+- `AGENTS.md`
+- `README.md`
+- `docs/vision.md`
+- `docs/stage_1_spec.md`
+- `docs/architecture.md`
+- `docs/ontology.md`
+- `docs/database_design.md`
+- `docs/ui_principles.md`
+- `app/entities.py`
+- `app/relationships.py`
+- `app/db.py`
+- `app/web.py`
+- `app/views.py`
+- `tests/test_entities.py`
+- `docs/reviews/final_codex_review.md`
+- `docs/reviews/technical_debt_register.md`
+
+## Avoid Over-Editing Unless Necessary
+
+- `docs/build_log.md`: useful history, but too large to polish during feature/refactor work.
+- `PROJECT_GOAL.md` and `ROADMAP.md`: currently modified before this review session; inspect before editing.
+- Existing migration compatibility paths in `app/db.py`: preserve old local database compatibility.
+- Legacy relationship keys in `app/relationships.py`: keep loadable unless a deliberate migration is designed.
+
+## Implementation Style Preferences
+
+- Keep changes small and behaviour-preserving unless the task explicitly asks for a feature.
+- Prefer standard library and SQLite.
+- Do not introduce an ORM or frontend framework just to tidy code.
+- Use existing entity definitions and relationship primitives rather than one-off domain code.
+- Add meaningful regression tests for architecture changes that could break existing data, relationship direction, forms or navigation.
+- Keep docs concise; update planning docs only when architecture, scope or domain boundaries change.
+
+## Attribution Recommendation
+
+Use commit message trailers only when commits are made:
+
+```text
+Agent: Claude
+```
+
+or
+
+```text
+Agent: Codex
+```
+
+Do not add per-file signatures or attribution tooling unless the workflow later proves it needs more.

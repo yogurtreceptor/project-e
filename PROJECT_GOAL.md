@@ -10,12 +10,14 @@ Stage 1 is focused only on building the information platform.
 
 The platform should store, organise, display, search and connect real-world information in a user-friendly way.
 
-The first core areas are:
+The foundation domains are:
 
 * People
 * Organisations
 * Locations
 * Relationships
+
+Projects, Documents and Assets are also active Stage 1 domains. They prove the shared entity architecture can support more than the foundation domains without one-off models.
 
 Relationships are first-class records. They should be stored, displayed, edited and navigated directly.
 
