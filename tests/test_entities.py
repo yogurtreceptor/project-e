@@ -550,6 +550,9 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertIn('data-workflow-panel="create_new" hidden', existing_html)
         self.assertIn('data-workflow-panel="existing" hidden', new_html)
         self.assertNotIn('connected_entity_search', existing_html)
+        self.assertIn('document.querySelectorAll("[id^=', existing_html)
+        self.assertIn('new_sex', existing_html)
+        self.assertNotIn("document.querySelectorAll('[id^=", existing_html)
         self.assertIn('[hidden]', css)
         self.assertIn('display: none !important', css)
 

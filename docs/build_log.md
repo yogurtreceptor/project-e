@@ -2,6 +2,26 @@
 
 ## 2026-06-22
 
+Relationship workflow toggle regression fixed.
+
+What changed:
+
+- Fixed the client-side workflow toggle so selecting New Entity immediately hides Existing Entity and shows the New Entity form.
+- Kept Existing Entity selected by default on page load.
+- Added a regression assertion for the rendered workflow script so the broken selector shape cannot return unnoticed.
+
+Architectural correction:
+
+- The previous cleanup fixed server-rendered hidden panels but left a malformed JavaScript selector in the inline script. That syntax error prevented workflow change listeners from attaching, so clicking the New Entity radio did nothing. The selector now uses a valid quoted CSS selector, allowing the same mutual-exclusion model to work after page load.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+- Local smoke test confirmed `/relationships/new` renders Existing checked, New hidden, the workflow change listener present, and the broken selector absent.
+
+## 2026-06-22
+
 Relationship workflow visibility cleanup completed.
 
 What changed:

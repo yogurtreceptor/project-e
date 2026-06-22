@@ -963,7 +963,7 @@ def relationship_form_script(
         }};
         if (target) target.addEventListener('change', refreshRelationshipChoices);
         if (newType) newType.addEventListener('change', refreshPanels);
-        document.querySelectorAll('[id^=\'new_sex\']').forEach((field) => field.addEventListener('change', refreshRelationshipChoices));
+        document.querySelectorAll("[id^=\'new_sex\']").forEach((field) => field.addEventListener('change', refreshRelationshipChoices));
         workflowModes.forEach((item) => item.addEventListener('change', refreshPanels));
         filterTargets();
         refreshPanels();
