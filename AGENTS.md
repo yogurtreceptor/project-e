@@ -53,6 +53,7 @@ Implementation Preferences
 Documentation
 -------------
 Keep all planning documents current when architecture changes.
+Consult `docs/glossary.md` when project terminology is unclear.
 
 Mixed Agent Workflow
 --------------------
