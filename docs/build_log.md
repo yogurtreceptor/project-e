@@ -2,6 +2,71 @@
 
 ## 2026-06-22
 
+Relationship creation workflow simplification completed.
+
+What changed:
+
+- Changed relationship creation to ask what the connected entity is in relation to the currently viewed entity.
+- Added perspective relationship choices such as Daughter, Father, Employee and Employer that translate into canonical source/target/type storage automatically.
+- Split the relationship form into independent Existing entity and New entity workflows. Only the selected workflow is visible.
+- Kept relationship metadata consistent across both workflows: relationship role, status, start/end dates, date certainty and notes.
+- Replaced free-text Gender / sex with controlled Person Sex values: Male, Female, Other and Unknown.
+- Updated family role labels so Male/Female can display father, mother, son, daughter, brother or sister, while Other/Unknown use neutral labels.
+- Preserved existing relationship storage and inverse display behavior.
+
+Architectural correction:
+
+- The previous form mixed existing-entity linking and new-entity creation in one long surface, and exposed canonical relationship type labels rather than the connected entity's role from the current page's perspective. The UI now has two separate workflow panels and a perspective-to-canonical translation layer before validation and save. This keeps the database model stable while removing user-facing direction ambiguity.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
+## 2026-06-22
+
+Relationship taxonomy correction completed.
+
+What changed:
+
+- Reworked relationship definitions into ordered source/target definitions with category, subtype, forward label, reverse label, direction flag, usage notes and selectability.
+- Removed legacy/gendered family types from new relationship choices and replaced them with neutral family-tree-ready definitions such as Parent / child and Sibling.
+- Added optional Person Sex field support for display labels only. Relationship creation does not require it.
+- Added sex-aware family labels for parent/child, sibling, grandparent/grandchild and aunt/uncle relationships, with neutral fallback labels when Sex is Other or Unknown.
+- Tightened the relationship form so forced entity-pair workflows only render and send valid options for that pair. Organisation to Person no longer contains Family options in the dropdown or page option payload.
+- Added Person-Location, Person-Project, Organisation-Project, Organisation-Location, Asset-Location and Document pair definitions that match current Stage 1 domains.
+- Preserved legacy keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` as loadable but non-selectable definitions.
+
+Architectural correction:
+
+- Relationship definitions were previously close to pair-aware but still behaved like unordered pairs with generic and legacy definitions available to the browser. This allowed inappropriate options to leak into workflows and made family inverse labels brittle. Definitions now have canonical direction and selectability, and both server validation and UI rendering use the same selectable pair-filtered taxonomy.
+
+Migration approach:
+
+- Existing relationships are not rewritten during startup. Old keys remain readable as legacy definitions so existing records continue to load. Safe legacy `located_at` rows still contribute to Geography and Map views. New relationship creation uses only selectable pair-specific definitions.
+
+Manual testing steps:
+
+1. Open an Organisation page and add a Person relationship; confirm Family options are not shown.
+2. Open a Person page and add a Person relationship; confirm Family options are shown.
+3. Confirm Person to Organisation shows employment, member, provider/customer and ownership-style options.
+4. Confirm Organisation to Location shows only location-specific options.
+5. Change the connected entity type and confirm the relationship options change.
+6. Create a Parent / child relationship and confirm it displays naturally from both Person pages.
+7. Create a Sibling relationship and confirm it displays naturally from both Person pages.
+8. Set Person Sex to Male or Female and confirm labels such as father, mother, son, daughter, brother or sister are used where relevant.
+9. Set Person Sex to Unknown and confirm neutral labels such as parent, child or sibling are used.
+10. Open existing relationships and confirm they still load.
+11. Try submitting an invalid type for a pair, such as Parent / child for Person to Organisation, and confirm validation rejects it.
+12. Navigate from each connected entity page and confirm the relationship is visible from both sides.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
+## 2026-06-22
+
 Entity-first relationship creation redesign completed.
 
 What changed:

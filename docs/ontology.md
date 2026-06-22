@@ -29,7 +29,7 @@ Each real-world object should have one canonical entity record. Duplicate preven
 
 A Person represents a real person.
 
-Current fields include display name, title, given name, middle name, family name, preferred name, birthday, email, phone and notes. Email and phone remain direct Person fields for Stage 1 simplicity; contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
+Current fields include display name, title, given name, middle name, family name, preferred name, optional sex, birthday, email, phone and notes. Sex is optional and used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling. Email and phone remain direct Person fields for Stage 1 simplicity; contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
 
 ## Organisations
 
@@ -106,22 +106,39 @@ Relationships are editable and directly navigable from entity pages and the rela
 
 The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
-Relationship creation is entity-first. Users start from the known entity page, choose or create the connected entity, then choose a relationship category/type that is valid for that pair of entity types. Saving returns to the original entity page and the relationship appears from both connected entities.
+Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question: what is the connected entity in relation to the current entity? Saving returns to the original entity page and the relationship appears from both connected entities with the inverse label derived automatically.
 
 ## Relationship Types
 
-Relationship types are defined centrally with category, subtype, pair applicability, forward label and inverse label metadata. This keeps the database simple while preventing irrelevant options from appearing in the creation workflow.
+Relationship types are ordered definitions, not free-floating labels. Each definition includes:
+
+- allowed source entity type
+- allowed target entity type
+- category
+- subtype
+- forward display label
+- reverse display label
+- whether direction matters
+- optional usage notes
+- whether the type is selectable for new relationships
+
+The UI filters relationship options from these definitions after it knows the two endpoint entity types. Creation happens from the current entity page and asks what the connected entity is in relation to the current entity. The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
 
 Current pair-aware groups include:
 
-- Person to Person: Family, Work, Education, Health, Friend / social and Other.
-- Person to Organisation: Employee, Manager, Director, Member, Volunteer, Patient / client, Student, Customer, Owner and Other.
-- Person, Organisation or Asset to Location: Located at plus location-specific subtypes such as Headquartered at, Branch at, Operates at, Stored at and Last known at where relevant.
-- Document to Person, Organisation, Asset or Project: Belongs to, Issued by, Created by, Relates to, References, Receipt for, Manual for and Other.
+- Person to Person: Family, Work, Education, Health, Social and Other.
+- Person to Organisation: employee/employer, manager, director, member, volunteer, student, patient/client, customer, owner and Other.
+- Person to Location: lives at, works at, visited, born at, located at and Other.
+- Person to Project: contributor, involved in, managed/owned project and Other.
+- Organisation to Location: located at, headquartered at, branch at, operates at and Other.
+- Organisation to Project: involved in, sponsor, owner and Other.
+- Asset to Location: stored at, located at, last known at and Other.
+- Document to Person or Organisation: belongs to, created by, issued to/by, references and Other.
+- Document to Asset or Project: belongs to, receipt/manual/references where relevant and Other.
 
-Generic `related_to` and `associated_with` remain fallback relationship types for future unsupported entity pairs, but current pair menus prefer specific relationship definitions.
+Person-to-Person family definitions use neutral canonical types such as Parent / child and Sibling rather than storing Brother, Mother or Father as new relationship types. Display labels may become sex-specific when the viewed Person has Sex recorded as Female or Male. If Sex is Other or Unknown, neutral labels are used. For example, Parent / child can display as father of, mother of or parent of from the parent side, and son of, daughter of or child of from the child side.
 
-Relationship direction may be normalised at save time. For example, creating an Employee relationship from an Organisation page can still store the semantic Person -> Organisation direction so the Person page reads "works for" and the Organisation page reads "has worker".
+Legacy generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing relationships still load. They are not offered for new pair-specific relationship creation. Safe legacy location relationships continue to feed Geography and Map views.
 
 Phone numbers, emails and websites remain simple direct fields in Stage 1. The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes. That should be introduced only when multiple contact points or richer communication history justify it; it should not become a Communications domain during Stage 1.
 

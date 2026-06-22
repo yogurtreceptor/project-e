@@ -146,6 +146,13 @@ ASSET_STATUSES = (
     "Other",
 )
 
+SEX_OPTIONS = (
+    "Male",
+    "Female",
+    "Other",
+    "Unknown",
+)
+
 
 ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
     EntityDefinition(
@@ -160,6 +167,20 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("middle_name", "Middle name"),
             FieldDefinition("family_name", "Family name"),
             FieldDefinition("preferred_name", "Preferred name"),
+            FieldDefinition(
+                "sex",
+                "Sex",
+                options=SEX_OPTIONS,
+                default="Unknown",
+                previous_names=("gender_sex",),
+                value_aliases=(
+                    ("male", "Male"),
+                    ("female", "Female"),
+                    ("Non-binary", "Other"),
+                    ("Prefer not to say", "Unknown"),
+                    ("", "Unknown"),
+                ),
+            ),
             FieldDefinition("birthday", "Birthday", input_type="date"),
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),

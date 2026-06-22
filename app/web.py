@@ -30,6 +30,7 @@ from app.db import (
     list_relationships_for_entity,
     mark_entity_viewed,
     normalise_form_values,
+    normalise_relationship_direction,
     normalise_relationship_values,
     search_entities,
     set_entity_favourite,
@@ -334,6 +335,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             values = normalise_relationship_values(raw_form)
             with connect(self.database_path) as connection:
                 inline_errors = self.create_inline_relationship_target(connection, values, raw_form, query)
+                normalise_relationship_direction(connection, values)
                 errors = validate_relationship_values(connection, values)
                 errors = inline_errors + errors
                 entities = list_all_entities(connection)
@@ -463,7 +465,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     ) -> list[str]:
         if values.get("target_entity_id"):
             return []
-        if raw_form.get("target_mode") != "create_new":
+        if raw_form.get("workflow_mode") != "create_new" and raw_form.get("target_mode") != "create_new":
             return []
 
         entity_type = raw_form.get("new_entity_type", "").strip()

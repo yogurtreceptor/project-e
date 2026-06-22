@@ -33,18 +33,20 @@ Entity forms should avoid generic `summary` fields. Notes are the flexible free-
 
 Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
 
-People and Organisations keep phone/email as simple direct fields for now. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
+People and Organisations keep phone/email as simple direct fields for now. People may record optional Sex for relationship label display, but it must never be required. Sex uses controlled values: Male, Female, Other and Unknown. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
 
-Relationship creation should be entity-first:
+Relationship creation should be entity-first and perspective-based:
 
 - Start from the known entity page.
-- Choose the connected entity before choosing the relationship type.
-- Let users filter existing connected entities.
-- Let users create a missing Person, Organisation or Location inline without leaving the workflow.
-- Show only relationship categories/types valid for the selected entity pair.
+- Choose either Existing entity or New entity.
+- Show only the selected workflow so users do not scroll through irrelevant fields.
+- Existing entity workflow shows search, entity selection, relationship selection, dates, notes and save.
+- New entity workflow shows entity type, compact creation fields, relationship selection, dates, notes and save.
+- Ask what the connected entity is in relation to the current entity.
+- Show only relationship roles valid for the selected entity pair.
 - Save back to the original entity page so context is not lost.
 
-The relationship type selector should use category/subtype wording where it helps scanning, such as Family: Mother or Work: Employee, without turning the form into a complex ontology editor.
+The relationship selector should use plain role labels from the user's perspective, such as Daughter, Father, Employee or Employer. Family choices should use neutral relationship definitions underneath; sex-specific labels are display output, not separate required relationship types.
 
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 

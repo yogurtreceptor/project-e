@@ -17,6 +17,7 @@ from app.relationships import (
     RELATIONSHIP_TYPES_BY_KEY,
     RelationshipRecord,
     relationship_type_is_valid_for_pair,
+    split_relationship_choice,
 )
 
 
@@ -376,6 +377,7 @@ def normalise_form_values(
     values = {
         "display_name": str(raw_values.get("display_name", "")).strip(),
         "notes": str(raw_values.get("notes", "")).strip(),
+        "workflow_mode": str(raw_values.get("workflow_mode", "existing")).strip() or "existing",
     }
     for field in definition.fields:
         values[field.name] = str(raw_values.get(field.name, field.default)).strip() or field.default
@@ -531,6 +533,7 @@ def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
         "ended_at": str(raw_values.get("ended_at", "")).strip(),
         "ended_at_precision": str(raw_values.get("ended_at_precision", "exact")).strip() or "exact",
         "notes": str(raw_values.get("notes", "")).strip(),
+        "workflow_mode": str(raw_values.get("workflow_mode", "existing")).strip() or "existing",
     }
 
 
@@ -554,13 +557,14 @@ def validate_relationship_values(
     if source_id is not None and target_id is not None and source_id == target_id:
         errors.append("A relationship must connect two different entities.")
 
-    if values.get("type") not in RELATIONSHIP_TYPES_BY_KEY:
+    type_key, _connected_role = split_relationship_choice(values.get("type", ""))
+    if type_key not in RELATIONSHIP_TYPES_BY_KEY:
         errors.append("Relationship type is required.")
     elif source_id is not None and target_id is not None and source_id != target_id:
         source = get_entity_by_id(connection, source_id)
         target = get_entity_by_id(connection, target_id)
         if source is not None and target is not None and not relationship_type_is_valid_for_pair(
-            values["type"], source.type, target.type
+            type_key, source.type, target.type
         ):
             errors.append("Relationship type is not valid for these entity types.")
 
@@ -577,7 +581,9 @@ def validate_relationship_values(
 
 
 def normalise_relationship_direction(connection: sqlite3.Connection, values: dict[str, str]) -> None:
-    relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(values.get("type", ""))
+    type_key, connected_role = split_relationship_choice(values.get("type", ""))
+    values["type"] = type_key
+    relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(type_key)
     if relationship_type is None or not relationship_type.pairs:
         return
     source_id = parse_int(values.get("source_entity_id", ""))
@@ -588,6 +594,14 @@ def normalise_relationship_direction(connection: sqlite3.Connection, values: dic
     target = get_entity_by_id(connection, target_id)
     if source is None or target is None:
         return
+
+    if connected_role == "source":
+        values["source_entity_id"], values["target_entity_id"] = str(target_id), str(source_id)
+        return
+    if connected_role == "target":
+        values["source_entity_id"], values["target_entity_id"] = str(source_id), str(target_id)
+        return
+
     for source_type, target_type in relationship_type.pairs:
         if source.type == source_type and target.type == target_type:
             return

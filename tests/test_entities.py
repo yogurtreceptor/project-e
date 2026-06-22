@@ -205,8 +205,8 @@ class EntityDatabaseTests(unittest.TestCase):
             self.assertIsNotNone(relationship)
             self.assertEqual(relationship.source.display_name, "Ada Lovelace")
             self.assertEqual(relationship.target.display_name, "Analytical Engine Guild")
-            self.assertEqual(relationship.label_from(person_id), "works for")
-            self.assertEqual(relationship.label_from(organisation_id), "has worker")
+            self.assertEqual(relationship.label_from(person_id), "employee of")
+            self.assertEqual(relationship.label_from(organisation_id), "employer of")
             self.assertEqual(relationship.other_entity(person_id).id, organisation_id)
             self.assertEqual(relationship.started_at, "1843-01-01")
             self.assertEqual(relationship.started_at_precision, "approximate")
@@ -330,9 +330,11 @@ class EntityDatabaseTests(unittest.TestCase):
         person_organisation = {relationship_type.key for relationship_type in relationship_types_for_pair("person", "organisation")}
         organisation_location = {relationship_type.key for relationship_type in relationship_types_for_pair("organisation", "location")}
 
-        self.assertIn("mother_of", person_person)
+        self.assertIn("parent_child", person_person)
+        self.assertIn("sibling_of", person_person)
         self.assertIn("friend_of", person_person)
-        self.assertNotIn("mother_of", person_organisation)
+        self.assertNotIn("mother_of", person_person)
+        self.assertNotIn("parent_child", person_organisation)
         self.assertIn("works_for", person_organisation)
         self.assertIn("manager_at", person_organisation)
         self.assertIn("headquartered_at", organisation_location)
@@ -377,7 +379,7 @@ class EntityDatabaseTests(unittest.TestCase):
                 {
                     "source_entity_id": str(person_id),
                     "target_entity_id": str(organisation_id),
-                    "type": "mother_of",
+                    "type": "parent_child",
                     "status": "active",
                     "started_at": "",
                     "started_at_precision": "exact",
@@ -388,6 +390,248 @@ class EntityDatabaseTests(unittest.TestCase):
             )
 
         self.assertEqual(errors, ["Relationship type is not valid for these entity types."])
+
+    def test_relationship_form_filters_options_by_entity_pair(self) -> None:
+        organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
+        with connect(self.database_path) as connection:
+            person_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Ada",
+                    "middle_name": "",
+                    "family_name": "Lovelace",
+                    "preferred_name": "",
+                    "sex": "Female",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            organisation_id = create_entity(
+                connection,
+                organisation_definition,
+                {
+                    "display_name": "Analytical Engine Guild",
+                    "summary": "",
+                    "notes": "",
+                    "organisation_type": "Group",
+                    "website": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            daughter_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Jane Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Jane",
+                    "middle_name": "",
+                    "family_name": "Lovelace",
+                    "preferred_name": "",
+                    "sex": "Female",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            person = get_entity(connection, self.definition, person_id)
+            daughter = get_entity(connection, self.definition, daughter_id)
+            organisation = get_entity(connection, organisation_definition, organisation_id)
+            entities = [person, daughter, organisation]
+
+        org_to_person_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(organisation_id),
+                "target_entity_id": str(person_id),
+                "type": "",
+                "status": "active",
+            },
+            [],
+            entities,
+            "Create",
+            context_entity=organisation,
+            target_type="person",
+        )
+        person_to_person_html = views.relationship_form_page(
+            {
+                "source_entity_id": str(person_id),
+                "target_entity_id": str(daughter_id),
+                "type": "",
+                "status": "active",
+            },
+            [],
+            entities,
+            "Create",
+            context_entity=person,
+            target_type="person",
+        )
+
+        self.assertIn(">Employee</option>", org_to_person_html)
+        self.assertNotIn("Family: Parent / child", org_to_person_html)
+        self.assertNotIn("Family: Sibling", org_to_person_html)
+        self.assertIn(">Daughter</option>", person_to_person_html)
+        self.assertIn(">Sister</option>", person_to_person_html)
+
+    def test_family_relationship_labels_are_gender_aware_and_neutral(self) -> None:
+        with connect(self.database_path) as connection:
+            father_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Charles Babbage",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Charles",
+                    "middle_name": "",
+                    "family_name": "Babbage",
+                    "preferred_name": "",
+                    "sex": "Male",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            daughter_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Ada Lovelace",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Ada",
+                    "middle_name": "",
+                    "family_name": "Lovelace",
+                    "preferred_name": "",
+                    "sex": "Female",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            unknown_sibling_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Unknown Sibling",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "",
+                    "middle_name": "",
+                    "family_name": "",
+                    "preferred_name": "",
+                    "sex": "Unknown",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            parent_relationship_id = create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(father_id),
+                    "target_entity_id": str(daughter_id),
+                    "type": "parent_child",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+            sibling_relationship_id = create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(daughter_id),
+                    "target_entity_id": str(unknown_sibling_id),
+                    "type": "sibling_of",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+            parent_relationship = get_relationship(connection, parent_relationship_id)
+            sibling_relationship = get_relationship(connection, sibling_relationship_id)
+
+        self.assertEqual(parent_relationship.label_from(father_id), "father of")
+        self.assertEqual(parent_relationship.label_from(daughter_id), "daughter of")
+        self.assertEqual(sibling_relationship.label_from(daughter_id), "sister of")
+        self.assertEqual(sibling_relationship.label_from(unknown_sibling_id), "sibling of")
+
+    def test_perspective_relationship_choice_sets_canonical_direction(self) -> None:
+        with connect(self.database_path) as connection:
+            parent_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "John Smith",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "John",
+                    "middle_name": "",
+                    "family_name": "Smith",
+                    "preferred_name": "",
+                    "sex": "Male",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            child_id = create_entity(
+                connection,
+                self.definition,
+                {
+                    "display_name": "Jane Smith",
+                    "summary": "",
+                    "notes": "",
+                    "title": "",
+                    "given_name": "Jane",
+                    "middle_name": "",
+                    "family_name": "Smith",
+                    "preferred_name": "",
+                    "sex": "Female",
+                    "birthday": "",
+                    "email": "",
+                    "phone": "",
+                },
+            )
+            values = normalise_relationship_values(
+                {
+                    "source_entity_id": str(parent_id),
+                    "target_entity_id": str(child_id),
+                    "type": "parent_child::target",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                }
+            )
+            self.assertEqual(validate_relationship_values(connection, values), [])
+            relationship_id = create_relationship(connection, values)
+            relationship = get_relationship(connection, relationship_id)
+
+        self.assertEqual(relationship.source.id, parent_id)
+        self.assertEqual(relationship.target.id, child_id)
+        self.assertEqual(relationship.label_from(parent_id), "father of")
+        self.assertEqual(relationship.label_from(child_id), "daughter of")
 
     def test_inline_person_creation_can_feed_relationship_workflow(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -447,8 +691,8 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertEqual(new_person.metadata["given_name"], "Grace")
         self.assertEqual(relationship.source.id, new_person.id)
         self.assertEqual(relationship.target.id, organisation_id)
-        self.assertEqual(relationship.label_from(new_person.id), "works for")
-        self.assertEqual(relationship.label_from(organisation_id), "has worker")
+        self.assertEqual(relationship.label_from(new_person.id), "employee of")
+        self.assertEqual(relationship.label_from(organisation_id), "employer of")
 
     def test_display_name_is_required(self) -> None:
         values = normalise_form_values(self.definition, {"display_name": "  "})
