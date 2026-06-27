@@ -129,11 +129,11 @@ Status: good.
 Findings:
 
 - Accurately documents SQLite, typed tables, legacy columns, controlled fields, relationship storage and map storage.
-- Does not yet mention a schema version/migration ledger because none exists.
+- Schema versioning and the migration ledger are now documented in `docs/database_design.md`.
 
 Recommended changes:
 
-- After migration ledger work, add a short "Schema Versioning" section.
+- Keep the "Schema Versioning" section current when migrations are appended.
 - Add file lifecycle policy when Document deletion/replacement behaviour is decided.
 
 ## docs/ui_principles.md
@@ -161,7 +161,7 @@ Findings:
 
 Recommended changes:
 
-- Add future ADRs for schema versioning, relationship taxonomy registry and any import/export architecture.
+- ADR-004 records schema versioning. Add future ADRs for major relationship-taxonomy or import/export architecture decisions.
 - Avoid recording small refactors.
 
 ## docs/build_log.md

@@ -84,15 +84,15 @@ Why it conflicts: A placeholder can be mistaken for a committed architecture.
 
 Recommended correction: Keep it as a read-only derived section for now, or explicitly document it as derived metadata until an event model is justified.
 
-## 9. Import Appears On Roadmap Before Duplicate And Schema Governance
+## 9. Import Still Requires Duplicate Safeguards
 
 Location: `ROADMAP.md`, `docs/stage_1_spec.md`
 
-Issue: Import is a listed milestone, but duplicate handling and schema versioning are not yet in place.
+Issue: Schema governance is now in place, but duplicate handling is not yet implemented.
 
-Why it conflicts: Import can damage canonical-record quality if introduced before data-quality safeguards.
+Why it conflicts: Import can damage canonical-record quality if introduced before duplicate safeguards.
 
-Recommended correction: Make duplicate warnings and migration/schema ledger prerequisites for substantial import work.
+Recommended correction: Keep duplicate warnings as a prerequisite for substantial import work. The migration/schema-ledger prerequisite is resolved.
 
 ## 10. Build Log Is Too Detailed For Low-Context Handoff
 

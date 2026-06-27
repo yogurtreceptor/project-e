@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from app.db_support import allowed_entity_type_sql, sql_identifier, sql_literal
+from app.db_support import allowed_entity_type_sql, sql_identifier, sql_literal, utc_now
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition
 
 
@@ -20,6 +20,46 @@ def initialise_database(database_path: Path | str) -> None:
 
 
 def create_schema(connection: sqlite3.Connection) -> None:
+    create_schema_migration_table(connection)
+    apply_schema_migrations(connection)
+    ensure_current_schema(connection)
+
+
+def create_schema_migration_table(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            migration_id TEXT PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        )
+        """
+    )
+
+
+def apply_schema_migrations(connection: sqlite3.Connection) -> None:
+    applied = {
+        row["migration_id"]
+        for row in connection.execute("SELECT migration_id FROM schema_migrations")
+    }
+    for migration_id, migration in SCHEMA_MIGRATIONS:
+        if migration_id in applied:
+            continue
+        migration(connection)
+        connection.execute(
+            "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, ?)",
+            (migration_id, utc_now()),
+        )
+
+
+def ensure_current_schema(connection: sqlite3.Connection) -> None:
+    create_entity_table(connection)
+    ensure_entity_columns(connection)
+    ensure_entity_type_constraint(connection)
+    create_typed_entity_tables(connection)
+    create_relationship_table(connection)
+
+
+def create_entity_table(connection: sqlite3.Connection) -> None:
     connection.executescript(
         f"""
         CREATE TABLE IF NOT EXISTS entities (
@@ -38,12 +78,12 @@ def create_schema(connection: sqlite3.Connection) -> None:
             ON entities (type, display_name);
         """
     )
-    ensure_entity_columns(connection)
-    ensure_entity_type_constraint(connection)
+
+
+def create_typed_entity_tables(connection: sqlite3.Connection) -> None:
     for definition in ENTITY_DEFINITIONS:
         create_typed_table(connection, definition)
         ensure_typed_columns(connection, definition)
-    create_relationship_table(connection)
 
 
 def ensure_entity_columns(connection: sqlite3.Connection) -> None:
@@ -205,3 +245,14 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN started_at_precision TEXT NOT NULL DEFAULT 'exact'")
     if "ended_at_precision" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN ended_at_precision TEXT NOT NULL DEFAULT 'exact'")
+
+
+SCHEMA_MIGRATIONS = (
+    ("20260628_01_core_entities", create_entity_table),
+    ("20260628_02_typed_entities", create_typed_entity_tables),
+    ("20260628_03_relationships", create_relationship_table),
+)
+
+SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
+if len(SCHEMA_MIGRATION_IDS) != len(set(SCHEMA_MIGRATION_IDS)):
+    raise ValueError("Schema migration identifiers must be unique.")

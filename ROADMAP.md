@@ -12,6 +12,7 @@ Done:
 * Search
 * Maps
 * Additional domains: Projects, Documents and Assets
+* Schema governance and migration ledger
 
 Active:
 
@@ -21,7 +22,6 @@ Active:
 
 Next:
 
-* Schema governance
 * Duplicate/canonical-record safeguards
 * Import/export tools that protect local data quality
 * Derived timeline improvements

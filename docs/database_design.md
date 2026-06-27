@@ -2,6 +2,12 @@
 
 Operation Eddy uses SQLite as the embedded local database for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
 
+## Schema Versioning
+
+`schema_migrations` records each applied migration identifier and timestamp. Ordered migrations are append-only in `app/db_schema.py`: do not rename or remove an identifier after use. Existing databases are adopted by running missing idempotent migrations and recording them only after success.
+
+The current-schema repair pass still runs on every startup. This preserves additive field, controlled-value and entity-type compatibility even when definitions evolve between explicit migrations.
+
 ## Core Tables
 
 - `entities` stores shared identity and metadata for every canonical record.

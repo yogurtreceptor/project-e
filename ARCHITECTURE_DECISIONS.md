@@ -87,3 +87,19 @@ The milestone is intended to prove that Operation Eddy's entity architecture sca
 
 Consequences:
 Existing local databases need the central `entities.type` constraint to evolve when new domains are introduced, so startup now rebuilds that table constraint when required. The old attachment concept is no longer part of the active architecture; file-bearing records should be Document entities linked through relationships.
+
+
+## ADR-004: Track schema migrations while retaining additive repair
+
+Status: Accepted
+
+Date: 2026-06-28
+
+Decision:
+Record ordered, append-only migration identifiers and application timestamps in a local `schema_migrations` table. Continue running the idempotent current-schema repair pass at startup.
+
+Reason:
+Local databases need an auditable history for future schema changes, but Operation Eddy also relies on definition-driven additive repair to adopt older databases and safely add fields or entity types. A ledger alone would not cover those evolving definitions.
+
+Consequences:
+Future explicit schema changes must append a uniquely named migration and must not rename or remove identifiers already in use. Existing databases can adopt the ledger without losing data. Startup retains a small amount of repeated schema inspection in exchange for compatibility and recovery safety.

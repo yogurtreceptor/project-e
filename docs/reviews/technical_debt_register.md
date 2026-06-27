@@ -62,11 +62,13 @@ Fix before new features: yes, before imports or more document/file behaviour.
 
 Severity: medium
 
-Affected area: SQLite schema initialization in `app/db.py`, docs/database design
+Status: resolved 2026-06-28
+
+Affected area: SQLite schema initialization in `app/db_schema.py`, docs/database design
 
 Why it matters: Startup performs useful additive migrations, but future agents have no durable record of which migrations ran against a local database.
 
-Recommended fix: Add a small `schema_migrations` or `app_metadata` table with schema version and applied migration identifiers. Keep existing additive startup safety.
+Resolution: Added an append-only `schema_migrations` ledger with ordered identifiers and timestamps. Fresh and existing databases record the baseline migrations, while the idempotent schema-repair pass still runs at startup.
 
 Fix before new features: yes, before import/export or larger domain additions.
 

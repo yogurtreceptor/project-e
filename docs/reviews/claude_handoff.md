@@ -30,7 +30,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 ## Current Known Issues
 
 - View rendering has been split into focused `app/view_pages/` modules, with `app/views.py` retained as a compatibility facade.
-- Database responsibilities are split behind the stable `app/db.py` facade into schema, entity, relationship and discovery modules.
+- Database responsibilities are split behind the stable `app/db.py` facade; `app/db_schema.py` includes an append-only migration ledger plus additive startup repair.
 - Upload persistence and inline relationship-target creation are separated from `app/web.py` into focused services.
 - Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
 - All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
@@ -41,7 +41,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Add a lightweight schema migration ledger before import/export or larger domain changes. Preserve existing additive startup migrations, record applied migration identifiers safely for existing databases, and add tests for fresh and previously initialized databases.
+Add field-level validation and normalization for structured text-backed values, beginning with dates and coordinates. Preserve incomplete optional fields, return useful form errors, and avoid physical SQLite type migrations until a concrete querying need justifies them.
 
 ## Inspect First
 
