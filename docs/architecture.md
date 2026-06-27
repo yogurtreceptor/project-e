@@ -83,6 +83,7 @@ Date uncertainty is represented as metadata beside structured calendar date valu
 Discovery uses shared entity and relationship query primitives:
 
 - Global search matches canonical entity fields, typed profile fields, notes and relationship context.
+- Search currently scans the local dataset in memory. This is intentionally retained until representative data shows a performance problem; SQLite filtering or FTS5 are the preferred future paths if scale requires them.
 - Entity list pages support text filtering and favourites-only filtering.
 - Favourites are persisted as shared entity metadata.
 - Recent entities are tracked with `last_viewed_at` when an entity profile is opened.

@@ -104,13 +104,15 @@ Fix before new features: yes, before import tools.
 
 Severity: medium
 
+Status: deferred 2026-06-28 pending representative data volume
+
 Affected area: `search_entities`, `entity_matches_query`, relationship search
 
-Why it matters: Works for small local data but may become slow after imports or many documents/assets.
+Why it matters: The current implementation is simple and correct for small local datasets, but may become slow or memory-heavy after substantial imports or growth in Documents and Assets.
 
-Recommended fix: Keep current behaviour for now. Revisit with SQLite FTS or indexed query helpers when data volume justifies it.
+Deferred approach: Keep current behavior until real or representative data shows noticeable search latency or memory pressure. Reassess before a large import. Prefer moving basic filters into SQLite first, then consider SQLite FTS5 if indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
 
-Fix before new features: no, unless import work is next.
+Fix before new features: no. Reassess before large-volume import, not as a blocker for small import/export work.
 
 ## 9. Document File Lifecycle Is Incomplete
 

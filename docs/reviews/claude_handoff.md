@@ -40,7 +40,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Assess and address linear in-memory search before import work. Preserve current entity and relationship-context results, prefer SQLite indexed queries or FTS only where supported by focused tests, and avoid introducing a separate search service or external dependency.
+Define and implement the smallest safe Document file lifecycle policy. Decide how replacement and entity deletion treat stored files, preserve path confinement through `app/document_storage.py`, and add focused tests that prevent accidental orphaning or deletion.
 
 ## Inspect First
 
