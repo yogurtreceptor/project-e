@@ -48,11 +48,13 @@ Fix before new features: yes.
 
 Severity: medium
 
-Affected area: `app/web.py`
+Status: resolved 2026-06-27
+
+Affected area: `app/web.py`, `app/document_storage.py`, `app/relationship_workflow.py`
 
 Why it matters: Route handling is currently simple but increasingly crowded. Multipart upload storage and inline relationship target creation are business logic hidden inside the HTTP handler.
 
-Recommended fix: Extract upload storage helpers and relationship workflow service functions. Keep `EddyRequestHandler` focused on routing, request parsing and responses.
+Resolution: Extracted uploaded-file persistence/path safety and inline relationship-target creation into focused services. The handler retains HTTP parsing and thin compatibility adapters; rollback behavior remains in the request transaction.
 
 Fix before new features: yes, before imports or more document/file behaviour.
 

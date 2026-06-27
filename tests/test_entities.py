@@ -31,7 +31,7 @@ from app.db import (
 from app.entities import DEFINITIONS_BY_SLUG, ENTITY_DEFINITIONS
 from app.geo import build_map_payload
 from app.relationships import relationship_types_for_pair
-from app.web import EddyRequestHandler
+from app.relationship_workflow import create_inline_relationship_target
 
 
 class EntityDatabaseTests(unittest.TestCase):
@@ -782,7 +782,6 @@ class EntityDatabaseTests(unittest.TestCase):
 
     def test_inline_person_creation_can_feed_relationship_workflow(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
-        handler = object.__new__(EddyRequestHandler)
         with connect(self.database_path) as connection:
             organisation_id = create_entity(
                 connection,
@@ -810,7 +809,7 @@ class EntityDatabaseTests(unittest.TestCase):
                     "notes": "Joined from the organisation workflow.",
                 }
             )
-            errors = handler.create_inline_relationship_target(
+            errors = create_inline_relationship_target(
                 connection,
                 values,
                 {

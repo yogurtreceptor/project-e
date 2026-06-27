@@ -1,7 +1,4 @@
 import json
-import re
-import uuid
-from dataclasses import dataclass
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
@@ -10,7 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR
+from app.config import DATABASE_PATH
 from app.db import (
     connect,
     count_entities,
@@ -39,21 +36,22 @@ from app.db import (
     validate_entity_values,
     validate_relationship_values,
 )
-from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EntityDefinition
+from app.document_storage import (
+    UploadedFile,
+    format_file_size,
+    safe_file_name,
+    store_document_upload as persist_document_upload,
+    stored_document_path as resolve_document_path,
+)
+from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
+from app.relationship_workflow import (
+    create_inline_relationship_target as create_inline_target,
+    inline_entity_values as build_inline_entity_values,
+)
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-INLINE_RELATIONSHIP_ENTITY_TYPES = ("person", "organisation", "location")
-
-
-@dataclass(frozen=True)
-class UploadedFile:
-    file_name: str
-    content_type: str
-    data: bytes
-
-
 class EddyRequestHandler(BaseHTTPRequestHandler):
     database_path = DATABASE_PATH
 
@@ -463,40 +461,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         raw_form: dict[str, str],
         query: dict[str, str],
     ) -> list[str]:
-        if values.get("target_entity_id"):
-            return []
-        if raw_form.get("workflow_mode") != "create_new" and raw_form.get("target_mode") != "create_new":
-            return []
-
-        entity_type = raw_form.get("new_entity_type", "").strip()
-        forced_target_type = query.get("target_type", "").strip()
-        if forced_target_type:
-            entity_type = forced_target_type
-        if entity_type not in INLINE_RELATIONSHIP_ENTITY_TYPES:
-            return ["Choose Person, Organisation or Location for inline creation."]
-
-        definition = DEFINITIONS_BY_TYPE.get(entity_type)
-        if definition is None:
-            return ["Connected entity type is invalid."]
-
-        entity_values = self.inline_entity_values(definition, raw_form)
-        errors = validate_entity_values(definition, entity_values)
-        if errors:
-            return [f"New {definition.singular.lower()}: {error}" for error in errors]
-
-        target_id = create_entity(connection, definition, entity_values, commit=False)
-        values["target_entity_id"] = str(target_id)
-        return []
+        return create_inline_target(connection, values, raw_form, query)
 
     @staticmethod
     def inline_entity_values(definition: EntityDefinition, raw_form: dict[str, str]) -> dict[str, str]:
-        raw_values = {
-            "display_name": raw_form.get("new_display_name", ""),
-            "notes": raw_form.get("new_notes", ""),
-        }
-        for field in definition.fields:
-            raw_values[field.name] = raw_form.get(f"new_{field.name}", "")
-        return normalise_form_values(definition, raw_values)
+        return build_inline_entity_values(definition, raw_form)
 
     def relationship_redirect(
         self,
@@ -577,30 +546,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         return values, upload
 
     def store_document_upload(self, upload: UploadedFile) -> dict[str, str]:
-        DOCUMENT_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-        safe_name = safe_file_name(upload.file_name)
-        stored_name = f"{uuid.uuid4().hex}-{safe_name}"
-        stored_path = DOCUMENT_STORAGE_DIR / stored_name
-        stored_path.write_bytes(upload.data)
-        return {
-            "file_name": upload.file_name,
-            "file_path": f"documents/{stored_name}",
-            "mime_type": upload.content_type,
-            "file_size": format_file_size(len(upload.data)),
-        }
+        return persist_document_upload(upload)
 
     @staticmethod
     def stored_document_path(value: str) -> Path | None:
-        if not value:
-            return None
-        relative = Path(value)
-        if relative.is_absolute() or ".." in relative.parts:
-            return None
-        path = (DOCUMENT_STORAGE_DIR.parent / relative).resolve()
-        storage_root = DOCUMENT_STORAGE_DIR.resolve()
-        if storage_root not in (path, *path.parents):
-            return None
-        return path
+        return resolve_document_path(value)
 
     def respond_page(
         self,
@@ -640,18 +590,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except ValueError:
             return None
 
-
-def safe_file_name(value: str) -> str:
-    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(value).name).strip(".-")
-    return cleaned or "document"
-
-
-def format_file_size(size: int) -> str:
-    if size < 1024:
-        return f"{size} B"
-    if size < 1024 * 1024:
-        return f"{size / 1024:.1f} KB"
-    return f"{size / (1024 * 1024):.1f} MB"
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:

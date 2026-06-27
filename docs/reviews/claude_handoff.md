@@ -31,7 +31,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 - View rendering has been split into focused `app/view_pages/` modules, with `app/views.py` retained as a compatibility facade.
 - Database responsibilities are split behind the stable `app/db.py` facade into schema, entity, relationship and discovery modules.
-- `app/web.py` mixes route dispatch, form parsing, upload storage and relationship workflow orchestration.
+- Upload persistence and inline relationship-target creation are separated from `app/web.py` into focused services.
 - Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
 - All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
 - No duplicate/canonical-record warning exists yet.
@@ -41,7 +41,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Extract upload storage and inline relationship-target workflow logic from `app/web.py`, keeping `EddyRequestHandler` focused on HTTP routing, request parsing and responses. Preserve request behavior and rollback semantics, and run `python3 -m compileall app run.py tests` plus `python3 -m unittest discover -s tests` after each step.
+Add a lightweight schema migration ledger before import/export or larger domain changes. Preserve existing additive startup migrations, record applied migration identifiers safely for existing databases, and add tests for fresh and previously initialized databases.
 
 ## Inspect First
 
@@ -62,6 +62,8 @@ Extract upload storage and inline relationship-target workflow logic from `app/w
 - `app/relationship_repository.py`
 - `app/discovery_repository.py`
 - `app/web.py`
+- `app/document_storage.py`
+- `app/relationship_workflow.py`
 - `app/views.py`
 - `tests/test_entities.py`
 - `docs/reviews/final_codex_review.md`

@@ -45,7 +45,7 @@ Documents store document metadata plus local file metadata:
 - `mime_type`
 - `file_size`
 
-Uploaded files are stored in `instance/documents/`. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
+Uploaded files are stored in `instance/documents/` through `app/document_storage.py`, which owns safe naming, metadata and path confinement. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
 
 Assets store useful item metadata such as asset type, status, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
 
