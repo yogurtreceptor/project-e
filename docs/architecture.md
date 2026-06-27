@@ -19,7 +19,7 @@ No external runtime dependencies are required for the current foundation.
 - `app/views.py` is the stable public facade for page rendering. Focused implementations live in `app/view_pages/` modules for layout, dashboard, entities, relationships, forms, search and maps.
 - `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
-- `app/relationships.py` defines relationship records, relationship types and bidirectional labels.
+- `app/relationship_catalog.py` owns grouped relationship type metadata; `app/relationships.py` owns relationship records, selection rules and bidirectional behavior.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 

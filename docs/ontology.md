@@ -110,7 +110,7 @@ Relationship creation is entity-first and perspective-based. Users start from th
 
 ## Relationship Types
 
-Relationship types are ordered definitions, not free-floating labels. Each definition includes:
+Relationship types are ordered definitions, not free-floating labels. The authoritative grouped catalogue is `app/relationship_catalog.py`; behavior that consumes it remains in `app/relationships.py`. Each definition includes:
 
 - allowed source entity type
 - allowed target entity type

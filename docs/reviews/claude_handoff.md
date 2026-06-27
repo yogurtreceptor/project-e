@@ -32,17 +32,16 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 - View rendering has been split into focused `app/view_pages/` modules, with `app/views.py` retained as a compatibility facade.
 - `app/db.py` mixes schema creation, migrations, CRUD, validation, search and discovery.
 - `app/web.py` mixes route dispatch, form parsing, upload storage and relationship workflow orchestration.
-- `app/relationships.py` has a large hard-coded taxonomy and label logic that will be hard to extend safely.
+- Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
 - All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
 - No duplicate/canonical-record warning exists yet.
-- Relationship taxonomy is strong enough for current domains but should be made easier to review before many new relationship types are added.
 - Optional map/address lookup uses network resources; normal app operation should remain useful without them.
 
 ## Recommended Next Refactor Task
 
 Refactor for maintainability without changing behaviour:
 
-Refactor the hard-coded relationship taxonomy in `app/relationships.py` into a compact, auditable registry while preserving relationship keys, direction, labels and legacy compatibility. Add focused tests for selectable choices across entity pairs. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each small step.
+Split `app/db.py` by responsibility while preserving its public API and startup compatibility behavior. Begin with schema creation/migrations, then separate entity persistence, relationship persistence and search/discovery queries in small verified steps. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each step.
 
 ## Inspect First
 
@@ -55,6 +54,7 @@ Refactor the hard-coded relationship taxonomy in `app/relationships.py` into a c
 - `docs/database_design.md`
 - `docs/ui_principles.md`
 - `app/entities.py`
+- `app/relationship_catalog.py`
 - `app/relationships.py`
 - `app/db.py`
 - `app/web.py`

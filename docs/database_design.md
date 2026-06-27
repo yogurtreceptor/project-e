@@ -99,7 +99,7 @@ Older local databases may still contain previously-created Organisation address 
 
 Relationships store source and target entity IDs, type, status, optional dates, date certainty and notes. The database stores one row per relationship; inverse navigation is derived from relationship metadata.
 
-Relationship category, subtype, option labels, ordered source/target entity types, direction semantics, usage notes and bidirectional display labels live in central application relationship definitions rather than separate lookup tables. This is the Stage 1 balance: the row stays lightweight and local databases avoid taxonomy migrations, while validation and forms can still offer context-aware relationship choices.
+Relationship category, subtype, option labels, ordered source/target entity types, direction semantics, usage notes and bidirectional display labels live in the grouped `app/relationship_catalog.py` definitions rather than separate lookup tables. This is the Stage 1 balance: the row stays lightweight and local databases avoid taxonomy migrations, while validation and forms can still offer context-aware relationship choices.
 
 Relationship validation checks that the selected type is selectable and valid for the two endpoint entity types. The UI uses the same relationship definitions to show only relevant options after the connected entity type is known. Forced-pair workflows, such as Organisation to Person, only send that pair's valid options to the page.
 

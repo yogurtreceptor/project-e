@@ -20,11 +20,13 @@ Fix before new features: yes.
 
 Severity: high
 
-Affected area: `app/relationships.py`
+Status: resolved 2026-06-27
+
+Affected area: `app/relationship_catalog.py`, `app/relationships.py`
 
 Why it matters: Relationship definitions, role labels, gender-aware labels and legacy behaviour are central to the product. As more domains are added, the current code-only catalogue will be difficult to audit and easy to break.
 
-Recommended fix: Move taxonomy into a compact registry/data section and keep logic functions small. Add tests that assert valid selectable relationship choices for every entity pair.
+Resolution: Moved immutable type metadata into an entity-pair-grouped catalogue, consolidated role and gender-aware labels into each definition, kept relationship behavior separate, and added pair-coverage contract tests.
 
 Fix before new features: yes, before adding relationship-heavy domains.
 
