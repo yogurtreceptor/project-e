@@ -6,11 +6,13 @@ Date: 2026-06-22
 
 Severity: high
 
+Status: resolved 2026-06-27
+
 Affected area: `app/views.py`
 
 Why it matters: One module renders layout, dashboard, entity lists/details/forms, relationship workflows, search, map HTML and inline JavaScript. This increases risk when changing any UI surface.
 
-Recommended fix: Split into focused modules such as `views/layout.py`, `views/entities.py`, `views/relationships.py`, `views/search.py` and `views/map.py`, or a similarly small structure that fits the current no-framework architecture.
+Resolution: Kept `app/views.py` as a compatibility facade and moved implementations into responsibility-focused modules under `app/view_pages/` without changing rendering behaviour.
 
 Fix before new features: yes.
 
@@ -126,7 +128,7 @@ Fix before new features: no, but should precede bulk import.
 
 Severity: low
 
-Affected area: `app/geo.py`, map page in `app/views.py`
+Affected area: `app/geo.py`, map page in `app/view_pages/map.py`
 
 Why it matters: Stage 1 is local-first. Leaflet and map tiles load from WAN, and address lookup calls Nominatim.
 

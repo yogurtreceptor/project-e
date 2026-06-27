@@ -29,7 +29,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 ## Current Known Issues
 
-- `app/views.py` is too large and contains page rendering, relationship UI, map rendering and inline JavaScript.
+- View rendering has been split into focused `app/view_pages/` modules, with `app/views.py` retained as a compatibility facade.
 - `app/db.py` mixes schema creation, migrations, CRUD, validation, search and discovery.
 - `app/web.py` mixes route dispatch, form parsing, upload storage and relationship workflow orchestration.
 - `app/relationships.py` has a large hard-coded taxonomy and label logic that will be hard to extend safely.
@@ -38,11 +38,11 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 - Relationship taxonomy is strong enough for current domains but should be made easier to review before many new relationship types are added.
 - Optional map/address lookup uses network resources; normal app operation should remain useful without them.
 
-## Recommended First Refactor Task
+## Recommended Next Refactor Task
 
 Refactor for maintainability without changing behaviour:
 
-Split the largest modules into smaller responsibility-focused files, starting with `app/views.py` and `app/relationships.py`. Preserve public functions used by routes/tests or update imports surgically. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each small step.
+Refactor the hard-coded relationship taxonomy in `app/relationships.py` into a compact, auditable registry while preserving relationship keys, direction, labels and legacy compatibility. Add focused tests for selectable choices across entity pairs. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each small step.
 
 ## Inspect First
 
