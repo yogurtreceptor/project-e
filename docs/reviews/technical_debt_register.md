@@ -34,11 +34,13 @@ Fix before new features: yes, before adding relationship-heavy domains.
 
 Severity: high
 
-Affected area: `app/db.py`
+Status: resolved 2026-06-27
+
+Affected area: `app/db.py`, `app/db_schema.py`, repository modules
 
 Why it matters: Schema creation, compatibility migration, CRUD, validation, relationship persistence, discovery and search all live together. Future migrations/imports will make this harder to reason about.
 
-Recommended fix: Split schema/migration helpers from entity repository, relationship repository and search/discovery queries while preserving the public behaviours.
+Resolution: Kept `app/db.py` as a stable facade and separated schema/migrations, entity persistence, relationship persistence, discovery/search and shared SQL/time helpers into acyclic focused modules.
 
 Fix before new features: yes.
 

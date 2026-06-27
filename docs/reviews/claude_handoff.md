@@ -30,7 +30,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 ## Current Known Issues
 
 - View rendering has been split into focused `app/view_pages/` modules, with `app/views.py` retained as a compatibility facade.
-- `app/db.py` mixes schema creation, migrations, CRUD, validation, search and discovery.
+- Database responsibilities are split behind the stable `app/db.py` facade into schema, entity, relationship and discovery modules.
 - `app/web.py` mixes route dispatch, form parsing, upload storage and relationship workflow orchestration.
 - Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
 - All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
@@ -41,7 +41,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Split `app/db.py` by responsibility while preserving its public API and startup compatibility behavior. Begin with schema creation/migrations, then separate entity persistence, relationship persistence and search/discovery queries in small verified steps. Run `python3 -m compileall app run.py tests` and `python3 -m unittest discover -s tests` after each step.
+Extract upload storage and inline relationship-target workflow logic from `app/web.py`, keeping `EddyRequestHandler` focused on HTTP routing, request parsing and responses. Preserve request behavior and rollback semantics, and run `python3 -m compileall app run.py tests` plus `python3 -m unittest discover -s tests` after each step.
 
 ## Inspect First
 
@@ -57,6 +57,10 @@ Split `app/db.py` by responsibility while preserving its public API and startup 
 - `app/relationship_catalog.py`
 - `app/relationships.py`
 - `app/db.py`
+- `app/db_schema.py`
+- `app/entity_repository.py`
+- `app/relationship_repository.py`
+- `app/discovery_repository.py`
 - `app/web.py`
 - `app/views.py`
 - `tests/test_entities.py`

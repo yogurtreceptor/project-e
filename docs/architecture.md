@@ -17,7 +17,7 @@ No external runtime dependencies are required for the current foundation.
 - `run.py` starts a local HTTP server.
 - `app/web.py` handles HTTP routing and request/response concerns.
 - `app/views.py` is the stable public facade for page rendering. Focused implementations live in `app/view_pages/` modules for layout, dashboard, entities, relationships, forms, search and maps.
-- `app/db.py` owns SQLite connection, definition-driven schema creation, additive field migration and CRUD operations.
+- `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, schema and additive migrations; entity, relationship and discovery persistence live in focused repository modules.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/relationship_catalog.py` owns grouped relationship type metadata; `app/relationships.py` owns relationship records, selection rules and bidirectional behavior.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.

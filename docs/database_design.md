@@ -1,6 +1,6 @@
 # Database Design
 
-Operation Eddy uses SQLite as the embedded local database for Stage 1.
+Operation Eddy uses SQLite as the embedded local database for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
 
 ## Core Tables
 
