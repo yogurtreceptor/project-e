@@ -102,7 +102,7 @@ Issue: It is useful history but long and implementation-heavy.
 
 Why it conflicts: Future AI agents need concise, current context.
 
-Recommended correction: Keep the build log as history. Use `docs/reviews/claude_handoff.md` for low-context handoff.
+Recommended correction: Keep the build log as history. Use concise current architecture docs for low-context onboarding; retain `docs/reviews/claude_handoff.md` as historical implementation/refactor guidance.
 
 ## 11. Command-First UX Has Not Drifted Into The Product
 

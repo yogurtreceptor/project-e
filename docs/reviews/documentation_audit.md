@@ -16,12 +16,12 @@ Findings:
 
 - Clear project purpose, Stage 1 exclusions and implementation preferences.
 - Useful workspace-specific tool notes.
-- Concise enough for future Codex/Claude sessions.
+- Concise enough for future AI coding sessions.
 
 Recommended changes:
 
 - No immediate change required.
-- Later, add a short pointer to `docs/reviews/claude_handoff.md` if that file becomes the standard mixed-agent onboarding document.
+- Retain `docs/reviews/claude_handoff.md` as historical implementation/refactor guidance rather than required onboarding.
 
 ## README.md
 
@@ -177,7 +177,7 @@ Recommended changes:
 
 - Keep as history.
 - Do not rewrite.
-- Use `docs/reviews/claude_handoff.md` as the compact future-agent briefing.
+- Use current architecture docs for onboarding; retain `docs/reviews/claude_handoff.md` as historical implementation/refactor guidance.
 
 ## Outdated AI Dispatcher Framing
 
@@ -207,8 +207,8 @@ Recommended changes:
 Findings:
 
 - `AGENTS.md` is the best session instruction file.
-- `docs/reviews/claude_handoff.md` should become the practical mixed-agent briefing.
+- `docs/reviews/claude_handoff.md` remains useful historical implementation/refactor guidance, but is not required onboarding.
 
 Recommended changes:
 
-- In a future small doc update, link `docs/reviews/claude_handoff.md` from `README.md` or `AGENTS.md` if the user wants it treated as canonical handoff context.
+- Keep active workflow instructions in `AGENTS.md`; validate older review handoffs against current code.

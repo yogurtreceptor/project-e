@@ -154,18 +154,18 @@ Affected area: `docs/build_log.md`
 
 Why it matters: It is useful history but inefficient as context for future agents.
 
-Recommended fix: Keep it as history. Use `docs/reviews/claude_handoff.md` and concise architecture docs as active handoff context.
+Recommended fix: Keep it as history. Use concise architecture docs as active context; retain `docs/reviews/claude_handoff.md` as historical implementation/refactor guidance.
 
 Fix before new features: no.
 
-## 14. Minimal Attribution Convention Not Yet Adopted
+## 14. Minimal Attribution Convention
 
 Severity: low
 
-Affected area: mixed Codex + Claude workflow
+Affected area: AI-assisted repository workflow
 
-Why it matters: Lightweight attribution could help diagnose future implementation differences without adding bureaucracy.
+Why it matters: Lightweight attribution can help identify the tool used for a change without adding bureaucracy.
 
-Recommended fix: Use commit message trailers only, such as `Agent: Codex` or `Agent: Claude`.
+Recommended fix: Use commit message trailers only, normally `Agent: Codex`; use `Agent: Claude` if Claude Code is used later.
 
 Fix before new features: no.

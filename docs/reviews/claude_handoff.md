@@ -1,6 +1,8 @@
-# Claude Code Handoff
+# Implementation And Refactor Handoff
 
 Date: 2026-06-22
+
+Originally prepared for Claude Code. Retained as historical/reference guidance for any future implementation agent. Codex is the current primary implementation and review tool; verify this document against current code before acting on it.
 
 ## Project Purpose
 
@@ -36,7 +38,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 - Relationship taxonomy is strong enough for current domains but should be made easier to review before many new relationship types are added.
 - Optional map/address lookup uses network resources; normal app operation should remain useful without them.
 
-## Recommended First Claude Task
+## Recommended First Refactor Task
 
 Refactor for maintainability without changing behaviour:
 
@@ -79,16 +81,16 @@ Split the largest modules into smaller responsibility-focused files, starting wi
 
 ## Attribution Recommendation
 
-Use commit message trailers only when commits are made:
-
-```text
-Agent: Claude
-```
-
-or
+Use commit message trailers only when commits are made. For the current workflow:
 
 ```text
 Agent: Codex
+```
+
+If Claude Code is used later:
+
+```text
+Agent: Claude
 ```
 
 Do not add per-file signatures or attribution tooling unless the workflow later proves it needs more.

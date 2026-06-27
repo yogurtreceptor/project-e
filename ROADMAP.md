@@ -15,7 +15,7 @@ Done:
 
 Active:
 
-* Documentation and handoff clarity
+* Documentation and repository-first agent context
 * Maintainability cleanup planning
 * Polish for dashboard, navigation, forms and relationships
 

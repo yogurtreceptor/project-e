@@ -8,7 +8,7 @@ Stage 1 stores and navigates structured local information for People, Organisati
 
 Stage 1 excludes AI, chat, dispatcher architecture, automation, scheduling, decision support, WAN/mobile access and login.
 
-For mixed Codex + Claude Code work, use [docs/reviews/claude_handoff.md](docs/reviews/claude_handoff.md) as the compact handoff brief.
+Codex is the current primary implementation and review tool. Repository docs and current code are the source of truth; the [implementation/refactor handoff](docs/reviews/claude_handoff.md) is retained as historical guidance.
 
 ## Run
 
