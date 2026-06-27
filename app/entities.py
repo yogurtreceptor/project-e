@@ -27,6 +27,7 @@ class EntityDefinition:
     plural: str
     table: str
     fields: tuple[FieldDefinition, ...]
+    duplicate_fields: tuple[str, ...] = ()
 
     @property
     def field_names(self) -> tuple[str, ...]:
@@ -186,6 +187,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),
         ),
+        duplicate_fields=("email", "phone"),
     ),
     EntityDefinition(
         type="organisation",
@@ -199,6 +201,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("phone", "Phone"),
             FieldDefinition("email", "Email"),
         ),
+        duplicate_fields=("website", "email", "phone"),
     ),
     EntityDefinition(
         type="location",
@@ -219,6 +222,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("longitude", "Longitude", input_type="number", value_kind="longitude"),
             FieldDefinition("source", "Source", previous_names=("geocoding_source",)),
         ),
+        duplicate_fields=("formatted_address",),
     ),
     EntityDefinition(
         type="project",
@@ -242,6 +246,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             ),
             FieldDefinition("started_at", "Started", input_type="date", value_kind="date"),
         ),
+        duplicate_fields=(),
     ),
     EntityDefinition(
         type="document",
@@ -258,6 +263,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("mime_type", "MIME type", editable=False),
             FieldDefinition("file_size", "File size", editable=False),
         ),
+        duplicate_fields=("file_name",),
     ),
     EntityDefinition(
         type="asset",
@@ -281,6 +287,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("latitude", "Latitude", input_type="number", value_kind="latitude"),
             FieldDefinition("longitude", "Longitude", input_type="number", value_kind="longitude"),
         ),
+        duplicate_fields=("serial_number",),
     ),
 )
 

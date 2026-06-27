@@ -33,6 +33,8 @@ Entity forms should avoid generic `summary` fields. Notes are the flexible free-
 
 Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
 
+Possible duplicate entities should appear as a warning with links to existing records and an explicit Save anyway action. Warnings must not silently block legitimate records or become database uniqueness constraints.
+
 People and Organisations keep phone/email as simple direct fields for now. People may record optional Sex for relationship label display, but it must never be required. Sex uses controlled values: Male, Female, Other and Unknown. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
 
 Relationship creation should be entity-first and perspective-based:

@@ -34,14 +34,13 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 - Upload persistence and inline relationship-target creation are separated from `app/web.py` into focused services.
 - Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
 - Structured dates, coordinates and whole-number values remain text-backed but now have metadata-driven normalization and validation.
-- No duplicate/canonical-record warning exists yet.
 - Optional map/address lookup uses network resources; normal app operation should remain useful without them.
 
 ## Recommended Next Refactor Task
 
 Refactor for maintainability without changing behaviour:
 
-Add non-blocking duplicate warnings to entity create/edit flows using display name plus a small set of key fields per domain. Preserve deliberate creation, avoid premature uniqueness constraints, and add tests for warning behavior before import work begins.
+Assess and address linear in-memory search before import work. Preserve current entity and relationship-context results, prefer SQLite indexed queries or FTS only where supported by focused tests, and avoid introducing a separate search service or external dependency.
 
 ## Inspect First
 

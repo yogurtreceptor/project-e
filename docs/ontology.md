@@ -23,7 +23,7 @@ Stage 1 entity types are:
 - Document
 - Asset
 
-Each real-world object should have one canonical entity record. Duplicate prevention is a product concern from the start.
+Each real-world object should have one canonical entity record. Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields, but users may explicitly save anyway when two real objects genuinely share those values.
 
 ## People
 

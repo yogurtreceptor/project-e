@@ -43,6 +43,7 @@ from app.document_storage import (
     store_document_upload as persist_document_upload,
     stored_document_path as resolve_document_path,
 )
+from app.duplicate_detection import find_duplicate_entities
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
 from app.relationship_workflow import (
@@ -209,7 +210,18 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if self.command == "POST":
             values, upload = self.read_entity_form(definition)
             errors = validate_entity_values(definition, values)
+            duplicate_matches = []
             if not errors:
+                with connect(self.database_path) as connection:
+                    duplicate_matches = find_duplicate_entities(connection, definition, values)
+                if duplicate_matches and values.get("confirm_duplicate") != "1":
+                    if upload is not None:
+                        self.clear_document_file_values(values)
+                    self.respond_form(
+                        definition, values, errors, "Create",
+                        duplicate_matches=duplicate_matches,
+                    )
+                    return
                 if upload is not None:
                     values.update(self.store_document_upload(upload))
                 with connect(self.database_path) as connection:
@@ -236,7 +248,20 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if self.command == "POST":
             values, upload = self.read_entity_form(definition)
             errors = validate_entity_values(definition, values)
+            duplicate_matches = []
             if not errors:
+                with connect(self.database_path) as connection:
+                    duplicate_matches = find_duplicate_entities(
+                        connection, definition, values, exclude_entity_id=entity_id
+                    )
+                if duplicate_matches and values.get("confirm_duplicate") != "1":
+                    if upload is not None:
+                        self.restore_document_file_values(values, record.metadata)
+                    self.respond_form(
+                        definition, values, errors, "Edit", entity_id,
+                        duplicate_matches=duplicate_matches,
+                    )
+                    return
                 if upload is not None:
                     values.update(self.store_document_upload(upload))
                 with connect(self.database_path) as connection:
@@ -416,10 +441,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         errors: list[str],
         action: str,
         entity_id: int | None = None,
+        duplicate_matches: list | None = None,
     ) -> None:
         self.respond_page(
             f"{action} {definition.singular}",
-            views.entity_form_page(definition, values, errors, action, entity_id),
+            views.entity_form_page(
+                definition, values, errors, action, entity_id, duplicate_matches
+            ),
             active_slug=definition.slug,
         )
 
@@ -508,9 +536,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def read_entity_form(self, definition: EntityDefinition) -> tuple[dict[str, str], UploadedFile | None]:
         if definition.type != "document" or not self.headers.get("Content-Type", "").startswith("multipart/form-data"):
-            return normalise_form_values(definition, self.read_form()), None
+            raw_values = self.read_form()
+            values = normalise_form_values(definition, raw_values)
+            values["confirm_duplicate"] = raw_values.get("confirm_duplicate", "")
+            return values, None
         raw_values, upload = self.read_multipart_form()
         values = normalise_form_values(definition, raw_values)
+        values["confirm_duplicate"] = raw_values.get("confirm_duplicate", "")
         if upload is not None:
             values["file_name"] = upload.file_name
             values["mime_type"] = upload.content_type
@@ -544,6 +576,18 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 charset = item.get_content_charset() or "utf-8"
                 values[key] = data.decode(charset, errors="replace")
         return values, upload
+
+    @staticmethod
+    def clear_document_file_values(values: dict[str, str]) -> None:
+        for field_name in ("file_name", "file_path", "mime_type", "file_size"):
+            values[field_name] = ""
+
+    @staticmethod
+    def restore_document_file_values(
+        values: dict[str, str], metadata: dict[str, str]
+    ) -> None:
+        for field_name in ("file_name", "file_path", "mime_type", "file_size"):
+            values[field_name] = metadata.get(field_name, "")
 
     def store_document_upload(self, upload: UploadedFile) -> dict[str, str]:
         return persist_document_upload(upload)

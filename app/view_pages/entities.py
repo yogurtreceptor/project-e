@@ -8,6 +8,7 @@ from app.view_pages.forms import (
     address_lookup_field,
     address_lookup_script,
     entity_field_control,
+    duplicate_warning,
     error_block,
     existing_location_action,
     file_upload_field,
@@ -419,11 +420,13 @@ def entity_form_page(
     errors: list[str],
     action: str,
     entity_id: int | None = None,
+    duplicate_matches: list | None = None,
 ) -> str:
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
     )
     error_html = error_block(errors)
+    duplicate_html = duplicate_warning(duplicate_matches or [], definition.type == "document")
 
     fields = [
         input_field("display_name", f"{definition.singular} name", values),
@@ -451,11 +454,12 @@ def entity_form_page(
     </section>
     <section class="panel">
         {error_html}
+        {duplicate_html}
         <form class="record-form{location_class}" method="post" action="{form_action}"{enctype}>
             {''.join(fields)}
             <div class="actions">
                 <a class="button secondary" href="/{definition.slug}">Cancel</a>
-                <button class="button" type="submit">Save</button>
+                <button class="button" type="submit"{' name="confirm_duplicate" value="1"' if duplicate_matches else ''}>{'Save anyway' if duplicate_matches else 'Save'}</button>
             </div>
         </form>
     </section>

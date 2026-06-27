@@ -275,6 +275,29 @@ dd {
     margin-bottom: 0;
 }
 
+.warnings {
+    background: #fff8df;
+    border: 1px solid #d9bd63;
+    border-radius: 8px;
+    color: #5f4a08;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+}
+
+.warnings p {
+    margin: 6px 0;
+}
+
+.warnings ul {
+    margin-bottom: 0;
+}
+
+.warnings li span {
+    color: var(--muted);
+    display: block;
+    font-size: 0.9rem;
+}
+
 @media (max-width: 720px) {
     .site-header,
     .split {

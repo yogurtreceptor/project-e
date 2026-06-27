@@ -54,15 +54,15 @@ Why it conflicts: Stage 1 should not depend on WAN for normal operation.
 
 Recommended correction: Keep these features optional and document fallback behaviour. Consider vendoring Leaflet assets later if maps become core. Do not make lookup mandatory.
 
-## 6. One Canonical Record Principle Has No Product Support Yet
+## 6. Canonical Record Warnings Are Implemented
 
-Location: entity create/edit flows in `app/web.py`, validation in `app/db.py`
+Location: entity create/edit flows in `app/web.py`, `app/duplicate_detection.py`
 
-Issue: Users can create duplicate entities without warnings.
+Issue: Resolved. Create and edit flows now identify likely matches before saving.
 
-Why it conflicts: The project principle says one canonical record per real-world object.
+Why it matters: The product supports the one-canonical-record principle without imposing unsafe uniqueness constraints.
 
-Recommended correction: Add duplicate warnings based on display name and key structured fields. Start as non-blocking warnings before enforcing uniqueness.
+Current approach: Keep warnings non-blocking and refine strong identity fields only when real usage shows false positives or missed matches.
 
 ## 7. Forms Still Have Weak Free-Text Areas
 
@@ -84,15 +84,15 @@ Why it conflicts: A placeholder can be mistaken for a committed architecture.
 
 Recommended correction: Keep it as a read-only derived section for now, or explicitly document it as derived metadata until an event model is justified.
 
-## 9. Import Still Requires Duplicate Safeguards
+## 9. Import Prerequisites Are Now In Place
 
 Location: `ROADMAP.md`, `docs/stage_1_spec.md`
 
-Issue: Schema governance is now in place, but duplicate handling is not yet implemented.
+Issue: Resolved. Schema governance and non-blocking duplicate warnings are implemented.
 
-Why it conflicts: Import can damage canonical-record quality if introduced before duplicate safeguards.
+Why it matters: Import work can now build on explicit migrations and canonical-record safeguards rather than bypassing data quality.
 
-Recommended correction: Keep duplicate warnings as a prerequisite for substantial import work. The migration/schema-ledger prerequisite is resolved.
+Recommended correction: Define import acceptance criteria and preserve duplicate warnings during any future bulk workflow.
 
 ## 10. Build Log Is Too Detailed For Low-Context Handoff
 

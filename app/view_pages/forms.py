@@ -13,6 +13,26 @@ def error_block(errors: list[str]) -> str:
     )
 
 
+def duplicate_warning(matches: list, document_form: bool = False) -> str:
+    if not matches:
+        return ""
+    items = "".join(
+        f'<li><a href="/{match.record.slug}/{match.record.id}">{escape(match.record.title)}</a>'
+        f'<span>Matched: {escape(", ".join(match.matched_fields))}</span></li>'
+        for match in matches
+    )
+    file_note = (
+        "<p>If you selected a new file, select it again before saving.</p>"
+        if document_form
+        else ""
+    )
+    return (
+        '<div class="warnings"><strong>Possible duplicate records found</strong>'
+        '<p>Review these records before creating another canonical record.</p>'
+        f'<ul>{items}</ul>{file_note}</div>'
+    )
+
+
 def input_field(
     name: str,
     label: str,

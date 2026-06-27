@@ -90,11 +90,13 @@ Fix before new features: no, but fix before analytics, robust export or larger i
 
 Severity: medium
 
+Status: resolved 2026-06-28
+
 Affected area: entity creation/editing, search, domain model
 
 Why it matters: "One canonical record per real-world object" is a core principle, but the app currently allows easy duplicates.
 
-Recommended fix: Add duplicate warnings on create/edit using display name plus selected key fields per entity type. Do not block creation at first.
+Resolution: Create and edit flows now show non-blocking possible-match warnings based on normalized display names and strong domain-specific fields. Existing records are linked for review, edits exclude themselves, and an explicit Save anyway action preserves deliberate duplicates.
 
 Fix before new features: yes, before import tools.
 
