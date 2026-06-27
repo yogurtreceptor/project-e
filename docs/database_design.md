@@ -59,6 +59,8 @@ Assets store useful item metadata such as asset type, status, serial number / as
 
 Controlled dropdown values are stored as text in the relevant typed table column. Preset-backed custom values use the same column rather than a separate lookup table in Stage 1.
 
+Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
+
 Current controlled fields are:
 
 - `organisations.organisation_type`, custom allowed.

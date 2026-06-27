@@ -76,11 +76,13 @@ Fix before new features: yes, before import/export or larger domain additions.
 
 Severity: medium
 
+Status: resolved for Stage 1 on 2026-06-28
+
 Affected area: typed entity tables and relationship dates
 
 Why it matters: Text storage simplifies Stage 1 but weakens sorting, validation and data export for dates, coordinates, booleans and money.
 
-Recommended fix: Keep SQLite, but introduce field-level validation and formatting first. Consider typed columns only when a migration policy exists.
+Resolution: Added metadata-driven normalization and validation for calendar dates, latitude, longitude and whole-number asset values, including relationship dates. Text storage remains an intentional Stage 1 choice; physical typed columns stay deferred until querying or analytics justifies migration.
 
 Fix before new features: no, but fix before analytics, robust export or larger imports.
 

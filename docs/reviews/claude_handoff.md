@@ -33,7 +33,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 - Database responsibilities are split behind the stable `app/db.py` facade; `app/db_schema.py` includes an append-only migration ledger plus additive startup repair.
 - Upload persistence and inline relationship-target creation are separated from `app/web.py` into focused services.
 - Relationship taxonomy now lives in grouped `app/relationship_catalog.py` metadata with pair-coverage contract tests.
-- All typed fields are stored as text; fine for now, but weak for dates, coordinates, numeric values and future querying.
+- Structured dates, coordinates and whole-number values remain text-backed but now have metadata-driven normalization and validation.
 - No duplicate/canonical-record warning exists yet.
 - Optional map/address lookup uses network resources; normal app operation should remain useful without them.
 
@@ -41,7 +41,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Add field-level validation and normalization for structured text-backed values, beginning with dates and coordinates. Preserve incomplete optional fields, return useful form errors, and avoid physical SQLite type migrations until a concrete querying need justifies them.
+Add non-blocking duplicate warnings to entity create/edit flows using display name plus a small set of key fields per domain. Preserve deliberate creation, avoid premature uniqueness constraints, and add tests for warning behavior before import work begins.
 
 ## Inspect First
 

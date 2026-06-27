@@ -38,8 +38,12 @@ def entity_field_control(field, values: dict[str, str]) -> str:
     if field.options:
         return select_field(field.name, field.label, [(option, option) for option in field.options], field_values)
     attrs = ""
-    if field.name == "value":
+    if field.value_kind == "whole_number":
         attrs = ' min="0" step="1" inputmode="numeric" pattern="[0-9]*"'
+    elif field.value_kind == "latitude":
+        attrs = ' min="-90" max="90" step="any"'
+    elif field.value_kind == "longitude":
+        attrs = ' min="-180" max="180" step="any"'
     elif field.input_type == "number":
         attrs = ' step="any"'
     return input_field(field.name, field.label, field_values, field.multiline, field.input_type, attrs)

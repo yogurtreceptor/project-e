@@ -34,7 +34,7 @@ The application should not depend on WAN access for normal operation.
 Current domains inherit from a common entity architecture:
 
 - `EntityDefinition` describes each domain type, route slug, table and domain-specific fields.
-- `FieldDefinition` describes reusable field metadata, including overview visibility, input type, controlled options, custom-value support, default values, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup.
+- `FieldDefinition` describes reusable field metadata, including overview visibility, input type, structured value kind, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup.
 - `EntityRecord` is the shared runtime model for all entity instances.
 - Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`.
 - `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.

@@ -9,6 +9,7 @@ from app.entities import (
     EntityRecord,
     to_entity_record,
 )
+from app.structured_values import normalise_structured_value, validate_structured_value
 
 
 def list_entities(
@@ -148,10 +149,9 @@ def validate_entity_values(
         value = values.get(field.name, "").strip()
         if field.options and not field.allow_custom and value and value not in field.options:
             errors.append(f"{field.label} is invalid.")
-    if definition.type == "asset":
-        value = values.get("value", "").strip()
-        if value and not value.isdecimal():
-            errors.append("Value must be a whole number without a dollar sign.")
+        structured_error = validate_structured_value(value, field.value_kind, field.label)
+        if structured_error:
+            errors.append(structured_error)
     return errors
 
 
@@ -163,7 +163,8 @@ def normalise_form_values(
         "notes": str(raw_values.get("notes", "")).strip(),
     }
     for field in definition.fields:
-        values[field.name] = str(raw_values.get(field.name, field.default)).strip() or field.default
+        raw_value = str(raw_values.get(field.name, field.default)).strip() or field.default
+        values[field.name] = normalise_structured_value(raw_value, field.value_kind)
     return values
 
 

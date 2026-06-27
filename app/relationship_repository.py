@@ -12,6 +12,7 @@ from app.relationships import (
     relationship_type_is_valid_for_pair,
     split_relationship_choice,
 )
+from app.structured_values import normalise_structured_value, validate_structured_value
 
 
 def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecord]:
@@ -119,9 +120,9 @@ def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
         "target_entity_id": str(raw_values.get("target_entity_id", "")).strip(),
         "type": str(raw_values.get("type", "")).strip(),
         "status": str(raw_values.get("status", "active")).strip() or "active",
-        "started_at": str(raw_values.get("started_at", "")).strip(),
+        "started_at": normalise_structured_value(str(raw_values.get("started_at", "")), "date"),
         "started_at_precision": str(raw_values.get("started_at_precision", "exact")).strip() or "exact",
-        "ended_at": str(raw_values.get("ended_at", "")).strip(),
+        "ended_at": normalise_structured_value(str(raw_values.get("ended_at", "")), "date"),
         "ended_at_precision": str(raw_values.get("ended_at_precision", "exact")).strip() or "exact",
         "notes": str(raw_values.get("notes", "")).strip(),
         "workflow_mode": str(raw_values.get("workflow_mode", "existing")).strip() or "existing",
@@ -167,6 +168,11 @@ def validate_relationship_values(
 
     if values.get("ended_at_precision", "exact") not in DATE_PRECISIONS:
         errors.append("End date certainty is invalid.")
+
+    for field_name, label in (("started_at", "Started"), ("ended_at", "Ended")):
+        date_error = validate_structured_value(values.get(field_name, ""), "date", label)
+        if date_error:
+            errors.append(date_error)
 
     return errors
 

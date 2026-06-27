@@ -9,6 +9,7 @@ class FieldDefinition:
     multiline: bool = False
     overview: bool = True
     input_type: str = "text"
+    value_kind: str = ""
     editable: bool = True
     options: tuple[str, ...] = ()
     allow_custom: bool = False
@@ -181,7 +182,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
                     ("", "Unknown"),
                 ),
             ),
-            FieldDefinition("birthday", "Birthday", input_type="date"),
+            FieldDefinition("birthday", "Birthday", input_type="date", value_kind="date"),
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),
         ),
@@ -214,8 +215,8 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("state", "State", previous_names=("region",)),
             FieldDefinition("post_code", "Post code", previous_names=("postal_code",)),
             FieldDefinition("country", "Country"),
-            FieldDefinition("latitude", "Latitude", input_type="number"),
-            FieldDefinition("longitude", "Longitude", input_type="number"),
+            FieldDefinition("latitude", "Latitude", input_type="number", value_kind="latitude"),
+            FieldDefinition("longitude", "Longitude", input_type="number", value_kind="longitude"),
             FieldDefinition("source", "Source", previous_names=("geocoding_source",)),
         ),
     ),
@@ -239,7 +240,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
                     ("abandoned", "Abandoned"),
                 ),
             ),
-            FieldDefinition("started_at", "Started", input_type="date"),
+            FieldDefinition("started_at", "Started", input_type="date", value_kind="date"),
         ),
     ),
     EntityDefinition(
@@ -250,7 +251,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         table="documents",
         fields=(
             FieldDefinition("document_type", "Document type", options=DOCUMENT_TYPES, allow_custom=True),
-            FieldDefinition("document_date", "Document date", input_type="date"),
+            FieldDefinition("document_date", "Document date", input_type="date", value_kind="date"),
             FieldDefinition("issuer", "Issuer / created by"),
             FieldDefinition("file_name", "File name", editable=False),
             FieldDefinition("file_path", "Stored file path", overview=False, editable=False),
@@ -275,10 +276,10 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
                 value_aliases=(("active", "Owned"),),
             ),
             FieldDefinition("serial_number", "Serial number / asset number"),
-            FieldDefinition("acquisition_date", "Acquisition date", input_type="date", previous_names=("purchase_date",)),
-            FieldDefinition("value", "Value", input_type="number", display_prefix="$"),
-            FieldDefinition("latitude", "Latitude", input_type="number"),
-            FieldDefinition("longitude", "Longitude", input_type="number"),
+            FieldDefinition("acquisition_date", "Acquisition date", input_type="date", value_kind="date", previous_names=("purchase_date",)),
+            FieldDefinition("value", "Value", input_type="number", value_kind="whole_number", display_prefix="$"),
+            FieldDefinition("latitude", "Latitude", input_type="number", value_kind="latitude"),
+            FieldDefinition("longitude", "Longitude", input_type="number", value_kind="longitude"),
         ),
     ),
 )
