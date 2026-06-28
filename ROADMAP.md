@@ -1,35 +1,42 @@
 # Roadmap
 
+This file tracks delivery direction. Current behaviour belongs in the specification and reference docs; unresolved engineering risks belong in the technical-debt register.
+
 ## Stage 1: Information Platform
 
-Done:
+Delivered:
 
-* Architecture
-* Foundation
-* Entity model
-* Relationships
-* Entity pages
-* Search
-* Maps
-* Additional domains: Projects, Documents and Assets
-* Schema governance and migration ledger
-* Duplicate/canonical-record safeguards
-* Deterministic family relationship inference and review history
+- local SQLite application foundation and schema migration ledger
+- shared entity model for People, Organisations, Locations, Projects, Documents and Assets
+- first-class relationship catalogue, CRUD and entity-centred workflows
+- reusable entity profiles, dashboard, search, favourites and recent records
+- structured filters and local-data privacy boundary
+- map view over Locations and location relationships
+- local Document upload lifecycle
+- duplicate warnings, preview-first entity merge and edit history
+- relationship integrity checks and exact-duplicate prevention
+- deterministic family inference with review, provenance, history and undo
+- responsibility-focused database, view and workflow modules behind stable facades
 
 Active:
 
-* Documentation and repository-first agent context
-* Maintainability cleanup planning
-* Polish for dashboard, navigation, forms and relationships
+- documentation accuracy and concise repository-first context
+- dashboard, navigation, forms and relationship polish
+- relationship integrity and data-quality polish
 
 Next:
 
-* Import/export tools that protect local data quality
-* Derived timeline improvements
+- import/export tools that protect local data quality
+- richer derived timeline views
+- domain-specific list columns
 
-Deferred:
+Reassess when representative data justifies it:
 
-* Decision support
-* Automation
-* Artificial Intelligence
-* Login, WAN/mobile access and complex integrations
+- SQLite-backed filtering or FTS5 search
+- physical typed columns for analytics and complex sorting
+- vendored map assets for a fully offline map UI
+
+Deferred beyond Stage 1:
+
+- decision support, automation and artificial intelligence
+- login, multi-user accounts, WAN/mobile access and complex integrations

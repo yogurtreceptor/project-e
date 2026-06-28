@@ -1,16 +1,26 @@
 # Operation Eddy
 
-Local-first Personal Operational Intelligence Platform.
+Operation Eddy is a local-first Personal Information Platform for structured, connected records. The longer-term direction includes operational intelligence, but Stage 1 is deliberately limited to storing, organising and navigating information.
 
 ## Stage 1
 
-Stage 1 stores and navigates structured local information for People, Organisations, Locations, Projects, Documents, Assets and Relationships.
+Stage 1 supports People, Organisations, Locations, Projects, Documents, Assets and first-class Relationships. It includes CRUD, search, favourites, recent records, structured filters, maps, duplicate warnings and merges, document uploads, relationship integrity checks, and reviewed deterministic family inference.
 
-Current relationship features include deterministic family inference for safe bloodline relationships. Suggestions remain outside the relationship table until reviewed in the Inference Review Queue. Confirmation creates a normal editable relationship with retained provenance; rejection suppresses unchanged evidence; completed batches archive automatically and remain searchable with undo controls.
+Stage 1 excludes AI, chat, dispatcher architecture, decision support, automation, scheduling, login, WAN/mobile access and cloud dependencies. Map tiles and address lookup may use optional network services; core records remain usable without them.
 
-Stage 1 excludes AI, chat, dispatcher architecture, automation, scheduling, decision support, WAN/mobile access and login.
+## Documentation
 
-Codex is the current primary implementation and review tool. Repository docs and current code are the source of truth; the [implementation/refactor handoff](docs/reviews/claude_handoff.md) is retained as historical guidance.
+- [Project goal](PROJECT_GOAL.md) — product direction and boundaries.
+- [Stage 1 specification](docs/stage_1_spec.md) — current scope and acceptance criteria.
+- [Roadmap](ROADMAP.md) — delivered, active, next and deferred work.
+- [Architecture](docs/architecture.md) — current application structure and boundaries.
+- [Database design](docs/database_design.md) — persistence and migration rules.
+- [Ontology](docs/ontology.md) — entity and relationship semantics.
+- [UI principles](docs/ui_principles.md) — interaction and presentation rules.
+- [Architecture decisions](ARCHITECTURE_DECISIONS.md) — durable decisions and consequences.
+- [Glossary](docs/glossary.md) — canonical project terminology.
+- [Technical debt](docs/reviews/technical_debt_register.md) — unresolved, actionable debt only.
+- [Build history](docs/build_log.md) — concise historical summaries by day.
 
 ## Run
 
@@ -18,35 +28,17 @@ Codex is the current primary implementation and review tool. Repository docs and
 python3 run.py
 ```
 
-Open `http://127.0.0.1:8000`.
-
-The app creates a local SQLite database at `instance/eddy.sqlite3`.
-It also creates `instance/documents/` for uploaded Document files. A fresh clone
-starts with an empty database: dashboard counts are zero and list, search, map and
-relationship pages show empty states until records are added.
+Open `http://127.0.0.1:8000`. The app creates `instance/eddy.sqlite3` and `instance/documents/` as needed. A fresh clone starts empty.
 
 ## Local data and privacy
 
-Personal data belongs under the Git-ignored `instance/` directory. The database,
-uploaded documents, SQLite runtime files, logs, caches, exports and backups are not
-source files and must not be committed. Root-level `data/`, `local-data/`,
-`exports/` and `backups/` directories are also ignored as safeguards for local
-working copies.
+Personal data belongs under the Git-ignored `instance/` directory. Databases, uploaded files, SQLite runtime files, logs, caches, exports and backups must not be committed. Root-level `data/`, `local-data/`, `exports/` and `backups/` are also ignored.
 
-No sample data is required. New developers obtain a clean schema simply by
-starting the app; they can then create clearly fictional records through the UI if
-they need development data. Intentionally shareable fixtures or examples should
-live in a clearly named tracked test or example-data location, contain no real
-personal information, and be reviewed before commit.
-
-## Stop
-
-Press `Ctrl+C` in the terminal running `python3 run.py`.
-
-If a server is detached, find it with `lsof -i :8000` and stop the listed PID with `kill <pid>`.
+No sample data is required. Shareable fixtures must be clearly fictional, intentionally tracked and reviewed before commit.
 
 ## Test
 
 ```bash
 python3 -m unittest discover -s tests
+python3 -m compileall app run.py tests
 ```

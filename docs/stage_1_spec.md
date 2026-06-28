@@ -38,21 +38,11 @@ Simple import and export tools are permitted when they support data entry, backu
 
 Projects, Documents and Assets are included to prove the entity architecture scales beyond the initial domains without special-case pages or relationship models.
 
-## Milestones
+## Delivery Status
 
-1. Architecture
-2. Foundation
-3. Entity Model
-4. Relationships and deterministic family inference
-5. Entity Pages
-6. Search
-7. Maps
-8. Import
-9. Timeline
-10. Additional Domains
-11. Polish
+Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, a derived timeline and deterministic family inference.
 
-Maps are a later Stage 1 view over Location data. Search and relationship navigation come first.
+Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP.md) for current ordering; this specification defines scope rather than task priority.
 
 ## Acceptance Criteria
 

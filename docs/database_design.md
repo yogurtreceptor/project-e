@@ -121,7 +121,7 @@ Person Sex is stored as a controlled optional Person field with Male, Female, Ot
 
 Legacy generic or gendered relationship keys remain loadable but non-selectable. Existing rows are not rewritten in Stage 1. Safe legacy `located_at` rows still contribute to Geography and Map views. New records should use the pair-specific taxonomy.
 
-The relationship UI has independent existing-entity and new-entity workflows. Inline relationship creation can create Person, Organisation and Location entities inside the new-entity workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
+The relationship UI has independent existing-entity and new-entity workflows. Inline relationship creation reuses the standard definition-driven fields for supported entity types inside the new-entity workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
 
 ## Map Storage
 

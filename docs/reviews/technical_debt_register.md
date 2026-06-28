@@ -1,189 +1,51 @@
 # Technical Debt Register
 
-Date: 2026-06-22
+This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
-## 1. Oversized View Module
-
-Severity: high
-
-Status: resolved 2026-06-27
-
-Affected area: `app/views.py`
-
-Why it matters: One module renders layout, dashboard, entity lists/details/forms, relationship workflows, search, map HTML and inline JavaScript. This increases risk when changing any UI surface.
-
-Resolution: Kept `app/views.py` as a compatibility facade and moved implementations into responsibility-focused modules under `app/view_pages/` without changing rendering behaviour.
-
-Fix before new features: yes.
-
-## 2. Relationship Taxonomy Is Hard To Extend
-
-Severity: high
-
-Status: resolved 2026-06-27
-
-Affected area: `app/relationship_catalog.py`, `app/relationships.py`
-
-Why it matters: Relationship definitions, role labels, gender-aware labels and legacy behaviour are central to the product. As more domains are added, the current code-only catalogue will be difficult to audit and easy to break.
-
-Resolution: Moved immutable type metadata into an entity-pair-grouped catalogue, consolidated role and gender-aware labels into each definition, kept relationship behavior separate, and added pair-coverage contract tests.
-
-Fix before new features: yes, before adding relationship-heavy domains.
-
-## 3. Database Module Mixes Too Many Responsibilities
-
-Severity: high
-
-Status: resolved 2026-06-27
-
-Affected area: `app/db.py`, `app/db_schema.py`, repository modules
-
-Why it matters: Schema creation, compatibility migration, CRUD, validation, relationship persistence, discovery and search all live together. Future migrations/imports will make this harder to reason about.
-
-Resolution: Kept `app/db.py` as a stable facade and separated schema/migrations, entity persistence, relationship persistence, discovery/search and shared SQL/time helpers into acyclic focused modules.
-
-Fix before new features: yes.
-
-## 4. Route Handler Owns Form Parsing, Uploads And Workflow Orchestration
+## Search is in-memory and linear
 
 Severity: medium
 
-Status: resolved 2026-06-27
+Entity and relationship search loads local records and filters in Python. This is appropriate for the current small-data Stage 1 application but may become slow after large imports.
 
-Affected area: `app/web.py`, `app/document_storage.py`, `app/relationship_workflow.py`
+Trigger: representative data shows noticeable latency or memory use, or a large import is planned.
 
-Why it matters: Route handling is currently simple but increasingly crowded. Multipart upload storage and inline relationship target creation are business logic hidden inside the HTTP handler.
+Direction: move basic filtering into SQLite first; consider FTS5 only if indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
 
-Resolution: Extracted uploaded-file persistence/path safety and inline relationship-target creation into focused services. The handler retains HTTP parsing and thin compatibility adapters; rollback behavior remains in the request transaction.
-
-Fix before new features: yes, before imports or more document/file behaviour.
-
-## 5. No Explicit Schema Version Or Migration Ledger
-
-Severity: medium
-
-Status: resolved 2026-06-28
-
-Affected area: SQLite schema initialization in `app/db_schema.py`, docs/database design
-
-Why it matters: Startup performs useful additive migrations, but future agents have no durable record of which migrations ran against a local database.
-
-Resolution: Added an append-only `schema_migrations` ledger with ordered identifiers and timestamps. Fresh and existing databases record the baseline migrations, while the idempotent schema-repair pass still runs at startup.
-
-Fix before new features: yes, before import/export or larger domain additions.
-
-## 6. Typed Fields Stored As Text
-
-Severity: medium
-
-Status: resolved for Stage 1 on 2026-06-28
-
-Affected area: typed entity tables and relationship dates
-
-Why it matters: Text storage simplifies Stage 1 but weakens sorting, validation and data export for dates, coordinates, booleans and money.
-
-Resolution: Added metadata-driven normalization and validation for calendar dates, latitude, longitude and whole-number asset values, including relationship dates. Text storage remains an intentional Stage 1 choice; physical typed columns stay deferred until querying or analytics justifies migration.
-
-Fix before new features: no, but fix before analytics, robust export or larger imports.
-
-## 7. No Canonical Duplicate Safeguards
-
-Severity: medium
-
-Status: resolved 2026-06-28
-
-Affected area: entity creation/editing, search, domain model
-
-Why it matters: "One canonical record per real-world object" is a core principle, but the app currently allows easy duplicates.
-
-Resolution: Create and edit flows now show non-blocking possible-match warnings based on normalized display names and strong domain-specific fields. Existing records are linked for review, edits exclude themselves, and an explicit Save anyway action preserves deliberate duplicates.
-
-Fix before new features: yes, before import tools.
-
-## 8. Search Is In-Memory And Linear
-
-Severity: medium
-
-Status: deferred 2026-06-28 pending representative data volume
-
-Affected area: `search_entities`, `entity_matches_query`, relationship search
-
-Why it matters: The current implementation is simple and correct for small local datasets, but may become slow or memory-heavy after substantial imports or growth in Documents and Assets.
-
-Deferred approach: Keep current behavior until real or representative data shows noticeable search latency or memory pressure. Reassess before a large import. Prefer moving basic filters into SQLite first, then consider SQLite FTS5 if indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
-
-Fix before new features: no. Reassess before large-volume import, not as a blocker for small import/export work.
-
-## 9. Document File Lifecycle Is Incomplete
-
-Severity: medium
-
-Status: resolved 2026-06-28
-
-Affected area: Document uploads and deletion
-
-Why it matters: Replacing or deleting Document entities can leave local files behind, and file metadata is treated as editable hidden fields.
-
-Resolution: Documents own uploaded files. Successful replacement removes the superseded file, Document deletion removes its unreferenced file, failed database writes clean up newly stored files, shared legacy references are preserved, and file metadata is restored from the database rather than trusted from hidden form fields.
-
-Fix before new features: yes, before expanding document handling.
-
-## 10. Relationship Duplicate Handling Is Missing
-
-Severity: medium
-
-Affected area: relationship creation and validation
-
-Why it matters: Users can create multiple active relationships of the same type between the same endpoints without warning.
-
-Recommended fix: Add a warning or validation rule for exact duplicate active relationships. Allow deliberate historical duplicates when dates/status differ.
-
-Fix before new features: no, but should precede bulk import.
-
-## 11. Map View Depends On External Resources
+## Map UI uses optional external resources
 
 Severity: low
 
-Affected area: `app/geo.py`, map page in `app/view_pages/map.py`
+Leaflet assets, map tiles and Nominatim address lookup require WAN access. Core entity data, manual coordinates and non-map workflows remain local and usable without them.
 
-Why it matters: Stage 1 is local-first. Leaflet and map tiles load from WAN, and address lookup calls Nominatim.
+Trigger: the map becomes a core offline workflow.
 
-Recommended fix: Keep map/address lookup optional. Document fallback behaviour and consider vendoring Leaflet assets later if map use becomes core.
+Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
 
-Fix before new features: no.
-
-## 12. Domain List Pages Are Too Generic
+## Domain list pages are generic
 
 Severity: low
 
-Affected area: entity list rendering
+Browse tables do not yet expose the most useful structured fields for every domain.
 
-Why it matters: Every list uses name plus notes, which hides useful structured fields such as organisation type, project status, document type or asset status.
+Direction: derive list columns from entity metadata so, for example, project status and document or asset type can be scanned without opening each record.
 
-Recommended fix: Use `FieldDefinition.overview` or a new list-field flag to render useful columns per domain.
-
-Fix before new features: no.
-
-## 13. Build Log Is Long As Handoff Context
+## Timeline is derived and limited
 
 Severity: low
 
-Affected area: `docs/build_log.md`
+Entity timelines currently combine timestamps, relationships and edit history rather than a general event model.
 
-Why it matters: It is useful history but inefficient as context for future agents.
+Trigger: users need richer event types, ordering or provenance.
 
-Recommended fix: Keep it as history. Use concise architecture docs as active context; retain `docs/reviews/claude_handoff.md` as historical implementation/refactor guidance.
+Direction: extend derived events first. Introduce persisted event records only when concrete workflows require them.
 
-Fix before new features: no.
-
-## 14. Minimal Attribution Convention
+## Contact details are single-value fields
 
 Severity: low
 
-Affected area: AI-assisted repository workflow
+Person and Organisation phone, email and website values are direct fields. This is intentionally simple but cannot express multiple labelled methods, verification or validity periods.
 
-Why it matters: Lightweight attribution can help identify the tool used for a change without adding bureaucracy.
+Trigger: a real workflow requires multiple contact points or lifecycle metadata.
 
-Recommended fix: Use commit message trailers only, normally `Agent: Codex`; use `Agent: Claude` if Claude Code is used later.
-
-Fix before new features: no.
+Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain in Stage 1.

@@ -106,7 +106,7 @@ Relationships are treated as ongoing unless they are explicitly marked as former
 
 Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
-The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
+The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type across the current domains.
 
 Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities. Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
 

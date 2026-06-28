@@ -1,54 +1,19 @@
-# PROJECT_GOAL.md
+# Project Goal
 
-# Operation Eddy
+Operation Eddy is a local-first Personal Information Platform. Its longer-term direction is personal operational intelligence built on trustworthy structured information, not a replacement for that foundation.
 
-Operation Eddy is a local-first Personal Operational Intelligence Platform.
+Stage 1 creates a central source of truth for meaningful personal information. It stores, organises, displays, searches and connects real-world records through a clean local UI.
 
-The project goal is to create a structured information platform that becomes the central source of truth for meaningful personal information.
+The foundation is:
 
-Stage 1 is focused only on building the information platform.
+- canonical entities for People, Organisations, Locations, Projects, Documents and Assets
+- first-class, directly navigable Relationships
+- multiple views over the same records
+- maintainable, lightweight and preferably free/open-source technology
+- useful operation without WAN access
 
-The platform should store, organise, display, search and connect real-world information in a user-friendly way.
+Deterministic relationship inference may assist data entry only when it is explainable and reviewed before creating a relationship.
 
-The foundation domains are:
+Stage 1 does not include AI, chat, dispatcher architecture, decision support, automation, scheduling, login or WAN/mobile features. Import and export are allowed when they directly help populate, migrate or protect local data.
 
-* People
-* Organisations
-* Locations
-* Relationships
-
-Projects, Documents and Assets are also active Stage 1 domains. They prove the shared entity architecture can support more than the foundation domains without one-off models.
-
-Relationships are first-class records. They should be stored, displayed, edited and navigated directly. Deterministic relationship inference suggestions may assist data entry, but users review them before creation and retain normal ownership of confirmed records.
-
-Operation Eddy should prioritise:
-
-* local-first architecture
-* free and open-source tools where practical
-* structured data
-* reusable entities
-* clean navigation
-* maintainable code
-* useful UI early
-* long-term extensibility
-
-Stage 1 must not include:
-
-* AI
-* chatbot features
-* dispatcher architecture
-* decision support
-* complex automation
-* scheduling
-
-Simple import/export tools are allowed where they directly help populate or protect the information platform.
-
-Future stages are:
-
-1. Decision Support
-2. Automation
-3. Artificial Intelligence
-
-AI should eventually consume the platform’s data.
-
-AI should not become the platform.
+Possible later stages include decision support, automation and artificial intelligence. They are direction, not current commitments; Stage 1 must remain useful without them.

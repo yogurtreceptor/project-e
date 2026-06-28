@@ -1,5 +1,3 @@
-# ARCHITECTURE_DECISIONS.md
-
 # Architecture Decisions
 
 This file records important architecture decisions for Operation Eddy.

@@ -63,7 +63,7 @@ Agent Workflow
 --------------
 - Codex is the current primary implementation and review tool. Claude Code is optional and not part of the active workflow.
 - All agents should rely on repository docs and current code, not assumptions from previous sessions.
-- `docs/reviews/claude_handoff.md` is retained as historical implementation/refactor guidance; validate it against current code before use.
+- Point-in-time reviews and handoffs are not active guidance; use current code, the roadmap and the live technical-debt register.
 - Codex-specific sandbox/workspace notes are not universal instructions for other tools.
 - Commit messages must have a concise, descriptive subject explaining the delivered change; never use agent attribution as the subject or sole description.
 - When committing, add a lightweight final trailer such as `Agent: Codex` (or `Agent: Claude` if Claude Code is used later) after the descriptive message.

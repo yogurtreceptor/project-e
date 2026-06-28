@@ -10,7 +10,7 @@ The system is organised around three practical layers:
 - Local application layer for validation, persistence rules and view logic.
 - Embedded SQLite database for durable local storage.
 
-No external runtime dependencies are required for the current foundation.
+The core application uses only the Python standard library. Map tiles, browser map assets and address lookup are optional external services; core record workflows do not require them.
 
 ## Current Implementation
 
@@ -70,7 +70,7 @@ Reusable entity pages include:
 - Related Entities for graph exploration.
 - Notes for free-text information.
 - Documents section backed by first-class Document entity relationships.
-- Timeline placeholder for created, modified and relationship events.
+- Derived timeline for creation, modification, edit history and relationship events.
 - Metadata with system information.
 
 Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
