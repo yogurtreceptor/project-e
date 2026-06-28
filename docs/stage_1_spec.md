@@ -43,7 +43,7 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 1. Architecture
 2. Foundation
 3. Entity Model
-4. Relationships
+4. Relationships and deterministic family inference
 5. Entity Pages
 6. Search
 7. Maps
@@ -60,6 +60,8 @@ Maps are a later Stage 1 view over Location data. Search and relationship naviga
 - Users can create, edit, delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
 - Users can upload an individual file to a Document entity; replacement and Document deletion clean up unreferenced owned files.
 - Users can connect Documents and Assets to other entities through relationships.
+- Safe deterministic family suggestions are reviewed before becoming normal editable relationships.
+- Confirmed inference-created relationships retain provenance; rejected evidence is suppressed until it materially changes; completed review batches remain available in searchable history with undo.
 - The platform remains usable without WAN access.
 - Stage 1 features do not require AI, automation, login or scheduling.
 

@@ -14,6 +14,7 @@ Done:
 * Additional domains: Projects, Documents and Assets
 * Schema governance and migration ledger
 * Duplicate/canonical-record safeguards
+* Deterministic family relationship inference and review history
 
 Active:
 

@@ -58,6 +58,15 @@ Document forms include a file upload control, while stored file path, MIME type 
 
 Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 
+## Inference Review
+
+- Keep pending suggestions separate from real relationship records.
+- Present one suggestion card at a time with clear Confirm and Reject actions, the people involved, rule/reason, source chain and any inferred date.
+- Advance through the active stack after each decision and archive a batch automatically after its final review.
+- Hide archived batches behind one explicit button; once shown, render every batch expanded so browser Find can search the complete history.
+- Provide Undo for confirmed and rejected decisions. Undoing confirmation removes the relationship created by that decision and reopens the suggestion.
+- Confirmed relationships use the normal edit/delete workflow; inference origin and evidence health belong in details/history, not in access restrictions.
+
 ## Map View
 
 The map should behave like a view, not a separate workspace. Markers link back to canonical entity pages, and layer controls filter visible entity-derived markers without changing stored data.

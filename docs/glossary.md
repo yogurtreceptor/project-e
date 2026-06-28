@@ -183,8 +183,20 @@ Information captured in named fields or relationships rather than only in free t
 See also: Notes, Controlled Field.
 
 
-**Inference Review Queue** — Review-only workspace containing deterministic relationship suggestions that are not active records until confirmed. Completed batches move automatically into its historic section, where decisions can be undone.
+## Evidence Fingerprint
 
-**Inference-created relationship** — A normal editable relationship created when a user confirms a deterministic suggestion. It behaves like a manually entered relationship while retaining inference provenance and evidence-health metadata for auditability.
+A stable digest of an inference rule, inferred date and supporting relationship rows. It identifies material evidence changes and prevents an unchanged rejected suggestion from reappearing.
 
-**Evidence fingerprint** — Stable digest of an inference rule, inferred date, and supporting relationship rows, used to explain evidence changes and suppress unchanged rejected suggestions.
+See also: Inference Review Queue, Relationship.
+
+## Inference-created Relationship
+
+A normal editable relationship created when a user confirms a deterministic suggestion. It behaves like a manually entered relationship while retaining inference provenance and evidence-health metadata for auditability.
+
+See also: Inference Review Queue, Relationship.
+
+## Inference Review Queue
+
+A review workspace containing deterministic relationship suggestions that are not relationship records until confirmed. Completed batches archive automatically; one archive control reveals fully expanded searchable history with per-decision undo.
+
+See also: Evidence Fingerprint, Inference-created Relationship, Relationship.

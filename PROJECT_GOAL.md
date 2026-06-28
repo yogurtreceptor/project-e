@@ -19,7 +19,7 @@ The foundation domains are:
 
 Projects, Documents and Assets are also active Stage 1 domains. They prove the shared entity architecture can support more than the foundation domains without one-off models.
 
-Relationships are first-class records. They should be stored, displayed, edited and navigated directly.
+Relationships are first-class records. They should be stored, displayed, edited and navigated directly. Deterministic relationship inference suggestions may assist data entry, but users review them before creation and retain normal ownership of confirmed records.
 
 Operation Eddy should prioritise:
 

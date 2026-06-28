@@ -144,6 +144,14 @@ Legacy generic or gendered keys such as `located_at`, `mother_of`, `father_of`, 
 
 Phone numbers, emails and websites remain simple direct fields in Stage 1. The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes. That should be introduced only when multiple contact points or richer communication history justify it; it should not become a Communications domain during Stage 1.
 
+## Deterministic Family Inference
+
+Manual parent/child relationships are source facts. The inference manager derives only safe bloodline candidates: grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin. It does not infer step, adoptive, half, foster, guardian, in-law or partner relationships.
+
+Suggestions are not relationships until confirmed. Confirmation creates a normal editable relationship while preserving its rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps. Rejection suppresses the same evidence fingerprint. Later source changes invalidate pending suggestions but only flag changed evidence on confirmed relationships.
+
+Full-sibling evidence requires the same complete known parent set with at least two parents. Direct-generation dates may use the younger person’s DOB alone; peer and collateral dates require both DOBs.
+
 ## Relationship Dates
 
 Relationship dates support exact calendar dates plus certainty metadata.

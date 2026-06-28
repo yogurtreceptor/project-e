@@ -2,6 +2,28 @@
 
 ## 2026-06-28
 
+Deterministic family inference manager completed.
+
+What changed:
+
+- Added reusable rules for grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin suggestions from active parent/child evidence.
+- Added an Inference Review Queue with one-card review, provenance/source-chain display, confirmation, rejection suppression, automatic batch archival, searchable expanded history and undo.
+- Kept pending suggestions outside canonical relationships. Confirmation creates a normal editable/deletable relationship with rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps.
+- Changed later evidence loss to a non-destructive evidence-health warning on confirmed relationships.
+- Added conservative date inference: direct-generation relationships may use the younger person’s DOB alone; peer/collateral relationships require both DOBs.
+- Added schema migration/repair fields, conflict and cycle safeguards, UI distinctions, documentation and inference lifecycle coverage.
+
+Current limits:
+
+- No step, adoptive, half, foster, guardian, in-law or partner inference.
+- Date enrichment for an already-confirmed relationship is a future review rule.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests` (85 tests passing at completion)
+
+
 Person title deferred.
 
 What changed:

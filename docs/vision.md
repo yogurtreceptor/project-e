@@ -28,6 +28,7 @@ The Stage 1 domains are:
 
 - One canonical record should represent each real-world object.
 - Relationships should be stored, edited, displayed and navigated directly.
+- Deterministic inference should remain explainable, reviewable and user-correctable.
 - Local data should remain useful without network access.
 - Views should reveal the same underlying data in different practical ways.
 - The platform should stay understandable enough to maintain over time.

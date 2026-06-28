@@ -125,7 +125,7 @@ Older local databases may still contain an unused `attachments` table. It is no 
 
 ## Documentation Rule
 
-Planning documents should be updated when architecture, scope, data model or domain boundaries change.
+Documentation is part of each feature, behaviour, workflow, schema and architecture change. Agents must audit and update every affected planning/reference document, including feature status, roadmap, architecture, database design, ontology/glossary, UI workflow and build log where relevant. Commit subjects must describe the delivered change; agent attribution is a final trailer only.
 
 ## Geographic Architecture
 

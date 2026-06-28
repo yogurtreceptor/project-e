@@ -6,6 +6,8 @@ Local-first Personal Operational Intelligence Platform.
 
 Stage 1 stores and navigates structured local information for People, Organisations, Locations, Projects, Documents, Assets and Relationships.
 
+Current relationship features include deterministic family inference for safe bloodline relationships. Suggestions remain outside the relationship table until reviewed in the Inference Review Queue. Confirmation creates a normal editable relationship with retained provenance; rejection suppresses unchanged evidence; completed batches archive automatically and remain searchable with undo controls.
+
 Stage 1 excludes AI, chat, dispatcher architecture, automation, scheduling, decision support, WAN/mobile access and login.
 
 Codex is the current primary implementation and review tool. Repository docs and current code are the source of truth; the [implementation/refactor handoff](docs/reviews/claude_handoff.md) is retained as historical guidance.

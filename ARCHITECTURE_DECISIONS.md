@@ -103,3 +103,19 @@ Local databases need an auditable history for future schema changes, but Operati
 
 Consequences:
 Future explicit schema changes must append a uniquely named migration and must not rename or remove identifiers already in use. Existing databases can adopt the ledger without losing data. Startup retains a small amount of repeated schema inspection in exchange for compatibility and recovery safety.
+
+
+## ADR-005: Review deterministic relationship inference before creation
+
+Status: Accepted
+
+Date: 2026-06-28
+
+Decision:
+Implement family inference as a reusable deterministic rule engine over canonical Person relationships. Inferred candidates are review suggestions, not relationship records. Confirmation creates a normal editable relationship with provenance; rejection suppresses the unchanged evidence fingerprint. Completed batches archive automatically with searchable history and undo.
+
+Reason:
+Safe bloodline facts can be derived consistently from manual parent/child evidence, but derived data must remain explainable and under user control. Keeping suggestions outside the relationship table prevents silent graph mutation while provenance and suppression make reviews repeatable.
+
+Consequences:
+Initial rules are limited to grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin. Half, step, adoptive, foster, guardian, in-law and partner inference remain excluded. Confirmed relationships are editable and are not deleted when original evidence changes; their evidence health is flagged instead. Rule, source relationship IDs, source batch, fingerprint and timestamps remain auditable.

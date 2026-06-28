@@ -52,8 +52,12 @@ Implementation Preferences
 
 Documentation
 -------------
-Keep all planning documents current when architecture changes.
-Consult `docs/glossary.md` when project terminology is unclear.
+- Treat documentation as part of every feature, behaviour, schema, workflow, and architecture change.
+- Before finishing work, audit the relevant planning and reference documents and update every affected one; do not update only the architecture document.
+- Keep feature status, roadmap/planning, architecture, database design, glossary/ontology, user workflow, and build log documentation aligned with the current code where relevant.
+- Record important implementation decisions, constraints, exclusions, migrations, and follow-up work concisely so future agents can reconstruct the current state from the repository.
+- If no documentation change is needed, explicitly verify that during review rather than assuming it.
+- Consult `docs/glossary.md` when project terminology is unclear and add or revise terms when a feature introduces new language.
 
 Agent Workflow
 --------------
@@ -61,7 +65,8 @@ Agent Workflow
 - All agents should rely on repository docs and current code, not assumptions from previous sessions.
 - `docs/reviews/claude_handoff.md` is retained as historical implementation/refactor guidance; validate it against current code before use.
 - Codex-specific sandbox/workspace notes are not universal instructions for other tools.
-- When committing, use a lightweight agent trailer such as `Agent: Codex` (or `Agent: Claude` if Claude Code is used later).
+- Commit messages must have a concise, descriptive subject explaining the delivered change; never use agent attribution as the subject or sole description.
+- When committing, add a lightweight final trailer such as `Agent: Codex` (or `Agent: Claude` if Claude Code is used later) after the descriptive message.
 - Do not add per-file signatures or "written by" banners.
 - Do not create separate duplicate instructions for each agent unless a workflow difference actually matters.
 
