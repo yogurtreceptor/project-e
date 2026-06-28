@@ -68,11 +68,15 @@ class FamilyFacts:
         row = self.people.get(person_id)
         return row["birthday"] if row else ""
 
-    def relationship_start(self, first_id: int, second_id: int) -> str:
+    def peer_relationship_start(self, first_id: int, second_id: int) -> str:
         """Return the lower DOB only when both related people have one."""
         first = self.birth(first_id)
         second = self.birth(second_id)
         return min(first, second) if first and second else ""
+
+    def generation_relationship_start(self, younger_id: int) -> str:
+        """A child or grandchild's DOB alone establishes the relationship start."""
+        return self.birth(younger_id)
 
     def is_ancestor(self, ancestor: int, descendant: int) -> bool:
         seen = set()
@@ -111,14 +115,14 @@ class GrandparentRule(InferenceRule):
             for parent, lower_id in parent_map.items():
                 for grandparent, upper_id in facts.parents.get(parent, {}).items():
                     if grandparent != child:
-                        out.append(Candidate("grandparent_child", grandparent, child, self.key, tuple(sorted((upper_id, lower_id))), facts.relationship_start(grandparent, child)))
+                        out.append(Candidate("grandparent_child", grandparent, child, self.key, tuple(sorted((upper_id, lower_id))), facts.generation_relationship_start(child)))
         return out
 
 
 class SiblingRule(InferenceRule):
     key = "full_sibling_shared_parents"
     def infer(self, facts):
-        return [Candidate("sibling_of", a, b, self.key, ids, facts.relationship_start(a, b)) for (a, b), ids in facts.full_siblings().items()]
+        return [Candidate("sibling_of", a, b, self.key, ids, facts.peer_relationship_start(a, b)) for (a, b), ids in facts.full_siblings().items()]
 
 
 class AuntUncleRule(InferenceRule):
@@ -129,7 +133,7 @@ class AuntUncleRule(InferenceRule):
             for parent, relative in ((a, b), (b, a)):
                 for child, parent_map in facts.parents.items():
                     if parent in parent_map and child != relative:
-                        out.append(Candidate("aunt_uncle_niece_nephew", relative, child, self.key, tuple(sorted((*sibling_ids, parent_map[parent]))), facts.relationship_start(relative, child)))
+                        out.append(Candidate("aunt_uncle_niece_nephew", relative, child, self.key, tuple(sorted((*sibling_ids, parent_map[parent]))), facts.peer_relationship_start(relative, child)))
         return out
 
 
@@ -146,7 +150,7 @@ class CousinRule(InferenceRule):
                 for second, second_rid in children_by_parent.get(b, []):
                     if first != second:
                         x, y = sorted((first, second))
-                        out.append(Candidate("cousin_of", x, y, self.key, tuple(sorted((*sibling_ids, first_rid, second_rid))), facts.relationship_start(x, y)))
+                        out.append(Candidate("cousin_of", x, y, self.key, tuple(sorted((*sibling_ids, first_rid, second_rid))), facts.peer_relationship_start(x, y)))
         return out
 
 

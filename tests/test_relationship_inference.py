@@ -44,7 +44,7 @@ class RelationshipInferenceTests(unittest.TestCase):
         self.assertIn(("aunt_uncle_niece_nephew", p2, c1), keys)
         self.assertIn(("cousin_of", min(c1,c2), max(c1,c2)), keys)
         grandchild = next(x for x in suggestions if x.type_key == "grandparent_child" and x.target.id == c1)
-        self.assertEqual(grandchild.started_at, "1940-01-01")
+        self.assertEqual(grandchild.started_at, "2020-01-02")
         sibling = next(x for x in suggestions if x.type_key == "sibling_of")
         aunt = next(x for x in suggestions if x.type_key == "aunt_uncle_niece_nephew" and x.source.id == p2)
         cousin = next(x for x in suggestions if x.type_key == "cousin_of")
@@ -54,8 +54,14 @@ class RelationshipInferenceTests(unittest.TestCase):
         self.assertGreaterEqual(len(grandchild.supporting_relationship_ids), 2)
         self.assertEqual(self.connection.execute("SELECT count(*) FROM relationships WHERE record_origin='inferred'").fetchone()[0], 0)
 
-    def test_start_date_is_unknown_when_either_person_lacks_dob(self):
+    def test_grandchild_dob_alone_sets_generation_relationship_start(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child", "2020-01-02")
+        self.parent(gp, parent); self.parent(parent, child)
+        item = next(x for x in self.pending() if x.type_key == "grandparent_child")
+        self.assertEqual(item.started_at, "2020-01-02")
+
+    def test_generation_start_is_unknown_when_only_older_person_has_dob(self):
+        gp, parent, child = self.person("GP", "1950-01-01"), self.person("Parent"), self.person("Child")
         self.parent(gp, parent); self.parent(parent, child)
         item = next(x for x in self.pending() if x.type_key == "grandparent_child")
         self.assertEqual(item.started_at, "")
@@ -87,8 +93,8 @@ class RelationshipInferenceTests(unittest.TestCase):
         review_suggestion(self.connection, item.id, "reject")
         recompute_inferences(self.connection)
         self.assertFalse(self.pending())
-        self.connection.execute("UPDATE people SET birthday='1950-01-01' WHERE entity_id=?", (gp,))
-        recompute_inferences(self.connection, "person_date_updated", gp)
+        self.connection.execute("UPDATE people SET birthday='2021-02-03' WHERE entity_id=?", (child,))
+        recompute_inferences(self.connection, "person_date_updated", child)
         replacement = next(x for x in self.pending() if x.type_key == "grandparent_child")
         self.assertNotEqual(replacement.evidence_fingerprint, item.evidence_fingerprint)
 
