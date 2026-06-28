@@ -93,7 +93,7 @@ Date uncertainty is represented as metadata beside structured calendar date valu
 
 ### Relationship Visualisation Framework
 
-Relationship visualisations are derived views over canonical entity and relationship records; they do not introduce graph-specific persistence. `app/relationship_graph.py` separates relationship extraction from presentation by adapting `RelationshipRecord` instances into deduplicated `RelationshipGraph` nodes and edges. The family adapter currently maps Person parent/child, grandparent, sibling, spouse and partner records.
+Relationship visualisations are derived views over canonical entity and relationship records; they do not introduce graph-specific persistence. `app/relationship_graph.py` separates relationship extraction from presentation by adapting `RelationshipRecord` instances into deduplicated `RelationshipGraph` nodes and edges. The family adapter maps Person parent/child, grandparent, sibling, spouse and partner records, then generically limits the rendered graph to same-generation and adjacent-generation edges. Multi-generation records remain canonical data but are represented visually through their parent/child chain rather than redundant direct lines.
 
 `app/graph_layout.py` provides a presentation-neutral layered layout. Edges declare only a rank difference, allowing the same layout to support future organisation, project, document or mixed-entity graphs without family-specific rules. Positive-rank cycles are detected and marked rather than repeatedly traversed, and nodes are keyed by canonical entity ID. Server-rendered SVG in the relationship page is a separate rendering concern.
 

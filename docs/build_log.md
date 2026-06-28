@@ -35,7 +35,7 @@ What changed:
 - Added a Family tree view to the relationship browser using only existing canonical Person relationships.
 - Added reusable relationship-to-graph extraction with canonical entity-ID node deduplication.
 - Added a generic layered graph layout based on edge rank differences, independent of family terminology.
-- Rendered parent and grandparent generations above descendants, with siblings naturally sharing a row and sibling/spouse/partner links shown as same-level connections where data permits.
+- Rendered generations above descendants using adjacent parent/child edges only, with siblings naturally sharing a row and sibling/spouse/partner links shown as same-level connections where data permits. Stored multi-generation relationships are represented through the parent/child chain without redundant direct lines.
 - Added deterministic cycle detection, safe empty states and tests for hierarchy, deduplication, unrelated relationship filtering and cyclic input.
 
 Current limitations:

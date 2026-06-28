@@ -40,8 +40,13 @@ def extract_relationship_graph(relationships: Iterable[RelationshipRecord], edge
     return RelationshipGraph(tuple(sorted(nodes.values(), key=lambda node: (node.label.casefold(), node.id))), tuple(edges.values()))
 
 def extract_family_graph(relationships: Iterable[RelationshipRecord]) -> RelationshipGraph:
-    """Adapt existing Person family relationships to the generic graph contract."""
-    return extract_relationship_graph(relationships, family_edge)
+    """Adapt family records, drawing only same or adjacent-generation edges."""
+    return extract_relationship_graph(relationships, adjacent_family_edge)
+
+def adjacent_family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
+    """Exclude visually redundant relationships that span multiple generations."""
+    edge = family_edge(relationship)
+    return edge if edge is None or edge.rank_delta <= 1 else None
 
 def family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
     if relationship.source.type != "person" or relationship.target.type != "person":
