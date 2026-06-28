@@ -95,13 +95,37 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         groups_in_layer.sort(key=lambda nodes: (nodes[0].label.casefold(), nodes[0].id))
 
     ordered_layers = {rank: [node for group in groups_in_layer for node in group] for rank, groups_in_layer in layers.items()}
-    max_count = max(len(nodes) for nodes in ordered_layers.values())
+    hierarchy_neighbours: dict[int, set[int]] = {node.id: set() for node in graph.nodes}
+    for edge in graph.edges:
+        if edge.rank_delta > 0:
+            hierarchy_neighbours[edge.source_id].add(edge.target_id)
+            hierarchy_neighbours[edge.target_id].add(edge.source_id)
+    _order_layers_by_neighbours(ordered_layers, ranks, hierarchy_neighbours)
+
+    peer_pairs = {
+        frozenset((edge.source_id, edge.target_id))
+        for edge in graph.edges
+        if edge.rank_delta == 0
+    }
+    branch_gap = horizontal_gap // 2
+    row_coordinates: dict[int, list[int]] = {}
+    row_widths: dict[int, int] = {}
+    for rank, nodes in ordered_layers.items():
+        coordinates = [0]
+        for previous, current in zip(nodes, nodes[1:]):
+            distinct_branches = hierarchy_neighbours[previous.id] != hierarchy_neighbours[current.id]
+            explicit_peers = frozenset((previous.id, current.id)) in peer_pairs
+            extra_gap = branch_gap if distinct_branches and not explicit_peers else 0
+            coordinates.append(coordinates[-1] + horizontal_gap + extra_gap)
+        row_coordinates[rank] = coordinates
+        row_widths[rank] = coordinates[-1]
+
+    max_width = max(row_widths.values())
     positions: list[PositionedNode] = []
     for rank, nodes in sorted(ordered_layers.items()):
-        row_width = (len(nodes) - 1) * horizontal_gap
-        offset = padding + ((max_count - 1) * horizontal_gap - row_width) // 2
-        for index, node in enumerate(nodes):
-            positions.append(PositionedNode(node.id, node.label, node.href, offset + index * horizontal_gap, padding + rank * vertical_gap))
+        offset = padding + (max_width - row_widths[rank]) // 2
+        for node, coordinate in zip(nodes, row_coordinates[rank]):
+            positions.append(PositionedNode(node.id, node.label, node.href, offset + coordinate, padding + rank * vertical_gap))
 
     rendered_edges = tuple(
         PositionedEdge(
@@ -113,7 +137,32 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         )
         for edge in graph.edges
     )
-    return GraphLayout(tuple(positions), rendered_edges, (max_count - 1) * horizontal_gap + padding * 2, max(ranks.values()) * vertical_gap + padding * 2)
+    return GraphLayout(tuple(positions), rendered_edges, max_width + padding * 2, max(ranks.values()) * vertical_gap + padding * 2)
+
+def _order_layers_by_neighbours(ordered_layers: dict[int, list], ranks: dict[int, int], neighbours: dict[int, set[int]]) -> None:
+    """Order each row near its actual adjacent-row connections."""
+    sorted_ranks = sorted(ordered_layers)
+    for _ in range(4):
+        for rank_order, neighbour_direction in ((sorted_ranks[1:], -1), (list(reversed(sorted_ranks[:-1])), 1)):
+            for rank in rank_order:
+                nodes = ordered_layers[rank]
+                prior_positions = {node.id: index for index, node in enumerate(nodes)}
+                positions = {
+                    node.id: index
+                    for layer_nodes in ordered_layers.values()
+                    for index, node in enumerate(layer_nodes)
+                }
+
+                def order_key(node) -> tuple[float, int, str, int]:
+                    adjacent = [
+                        positions[other_id]
+                        for other_id in neighbours[node.id]
+                        if ranks[other_id] == rank + neighbour_direction
+                    ]
+                    barycentre = sum(adjacent) / len(adjacent) if adjacent else float(prior_positions[node.id])
+                    return (barycentre, prior_positions[node.id], node.label.casefold(), node.id)
+
+                nodes.sort(key=order_key)
 
 def _reachable(adjacency: dict[int, set[int]], start: int, target: int) -> bool:
     pending = [start]

@@ -71,6 +71,28 @@ class RelationshipGraphTests(unittest.TestCase):
         positions = {node.id: node for node in layout.nodes}
         self.assertEqual(positions[2].y, positions[3].y)
 
+    def test_mixed_parent_sets_are_ordered_near_only_their_connected_children(self) -> None:
+        shared_parent, additional_parent, first_child, second_child = (
+            person(1, "Zulu shared parent"),
+            person(2, "Alpha additional parent"),
+            person(3, "Alpha first child"),
+            person(4, "Zulu second child"),
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", shared_parent, first_child),
+            relationship(2, "parent_child", shared_parent, second_child),
+            relationship(3, "parent_child", additional_parent, second_child),
+        ]))
+        positions = {node.id: node for node in layout.nodes}
+
+        parent_order = positions[2].x - positions[1].x
+        child_order = positions[4].x - positions[3].x
+        self.assertGreater(parent_order * child_order, 0)
+        self.assertLess(abs(positions[1].x - positions[3].x), abs(positions[2].x - positions[3].x))
+        self.assertLess(abs(positions[2].x - positions[4].x), abs(positions[2].x - positions[3].x))
+        self.assertGreater(abs(positions[1].x - positions[2].x), 190)
+        self.assertGreater(abs(positions[3].x - positions[4].x), 190)
+
     def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
         grandparent, parent, partner, child = (
             person(1, "Grandparent"), person(2, "Parent"), person(3, "Partner"), person(4, "Child")
