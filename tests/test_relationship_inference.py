@@ -5,7 +5,8 @@ import unittest
 from app.db_schema import create_schema
 from app.db_support import utc_now
 from app.relationship_inference import dismiss_batch, list_review_batches, recompute_inferences, review_suggestion
-from app.relationship_repository import create_relationship, delete_relationship, get_relationship
+from app.relationship_repository import create_relationship, delete_relationship, get_relationship, list_relationships, update_relationship
+from app.view_pages.relationships import inference_review_page
 
 
 class RelationshipInferenceTests(unittest.TestCase):
@@ -47,18 +48,25 @@ class RelationshipInferenceTests(unittest.TestCase):
         self.assertGreaterEqual(len(grandchild.supporting_relationship_ids), 2)
         self.assertEqual(self.connection.execute("SELECT count(*) FROM relationships WHERE record_origin='inferred'").fetchone()[0], 0)
 
-    def test_confirmation_keeps_provenance_and_is_read_only(self):
+    def test_confirmation_creates_editable_relationship_with_audit_provenance(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child", "2020-01-02")
         upper, lower = self.parent(gp, parent), self.parent(parent, child)
         item = next(x for x in self.pending() if x.type_key == "grandparent_child")
         review_suggestion(self.connection, item.id, "confirm")
         row = self.connection.execute("SELECT id, provenance_json FROM relationships WHERE inference_suggestion_id=?", (item.id,)).fetchone()
         record = get_relationship(self.connection, row["id"])
-        self.assertEqual(record.record_origin, "inferred")
+        self.assertEqual(record.record_origin, "manual")
+        self.assertTrue(record.created_from_inference)
+        self.assertEqual(record.inference_evidence_status, "current")
         provenance = json.loads(row["provenance_json"])
         self.assertEqual(provenance["supporting_relationship_ids"], [upper, lower])
-        with self.assertRaisesRegex(ValueError, "read-only"):
-            delete_relationship(self.connection, record.id)
+        self.assertEqual(provenance["source_batch_id"], item.batch_id)
+        self.assertTrue(provenance["confirmed_at"])
+        values = record.to_form_values(); values["notes"] = "User corrected details"
+        update_relationship(self.connection, record.id, values)
+        self.assertEqual(get_relationship(self.connection, record.id).notes, "User corrected details")
+        delete_relationship(self.connection, record.id)
+        self.assertIsNone(get_relationship(self.connection, record.id))
 
     def test_rejection_is_suppressed_until_evidence_changes(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child", "2020-01-02")
@@ -72,14 +80,17 @@ class RelationshipInferenceTests(unittest.TestCase):
         replacement = next(x for x in self.pending() if x.type_key == "grandparent_child")
         self.assertNotEqual(replacement.evidence_fingerprint, item.evidence_fingerprint)
 
-    def test_support_removal_invalidates_and_removes_confirmed_relationship(self):
+    def test_support_removal_flags_but_preserves_confirmed_relationship(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")
         upper = self.parent(gp, parent); self.parent(parent, child)
         item = next(x for x in self.pending() if x.type_key == "grandparent_child")
         review_suggestion(self.connection, item.id, "confirm")
+        confirmed_id = self.connection.execute("SELECT id FROM relationships WHERE inference_suggestion_id=?", (item.id,)).fetchone()[0]
         delete_relationship(self.connection, upper)
-        self.assertEqual(self.connection.execute("SELECT status FROM inference_suggestions WHERE id=?", (item.id,)).fetchone()[0], "invalidated")
-        self.assertFalse(self.connection.execute("SELECT 1 FROM relationships WHERE inference_suggestion_id=?", (item.id,)).fetchone())
+        self.assertEqual(self.connection.execute("SELECT status FROM inference_suggestions WHERE id=?", (item.id,)).fetchone()[0], "confirmed")
+        record = get_relationship(self.connection, confirmed_id)
+        self.assertIsNotNone(record)
+        self.assertEqual(record.inference_evidence_status, "changed")
 
     def test_conflicts_cycles_self_and_half_siblings_are_not_suggested(self):
         a,b,c,d = [self.person(name) for name in "ABCD"]
@@ -98,6 +109,21 @@ class RelationshipInferenceTests(unittest.TestCase):
             review_suggestion(self.connection, item.id, "reject")
         dismiss_batch(self.connection, batch["id"])
         self.assertEqual(self.connection.execute("SELECT status FROM inference_batches WHERE id=?", (batch["id"],)).fetchone()[0], "dismissed")
+
+    def test_review_queue_shows_one_pending_card_then_advances(self):
+        gp1, gp2, parent, child = (self.person("GP1"), self.person("GP2"), self.person("Parent"), self.person("Child"))
+        self.parent(gp1, parent); self.parent(gp2, parent); self.parent(parent, child)
+        batches = list_review_batches(self.connection)
+        pending = [item for _, items in batches for item in items if item.status == "pending" and item.type_key == "grandparent_child"]
+        relationships = {item.id: item for item in list_relationships(self.connection)}
+        html = inference_review_page(batches, relationships)
+        self.assertIn("Suggestion 1 of 2", html)
+        self.assertIn(pending[0].source.title, html)
+        self.assertNotIn(f'<h3>{pending[1].source.title}', html)
+        review_suggestion(self.connection, pending[0].id, "reject")
+        html = inference_review_page(list_review_batches(self.connection), relationships)
+        self.assertIn("Suggestion 2 of 2", html)
+        self.assertIn(pending[1].source.title, html)
 
     def test_reconciliation_recovers_parent_chain_created_outside_repository_hooks(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")

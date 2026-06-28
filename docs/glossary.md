@@ -185,6 +185,6 @@ See also: Notes, Controlled Field.
 
 **Inference Review Queue** — Review-only workspace containing deterministic relationship suggestions that are not active records until confirmed.
 
-**Inferred relationship** — A read-only relationship confirmed by a user from deterministic supporting facts. It remains marked inferred and retains provenance; it is never converted into a manual record.
+**Inference-created relationship** — A normal editable relationship created when a user confirms a deterministic suggestion. It behaves like a manually entered relationship while retaining inference provenance and evidence-health metadata for auditability.
 
 **Evidence fingerprint** — Stable digest of an inference rule, inferred date, and supporting relationship rows, used to explain evidence changes and suppress unchanged rejected suggestions.

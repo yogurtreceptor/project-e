@@ -211,10 +211,10 @@ def relationship_list_page(relationships: list[RelationshipRecord], integrity_wa
                     <td><a href="/relationships/{relationship.id}">{escape(relationship.label)}</a></td>
                     <td><a href="/{relationship.source.slug}/{relationship.source.id}">{escape(relationship.source.title)}</a></td>
                     <td><a href="/{relationship.target.slug}/{relationship.target.id}">{escape(relationship.target.title)}</a></td>
-                    <td>{escape(relationship.status)} <span class="origin-badge origin-{escape(relationship.record_origin)}">{escape(relationship.record_origin)}</span></td>
+                    <td>{escape(relationship.status)} {('<span class="origin-badge origin-inferred">created from inference</span>' if relationship.created_from_inference else '')}</td>
                     <td class="row-actions">
-                        {f'<a href="/relationships/{relationship.id}/edit">Edit</a>' if getattr(relationship, "record_origin", "manual") == "manual" else "Read-only"}
-                        {f'<form method="post" action="/relationships/{relationship.id}/delete"><button class="link-button" type="submit">Delete</button></form>' if getattr(relationship, "record_origin", "manual") == "manual" else ""}
+                        <a href="/relationships/{relationship.id}/edit">Edit</a>
+                        <form method="post" action="/relationships/{relationship.id}/delete"><button class="link-button" type="submit">Delete</button></form>
                     </td>
                 </tr>
                 """
@@ -255,7 +255,7 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
         </div>
         <div class="actions">
             <a class="button secondary" href="/relationships">Back</a>
-            {f'<a class="button" href="/relationships/{relationship.id}/edit">Edit</a>' if getattr(relationship, "record_origin", "manual") == "manual" else '<span class="status-badge">Confirmed inferred / read-only</span>'}
+            <a class="button" href="/relationships/{relationship.id}/edit">Edit</a>
         </div>
     </section>
     <section class="panel">
@@ -266,11 +266,12 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
             <dt>Type</dt><dd>{escape(relationship.label)}</dd>
             <dt>Inverse</dt><dd>{escape(relationship.type.inverse_label)}</dd>
             <dt>Status</dt><dd>{escape(relationship.status)}</dd>
-            <dt>Origin</dt><dd>{escape(getattr(relationship, "record_origin", "manual"))}</dd>
+            <dt>Origin</dt><dd>{'Created from a confirmed inference' if getattr(relationship, 'created_from_inference', False) else 'Created manually'}</dd>
             <dt>Started</dt><dd>{escape(format_date_with_precision(relationship.started_at, relationship.started_at_precision))}</dd>
             {ended_date}
         </dl>
     </section>
+    {inference_audit_panel(relationship)}
     <section class="panel">
         <h2>Notes</h2>
         <p class="notes">{escape(relationship.notes) if relationship.notes else 'No notes yet.'}</p>
@@ -597,33 +598,57 @@ def date_precision_options() -> list[tuple[str, str]]:
 
 
 
+
+def inference_audit_panel(relationship: RelationshipRecord) -> str:
+    if not getattr(relationship, "created_from_inference", False):
+        return ""
+    try:
+        provenance = json.loads(getattr(relationship, "provenance_json", "") or "{}")
+    except json.JSONDecodeError:
+        provenance = {}
+    support_ids = provenance.get("supporting_relationship_ids", [])
+    links = ", ".join(f'<a href="/relationships/{int(item)}">#{int(item)}</a>' for item in support_ids) or "Not recorded"
+    evidence = getattr(relationship, "inference_evidence_status", "") or "unknown"
+    warning = '<p class="warning-text">The original supporting evidence has changed. Review this relationship when convenient; it remains editable and active.</p>' if evidence == "changed" else ""
+    return f'''<section class="panel inference-audit"><h2>Inference history</h2>{warning}<dl>
+        <dt>Rule</dt><dd>{escape(str(provenance.get("rule_key", "Not recorded")))}</dd>
+        <dt>Source batch</dt><dd>{escape(str(provenance.get("source_batch_id", "Not recorded")))}</dd>
+        <dt>Supporting relationships</dt><dd>{links}</dd>
+        <dt>Evidence status</dt><dd>{escape(evidence)}</dd>
+        <dt>Suggested</dt><dd>{escape(str(provenance.get("inferred_at", "Not recorded")))}</dd>
+        <dt>Confirmed</dt><dd>{escape(str(provenance.get("confirmed_at", "Not recorded")))}</dd>
+    </dl></section>'''
+
+
 def inference_review_page(batches, relationships_by_id) -> str:
-    if not batches:
-        content = '<p class="empty">No inference batches await review.</p>'
-    else:
-        stacks = []
-        for batch, suggestions in batches:
-            rows = []
-            for item in suggestions:
-                relationship_type = RELATIONSHIP_TYPES_BY_KEY[item.type_key]
-                label = relationship_type.label_for_role("source", item.source.metadata.get("sex", ""))
-                chain_parts = []
-                for relationship_id in item.supporting_relationship_ids:
-                    supporting = relationships_by_id.get(relationship_id)
-                    if supporting:
-                        chain_parts.append(f'<a href="/relationships/{supporting.id}">{escape(supporting.source.title)} {escape(supporting.label)} {escape(supporting.target.title)}</a>')
-                chain = " &rarr; ".join(chain_parts) or "Supporting records unavailable"
-                dates = escape(format_date_with_precision(item.started_at, item.started_at_precision)) if item.started_at else "Unknown"
-                actions = ""
-                if item.status == "pending":
-                    actions = f'''<form method="post" action="/relationships/inferences/{item.id}/review"><button name="decision" value="confirm">Confirm</button><button class="secondary" name="decision" value="reject">Reject / suppress</button></form>'''
-                rows.append(f'''<article class="inference-item status-{escape(item.status)}">
-                    <div class="split"><h3>{escape(item.source.title)} {escape(label)} {escape(item.target.title)}</h3><span class="status-badge">{escape(item.status)}</span></div>
-                    <p><strong>People:</strong> <a href="/{item.source.slug}/{item.source.id}">{escape(item.source.title)}</a> and <a href="/{item.target.slug}/{item.target.id}">{escape(item.target.title)}</a></p>
-                    <p><strong>Supporting chain:</strong> {chain}</p><p><strong>Inferred start:</strong> {dates}</p>
-                    <p><strong>Provenance:</strong> {escape(item.source_type)} / {escape(item.rule_key)} / evidence {escape(item.evidence_fingerprint[:12])}</p>{actions}</article>''')
-            pending = any(item.status == "pending" for item in suggestions)
-            dismiss = "" if pending else f'''<form method="post" action="/relationships/inferences/batches/{batch['id']}/dismiss"><button class="secondary">Dismiss reviewed batch</button></form>'''
-            stacks.append(f'''<section class="panel inference-batch"><div class="split"><div><p class="eyebrow">Review batch {batch['id']}</p><h2>{escape(batch['trigger_type'].replace('_', ' ').title())}</h2></div>{dismiss}</div>{''.join(rows)}</section>''')
-        content = "".join(stacks)
-    return f'''<section class="page-heading split"><div><h1>Inference Review Queue</h1><p>Deterministic family suggestions remain inactive until confirmed.</p></div><a class="button secondary" href="/relationships">Relationships</a></section>{content}'''
+    stacks = []
+    for batch, suggestions in batches:
+        pending = [item for item in suggestions if item.status == "pending"]
+        reviewed_count = len(suggestions) - len(pending)
+        if pending:
+            item = pending[0]
+            relationship_type = RELATIONSHIP_TYPES_BY_KEY[item.type_key]
+            label = relationship_type.label_for_role("source", item.source.metadata.get("sex", ""))
+            chain_parts = []
+            for relationship_id in item.supporting_relationship_ids:
+                supporting = relationships_by_id.get(relationship_id)
+                if supporting:
+                    chain_parts.append(f'<a href="/relationships/{supporting.id}">{escape(supporting.source.title)} {escape(supporting.label)} {escape(supporting.target.title)}</a>')
+            chain = " &rarr; ".join(chain_parts) or "Supporting records unavailable"
+            dates = escape(format_date_with_precision(item.started_at, item.started_at_precision)) if item.started_at else "Unknown"
+            card = f'''<article class="inference-card">
+                <div class="inference-progress"><span>Suggestion {reviewed_count + 1} of {len(suggestions)}</span><span>{len(pending)} remaining</span></div>
+                <p class="eyebrow">Suggested relationship</p><h3>{escape(item.source.title)} {escape(label)} {escape(item.target.title)}</h3>
+                <p><strong>People:</strong> <a href="/{item.source.slug}/{item.source.id}">{escape(item.source.title)}</a> and <a href="/{item.target.slug}/{item.target.id}">{escape(item.target.title)}</a></p>
+                <div class="inference-reason"><strong>Why this was suggested</strong><p>{chain}</p><p>Rule: {escape(item.rule_key)}</p></div>
+                <p><strong>Suggested start date:</strong> {dates}</p>
+                <form class="inference-actions" method="post" action="/relationships/inferences/{item.id}/review">
+                    <button class="button" name="decision" value="confirm">Confirm relationship</button>
+                    <button class="button secondary" name="decision" value="reject">Reject suggestion</button>
+                </form></article>'''
+        else:
+            card = f'''<div class="inference-complete"><h3>Batch complete</h3><p>All {len(suggestions)} suggestions have been reviewed.</p>
+                <form method="post" action="/relationships/inferences/batches/{batch['id']}/dismiss"><button class="button secondary">Dismiss completed batch</button></form></div>'''
+        stacks.append(f'''<section class="panel inference-batch"><div><p class="eyebrow">Review batch {batch['id']}</p><h2>{escape(batch['trigger_type'].replace('_', ' ').title())}</h2></div>{card}</section>''')
+    content = "".join(stacks) if stacks else '<p class="empty">No inference batches await review.</p>'
+    return f'''<section class="page-heading split"><div><h1>Inference Review Queue</h1><p>Review one deterministic suggestion at a time. Suggestions are not relationships until confirmed.</p></div><a class="button secondary" href="/relationships">Relationships</a></section>{content}'''

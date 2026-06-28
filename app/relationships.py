@@ -26,6 +26,8 @@ class RelationshipRecord:
     record_origin: str = "manual"
     inference_suggestion_id: int | None = None
     provenance_json: str = ""
+    created_from_inference: bool = False
+    inference_evidence_status: str = ""
 
     @property
     def type(self) -> RelationshipType:

@@ -763,5 +763,11 @@ dd {
 .status-pending { border-left: 4px solid #d97706; }
 .status-rejected, .status-invalidated { opacity: .72; }
 .inference-batch { margin-bottom: 1rem; }
-.inference-item { padding: 1rem 0; border-top: 1px solid #dbe3ec; }
-.inference-item form { display: flex; gap: .5rem; }
+.inference-card { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1.25rem; }
+.inference-card h3 { font-size: 1.5rem; margin: .35rem 0 1rem; }
+.inference-progress { color: var(--muted); display: flex; font-size: .875rem; justify-content: space-between; margin-bottom: 1rem; }
+.inference-reason { background: #f6f8fb; border-left: 4px solid var(--accent); margin: 1rem 0; padding: .85rem 1rem; }
+.inference-reason p:last-child { color: var(--muted); font-size: .875rem; margin-bottom: 0; }
+.inference-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
+.inference-complete { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.warning-text { background: #fff7ed; border-left: 4px solid #d97706; padding: .75rem 1rem; }

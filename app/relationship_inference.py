@@ -167,7 +167,7 @@ def _valid_candidate(facts: FamilyFacts, candidate: Candidate) -> bool:
     # Any manual bloodline statement for the same pair wins over a different inference.
     for row in facts.rows.values():
         pair = {int(row["source_entity_id"]), int(row["target_entity_id"])}
-        if row["record_origin"] == "manual" and pair == {candidate.source_id, candidate.target_id}:
+        if row["record_origin"] == "manual" and not row["created_from_inference"] and pair == {candidate.source_id, candidate.target_id}:
             if row["type"] != candidate.type_key:
                 return False
             return False
@@ -184,12 +184,20 @@ def recompute_inferences(connection: sqlite3.Connection, trigger_type: str = "ma
                 if existing is None or candidate.support_ids < existing.support_ids:
                     candidates[candidate.key] = candidate
     fingerprints = {key: _fingerprint(connection, item) for key, item in candidates.items()}
-    active = connection.execute("SELECT * FROM inference_suggestions WHERE status IN ('pending','confirmed')").fetchall()
-    for row in active:
+    pending = connection.execute("SELECT * FROM inference_suggestions WHERE status='pending'").fetchall()
+    for row in pending:
         key = (row["type"], int(row["source_entity_id"]), int(row["target_entity_id"]))
         if key not in candidates or fingerprints[key] != row["evidence_fingerprint"]:
             connection.execute("UPDATE inference_suggestions SET status='invalidated', reviewed_at=? WHERE id=?", (utc_now(), row["id"]))
-            connection.execute("DELETE FROM relationships WHERE inference_suggestion_id=?", (row["id"],))
+
+    # Confirmation transfers ownership to the normal relationship workflow. Later
+    # evidence changes are audit information only: never delete, lock, or rewrite
+    # the user's confirmed relationship.
+    confirmed = connection.execute("SELECT * FROM inference_suggestions WHERE status='confirmed'").fetchall()
+    for row in confirmed:
+        key = (row["type"], int(row["source_entity_id"]), int(row["target_entity_id"]))
+        evidence_status = "current" if key in candidates and fingerprints[key] == row["evidence_fingerprint"] else "changed"
+        connection.execute("UPDATE relationships SET inference_evidence_status=? WHERE inference_suggestion_id=?", (evidence_status, row["id"]))
     new_items = []
     for key, candidate in candidates.items():
         fingerprint = fingerprints[key]
@@ -239,10 +247,10 @@ def review_suggestion(connection: sqlite3.Connection, suggestion_id: int, decisi
     status = "confirmed" if decision == "confirm" else "rejected"
     connection.execute("UPDATE inference_suggestions SET status=?, reviewed_at=? WHERE id=?", (status, now, suggestion_id))
     if decision == "confirm":
-        provenance = json.dumps({"source_type": row["source_type"], "rule_key": row["rule_key"], "supporting_relationship_ids": json.loads(row["supporting_relationship_ids"]), "evidence_fingerprint": row["evidence_fingerprint"], "inferred_at": row["created_at"], "confirmed_at": now}, sort_keys=True)
+        provenance = json.dumps({"source_type": row["source_type"], "rule_key": row["rule_key"], "supporting_relationship_ids": json.loads(row["supporting_relationship_ids"]), "source_batch_id": row["batch_id"], "evidence_fingerprint": row["evidence_fingerprint"], "inferred_at": row["created_at"], "confirmed_at": now}, sort_keys=True)
         connection.execute("""INSERT INTO relationships
-            (source_entity_id,target_entity_id,type,status,started_at,started_at_precision,ended_at,ended_at_precision,notes,created_at,updated_at,record_origin,inference_suggestion_id,provenance_json)
-            VALUES(?,?,?,'active',?,?,'','exact','',?,?, 'inferred',?,?)""", (row["source_entity_id"], row["target_entity_id"], row["type"], row["started_at"], row["started_at_precision"], now, now, suggestion_id, provenance))
+            (source_entity_id,target_entity_id,type,status,started_at,started_at_precision,ended_at,ended_at_precision,notes,created_at,updated_at,record_origin,inference_suggestion_id,provenance_json,created_from_inference,inference_evidence_status)
+            VALUES(?,?,?,'active',?,?,'','exact','',?,?, 'manual',?,?,1,'current')""", (row["source_entity_id"], row["target_entity_id"], row["type"], row["started_at"], row["started_at_precision"], now, now, suggestion_id, provenance))
     _close_reviewed_batches(connection)
     connection.commit()
     return recompute_inferences(connection, "inference_confirmation", suggestion_id) if decision == "confirm" else None

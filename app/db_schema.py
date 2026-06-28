@@ -268,6 +268,16 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN inference_suggestion_id INTEGER")
     if "provenance_json" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN provenance_json TEXT NOT NULL DEFAULT ''")
+    if "created_from_inference" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN created_from_inference INTEGER NOT NULL DEFAULT 0")
+    if "inference_evidence_status" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN inference_evidence_status TEXT NOT NULL DEFAULT ''")
+    # Confirmed suggestions are ordinary user-owned relationships. Migrate rows
+    # created under the earlier read-only origin model without losing provenance.
+    connection.execute("""UPDATE relationships
+        SET created_from_inference=1, record_origin='manual',
+            inference_evidence_status=CASE WHEN inference_evidence_status='' THEN 'current' ELSE inference_evidence_status END
+        WHERE record_origin='inferred' OR inference_suggestion_id IS NOT NULL""")
 
 
 def create_inference_tables(connection: sqlite3.Connection) -> None:

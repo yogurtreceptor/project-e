@@ -98,9 +98,6 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
 def update_relationship(
     connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
 ) -> None:
-    existing = connection.execute("SELECT record_origin FROM relationships WHERE id=?", (relationship_id,)).fetchone()
-    if existing and existing["record_origin"] == "inferred":
-        raise ValueError("Confirmed inferred relationships are read-only.")
     normalise_relationship_direction(connection, values)
     connection.execute(
         """
@@ -128,9 +125,6 @@ def update_relationship(
 
 
 def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
-    existing = connection.execute("SELECT record_origin FROM relationships WHERE id=?", (relationship_id,)).fetchone()
-    if existing and existing["record_origin"] == "inferred":
-        raise ValueError("Confirmed inferred relationships are read-only.")
     connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_deleted", relationship_id)
@@ -277,6 +271,8 @@ def to_relationship_record(
         record_origin=row["record_origin"],
         inference_suggestion_id=row["inference_suggestion_id"],
         provenance_json=row["provenance_json"],
+        created_from_inference=bool(row["created_from_inference"]),
+        inference_evidence_status=row["inference_evidence_status"],
     )
 
 
