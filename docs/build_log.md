@@ -23,3 +23,5 @@ Standardised structured entity forms and controlled values. Redesigned relations
 Established the standard-library Python/SQLite local application, reusable entity definitions and CRUD, first-class relationships, entity profiles, search/favourites/recent discovery, and the geographic view. Added Projects, Documents and Assets through the shared architecture; introduced local Document uploads and optional Leaflet/OpenStreetMap/Nominatim map support. Recorded G-NAF as an optional future Australian address index. Early attachment and organisation-address concepts were superseded by first-class Document entities and Location relationships.
 
 - 2026-06-28: Added registry-driven audit/provenance, advanced search, data-quality, and real-world timeline infrastructure.
+
+- 2026-06-28: Restored entity change history as a separate audit section alongside real-world timelines, including legacy edit-history visibility.

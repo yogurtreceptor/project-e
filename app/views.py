@@ -50,6 +50,7 @@ from app.view_pages.entities import (
     document_file_section,
     linked_documents_section,
     timeline_section,
+    audit_history_section,
     metadata_section,
     entity_form_page,
 )
@@ -98,6 +99,7 @@ __all__ = [
     "document_file_section",
     "linked_documents_section",
     "timeline_section",
+    "audit_history_section",
     "metadata_section",
     "format_relationship_dates",
     "format_date_with_precision",

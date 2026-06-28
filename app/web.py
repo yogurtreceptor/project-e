@@ -47,6 +47,7 @@ from app.document_storage import (
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
+from app.audit import list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
@@ -233,13 +234,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             relationships = list_relationships_for_entity(connection, entity_id) if record else []
             integrity_warnings = warnings_for_entity(audit_relationships(connection), entity_id) if record else []
             history = list_entity_history(connection, entity_id) if record else []
+            audit_events = list_audit_events(connection, "entity", entity_id) if record else []
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, integrity_warnings, history),
+            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events),
             active_slug=definition.slug,
         )
 

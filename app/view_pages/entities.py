@@ -73,9 +73,11 @@ def entity_detail_page(
     relationships: list[RelationshipRecord],
     integrity_warnings: list = None,
     history: list = None,
+    audit_events: list = None,
 ) -> str:
     integrity_warnings = integrity_warnings or []
     history = history or []
+    audit_events = audit_events or []
     warning_html = ""
     if integrity_warnings:
         items = "".join(f"<li>{escape(item.message)}</li>" for item in integrity_warnings)
@@ -95,7 +97,8 @@ def entity_detail_page(
             <aside class="profile-side">
                 {document_file_section(record)}
                 {linked_documents_section(record, relationships)}
-                {timeline_section(record, relationships, history)}
+                {timeline_section(record, relationships)}
+                {audit_history_section(history, audit_events)}
                 {metadata_section(record, relationships)}
             </aside>
         </div>
@@ -387,6 +390,23 @@ def timeline_section(record: EntityRecord, relationships: list[RelationshipRecor
     items = "".join(f"<li><span>{escape(event.date)}</span> {escape(event.title)}</li>" for event in events)
     if not items: items = '<li><span>Not yet</span> No dated real-world events.</li>'
     return f"""<section class="panel profile-section"><h2>Timeline</h2><p class="muted">Real-world events only; audit history is separate.</p><ol class="timeline-list">{items}</ol></section>"""
+
+
+def audit_history_section(history: list = None, audit_events: list = None) -> str:
+    history = history or []
+    audit_events = audit_events or []
+    generic_items = [
+        f"<li><span>{escape(event.occurred_at)}</span> {escape(event.event_type.replace('_', ' ').title())}{': ' + escape(event.notes) if event.notes else ''} <small>by {escape(event.actor)} · {escape(event.provenance)}</small></li>"
+        for event in audit_events
+    ]
+    legacy_items = [
+        f"<li><span>{escape(row['created_at'])}</span> {escape(row['event_type'].replace('_', ' ').title())} <small>Legacy edit history</small></li>"
+        for row in history
+    ]
+    items = "".join(generic_items + legacy_items)
+    if not items:
+        items = '<li><span>Not yet</span> No changes recorded.</li>'
+    return f"""<section class="panel profile-section"><h2>Change History</h2><p class="muted">Operational audit events only; real-world history is shown in Timeline.</p><ol class="timeline-list">{items}</ol></section>"""
 
 
 def metadata_section(

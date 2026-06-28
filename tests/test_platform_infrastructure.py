@@ -7,6 +7,8 @@ from app.audit import list_audit_events, get_provenance
 from app.data_quality import registry, resolve_finding
 from app.discovery_repository import search_entities
 from app.timeline import registry as timeline_registry
+from app import views
+from app.entity_merge import record_entity_edit, list_entity_history
 class PlatformTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory(); self.path=Path(self.tmp.name)/'e.db'; initialise_database(self.path); self.c=connect(self.path)
@@ -19,4 +21,7 @@ class PlatformTests(unittest.TestCase):
         findings=registry.evaluate(self.c); self.assertTrue(any(f.category=='orphan_detection' for f in findings))
         resolve_finding(self.c,findings[0].key,'reviewed'); self.assertEqual('reviewed',next(f for f in registry.evaluate(self.c) if f.key==findings[0].key).status)
         events=timeline_registry.derive(result,[]); self.assertEqual('Birth',events[0].title); self.assertNotIn('create',[e.category for e in events])
+        record_entity_edit(self.c,eid,{'given_name':'A'},{'given_name':'Ada'}); self.c.commit()
+        html=views.entity_detail_page(result,[],history=list_entity_history(self.c,eid),audit_events=list_audit_events(self.c,'entity',eid))
+        self.assertIn('Timeline',html); self.assertIn('Birth',html); self.assertIn('Change History',html); self.assertIn('Create',html); self.assertIn('Legacy edit history',html)
 if __name__=='__main__': unittest.main()
