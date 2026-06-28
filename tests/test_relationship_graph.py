@@ -4,6 +4,7 @@ from app.entities import DEFINITIONS_BY_TYPE, EntityRecord
 from app.graph_layout import layered_layout
 from app.relationship_graph import GraphEdge, adjacent_family_edge, extract_family_graph
 from app.relationships import RelationshipRecord
+from app.view_pages.relationships import family_tree_page
 
 def person(entity_id: int, name: str) -> EntityRecord:
     return EntityRecord(entity_id, DEFINITIONS_BY_TYPE["person"], name, "", "", "", "", "", False, {})
@@ -44,6 +45,42 @@ class RelationshipGraphTests(unittest.TestCase):
 
         with patch("app.relationship_graph.family_edge", return_value=GraphEdge(1, 2, "future ancestor", 3)):
             self.assertIsNone(adjacent_family_edge(record))
+
+    def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
+        grandparent, parent, partner, child = (
+            person(1, "Grandparent"), person(2, "Parent"), person(3, "Partner"), person(4, "Child")
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", grandparent, parent),
+            relationship(2, "partner_of", parent, partner),
+            relationship(3, "parent_child", partner, child),
+        ]))
+        positions = {node.id: node for node in layout.nodes}
+        self.assertEqual(positions[2].y, positions[3].y)
+        self.assertEqual(abs(positions[2].x - positions[3].x), 190)
+        self.assertLess(positions[1].y, positions[2].y)
+        self.assertLess(positions[3].y, positions[4].y)
+
+    def test_connector_styles_are_generic_edge_metadata_and_render_with_a_key(self) -> None:
+        parent, child, sibling, partner = (
+            person(1, "Parent"), person(2, "Child"), person(3, "Sibling"), person(4, "Partner")
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", parent, child),
+            relationship(2, "sibling_of", child, sibling),
+            relationship(3, "spouse_of", parent, partner),
+        ]))
+        styles = {edge.label: edge.connector_style for edge in layout.edges}
+        self.assertEqual(styles, {"parent": "hierarchy", "sibling": "peer", "spouse": "peer-strong"})
+
+        html = family_tree_page(layout)
+        self.assertIn('family-edge-peer-strong', html)
+        self.assertIn('family-edge-peer', html)
+        self.assertIn('family-edge-hierarchy', html)
+        self.assertIn('aria-label="Family tree connector key"', html)
+        self.assertIn('Partner / spouse', html)
+        self.assertRegex(html, r'd="M \d+ \d+ H \d+"')
+        self.assertRegex(html, r'd="M \d+ \d+ V \d+ H \d+ V \d+"')
 
     def test_cycles_terminate_and_are_marked_without_duplicate_nodes(self) -> None:
         first, second = person(1, "First"), person(2, "Second")

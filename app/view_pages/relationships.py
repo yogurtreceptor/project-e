@@ -28,10 +28,19 @@ def family_tree_page(tree: GraphLayout) -> str:
             target = positions.get(edge.target_id)
             if source is None or target is None:
                 continue
-            css_class = "family-edge family-edge-horizontal" if source.y == target.y else "family-edge"
+            css_class = f"family-edge family-edge-{edge.connector_style}"
             if edge.cyclic:
                 css_class += " family-edge-cyclic"
-            lines.append(f'<line class="{css_class}" x1="{source.x}" y1="{source.y + 26}" x2="{target.x}" y2="{target.y - 26}" />')
+            if source.y == target.y:
+                direction = 1 if target.x > source.x else -1
+                start_x, end_x = source.x + direction * 72, target.x - direction * 72
+                path = f"M {start_x} {source.y} H {end_x}"
+            else:
+                direction = 1 if target.y > source.y else -1
+                start_y, end_y = source.y + direction * 26, target.y - direction * 26
+                midpoint_y = (start_y + end_y) // 2
+                path = f"M {source.x} {start_y} V {midpoint_y} H {target.x} V {end_y}"
+            lines.append(f'<path class="{css_class}" d="{path}" />')
         nodes = "".join(f'<a href="{escape(node.href)}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
         visual = f'<div class="family-tree-scroll"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
     return f"""
@@ -40,6 +49,7 @@ def family_tree_page(tree: GraphLayout) -> str:
         <a class="button secondary" href="/relationships">Back to relationships</a>
     </section>
     <section class="panel family-tree-panel">{visual}</section>
+    <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-sibling"></i>Sibling</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
     <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
 

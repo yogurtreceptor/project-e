@@ -17,6 +17,7 @@ class GraphEdge:
     target_id: int
     label: str
     rank_delta: int = 1
+    connector_style: str = "hierarchy"
 
 @dataclass(frozen=True)
 class RelationshipGraph:
@@ -28,14 +29,14 @@ EdgeMapper = Callable[[RelationshipRecord], GraphEdge | None]
 def extract_relationship_graph(relationships: Iterable[RelationshipRecord], edge_mapper: EdgeMapper) -> RelationshipGraph:
     """Map canonical records into a deduplicated graph without layout assumptions."""
     nodes: dict[int, GraphNode] = {}
-    edges: dict[tuple[int, int, str, int], GraphEdge] = {}
+    edges: dict[tuple[int, int, str, int, str], GraphEdge] = {}
     for relationship in relationships:
         edge = edge_mapper(relationship)
         if edge is None or edge.source_id == edge.target_id:
             continue
         for entity in (relationship.source, relationship.target):
             nodes.setdefault(entity.id, node_from_entity(entity))
-        key = (edge.source_id, edge.target_id, edge.label, edge.rank_delta)
+        key = (edge.source_id, edge.target_id, edge.label, edge.rank_delta, edge.connector_style)
         edges.setdefault(key, edge)
     return RelationshipGraph(tuple(sorted(nodes.values(), key=lambda node: (node.label.casefold(), node.id))), tuple(edges.values()))
 
@@ -55,8 +56,10 @@ def family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
         return GraphEdge(relationship.source.id, relationship.target.id, "parent", 1)
     if relationship.type_key == "grandparent_child":
         return GraphEdge(relationship.source.id, relationship.target.id, "grandparent", 2)
-    if relationship.type_key in {"sibling_of", "spouse_of", "partner_of"}:
-        return GraphEdge(relationship.source.id, relationship.target.id, relationship.type.subtype.lower(), 0)
+    if relationship.type_key == "sibling_of":
+        return GraphEdge(relationship.source.id, relationship.target.id, "sibling", 0, "peer")
+    if relationship.type_key in {"spouse_of", "partner_of"}:
+        return GraphEdge(relationship.source.id, relationship.target.id, relationship.type.subtype.lower(), 0, "peer-strong")
     return None
 
 def node_from_entity(entity: EntityRecord) -> GraphNode:

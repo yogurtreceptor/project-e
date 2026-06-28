@@ -37,6 +37,7 @@ What changed:
 - Added a generic layered graph layout based on edge rank differences, independent of family terminology.
 - Rendered generations above descendants using adjacent parent/child edges only, with siblings naturally sharing a row and sibling/spouse/partner links shown as same-level connections where data permits. Stored multi-generation relationships are represented through the parent/child chain without redundant direct lines.
 - Added deterministic cycle detection, safe empty states and tests for hierarchy, deduplication, unrelated relationship filtering and cyclic input.
+- Aligned zero-rank relationship groups on a clean generational grid, kept partners and siblings together, rendered orthogonal parent/child connectors, and added distinct partner/spouse and sibling connector styles with an on-page key.
 
 Current limitations:
 
