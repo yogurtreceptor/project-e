@@ -7,12 +7,11 @@ from app.view_pages.dashboard import favourite_form
 from app.view_pages.forms import (
     address_lookup_field,
     address_lookup_script,
-    entity_field_control,
+    entity_form_fields,
     duplicate_warning,
     error_block,
     existing_location_action,
     file_upload_field,
-    hidden_field,
     input_field,
 )
 
@@ -445,18 +444,11 @@ def entity_form_page(
     duplicate_html = duplicate_warning(duplicate_matches or [], definition.type == "document")
 
     fields = []
-    if definition.type != "person":
-        fields.append(input_field("display_name", f"{definition.singular} name", values))
     if definition.type == "location":
         fields.append(address_lookup_field())
-    for field in definition.fields:
-        if field.editable:
-            fields.append(entity_field_control(field, values))
-        else:
-            fields.append(hidden_field(field.name, values))
+    fields.append(entity_form_fields(definition, values))
     if definition.type == "document":
         fields.append(file_upload_field(values))
-    fields.append(input_field("notes", "Notes", values, multiline=True))
 
     location_class = " location-form" if definition.type == "location" else ""
     enctype = ' enctype="multipart/form-data"' if definition.type == "document" else ""

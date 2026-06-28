@@ -49,14 +49,15 @@ def input_field(
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
 
 
-def entity_field_control(field, values: dict[str, str]) -> str:
+def entity_field_control(field, values: dict[str, str], name: str | None = None) -> str:
+    name = name or field.name
     field_values = values
-    if field.default and not str(values.get(field.name, "")):
-        field_values = {**values, field.name: field.default}
+    if field.default and not str(values.get(name, "")):
+        field_values = {**values, name: field.default}
     if field.options and field.allow_custom:
-        return custom_value_field(field.name, field.label, field.options, field_values)
+        return custom_value_field(name, field.label, field.options, field_values)
     if field.options:
-        return select_field(field.name, field.label, [(option, option) for option in field.options], field_values)
+        return select_field(name, field.label, [(option, option) for option in field.options], field_values)
     attrs = ""
     if field.value_kind == "whole_number":
         attrs = ' min="0" step="1" inputmode="numeric" pattern="[0-9]*"'
@@ -66,7 +67,26 @@ def entity_field_control(field, values: dict[str, str]) -> str:
         attrs = ' min="-180" max="180" step="any"'
     elif field.input_type == "number":
         attrs = ' step="any"'
-    return input_field(field.name, field.label, field_values, field.multiline, field.input_type, attrs)
+    return input_field(name, field.label, field_values, field.multiline, field.input_type, attrs)
+
+
+def entity_form_fields(
+    definition: EntityDefinition,
+    values: dict[str, str],
+    name_prefix: str = "",
+) -> str:
+    """Render the shared editable fields used to create an entity."""
+    fields = []
+    if definition.type != "person":
+        fields.append(input_field(f"{name_prefix}display_name", f"{definition.singular} name", values))
+    for field in definition.fields:
+        name = f"{name_prefix}{field.name}"
+        if field.editable:
+            fields.append(entity_field_control(field, values, name))
+        else:
+            fields.append(hidden_field(name, values))
+    fields.append(input_field(f"{name_prefix}notes", "Notes", values, multiline=True))
+    return "".join(fields)
 
 
 def custom_value_field(

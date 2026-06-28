@@ -444,3 +444,10 @@ Verification:
 - Added transactional, preview-first duplicate record merging with relationship repointing/deduplication and append-only edit history.
 - Added a declarative structured-filter registry with birthday month/year/missing birthday and organisation-without-location filters.
 - Added migration, repository, UI and focused regression coverage; full suite passes.
+
+## Shared relationship entity creation form — 2026-06-28
+
+- Reused the definition-driven standard entity form fields in the Add Relationship new-entity workflow.
+- Added Birthday and all other Person fields to inline creation without a separate field allowlist.
+- Preserved submitted inline values on validation errors and retained transactional person-plus-relationship creation.
+- Added regression coverage ensuring every Person definition field renders inline and Birthday persists on the linked Person.

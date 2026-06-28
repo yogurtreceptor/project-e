@@ -548,6 +548,9 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertNotIn('connected_entity_search', existing_html)
         self.assertIn('document.querySelectorAll("[id^=', existing_html)
         self.assertIn('new_sex', existing_html)
+        self.assertIn('name="new_birthday" type="date"', existing_html)
+        for field in self.definition.fields:
+            self.assertIn(f'name="new_{field.name}"', existing_html)
         self.assertNotIn("document.querySelectorAll('[id^=", existing_html)
         self.assertIn('[hidden]', css)
         self.assertIn('display: none !important', css)
@@ -875,6 +878,7 @@ class EntityDatabaseTests(unittest.TestCase):
                     "new_entity_type": "person",
                     "new_given_name": "Grace",
                     "new_family_name": "Hopper",
+                    "new_birthday": "1906-12-09",
                     "new_email": "grace@example.test",
                     "new_phone": "",
                     "new_notes": "",
@@ -892,6 +896,7 @@ class EntityDatabaseTests(unittest.TestCase):
 
         self.assertEqual(new_person.display_name, "Grace Hopper")
         self.assertEqual(new_person.metadata["given_name"], "Grace")
+        self.assertEqual(new_person.metadata["birthday"], "1906-12-09")
         self.assertEqual(relationship.source.id, new_person.id)
         self.assertEqual(relationship.target.id, organisation_id)
         self.assertEqual(relationship.label_from(new_person.id), "employee of")

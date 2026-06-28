@@ -10,7 +10,7 @@ from app.relationships import (
     relationship_choices_for_context,
 )
 from app.view_pages.common import format_date_with_precision
-from app.view_pages.forms import custom_value_field, error_block, input_field, select_field
+from app.view_pages.forms import entity_form_fields, error_block, input_field, select_field
 from app.graph_layout import GraphLayout
 
 
@@ -172,7 +172,7 @@ def relationship_form_page(
     fields.extend([
         relationship_workflow_selector(workflow_mode),
         existing_entity_workflow(target_entities, values, workflow_mode),
-        new_entity_workflow(target_type, workflow_mode),
+        new_entity_workflow(target_type, workflow_mode, values),
         relationship_metadata_fields(source_entity, connected_type, connected_sex, selected_target, values),
     ])
     return f"""
@@ -217,7 +217,8 @@ def existing_entity_workflow(entities: list[EntityRecord], values: dict[str, str
     """
 
 
-def new_entity_workflow(target_type: str | None, workflow_mode: str) -> str:
+def new_entity_workflow(target_type: str | None, workflow_mode: str, values: dict[str, str] | None = None) -> str:
+    values = values or {}
     hidden = " hidden" if workflow_mode != "create_new" else ""
     definitions = [
         definition
@@ -226,28 +227,21 @@ def new_entity_workflow(target_type: str | None, workflow_mode: str) -> str:
     ]
     if not definitions:
         return ""
-    selected_type = target_type or definitions[0].type
-    values = {"new_entity_type": selected_type}
+    selected_type = values.get("new_entity_type") or target_type or definitions[0].type
+    select_values = {**values, "new_entity_type": selected_type}
     fieldsets = []
     for definition in definitions:
-        fields = []
-        if definition.type != "person":
-            fields.append(input_field("new_display_name", f"{definition.singular} name", {}))
-        for field in inline_fields_for_definition(definition):
-            prefixed_field = field
-            fields.append(entity_field_control_for_name(f"new_{field.name}", prefixed_field, {}))
-        fields.append(input_field("new_notes", "Notes", {}, multiline=True))
         fieldsets.append(
             f"""
             <div class="inline-entity-fields" data-inline-entity-type="{escape(definition.type)}">
-                {''.join(fields)}
+                {entity_form_fields(definition, values, name_prefix="new_")}
             </div>
             """
         )
     return f"""
     <fieldset class="relationship-step relationship-workflow-panel" data-workflow-panel="create_new"{hidden}>
         <legend>New entity</legend>
-        {select_field("new_entity_type", "Entity type", [(definition.type, definition.singular) for definition in definitions], values)}
+        {select_field("new_entity_type", "Entity type", [(definition.type, definition.singular) for definition in definitions], select_values)}
         {''.join(fieldsets)}
     </fieldset>
     """
@@ -280,16 +274,6 @@ def relationship_metadata_fields(
     """
 
 
-def inline_fields_for_definition(definition: EntityDefinition):
-    if definition.type == "person":
-        return [field for field in definition.fields if field.name in {"given_name", "middle_name", "family_name", "sex", "email", "phone"}]
-    if definition.type == "organisation":
-        return [field for field in definition.fields if field.name in {"organisation_type", "website", "email", "phone"}]
-    if definition.type == "location":
-        return [field for field in definition.fields if field.name in {"formatted_address", "city", "state", "country"}]
-    return []
-
-
 def inline_connected_name(entity_type: str, values: dict[str, str]) -> str:
     if entity_type == "person":
         return " ".join(
@@ -319,17 +303,6 @@ def relationship_type_options(
 
 def relationship_option_text(relationship_type) -> str:
     return relationship_type.display_label
-
-
-def entity_field_control_for_name(name: str, field, values: dict[str, str]) -> str:
-    field_values = values
-    if field.default and not str(values.get(name, "")):
-        field_values = {**values, name: field.default}
-    if field.options and field.allow_custom:
-        return custom_value_field(name, field.label, field.options, field_values)
-    if field.options:
-        return select_field(name, field.label, [(option, option) for option in field.options], field_values)
-    return input_field(name, field.label, field_values, field.multiline, field.input_type)
 
 
 def relationship_form_script(

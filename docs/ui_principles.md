@@ -43,7 +43,7 @@ Relationship creation should be entity-first and perspective-based:
 - Choose either Existing entity or New entity.
 - Show only the selected workflow so users do not scroll through irrelevant fields.
 - Existing entity workflow shows entity selection, relationship selection, dates, notes and save. A searchable selector can be added later without changing the workflow split.
-- New entity workflow shows entity type, compact creation fields, relationship selection, dates, notes and save.
+- New entity workflow reuses the standard entity creation fields (including Birthday for People), followed by relationship selection, dates, notes and save. Definition changes therefore apply to both creation paths.
 - Ask what the named connected entity is in relation to the named current entity; avoid ambiguous wording such as "this entity" once an entity name is available.
 - Show only relationship roles valid for the selected entity pair.
 - Save back to the original entity page so context is not lost.
