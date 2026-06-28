@@ -22,8 +22,10 @@ def family_tree_page(tree: GraphLayout) -> str:
         visual = '<p class="empty">No supported family relationships yet. Add parent/child, sibling, spouse or partner relationships between People first.</p>'
     else:
         positions = {node.id: node for node in tree.nodes}
-        lines = []
+        lines = _hierarchy_connector_paths(tree, positions)
         for edge in tree.edges:
+            if edge.rank_delta > 0 and not edge.cyclic:
+                continue
             source = positions.get(edge.source_id)
             target = positions.get(edge.target_id)
             if source is None or target is None:
@@ -50,8 +52,49 @@ def family_tree_page(tree: GraphLayout) -> str:
     </section>
     <section class="panel family-tree-panel">{visual}</section>
     <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-sibling"></i>Sibling</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
-    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
+    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
+
+
+def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
+    """Bundle targets only when their exact incoming source sets match."""
+    incoming_sources: dict[int, set[int]] = {}
+    hierarchy_edges = [edge for edge in tree.edges if edge.rank_delta > 0 and not edge.cyclic]
+    for edge in hierarchy_edges:
+        incoming_sources.setdefault(edge.target_id, set()).add(edge.source_id)
+
+    targets_by_sources: dict[tuple[int, ...], list[int]] = {}
+    for target_id, source_ids in incoming_sources.items():
+        targets_by_sources.setdefault(tuple(sorted(source_ids)), []).append(target_id)
+
+    paths: list[str] = []
+    for source_ids, target_ids in sorted(targets_by_sources.items()):
+        sources = [positions[source_id] for source_id in source_ids if source_id in positions]
+        targets = [positions[target_id] for target_id in sorted(target_ids) if target_id in positions]
+        if not sources or not targets:
+            continue
+        source_y = max(source.y for source in sources) + 26
+        target_y = min(target.y for target in targets) - 26
+        parent_bar_y = source_y + (target_y - source_y) // 3
+        child_bar_y = source_y + (target_y - source_y) * 2 // 3
+        source_xs = sorted(source.x for source in sources)
+        target_xs = sorted(target.x for target in targets)
+        trunk_x = sum(target_xs) // len(target_xs)
+        parent_centre_x = (source_xs[0] + source_xs[-1]) // 2
+        commands = [f"M {x} {source_y} V {parent_bar_y}" for x in source_xs]
+        if len(source_xs) > 1:
+            commands.append(f"M {source_xs[0]} {parent_bar_y} H {source_xs[-1]}")
+        commands.append(f"M {parent_centre_x} {parent_bar_y} H {trunk_x} V {child_bar_y}")
+        if len(target_xs) > 1:
+            commands.append(f"M {target_xs[0]} {child_bar_y} H {target_xs[-1]}")
+        commands.extend(f"M {x} {child_bar_y} V {target_y}" for x in target_xs)
+        source_set = ",".join(str(source_id) for source_id in source_ids)
+        target_set = ",".join(str(target_id) for target_id in sorted(target_ids))
+        paths.append(
+            f'<path class="family-edge family-edge-hierarchy family-edge-bundle" '
+            f'data-source-set="{source_set}" data-target-set="{target_set}" d="{" ".join(commands)}" />'
+        )
+    return paths
 
 
 def relationship_list_page(relationships: list[RelationshipRecord], integrity_warnings: list = None) -> str:

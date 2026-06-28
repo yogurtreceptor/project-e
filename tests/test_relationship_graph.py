@@ -93,6 +93,28 @@ class RelationshipGraphTests(unittest.TestCase):
         self.assertGreater(abs(positions[1].x - positions[2].x), 190)
         self.assertGreater(abs(positions[3].x - positions[4].x), 190)
 
+    def test_hierarchy_connectors_bundle_children_by_exact_parent_set(self) -> None:
+        first_parent, second_parent, single_parent_child, first_shared_child, second_shared_child = (
+            person(1, "First parent"),
+            person(2, "Second parent"),
+            person(3, "Single-parent child"),
+            person(4, "First shared child"),
+            person(5, "Second shared child"),
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", first_parent, single_parent_child),
+            relationship(2, "parent_child", first_parent, first_shared_child),
+            relationship(3, "parent_child", second_parent, first_shared_child),
+            relationship(4, "parent_child", first_parent, second_shared_child),
+            relationship(5, "parent_child", second_parent, second_shared_child),
+        ]))
+
+        html = family_tree_page(layout)
+        self.assertEqual(html.count('family-edge-bundle'), 2)
+        self.assertIn('data-source-set="1" data-target-set="3"', html)
+        self.assertIn('data-source-set="1,2" data-target-set="4,5"', html)
+        self.assertNotIn('data-source-set="1" data-target-set="3,4,5"', html)
+
     def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
         grandparent, parent, partner, child = (
             person(1, "Grandparent"), person(2, "Parent"), person(3, "Partner"), person(4, "Child")
@@ -127,7 +149,8 @@ class RelationshipGraphTests(unittest.TestCase):
         self.assertIn('aria-label="Family tree connector key"', html)
         self.assertIn('Partner / spouse', html)
         self.assertRegex(html, r'd="M \d+ \d+ H \d+"')
-        self.assertRegex(html, r'd="M \d+ \d+ V \d+ H \d+ V \d+"')
+        self.assertIn('family-edge-bundle', html)
+        self.assertRegex(html, r'data-source-set="\d+" data-target-set="\d+"')
 
     def test_cycles_terminate_and_are_marked_without_duplicate_nodes(self) -> None:
         first, second = person(1, "First"), person(2, "Second")

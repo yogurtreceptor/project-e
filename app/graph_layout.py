@@ -16,6 +16,7 @@ class PositionedEdge:
     target_id: int
     label: str
     connector_style: str = "hierarchy"
+    rank_delta: int = 1
     cyclic: bool = False
 
 @dataclass(frozen=True)
@@ -129,11 +130,12 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
 
     rendered_edges = tuple(
         PositionedEdge(
-            edge.source_id,
-            edge.target_id,
-            edge.label,
-            edge.connector_style,
-            (edge.source_id, edge.target_id, edge.label, edge.connector_style) in cyclic_keys,
+            source_id=edge.source_id,
+            target_id=edge.target_id,
+            label=edge.label,
+            connector_style=edge.connector_style,
+            rank_delta=edge.rank_delta,
+            cyclic=(edge.source_id, edge.target_id, edge.label, edge.connector_style) in cyclic_keys,
         )
         for edge in graph.edges
     )
