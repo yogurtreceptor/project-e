@@ -73,6 +73,7 @@ from app.view_pages.search import (
     search_page,
     search_result_card,
 )
+from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
 )

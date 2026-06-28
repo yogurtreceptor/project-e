@@ -62,6 +62,8 @@ def search_entities(
 ) -> list[dict[str, object]]:
     query = query.strip()
     records = list_all_entities(connection)
+    from app.query_engine import registry as query_registry
+    records, query = query_registry.apply(connection, records, query)
     if entity_type:
         records = [record for record in records if record.type == entity_type]
     if favourites_only:

@@ -382,28 +382,11 @@ def linked_documents_section(record: EntityRecord, relationships: list[Relations
 
 
 def timeline_section(record: EntityRecord, relationships: list[RelationshipRecord], history: list = None) -> str:
-    history = history or []
-    relationship_events = "".join(
-        f"<li><span>{escape(relationship.created_at)}</span> Relationship added: {escape(relationship.label)}</li>"
-        for relationship in relationships[:5]
-    )
-    history_events = "".join(
-        f"<li><span>{escape(row['created_at'])}</span> Record {escape(row['event_type'].replace('_', ' '))}.</li>"
-        for row in history[:5]
-    )
-    if not relationship_events and not history_events:
-        relationship_events = '<li><span>Not yet</span> No relationship or edit events recorded.</li>'
-    return f"""
-    <section class="panel profile-section">
-        <h2>Timeline</h2>
-        <ol class="timeline-list">
-            <li><span>{escape(record.created_at)}</span> Entity created.</li>
-            <li><span>{escape(record.updated_at)}</span> Entity modified.</li>
-            {history_events}
-            {relationship_events}
-        </ol>
-    </section>
-    """
+    from app.timeline import registry
+    events = registry.derive(record, relationships)
+    items = "".join(f"<li><span>{escape(event.date)}</span> {escape(event.title)}</li>" for event in events)
+    if not items: items = '<li><span>Not yet</span> No dated real-world events.</li>'
+    return f"""<section class="panel profile-section"><h2>Timeline</h2><p class="muted">Real-world events only; audit history is separate.</p><ol class="timeline-list">{items}</ol></section>"""
 
 
 def metadata_section(

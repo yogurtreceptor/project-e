@@ -101,6 +101,10 @@ def create_entity(
     )
     entity_id = int(cursor.lastrowid)
     insert_typed_row(connection, definition, entity_id, values)
+    from app.audit import record_audit_event, set_provenance
+    record_audit_event(connection, "create", [("entity", entity_id)], after=values)
+    for field, value in values.items():
+        if value: set_provenance(connection, "entity", entity_id, field, "manual")
     if commit:
         connection.commit()
     return entity_id
@@ -131,8 +135,8 @@ def update_entity(
     )
     update_typed_row(connection, definition, entity_id, values)
     if before is not None:
-        from app.entity_merge import record_entity_edit
-        record_entity_edit(connection, entity_id, before.to_form_values(), values)
+        from app.audit import record_audit_event
+        record_audit_event(connection, "edit", [("entity", entity_id)], before=before.to_form_values(), after=values)
     if definition.type == "person" and before is not None and before.metadata.get("birthday", "") != values.get("birthday", ""):
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_date_updated", entity_id)
@@ -143,6 +147,9 @@ def update_entity(
 def delete_entity(
     connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int
 ) -> None:
+    before = get_entity(connection, definition, entity_id)
+    from app.audit import record_audit_event
+    if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
     connection.execute(
         "DELETE FROM entities WHERE id = ? AND type = ?", (entity_id, definition.type)
     )

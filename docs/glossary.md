@@ -206,3 +206,8 @@ See also: Inference Review Queue, Relationship.
 A review workspace containing deterministic relationship suggestions that are not relationship records until confirmed. Completed batches archive automatically; one archive control reveals fully expanded searchable history with per-decision undo.
 
 See also: Evidence Fingerprint, Inference-created Relationship, Relationship.
+
+- **Audit event:** An operational record of a canonical-data mutation or finding resolution.
+- **Provenance:** A lightweight origin classification for a field or relationship.
+- **Timeline event:** A derived real-world occurrence, separate from operational audit history.
+- **Data-quality finding:** A deterministic, explainable observation produced by a registered validation rule.

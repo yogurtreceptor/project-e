@@ -90,6 +90,9 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
         ),
     )
     relationship_id = int(cursor.lastrowid)
+    from app.audit import record_audit_event, set_provenance
+    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], after=values, notes="Relationship created")
+    set_provenance(connection, "relationship", relationship_id, "*", "manual")
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_created", relationship_id)
     return relationship_id
@@ -99,6 +102,7 @@ def update_relationship(
     connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
 ) -> None:
     normalise_relationship_direction(connection, values)
+    before = get_relationship(connection, relationship_id)
     connection.execute(
         """
         UPDATE relationships
@@ -120,11 +124,16 @@ def update_relationship(
             relationship_id,
         ),
     )
+    from app.audit import record_audit_event
+    record_audit_event(connection, "relationship_change", [("relationship", relationship_id)], before=before.to_form_values() if before else None, after=values, notes="Relationship edited")
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_updated", relationship_id)
 
 
 def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
+    before = get_relationship(connection, relationship_id)
+    from app.audit import record_audit_event
+    record_audit_event(connection, "relationship_change", [("relationship", relationship_id)], before=before.to_form_values() if before else None, notes="Relationship deleted")
     connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_deleted", relationship_id)

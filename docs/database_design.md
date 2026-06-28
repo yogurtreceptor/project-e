@@ -145,3 +145,7 @@ Confirmed suggestions become normal editable relationship rows. `relationships.c
 `inference_batches` stores review stacks and their trigger/status. `inference_suggestions` stores the canonical people/type pair, inferred date, deterministic rule, support IDs, fingerprint, and lifecycle status (`pending`, `confirmed`, `rejected`, or `invalidated`). Rejected fingerprints remain stored to prevent unchanged suggestions from reappearing. Batches are archived automatically after all suggestions are reviewed. Historic decisions can be undone: rejected suggestions return to pending, while confirmed suggestions also remove the relationship created by that confirmation before the batch reopens.
 
 Suggested dates are stored only when rule-specific DOB evidence is sufficient. Direct-generation rules may use the younger endpoint's DOB alone; peer and collateral rules require DOBs for both endpoints and use the chronologically lower value. The date participates in the evidence fingerprint.
+
+## Audit, provenance, and finding state
+
+Migration `20260628_06_platform_infrastructure` adds append-only generic audit events with affected-record links, lightweight per-field/relationship provenance, and user disposition state for deterministic data-quality findings. These tables do not provide snapshots, rollback, versioning, or evidence storage.

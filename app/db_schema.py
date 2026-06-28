@@ -59,6 +59,17 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_relationship_table(connection)
     create_inference_tables(connection)
     create_entity_history_table(connection)
+    create_platform_tables(connection)
+
+
+def create_platform_tables(connection: sqlite3.Connection) -> None:
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS audit_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, occurred_at TEXT NOT NULL, actor TEXT NOT NULL DEFAULT 'local_user', notes TEXT NOT NULL DEFAULT '', before_json TEXT NOT NULL DEFAULT '', after_json TEXT NOT NULL DEFAULT '', provenance TEXT NOT NULL DEFAULT 'manual');
+        CREATE TABLE IF NOT EXISTS audit_event_records (event_id INTEGER NOT NULL REFERENCES audit_events(id) ON DELETE CASCADE, record_kind TEXT NOT NULL, record_id INTEGER NOT NULL, PRIMARY KEY (event_id, record_kind, record_id));
+        CREATE INDEX IF NOT EXISTS idx_audit_records ON audit_event_records(record_kind, record_id);
+        CREATE TABLE IF NOT EXISTS provenance_metadata (record_kind TEXT NOT NULL, record_id INTEGER NOT NULL, field_name TEXT NOT NULL, provenance TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (record_kind, record_id, field_name));
+        CREATE TABLE IF NOT EXISTS data_quality_finding_state (finding_key TEXT PRIMARY KEY, status TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL);
+    """)
 
 
 def create_entity_history_table(connection: sqlite3.Connection) -> None:
@@ -313,6 +324,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_03_relationships", create_relationship_table),
     ("20260628_04_entity_edit_history", create_entity_history_table),
     ("20260628_05_relationship_inference", create_inference_tables),
+    ("20260628_06_platform_infrastructure", create_platform_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

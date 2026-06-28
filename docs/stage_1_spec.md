@@ -76,3 +76,7 @@ Implemented scope:
 Out of scope remains routing, journey planning, traffic analysis, public transport, AI, decision support and autonomous automation.
 
 Projects and Documents are never map markers.
+
+## Platform-derived views
+
+Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and real-world timelines derived from canonical dates and relationships. Audit and timeline histories remain separate.

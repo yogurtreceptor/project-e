@@ -90,6 +90,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_search(query)
             return
 
+        if parts[0] == "data-quality":
+            self.handle_data_quality()
+            return
+
         if parts[0] == "map":
             self.handle_map(query)
             return
@@ -178,6 +182,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug="search",
         )
 
+
+    def handle_data_quality(self) -> None:
+        from app.data_quality import registry
+        with connect(self.database_path) as connection:
+            findings = registry.evaluate(connection)
+        self.respond_page("Data Quality Centre", views.data_quality_page(findings), active_slug="data-quality")
 
     def handle_map(self, query: dict[str, str]) -> None:
         with connect(self.database_path) as connection:
