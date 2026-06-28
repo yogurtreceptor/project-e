@@ -1,4 +1,5 @@
 import json
+from itertools import permutations
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord
@@ -57,7 +58,7 @@ def family_tree_page(tree: GraphLayout) -> str:
 
 
 def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
-    """Route every exact incoming-source set through independent ports and lanes."""
+    """Route exact incoming-source sets independently, avoiding crossings first."""
     incoming_sources: dict[int, set[int]] = {}
     hierarchy_edges = [edge for edge in tree.edges if edge.rank_delta > 0 and not edge.cyclic]
     for edge in hierarchy_edges:
@@ -71,10 +72,9 @@ def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
     for source_ids, target_ids in targets_by_sources.items():
         sources = [positions[source_id] for source_id in source_ids if source_id in positions]
         targets = [positions[target_id] for target_id in sorted(target_ids) if target_id in positions]
-        if not sources or not targets:
-            continue
-        bundles.append((source_ids, tuple(sorted(target_ids)), sources, targets))
-    bundles.sort(key=lambda bundle: (min(target.x for target in bundle[3]), bundle[0], bundle[1]))
+        if sources and targets:
+            bundles.append((source_ids, tuple(sorted(target_ids)), sources, targets))
+    bundles.sort(key=lambda bundle: (sum(target.x for target in bundle[3]) / len(bundle[3]), bundle[0], bundle[1]))
 
     bundles_by_gap: dict[tuple[int, int], list[tuple]] = {}
     for bundle in bundles:
@@ -82,49 +82,115 @@ def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
         target_y = min(target.y for target in bundle[3]) - 26
         bundles_by_gap.setdefault((source_y, target_y), []).append(bundle)
 
-    source_bundles: dict[int, list[tuple[int, ...]]] = {}
-    for source_ids, _, _, _ in bundles:
-        for source_id in source_ids:
-            source_bundles.setdefault(source_id, []).append(source_ids)
-    source_ports: dict[tuple[int, tuple[int, ...]], int] = {}
-    for source_id, source_sets in source_bundles.items():
-        ordered_sets = sorted(source_sets)
-        step = min(24, 96 // max(1, len(ordered_sets) - 1))
-        start_offset = -(step * (len(ordered_sets) - 1)) // 2
-        for index, source_ids in enumerate(ordered_sets):
-            source_ports[(source_id, source_ids)] = positions[source_id].x + start_offset + index * step
-
     paths: list[str] = []
+    accepted_segments: list[tuple[int, int, int, int]] = []
     for (source_y, target_y), gap_bundles in sorted(bundles_by_gap.items()):
         available_height = target_y - source_y
         lane_step = max(8, min(18, available_height // max(4, len(gap_bundles) * 2 + 2)))
-        for lane_index, (source_ids, target_ids, sources, targets) in enumerate(gap_bundles):
-            parent_bar_y = source_y + lane_step * (lane_index + 1)
-            child_bar_y = target_y - lane_step * (len(gap_bundles) - lane_index)
-            source_port_pairs = sorted((source.id, source_ports[(source.id, source_ids)]) for source in sources)
-            source_xs = sorted(x for _, x in source_port_pairs)
-            target_xs = sorted(target.x for target in targets)
-            trunk_x = sum(target_xs) // len(target_xs)
-            parent_centre_x = (source_xs[0] + source_xs[-1]) // 2
-            commands = [f"M {x} {source_y} V {parent_bar_y}" for x in source_xs]
-            if len(source_xs) > 1:
-                commands.append(f"M {source_xs[0]} {parent_bar_y} H {source_xs[-1]}")
-            commands.append(f"M {parent_centre_x} {parent_bar_y} H {trunk_x} V {child_bar_y}")
-            if len(target_xs) > 1:
-                commands.append(f"M {target_xs[0]} {child_bar_y} H {target_xs[-1]}")
-            commands.extend(f"M {x} {child_bar_y} V {target_y}" for x in target_xs)
+        candidate_orders = permutations(gap_bundles) if len(gap_bundles) <= 6 else (tuple(gap_bundles),)
+        route_sets = [
+            _route_bundle_order(
+                order, positions, source_y, target_y, lane_step, tree.width, accepted_segments
+            )
+            for order in candidate_orders
+        ]
+        chosen_routes = min(
+            route_sets,
+            key=lambda routes: (sum(route[6] for route in routes), tuple(route[0] for route in routes)),
+        )
+        for source_ids, target_ids, source_port_pairs, parent_bar_y, child_bar_y, trunk_x, crossing_count, commands, segments in chosen_routes:
             source_set = ",".join(str(source_id) for source_id in source_ids)
             target_set = ",".join(str(target_id) for target_id in target_ids)
             source_port_set = ",".join(f"{source_id}:{x}" for source_id, x in source_port_pairs)
             path_data = " ".join(commands)
-            paths.append(f'<path class="family-edge-casing" d="{path_data}" aria-hidden="true" />')
+            if crossing_count:
+                paths.append(f'<path class="family-edge-casing" d="{path_data}" aria-hidden="true" />')
             paths.append(
                 f'<path class="family-edge family-edge-hierarchy family-edge-bundle" '
                 f'data-source-set="{source_set}" data-target-set="{target_set}" '
                 f'data-source-ports="{source_port_set}" data-lane="{parent_bar_y},{child_bar_y}" '
-                f'd="{path_data}" />'
+                f'data-trunk="{trunk_x}" data-crossings="{crossing_count}" d="{path_data}" />'
             )
+            accepted_segments.extend(segments)
     return paths
+
+
+def _route_bundle_order(order: tuple, positions: dict, source_y: int, target_y: int, lane_step: int, width: int, existing_segments: list[tuple[int, int, int, int]]) -> list[tuple]:
+    source_bundles: dict[int, list[tuple[int, ...]]] = {}
+    for source_ids, _, _, _ in order:
+        for source_id in source_ids:
+            source_bundles.setdefault(source_id, []).append(source_ids)
+    source_ports: dict[tuple[int, tuple[int, ...]], int] = {}
+    for source_id, source_sets in source_bundles.items():
+        step = min(24, 96 // max(1, len(source_sets) - 1))
+        start_offset = (step * (len(source_sets) - 1)) // 2
+        for index, source_ids in enumerate(source_sets):
+            source_ports[(source_id, source_ids)] = positions[source_id].x + start_offset - index * step
+
+    routes = []
+    routed_segments = list(existing_segments)
+    for lane_index, (source_ids, target_ids, sources, targets) in enumerate(order):
+        parent_bar_y = source_y + lane_step * (lane_index + 1)
+        child_bar_y = target_y - lane_step * (len(order) - lane_index)
+        source_port_pairs = sorted((source.id, source_ports[(source.id, source_ids)]) for source in sources)
+        source_xs = sorted(x for _, x in source_port_pairs)
+        target_xs = sorted(target.x for target in targets)
+        parent_centre_x = (source_xs[0] + source_xs[-1]) // 2
+        target_centre_x = sum(target_xs) // len(target_xs)
+        candidates = _trunk_candidates(parent_centre_x, target_centre_x, source_xs, target_xs, width)
+        scored_options = []
+        for trunk_x in candidates:
+            commands, segments = _bundle_route(source_xs, target_xs, source_y, target_y, parent_bar_y, child_bar_y, trunk_x)
+            scored_options.append((commands, segments, _crossing_count(segments, routed_segments), trunk_x))
+        commands, segments, crossing_count, trunk_x = min(
+            scored_options,
+            key=lambda option: (option[2], abs(option[3] - target_centre_x), option[3]),
+        )
+        routes.append((source_ids, target_ids, source_port_pairs, parent_bar_y, child_bar_y, trunk_x, crossing_count, commands, segments))
+        routed_segments.extend(segments)
+    return routes
+
+
+def _trunk_candidates(parent_x: int, target_x: int, source_xs: list[int], target_xs: list[int], width: int) -> list[int]:
+    candidates = [target_x, parent_x, *target_xs, *source_xs]
+    for x in (min(source_xs + target_xs), max(source_xs + target_xs)):
+        candidates.extend((x - 48, x + 48))
+    return list(dict.fromkeys(max(12, min(width - 12, x)) for x in candidates))
+
+
+def _bundle_route(source_xs: list[int], target_xs: list[int], source_y: int, target_y: int, parent_bar_y: int, child_bar_y: int, trunk_x: int) -> tuple[list[str], list[tuple[int, int, int, int]]]:
+    parent_x = (source_xs[0] + source_xs[-1]) // 2
+    commands = [f"M {x} {source_y} V {parent_bar_y}" for x in source_xs]
+    segments = [(x, source_y, x, parent_bar_y) for x in source_xs]
+    if len(source_xs) > 1:
+        commands.append(f"M {source_xs[0]} {parent_bar_y} H {source_xs[-1]}")
+        segments.append((source_xs[0], parent_bar_y, source_xs[-1], parent_bar_y))
+    commands.append(f"M {parent_x} {parent_bar_y} H {trunk_x} V {child_bar_y}")
+    segments.extend(((parent_x, parent_bar_y, trunk_x, parent_bar_y), (trunk_x, parent_bar_y, trunk_x, child_bar_y)))
+    child_bar_start = min(trunk_x, target_xs[0])
+    child_bar_end = max(trunk_x, target_xs[-1])
+    if child_bar_start != child_bar_end:
+        commands.append(f"M {child_bar_start} {child_bar_y} H {child_bar_end}")
+        segments.append((child_bar_start, child_bar_y, child_bar_end, child_bar_y))
+    commands.extend(f"M {x} {child_bar_y} V {target_y}" for x in target_xs)
+    segments.extend((x, child_bar_y, x, target_y) for x in target_xs)
+    return commands, segments
+
+
+def _crossing_count(route: list[tuple[int, int, int, int]], accepted: list[tuple[int, int, int, int]]) -> int:
+    return sum(_segments_intersect(first, second) for first in route for second in accepted)
+
+
+def _segments_intersect(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
+    ax1, ay1, ax2, ay2 = first
+    bx1, by1, bx2, by2 = second
+    if ax1 == ax2 and bx1 == bx2:
+        return ax1 == bx1 and max(min(ay1, ay2), min(by1, by2)) <= min(max(ay1, ay2), max(by1, by2))
+    if ay1 == ay2 and by1 == by2:
+        return ay1 == by1 and max(min(ax1, ax2), min(bx1, bx2)) <= min(max(ax1, ax2), max(bx1, bx2))
+    if ax1 == ax2:
+        return min(bx1, bx2) <= ax1 <= max(bx1, bx2) and min(ay1, ay2) <= by1 <= max(ay1, ay2)
+    return min(ax1, ax2) <= bx1 <= max(ax1, ax2) and min(by1, by2) <= ay1 <= max(by1, by2)
 
 
 def relationship_list_page(relationships: list[RelationshipRecord], integrity_warnings: list = None) -> str:

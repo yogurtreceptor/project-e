@@ -1,5 +1,6 @@
-"""Small generic layered graph layout with deterministic cycle handling."""
+"""Family-tree layout with generation, partner-unit and child-group rules."""
 from dataclasses import dataclass
+from itertools import permutations
 from app.relationship_graph import GraphEdge, RelationshipGraph
 
 @dataclass(frozen=True)
@@ -27,7 +28,7 @@ class GraphLayout:
     height: int
 
 def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical_gap: int = 130, padding: int = 90) -> GraphLayout:
-    """Place rank-connected groups on a deterministic generational grid."""
+    """Lay out family generations, partner units and exact-parent-set child groups."""
     if not graph.nodes:
         return GraphLayout((), (), 0, 0)
 
@@ -102,6 +103,9 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
             hierarchy_neighbours[edge.source_id].add(edge.target_id)
             hierarchy_neighbours[edge.target_id].add(edge.source_id)
     _order_layers_by_neighbours(ordered_layers, ranks, hierarchy_neighbours)
+    _order_sources_to_separate_family_units(ordered_layers, graph, ranks)
+    _keep_partner_units_contiguous(ordered_layers, graph)
+    _keep_exact_source_targets_contiguous(ordered_layers, graph, ranks)
 
     peer_pairs = {
         frozenset((edge.source_id, edge.target_id))
@@ -150,6 +154,113 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         for edge in graph.edges
     )
     return GraphLayout(tuple(positions), rendered_edges, max_width + padding * 2, max(ranks.values()) * effective_vertical_gap + padding * 2)
+
+def _order_sources_to_separate_family_units(ordered_layers: dict[int, list], graph: RelationshipGraph, ranks: dict[int, int]) -> None:
+    """Place shared parents between co-parents so family-unit spans do not interleave."""
+    incoming_sources: dict[int, set[int]] = {}
+    for edge in graph.edges:
+        if edge.rank_delta > 0:
+            incoming_sources.setdefault(edge.target_id, set()).add(edge.source_id)
+    source_sets_by_rank: dict[int, set[tuple[int, ...]]] = {}
+    for source_ids in incoming_sources.values():
+        if len(source_ids) > 1:
+            source_rank = ranks[next(iter(source_ids))]
+            source_sets_by_rank.setdefault(source_rank, set()).add(tuple(sorted(source_ids)))
+
+    for rank, source_sets in source_sets_by_rank.items():
+        nodes = ordered_layers.get(rank, [])
+        if len(nodes) > 7 or len(source_sets) < 2:
+            continue
+        original = {node.id: index for index, node in enumerate(nodes)}
+
+        def score(order: tuple) -> tuple:
+            positions = {node.id: index for index, node in enumerate(order)}
+            intervals = [
+                (min(positions[node_id] for node_id in source_set), max(positions[node_id] for node_id in source_set))
+                for source_set in source_sets if all(node_id in positions for node_id in source_set)
+            ]
+            overlap = sum(
+                max(0, min(first[1], second[1]) - max(first[0], second[0]))
+                for index, first in enumerate(intervals) for second in intervals[index + 1:]
+            )
+            span = sum(end - start for start, end in intervals)
+            movement = sum(abs(index - original[node.id]) for index, node in enumerate(order))
+            return overlap, span, movement, tuple(node.id for node in order)
+
+        ordered_layers[rank] = list(min(permutations(nodes), key=score))
+
+
+def _keep_partner_units_contiguous(ordered_layers: dict[int, list], graph: RelationshipGraph) -> None:
+    """Treat spouse/partner components as deterministic, indivisible row units."""
+    partner_edges = [edge for edge in graph.edges if edge.rank_delta == 0 and edge.connector_style == "peer-strong"]
+    adjacency: dict[int, set[int]] = {}
+    for edge in partner_edges:
+        adjacency.setdefault(edge.source_id, set()).add(edge.target_id)
+        adjacency.setdefault(edge.target_id, set()).add(edge.source_id)
+    for rank, nodes in ordered_layers.items():
+        current = {node.id: index for index, node in enumerate(nodes)}
+        node_by_id = {node.id: node for node in nodes}
+        seen: set[int] = set()
+        units: list[list] = []
+        for node in nodes:
+            if node.id in seen:
+                continue
+            pending = [node.id]
+            component: list[int] = []
+            while pending:
+                node_id = pending.pop()
+                if node_id in seen or node_id not in node_by_id:
+                    continue
+                seen.add(node_id)
+                component.append(node_id)
+                pending.extend(adjacency.get(node_id, ()))
+            unit = [node_by_id[node_id] for node_id in component]
+            if 1 < len(unit) <= 7:
+                unit = list(min(permutations(unit), key=lambda order: (
+                    sum(abs(index - next_index) for index, first in enumerate(order) for next_index, second in enumerate(order) if second.id in adjacency.get(first.id, ()) and index < next_index),
+                    sum(abs(index - current[item.id]) for index, item in enumerate(order)),
+                    tuple(item.id for item in order),
+                )))
+            else:
+                unit.sort(key=lambda item: current[item.id])
+            units.append(unit)
+        units.sort(key=lambda unit: sum(current[item.id] for item in unit) / len(unit))
+        ordered_layers[rank] = [node for unit in units for node in unit]
+
+
+def _keep_exact_source_targets_contiguous(ordered_layers: dict[int, list], graph: RelationshipGraph, ranks: dict[int, int]) -> None:
+    """Keep targets with the same complete incoming-source set in one row block."""
+    incoming_sources: dict[int, set[int]] = {}
+    for edge in graph.edges:
+        if edge.rank_delta > 0:
+            incoming_sources.setdefault(edge.target_id, set()).add(edge.source_id)
+    for rank, nodes in ordered_layers.items():
+        original_positions = {node.id: index for index, node in enumerate(nodes)}
+        blocks: dict[tuple, list] = {}
+        for node in nodes:
+            source_set = tuple(sorted(incoming_sources.get(node.id, ())))
+            key = ("sources", source_set) if source_set else ("node", node.id)
+            blocks.setdefault(key, []).append(node)
+        source_positions = {
+            node.id: index
+            for source_rank, source_nodes in ordered_layers.items()
+            if source_rank < rank
+            for index, node in enumerate(source_nodes)
+        }
+
+        def block_position(block: list) -> tuple[float, float, int]:
+            source_set = tuple(sorted(incoming_sources.get(block[0].id, ())))
+            parent_centre = (
+                sum(source_positions[source_id] for source_id in source_set) / len(source_set)
+                if source_set and all(source_id in source_positions for source_id in source_set)
+                else float("inf")
+            )
+            prior_centre = sum(original_positions[node.id] for node in block) / len(block)
+            return parent_centre, prior_centre, min(node.id for node in block)
+
+        ordered_blocks = sorted(blocks.values(), key=block_position)
+        ordered_layers[rank] = [node for block in ordered_blocks for node in sorted(block, key=lambda item: original_positions[item.id])]
+
 
 def _order_layers_by_neighbours(ordered_layers: dict[int, list], ranks: dict[int, int], neighbours: dict[int, set[int]]) -> None:
     """Order each row near its actual adjacent-row connections."""

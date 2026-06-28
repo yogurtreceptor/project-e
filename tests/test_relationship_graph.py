@@ -147,7 +147,61 @@ class RelationshipGraphTests(unittest.TestCase):
         }
         self.assertEqual(len(parent_a_ports), 3)
         self.assertEqual(len({lane for _, _, _, lane in bundles}), 3)
-        self.assertEqual(html.count('class="family-edge-casing"'), 3)
+        self.assertEqual(html.count('data-crossings="0"'), 3)
+        self.assertNotIn('class="family-edge-casing"', html)
+
+    def test_partner_units_are_adjacent_and_multiple_partners_do_not_interleave(self) -> None:
+        central, first_partner, second_partner, sibling, child = (
+            person(1, "Central"), person(2, "First partner"), person(3, "Second partner"),
+            person(4, "Sibling"), person(5, "Child"),
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "spouse_of", central, first_partner),
+            relationship(2, "partner_of", central, second_partner),
+            relationship(3, "sibling_of", central, sibling),
+            relationship(4, "parent_child", central, child),
+        ]))
+        row = [node.id for node in sorted((node for node in layout.nodes if node.y == min(item.y for item in layout.nodes)), key=lambda node: node.x)]
+        partner_indexes = sorted(row.index(node_id) for node_id in (1, 2, 3))
+        self.assertEqual(partner_indexes, list(range(partner_indexes[0], partner_indexes[0] + 3)))
+        self.assertNotIn(4, row[partner_indexes[0]:partner_indexes[-1] + 1])
+        self.assertEqual(abs(row.index(1) - row.index(2)), 1)
+        self.assertEqual(abs(row.index(1) - row.index(3)), 1)
+
+    def test_exact_parent_set_child_blocks_are_contiguous_and_under_their_family_units(self) -> None:
+        parent_a, parent_b, parent_c = person(1, "A"), person(2, "B"), person(3, "C")
+        child_a, child_ab_one, child_ab_two, child_ac = (
+            person(4, "A child"), person(5, "AB one"), person(6, "AB two"), person(7, "AC child")
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", parent_a, child_a),
+            relationship(2, "parent_child", parent_a, child_ab_one),
+            relationship(3, "parent_child", parent_b, child_ab_one),
+            relationship(4, "parent_child", parent_a, child_ab_two),
+            relationship(5, "parent_child", parent_b, child_ab_two),
+            relationship(6, "parent_child", parent_a, child_ac),
+            relationship(7, "parent_child", parent_c, child_ac),
+        ]))
+        positions = {node.id: node for node in layout.nodes}
+        child_order = [node.id for node in sorted((positions[node_id] for node_id in (4, 5, 6, 7)), key=lambda node: node.x)]
+        self.assertEqual(abs(child_order.index(5) - child_order.index(6)), 1)
+        self.assertLess(abs(positions[4].x - positions[1].x), abs(positions[4].x - positions[2].x))
+        parent_ab_centre = (positions[1].x + positions[2].x) / 2
+        self.assertLess(abs((positions[5].x + positions[6].x) / 2 - parent_ab_centre), abs(positions[7].x - parent_ab_centre))
+
+    def test_unrelated_branch_does_not_reshuffle_existing_family_order(self) -> None:
+        parent_a, parent_b, child = person(1, "Parent A"), person(2, "Parent B"), person(3, "Child")
+        base_relationships = [
+            relationship(1, "partner_of", parent_a, parent_b),
+            relationship(2, "parent_child", parent_a, child),
+            relationship(3, "parent_child", parent_b, child),
+        ]
+        base = layered_layout(extract_family_graph(base_relationships))
+        extra_parent, extra_child = person(10, "Unrelated parent"), person(11, "Unrelated child")
+        expanded = layered_layout(extract_family_graph(base_relationships + [relationship(4, "parent_child", extra_parent, extra_child)]))
+        base_order = [node.id for node in sorted(base.nodes, key=lambda node: (node.y, node.x)) if node.id in {1, 2, 3}]
+        expanded_order = [node.id for node in sorted(expanded.nodes, key=lambda node: (node.y, node.x)) if node.id in {1, 2, 3}]
+        self.assertEqual(expanded_order, base_order)
 
     def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
         grandparent, parent, partner, child = (
