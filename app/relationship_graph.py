@@ -56,8 +56,6 @@ def family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
         return GraphEdge(relationship.source.id, relationship.target.id, "parent", 1)
     if relationship.type_key == "grandparent_child":
         return GraphEdge(relationship.source.id, relationship.target.id, "grandparent", 2)
-    if relationship.type_key == "sibling_of":
-        return GraphEdge(relationship.source.id, relationship.target.id, "sibling", 0, "peer")
     if relationship.type_key in {"spouse_of", "partner_of"}:
         return GraphEdge(relationship.source.id, relationship.target.id, relationship.type.subtype.lower(), 0, "peer-strong")
     return None

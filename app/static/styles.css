@@ -747,13 +747,11 @@ dd {
 .family-tree path { fill: none; stroke: var(--line); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .family-tree .family-edge-casing { stroke: var(--panel); stroke-width: 8; }
 .family-tree .family-edge-peer-strong { stroke-width: 4; }
-.family-tree .family-edge-peer { stroke-dasharray: 6 5; stroke-width: 1.5; }
 .family-tree .family-edge-cyclic { stroke: #b56a5a; stroke-dasharray: 3 5; }
 .family-tree-legend { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 10px 14px; }
 .family-tree-legend span { align-items: center; color: var(--muted); display: inline-flex; font-size: 13px; gap: 8px; }
 .legend-line { border-top: 2px solid var(--line); display: inline-block; width: 34px; }
 .legend-partner { border-top-width: 4px; }
-.legend-sibling { border-top-style: dashed; border-top-width: 1.5px; }
 .legend-parent { border-left: 2px solid var(--line); border-top: 0; height: 20px; width: 0; }
 .family-tree rect { fill: #fff; stroke: var(--accent); stroke-width: 2; }
 .family-tree a:hover rect, .family-tree a:focus rect { fill: #eaf5f1; }

@@ -21,7 +21,7 @@ INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
 def family_tree_page(tree: GraphLayout) -> str:
     if not tree.nodes:
-        visual = '<p class="empty">No supported family relationships yet. Add parent/child, sibling, spouse or partner relationships between People first.</p>'
+        visual = '<p class="empty">No supported family relationships yet. Add parent/child, spouse or partner relationships between People first.</p>'
     else:
         positions = {node.id: node for node in tree.nodes}
         lines = _hierarchy_connector_paths(tree, positions)
@@ -53,8 +53,8 @@ def family_tree_page(tree: GraphLayout) -> str:
         <a class="button secondary" href="/relationships">Back to relationships</a>
     </section>
     <section class="panel family-tree-panel">{visual}</section>
-    <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-sibling"></i>Sibling</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
-    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
+    <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
+    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling connections are inferred only from shared parent-set connectors; no separate sibling lines are drawn. Spouse and partner links are shown directly on the same generation. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
 
 

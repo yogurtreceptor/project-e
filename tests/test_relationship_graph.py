@@ -151,17 +151,19 @@ class RelationshipGraphTests(unittest.TestCase):
         self.assertNotIn('class="family-edge-casing"', html)
 
     def test_partner_units_are_adjacent_and_multiple_partners_do_not_interleave(self) -> None:
-        central, first_partner, second_partner, sibling, child = (
+        central, first_partner, second_partner, sibling, child, parent = (
             person(1, "Central"), person(2, "First partner"), person(3, "Second partner"),
-            person(4, "Sibling"), person(5, "Child"),
+            person(4, "Sibling"), person(5, "Child"), person(6, "Parent"),
         )
         layout = layered_layout(extract_family_graph([
             relationship(1, "spouse_of", central, first_partner),
             relationship(2, "partner_of", central, second_partner),
-            relationship(3, "sibling_of", central, sibling),
-            relationship(4, "parent_child", central, child),
+            relationship(3, "parent_child", parent, central),
+            relationship(4, "parent_child", parent, sibling),
+            relationship(5, "parent_child", central, child),
         ]))
-        row = [node.id for node in sorted((node for node in layout.nodes if node.y == min(item.y for item in layout.nodes)), key=lambda node: node.x)]
+        central_y = next(node.y for node in layout.nodes if node.id == central.id)
+        row = [node.id for node in sorted((node for node in layout.nodes if node.y == central_y), key=lambda node: node.x)]
         partner_indexes = sorted(row.index(node_id) for node_id in (1, 2, 3))
         self.assertEqual(partner_indexes, list(range(partner_indexes[0], partner_indexes[0] + 3)))
         self.assertNotIn(4, row[partner_indexes[0]:partner_indexes[-1] + 1])
@@ -224,21 +226,23 @@ class RelationshipGraphTests(unittest.TestCase):
         )
         layout = layered_layout(extract_family_graph([
             relationship(1, "parent_child", parent, child),
-            relationship(2, "sibling_of", child, sibling),
-            relationship(3, "spouse_of", parent, partner),
+            relationship(2, "parent_child", parent, sibling),
+            relationship(3, "sibling_of", child, sibling),
+            relationship(4, "spouse_of", parent, partner),
         ]))
         styles = {edge.label: edge.connector_style for edge in layout.edges}
-        self.assertEqual(styles, {"parent": "hierarchy", "sibling": "peer", "spouse": "peer-strong"})
+        self.assertEqual(styles, {"parent": "hierarchy", "spouse": "peer-strong"})
 
         html = family_tree_page(layout)
         self.assertIn('family-edge-peer-strong', html)
-        self.assertIn('family-edge-peer', html)
+        self.assertNotIn('family-edge-peer"', html)
+        self.assertNotIn('legend-sibling', html)
         self.assertIn('family-edge-hierarchy', html)
         self.assertIn('aria-label="Family tree connector key"', html)
         self.assertIn('Partner / spouse', html)
         self.assertRegex(html, r'd="M \d+ \d+ H \d+"')
         self.assertIn('family-edge-bundle', html)
-        self.assertRegex(html, r'data-source-set="\d+" data-target-set="\d+"')
+        self.assertRegex(html, r'data-source-set="\d+" data-target-set="\d+(?:,\d+)*"')
 
     def test_cycles_terminate_and_are_marked_without_duplicate_nodes(self) -> None:
         first, second = person(1, "First"), person(2, "Second")

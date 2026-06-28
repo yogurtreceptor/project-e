@@ -43,6 +43,7 @@ What changed:
 - Bundled hierarchy connectors by exact incoming parent set, giving every unique parent combination an independent trunk and grouping only children who share that complete set.
 - Isolated exact-parent-set bundles onto separate source ports and routing lanes, with adaptive generation spacing and regression coverage for A-only, A+B and A+C half-sibling groups.
 - Replaced generic row heuristics with family-specific partner units and exact-parent-set child blocks; added bounded parent-row/lane/trunk crossing minimisation so casing is used only for unavoidable intersections.
+- Removed explicit sibling connectors and made partner units the final hard row-ordering constraint; siblings now appear only through shared exact-parent-set child connectors and are arranged around, never inside, partner units.
 
 Current limitations:
 

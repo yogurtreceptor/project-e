@@ -104,8 +104,8 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
             hierarchy_neighbours[edge.target_id].add(edge.source_id)
     _order_layers_by_neighbours(ordered_layers, ranks, hierarchy_neighbours)
     _order_sources_to_separate_family_units(ordered_layers, graph, ranks)
-    _keep_partner_units_contiguous(ordered_layers, graph)
     _keep_exact_source_targets_contiguous(ordered_layers, graph, ranks)
+    _keep_partner_units_contiguous(ordered_layers, graph)
 
     peer_pairs = {
         frozenset((edge.source_id, edge.target_id))
