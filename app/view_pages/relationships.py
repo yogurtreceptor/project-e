@@ -655,6 +655,7 @@ def inference_review_page(batches, relationships_by_id, history_batches=None) ->
     return f'''<section class="page-heading split"><div><h1>Inference Review Queue</h1><p>Review one deterministic suggestion at a time. Suggestions are not relationships until confirmed.</p></div><a class="button secondary" href="/relationships">Relationships</a></section>{content}{history}'''
 
 
+
 def inference_history_section(history_batches) -> str:
     if not history_batches:
         return '<section class="panel inference-history"><h2>Historic batches</h2><p class="empty">No completed batches yet.</p></section>'
@@ -668,5 +669,7 @@ def inference_history_section(history_batches) -> str:
             if item.status in {"confirmed", "rejected"}:
                 undo = f'''<form method="post" action="/relationships/inferences/{item.id}/undo"><button class="link-button" type="submit">Undo</button></form>'''
             items.append(f'''<li><span><strong>{escape(item.source.title)} {escape(label)} {escape(item.target.title)}</strong><small>{escape(item.status)} / reviewed {escape(item.reviewed_at or "unknown")}</small></span>{undo}</li>''')
-        batches.append(f'''<details class="history-batch"><summary>Batch {batch['id']} / {escape(batch['trigger_type'].replace('_', ' ').title())} / {len(suggestions)} suggestions</summary><ul>{''.join(items)}</ul></details>''')
-    return f'''<section class="panel inference-history"><h2>Historic batches</h2><p>Completed batches are archived automatically. Undo reopens the batch and returns that suggestion to review.</p>{''.join(batches)}</section>'''
+        batches.append(f'''<section class="history-batch"><h3>Batch {batch['id']} / {escape(batch['trigger_type'].replace('_', ' ').title())} / {len(suggestions)} suggestions</h3><ul>{''.join(items)}</ul></section>''')
+    return f'''<section class="inference-history-controls"><button class="button secondary" type="button" id="toggle-inference-history" aria-expanded="false" aria-controls="inference-history">Show archived batches ({len(history_batches)})</button></section>
+    <section class="panel inference-history" id="inference-history" hidden><h2>Historic batches</h2><p>Completed batches are archived automatically. Undo reopens the batch and returns that suggestion to review.</p>{''.join(batches)}</section>
+    <script>(() => {{ const button = document.getElementById('toggle-inference-history'); const history = document.getElementById('inference-history'); if (!button || !history) return; button.addEventListener('click', () => {{ const showing = history.hidden; history.hidden = !showing; button.setAttribute('aria-expanded', String(showing)); button.textContent = showing ? 'Hide archived batches' : 'Show archived batches ({len(history_batches)})'; if (showing) history.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}); }})();</script>'''

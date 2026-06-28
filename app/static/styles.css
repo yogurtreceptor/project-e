@@ -774,7 +774,8 @@ dd {
 
 .inference-history { margin-top: 1.5rem; }
 .history-batch { border-top: 1px solid var(--line); padding: .85rem 0; }
-.history-batch summary { cursor: pointer; font-weight: 700; }
+.history-batch h3 { font-size: 1rem; margin: 0; }
+.inference-history-controls { margin-top: 1.5rem; }
 .history-batch ul { list-style: none; margin: .75rem 0 0; padding: 0; }
 .history-batch li { align-items: center; border-top: 1px solid #edf1f5; display: flex; gap: 1rem; justify-content: space-between; padding: .65rem 0; }
 .history-batch small { color: var(--muted); display: block; margin-top: .2rem; }

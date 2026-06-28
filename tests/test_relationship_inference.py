@@ -147,7 +147,10 @@ class RelationshipInferenceTests(unittest.TestCase):
         all_batches = list_review_batches(self.connection, include_closed=True)
         history = [(batch, items) for batch, items in all_batches if batch["status"] == "dismissed"]
         html = inference_review_page([], {r.id: r for r in list_relationships(self.connection)}, history)
-        self.assertIn("Historic batches", html)
+        self.assertIn("Show archived batches (1)", html)
+        self.assertIn('id="inference-history" hidden', html)
+        self.assertNotIn("<details", html)
+        self.assertIn("<section class=\"history-batch\">", html)
         self.assertIn(f'/relationships/inferences/{item.id}/undo', html)
         self.assertIn("rejected", html)
 
