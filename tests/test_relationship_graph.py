@@ -1,3 +1,4 @@
+import re
 import unittest
 from unittest.mock import patch
 from app.entities import DEFINITIONS_BY_TYPE, EntityRecord
@@ -114,6 +115,39 @@ class RelationshipGraphTests(unittest.TestCase):
         self.assertIn('data-source-set="1" data-target-set="3"', html)
         self.assertIn('data-source-set="1,2" data-target-set="4,5"', html)
         self.assertNotIn('data-source-set="1" data-target-set="3,4,5"', html)
+
+    def test_blended_family_groups_use_independent_parent_ports_and_lanes(self) -> None:
+        parent_a, parent_b, parent_c, child_a, child_ab_one, child_ab_two, child_ac = (
+            person(1, "Parent A"), person(2, "Parent B"), person(3, "Parent C"),
+            person(4, "Child A"), person(5, "Child AB one"), person(6, "Child AB two"), person(7, "Child AC"),
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", parent_a, child_a),
+            relationship(2, "parent_child", parent_a, child_ab_one),
+            relationship(3, "parent_child", parent_b, child_ab_one),
+            relationship(4, "parent_child", parent_a, child_ab_two),
+            relationship(5, "parent_child", parent_b, child_ab_two),
+            relationship(6, "parent_child", parent_a, child_ac),
+            relationship(7, "parent_child", parent_c, child_ac),
+        ]))
+
+        html = family_tree_page(layout)
+        bundles = re.findall(
+            r'data-source-set="([^"]+)" data-target-set="([^"]+)" '
+            r'data-source-ports="([^"]+)" data-lane="([^"]+)"',
+            html,
+        )
+        self.assertEqual({(sources, targets) for sources, targets, _, _ in bundles}, {
+            ("1", "4"), ("1,2", "5,6"), ("1,3", "7"),
+        })
+        parent_a_ports = {
+            int(match.group(1))
+            for _, _, ports, _ in bundles
+            if (match := re.search(r'(?:^|,)1:(\d+)(?:,|$)', ports))
+        }
+        self.assertEqual(len(parent_a_ports), 3)
+        self.assertEqual(len({lane for _, _, _, lane in bundles}), 3)
+        self.assertEqual(html.count('class="family-edge-casing"'), 3)
 
     def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
         grandparent, parent, partner, child = (

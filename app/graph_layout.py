@@ -121,12 +121,22 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         row_coordinates[rank] = coordinates
         row_widths[rank] = coordinates[-1]
 
+    hierarchy_sources: dict[int, set[int]] = {}
+    for edge in graph.edges:
+        if edge.rank_delta > 0:
+            hierarchy_sources.setdefault(edge.target_id, set()).add(edge.source_id)
+    bundle_counts: dict[int, set[tuple[int, ...]]] = {}
+    for target_id, source_ids in hierarchy_sources.items():
+        bundle_counts.setdefault(ranks[target_id], set()).add(tuple(sorted(source_ids)))
+    max_bundles = max((len(source_sets) for source_sets in bundle_counts.values()), default=1)
+    effective_vertical_gap = max(vertical_gap, 90 + max_bundles * 24)
+
     max_width = max(row_widths.values())
     positions: list[PositionedNode] = []
     for rank, nodes in sorted(ordered_layers.items()):
         offset = padding + (max_width - row_widths[rank]) // 2
         for node, coordinate in zip(nodes, row_coordinates[rank]):
-            positions.append(PositionedNode(node.id, node.label, node.href, offset + coordinate, padding + rank * vertical_gap))
+            positions.append(PositionedNode(node.id, node.label, node.href, offset + coordinate, padding + rank * effective_vertical_gap))
 
     rendered_edges = tuple(
         PositionedEdge(
@@ -139,7 +149,7 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         )
         for edge in graph.edges
     )
-    return GraphLayout(tuple(positions), rendered_edges, max_width + padding * 2, max(ranks.values()) * vertical_gap + padding * 2)
+    return GraphLayout(tuple(positions), rendered_edges, max_width + padding * 2, max(ranks.values()) * effective_vertical_gap + padding * 2)
 
 def _order_layers_by_neighbours(ordered_layers: dict[int, list], ranks: dict[int, int], neighbours: dict[int, set[int]]) -> None:
     """Order each row near its actual adjacent-row connections."""

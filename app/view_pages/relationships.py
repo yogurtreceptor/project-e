@@ -52,12 +52,12 @@ def family_tree_page(tree: GraphLayout) -> str:
     </section>
     <section class="panel family-tree-panel">{visual}</section>
     <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-sibling"></i>Sibling</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
-    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
+    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling, spouse and partner links are shown on the same generation where the available data permits. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
 
 
 def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
-    """Bundle targets only when their exact incoming source sets match."""
+    """Route every exact incoming-source set through independent ports and lanes."""
     incoming_sources: dict[int, set[int]] = {}
     hierarchy_edges = [edge for edge in tree.edges if edge.rank_delta > 0 and not edge.cyclic]
     for edge in hierarchy_edges:
@@ -67,33 +67,63 @@ def _hierarchy_connector_paths(tree: GraphLayout, positions: dict) -> list[str]:
     for target_id, source_ids in incoming_sources.items():
         targets_by_sources.setdefault(tuple(sorted(source_ids)), []).append(target_id)
 
-    paths: list[str] = []
-    for source_ids, target_ids in sorted(targets_by_sources.items()):
+    bundles = []
+    for source_ids, target_ids in targets_by_sources.items():
         sources = [positions[source_id] for source_id in source_ids if source_id in positions]
         targets = [positions[target_id] for target_id in sorted(target_ids) if target_id in positions]
         if not sources or not targets:
             continue
-        source_y = max(source.y for source in sources) + 26
-        target_y = min(target.y for target in targets) - 26
-        parent_bar_y = source_y + (target_y - source_y) // 3
-        child_bar_y = source_y + (target_y - source_y) * 2 // 3
-        source_xs = sorted(source.x for source in sources)
-        target_xs = sorted(target.x for target in targets)
-        trunk_x = sum(target_xs) // len(target_xs)
-        parent_centre_x = (source_xs[0] + source_xs[-1]) // 2
-        commands = [f"M {x} {source_y} V {parent_bar_y}" for x in source_xs]
-        if len(source_xs) > 1:
-            commands.append(f"M {source_xs[0]} {parent_bar_y} H {source_xs[-1]}")
-        commands.append(f"M {parent_centre_x} {parent_bar_y} H {trunk_x} V {child_bar_y}")
-        if len(target_xs) > 1:
-            commands.append(f"M {target_xs[0]} {child_bar_y} H {target_xs[-1]}")
-        commands.extend(f"M {x} {child_bar_y} V {target_y}" for x in target_xs)
-        source_set = ",".join(str(source_id) for source_id in source_ids)
-        target_set = ",".join(str(target_id) for target_id in sorted(target_ids))
-        paths.append(
-            f'<path class="family-edge family-edge-hierarchy family-edge-bundle" '
-            f'data-source-set="{source_set}" data-target-set="{target_set}" d="{" ".join(commands)}" />'
-        )
+        bundles.append((source_ids, tuple(sorted(target_ids)), sources, targets))
+    bundles.sort(key=lambda bundle: (min(target.x for target in bundle[3]), bundle[0], bundle[1]))
+
+    bundles_by_gap: dict[tuple[int, int], list[tuple]] = {}
+    for bundle in bundles:
+        source_y = max(source.y for source in bundle[2]) + 26
+        target_y = min(target.y for target in bundle[3]) - 26
+        bundles_by_gap.setdefault((source_y, target_y), []).append(bundle)
+
+    source_bundles: dict[int, list[tuple[int, ...]]] = {}
+    for source_ids, _, _, _ in bundles:
+        for source_id in source_ids:
+            source_bundles.setdefault(source_id, []).append(source_ids)
+    source_ports: dict[tuple[int, tuple[int, ...]], int] = {}
+    for source_id, source_sets in source_bundles.items():
+        ordered_sets = sorted(source_sets)
+        step = min(24, 96 // max(1, len(ordered_sets) - 1))
+        start_offset = -(step * (len(ordered_sets) - 1)) // 2
+        for index, source_ids in enumerate(ordered_sets):
+            source_ports[(source_id, source_ids)] = positions[source_id].x + start_offset + index * step
+
+    paths: list[str] = []
+    for (source_y, target_y), gap_bundles in sorted(bundles_by_gap.items()):
+        available_height = target_y - source_y
+        lane_step = max(8, min(18, available_height // max(4, len(gap_bundles) * 2 + 2)))
+        for lane_index, (source_ids, target_ids, sources, targets) in enumerate(gap_bundles):
+            parent_bar_y = source_y + lane_step * (lane_index + 1)
+            child_bar_y = target_y - lane_step * (len(gap_bundles) - lane_index)
+            source_port_pairs = sorted((source.id, source_ports[(source.id, source_ids)]) for source in sources)
+            source_xs = sorted(x for _, x in source_port_pairs)
+            target_xs = sorted(target.x for target in targets)
+            trunk_x = sum(target_xs) // len(target_xs)
+            parent_centre_x = (source_xs[0] + source_xs[-1]) // 2
+            commands = [f"M {x} {source_y} V {parent_bar_y}" for x in source_xs]
+            if len(source_xs) > 1:
+                commands.append(f"M {source_xs[0]} {parent_bar_y} H {source_xs[-1]}")
+            commands.append(f"M {parent_centre_x} {parent_bar_y} H {trunk_x} V {child_bar_y}")
+            if len(target_xs) > 1:
+                commands.append(f"M {target_xs[0]} {child_bar_y} H {target_xs[-1]}")
+            commands.extend(f"M {x} {child_bar_y} V {target_y}" for x in target_xs)
+            source_set = ",".join(str(source_id) for source_id in source_ids)
+            target_set = ",".join(str(target_id) for target_id in target_ids)
+            source_port_set = ",".join(f"{source_id}:{x}" for source_id, x in source_port_pairs)
+            path_data = " ".join(commands)
+            paths.append(f'<path class="family-edge-casing" d="{path_data}" aria-hidden="true" />')
+            paths.append(
+                f'<path class="family-edge family-edge-hierarchy family-edge-bundle" '
+                f'data-source-set="{source_set}" data-target-set="{target_set}" '
+                f'data-source-ports="{source_port_set}" data-lane="{parent_bar_y},{child_bar_y}" '
+                f'd="{path_data}" />'
+            )
     return paths
 
 

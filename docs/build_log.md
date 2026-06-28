@@ -41,6 +41,7 @@ What changed:
 - Aligned equivalent hierarchy endpoints before rank assignment, keeping co-parents and co-children on the same generation when one branch has deeper known ancestry and leaving visual space for missing ancestors.
 - Ordered generational rows by adjacent hierarchy connections and widened gaps between differing connection sets, so mixed parent sets stay visually attached to only their recorded children.
 - Bundled hierarchy connectors by exact incoming parent set, giving every unique parent combination an independent trunk and grouping only children who share that complete set.
+- Isolated exact-parent-set bundles onto separate source ports and routing lanes, with adaptive generation spacing and regression coverage for A-only, A+B and A+C half-sibling groups.
 
 Current limitations:
 

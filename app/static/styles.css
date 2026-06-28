@@ -744,7 +744,8 @@ dd {
 .family-tree-panel { padding: 12px; }
 .family-tree-scroll { overflow: auto; }
 .family-tree { display: block; min-height: 220px; min-width: 100%; }
-.family-tree path { fill: none; stroke: var(--line); stroke-width: 2; }
+.family-tree path { fill: none; stroke: var(--line); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.family-tree .family-edge-casing { stroke: var(--panel); stroke-width: 8; }
 .family-tree .family-edge-peer-strong { stroke-width: 4; }
 .family-tree .family-edge-peer { stroke-dasharray: 6 5; stroke-width: 1.5; }
 .family-tree .family-edge-cyclic { stroke: #b56a5a; stroke-dasharray: 3 5; }
