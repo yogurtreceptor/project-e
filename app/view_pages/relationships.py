@@ -45,7 +45,7 @@ def family_tree_page(tree: GraphLayout) -> str:
                 midpoint_y = (start_y + end_y) // 2
                 path = f"M {source.x} {start_y} V {midpoint_y} H {target.x} V {end_y}"
             lines.append(f'<path class="{css_class}" d="{path}" />')
-        nodes = "".join(f'<a href="{escape(node.href)}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
+        nodes = "".join(f'<a href="{escape(node.href)}" class="{"family-node-selected" if node.selected else "family-node"}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
         visual = f'<div class="family-tree-scroll"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
     return f"""
     <section class="page-heading split">

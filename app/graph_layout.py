@@ -10,6 +10,7 @@ class PositionedNode:
     href: str
     x: int
     y: int
+    selected: bool = False
 
 @dataclass(frozen=True)
 class PositionedEdge:
@@ -27,7 +28,7 @@ class GraphLayout:
     width: int
     height: int
 
-def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical_gap: int = 130, padding: int = 90) -> GraphLayout:
+def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical_gap: int = 130, padding: int = 90, selected_ids: frozenset[int] = frozenset()) -> GraphLayout:
     """Lay out family generations, partner units and exact-parent-set child groups."""
     if not graph.nodes:
         return GraphLayout((), (), 0, 0)
@@ -91,7 +92,7 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
     for node in graph.nodes:
         grouped_nodes.setdefault(find(node.id), []).append(node)
     for group_id, nodes in grouped_nodes.items():
-        nodes.sort(key=lambda node: (node.label.casefold(), node.id))
+        nodes.sort(key=lambda node: (node.birth_date or "9999-12-31", node.label.casefold(), node.id))
         layers.setdefault(group_ranks[group_id], []).append(nodes)
     for groups_in_layer in layers.values():
         groups_in_layer.sort(key=lambda nodes: (nodes[0].label.casefold(), nodes[0].id))
@@ -140,7 +141,7 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
     for rank, nodes in sorted(ordered_layers.items()):
         offset = padding + (max_width - row_widths[rank]) // 2
         for node, coordinate in zip(nodes, row_coordinates[rank]):
-            positions.append(PositionedNode(node.id, node.label, node.href, offset + coordinate, padding + rank * effective_vertical_gap))
+            positions.append(PositionedNode(node.id, node.label, node.href, offset + coordinate, padding + rank * effective_vertical_gap, node.id in selected_ids))
 
     rendered_edges = tuple(
         PositionedEdge(

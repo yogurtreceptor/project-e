@@ -80,3 +80,7 @@ Projects and Documents are never map markers.
 ## Platform-derived views
 
 Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and real-world timelines derived from canonical dates and relationships. Audit and timeline histories remain separate.
+
+### Family graph view
+
+The relationships family-tree view renders the largest complete connected family component with fixed generation rows, adjacent partner units and independent exact-parent-set child connectors. It does not draw sibling links or centre layout around a selected person. Highlighting is visual only and cannot alter geometry. The reusable selector/layout boundary also supports a bounded person-centred subgraph for a future record-local view.

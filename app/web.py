@@ -50,7 +50,7 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
-from app.relationship_graph import extract_family_graph
+from app.relationship_graph import full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
@@ -154,7 +154,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def handle_family_tree(self) -> None:
         with connect(self.database_path) as connection:
-            graph = extract_family_graph(list_relationships(connection))
+            graph = full_family_component(list_relationships(connection))
         self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph)), active_slug="relationships")
 
     def handle_dashboard(self) -> None:

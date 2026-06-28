@@ -4,6 +4,8 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-06-28
 
+Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.
+
 Clarified the durable Stage 1 boundary between permitted deterministic assistance and prohibited autonomous automation, and aligned repository scope, architecture and terminology documentation.
 
 Completed schema migration tracking, structured value validation, duplicate detection and preview-first entity merging with edit history. Added relationship integrity auditing and exact-duplicate prevention, structured discovery filters, robust Document file ownership/cleanup, and definition-driven inline entity creation in relationship workflows. Implemented deterministic family inference as reviewable suggestions with provenance, suppression, archived batches and undo. Expanded automated coverage for these behaviours.

@@ -3,7 +3,9 @@ import unittest
 from unittest.mock import patch
 from app.entities import DEFINITIONS_BY_TYPE, EntityRecord
 from app.graph_layout import layered_layout
-from app.relationship_graph import GraphEdge, adjacent_family_edge, extract_family_graph
+from app.relationship_graph import (
+    GraphEdge, adjacent_family_edge, extract_family_graph, full_family_component, person_family_subgraph,
+)
 from app.relationships import RelationshipRecord
 from app.view_pages.relationships import family_tree_page
 
@@ -249,6 +251,48 @@ class RelationshipGraphTests(unittest.TestCase):
         layout = layered_layout(extract_family_graph([relationship(1, "parent_child", first, second), relationship(2, "parent_child", second, first)]))
         self.assertEqual(len(layout.nodes), 2)
         self.assertEqual(sum(edge.cyclic for edge in layout.edges), 1)
+
+    def test_full_view_selects_largest_component_and_local_view_filters_by_distance(self) -> None:
+        people = [person(index, f"Person {index}") for index in range(1, 7)]
+        records = [
+            relationship(1, "parent_child", people[0], people[1]),
+            relationship(2, "parent_child", people[1], people[2]),
+            relationship(3, "partner_of", people[1], people[3]),
+            relationship(4, "parent_child", people[4], people[5]),
+        ]
+        full = full_family_component(records)
+        self.assertEqual({node.id for node in full.nodes}, {1, 2, 3, 4})
+        local = person_family_subgraph(full, 2, generations=1)
+        self.assertEqual({node.id for node in local.nodes}, {1, 2, 3, 4})
+        self.assertEqual({node.id for node in person_family_subgraph(full, 1, generations=1).nodes}, {1, 2})
+
+    def test_highlighting_is_presentation_only_and_does_not_change_geometry(self) -> None:
+        parent, child, partner = person(1, "Parent"), person(2, "Child"), person(3, "Partner")
+        graph = extract_family_graph([
+            relationship(1, "partner_of", parent, partner),
+            relationship(2, "parent_child", parent, child),
+            relationship(3, "parent_child", partner, child),
+        ])
+        plain = layered_layout(graph)
+        highlighted = layered_layout(graph, selected_ids=frozenset({2}))
+        self.assertEqual([(node.id, node.x, node.y) for node in plain.nodes], [(node.id, node.x, node.y) for node in highlighted.nodes])
+        self.assertEqual([node.id for node in highlighted.nodes if node.selected], [2])
+        self.assertIn('family-node-selected', family_tree_page(highlighted))
+
+    def test_complex_blended_fixture_has_non_overlapping_cards_and_exact_groups(self) -> None:
+        people = [person(index, f"Family {index}") for index in range(1, 13)]
+        pairs = [(1,4),(2,4),(1,5),(2,5),(1,6),(3,6),(4,8),(7,8),(4,9),(7,9),(6,10),(6,11),(12,11)]
+        records = [relationship(index, "parent_child", people[source-1], people[target-1]) for index, (source, target) in enumerate(pairs, 1)]
+        records += [relationship(20, "spouse_of", people[0], people[1]), relationship(21, "partner_of", people[0], people[2]), relationship(22, "partner_of", people[3], people[6])]
+        layout = layered_layout(extract_family_graph(records), selected_ids=frozenset({4}))
+        boxes = [(node.id, node.x - 72, node.y - 26, node.x + 72, node.y + 26) for node in layout.nodes]
+        for index, first in enumerate(boxes):
+            for second in boxes[index + 1:]:
+                self.assertFalse(first[1] < second[3] and second[1] < first[3] and first[2] < second[4] and second[2] < first[4])
+        html = family_tree_page(layout)
+        self.assertIn('data-source-set="1,2" data-target-set="4,5"', html)
+        self.assertIn('data-source-set="1,3" data-target-set="6"', html)
+        self.assertNotIn('legend-sibling', html)
 
     def test_empty_input_is_safe(self) -> None:
         layout = layered_layout(extract_family_graph([]))

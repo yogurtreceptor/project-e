@@ -755,6 +755,7 @@ dd {
 .legend-parent { border-left: 2px solid var(--line); border-top: 0; height: 20px; width: 0; }
 .family-tree rect { fill: #fff; stroke: var(--accent); stroke-width: 2; }
 .family-tree a:hover rect, .family-tree a:focus rect { fill: #eaf5f1; }
+.family-tree .family-node-selected rect { fill: #fff3c4; stroke-width: 4; }
 .family-tree text { fill: var(--ink); font-size: 14px; font-weight: 700; text-anchor: middle; }
 
 

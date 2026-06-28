@@ -10,6 +10,7 @@ class GraphNode:
     label: str
     href: str
     entity_type: str
+    birth_date: str = ""
 
 @dataclass(frozen=True)
 class GraphEdge:
@@ -38,11 +39,63 @@ def extract_relationship_graph(relationships: Iterable[RelationshipRecord], edge
             nodes.setdefault(entity.id, node_from_entity(entity))
         key = (edge.source_id, edge.target_id, edge.label, edge.rank_delta, edge.connector_style)
         edges.setdefault(key, edge)
-    return RelationshipGraph(tuple(sorted(nodes.values(), key=lambda node: (node.label.casefold(), node.id))), tuple(edges.values()))
+    return RelationshipGraph(tuple(sorted(nodes.values(), key=_node_order)), tuple(edges.values()))
 
 def extract_family_graph(relationships: Iterable[RelationshipRecord]) -> RelationshipGraph:
     """Adapt family records, drawing only same or adjacent-generation edges."""
     return extract_relationship_graph(relationships, adjacent_family_edge)
+
+def connected_family_components(graph: RelationshipGraph) -> tuple[RelationshipGraph, ...]:
+    """Return deterministic connected components without making layout decisions."""
+    neighbours = {node.id: set() for node in graph.nodes}
+    for edge in graph.edges:
+        neighbours[edge.source_id].add(edge.target_id)
+        neighbours[edge.target_id].add(edge.source_id)
+    nodes_by_id = {node.id: node for node in graph.nodes}
+    components, unseen = [], set(nodes_by_id)
+    while unseen:
+        seed = min(unseen, key=lambda node_id: _node_order(nodes_by_id[node_id]))
+        pending, member_ids = [seed], set()
+        while pending:
+            node_id = pending.pop()
+            if node_id in member_ids:
+                continue
+            member_ids.add(node_id)
+            unseen.discard(node_id)
+            pending.extend(sorted(neighbours[node_id] - member_ids, reverse=True))
+        components.append(_induced_graph(graph, member_ids))
+    return tuple(sorted(components, key=lambda item: (-len(item.nodes), -len(item.edges), tuple(node.id for node in item.nodes))))
+
+
+def full_family_component(relationships: Iterable[RelationshipRecord]) -> RelationshipGraph:
+    """Select the largest connected family component for the relationships view."""
+    components = connected_family_components(extract_family_graph(relationships))
+    return components[0] if components else RelationshipGraph((), ())
+
+
+def person_family_subgraph(graph: RelationshipGraph, person_id: int, generations: int = 1) -> RelationshipGraph:
+    """Select a bounded person-centred subgraph for a future record-local view."""
+    neighbours = {node.id: set() for node in graph.nodes}
+    for edge in graph.edges:
+        neighbours[edge.source_id].add(edge.target_id)
+        neighbours[edge.target_id].add(edge.source_id)
+    included, frontier = {person_id}, {person_id}
+    for _ in range(max(0, generations)):
+        frontier = {other for node_id in frontier for other in neighbours.get(node_id, ())} - included
+        included.update(frontier)
+    return _induced_graph(graph, included)
+
+
+def _induced_graph(graph: RelationshipGraph, member_ids: set[int]) -> RelationshipGraph:
+    return RelationshipGraph(
+        tuple(node for node in graph.nodes if node.id in member_ids),
+        tuple(edge for edge in graph.edges if edge.source_id in member_ids and edge.target_id in member_ids),
+    )
+
+
+def _node_order(node: GraphNode) -> tuple[str, str, int]:
+    return (node.birth_date or "9999-12-31", node.label.casefold(), node.id)
+
 
 def adjacent_family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
     """Exclude visually redundant relationships that span multiple generations."""
@@ -62,4 +115,4 @@ def family_edge(relationship: RelationshipRecord) -> GraphEdge | None:
 
 def node_from_entity(entity: EntityRecord) -> GraphNode:
     label = entity.title or f"Unnamed {entity.definition.singular}"
-    return GraphNode(entity.id, label, f"/{entity.slug}/{entity.id}", entity.type)
+    return GraphNode(entity.id, label, f"/{entity.slug}/{entity.id}", entity.type, entity.metadata.get("birthday", ""))
