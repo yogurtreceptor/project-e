@@ -23,6 +23,19 @@ No external runtime dependencies are required for the current foundation.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 
+## Local Data Boundary
+
+`instance/` is the private runtime boundary and is intentionally ignored by Git.
+On startup the application creates the directory, an empty SQLite database and the
+`instance/documents/` upload directory when they are absent. Source code, schema
+logic, documentation and intentionally reviewed fictional fixtures remain tracked;
+real entity records and uploaded files do not.
+
+Developers do not need a copied database or sample profile to run the application.
+A fresh clone starts with clean empty dashboard and browse states. If shareable
+examples are introduced later, they should be minimal, fictional and kept outside
+the ignored runtime directories.
+
 ## Boundaries
 
 Stage 1 should not introduce separate AI, automation, dispatcher, scheduling, authentication or cloud service layers.

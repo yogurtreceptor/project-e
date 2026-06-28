@@ -2,7 +2,9 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from app.config import initialise_local_storage
 from app.db import connect, initialise_database
 from app.db_schema import SCHEMA_MIGRATION_IDS
 
@@ -41,6 +43,14 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("entities", tables)
         self.assertIn("relationships", tables)
         self.assertIn("schema_migrations", tables)
+
+    def test_fresh_local_storage_creates_document_directory(self) -> None:
+        documents_path = Path(self.temp_dir.name) / "instance" / "documents"
+
+        with patch("app.config.DOCUMENT_STORAGE_DIR", documents_path):
+            initialise_local_storage()
+
+        self.assertTrue(documents_path.is_dir())
 
     def test_repeat_initialisation_does_not_reapply_migrations(self) -> None:
         initialise_database(self.database_path)

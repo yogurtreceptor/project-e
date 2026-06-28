@@ -1,7 +1,44 @@
-__pycache__/
-.pytest_cache/
-*.pyc
+# Local application data (databases and uploaded documents)
+/instance/
+/data/
+/local-data/
+/backups/
+/exports/
+
+# SQLite databases and runtime sidecar files
 *.sqlite
 *.sqlite3
-instance/
+*.db
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-journal
+*.db-wal
+*.db-shm
 
+# Python caches, test output and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+
+# Runtime logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# Machine/editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

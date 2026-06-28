@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR
+from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR, initialise_local_storage
 from app.db import (
     connect,
     count_entities,
@@ -677,6 +677,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
+    initialise_local_storage()
     initialise_database(EddyRequestHandler.database_path)
     server = ThreadingHTTPServer((host, port), EddyRequestHandler)
     print(f"Operation Eddy running at http://{host}:{port}")
