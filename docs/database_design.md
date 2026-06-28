@@ -134,3 +134,10 @@ Assets may appear on the map when they have valid direct coordinates or a `locat
 `entity_edit_history` is an append-only audit table keyed by the surviving entity ID. It records normal edits and merge events as JSON detail snapshots. It intentionally does not use a foreign key: history copied from a retired duplicate must remain attached to the canonical survivor.
 
 Duplicate merges are same-type, previewed, and committed in one transaction. The survivor retains its ID and creation metadata. Non-conflicting values fill blanks, notes are combined, conflicts and the duplicate snapshot are retained in history, all relationship endpoints are repointed, and equivalent or newly self-referencing relationships are removed before the duplicate entity is deleted.
+
+
+## Relationship inference storage
+
+`relationships.record_origin` distinguishes `manual` and confirmed `inferred` rows. Confirmed inferred rows reference `inference_suggestions` through `inference_suggestion_id` and retain an immutable `provenance_json` snapshot containing source type, rule key, supporting relationship IDs, evidence fingerprint, and inference/confirmation timestamps.
+
+`inference_batches` stores review stacks and their trigger/status. `inference_suggestions` stores the canonical people/type pair, inferred date, deterministic rule, support IDs, fingerprint, and lifecycle status (`pending`, `confirmed`, `rejected`, or `invalidated`). Rejected fingerprints remain stored to prevent unchanged suggestions from reappearing. Reviewed batches require explicit dismissal.

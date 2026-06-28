@@ -57,6 +57,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     ensure_entity_type_constraint(connection)
     create_typed_entity_tables(connection)
     create_relationship_table(connection)
+    create_inference_tables(connection)
     create_entity_history_table(connection)
 
 
@@ -261,6 +262,39 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN started_at_precision TEXT NOT NULL DEFAULT 'exact'")
     if "ended_at_precision" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN ended_at_precision TEXT NOT NULL DEFAULT 'exact'")
+    if "record_origin" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN record_origin TEXT NOT NULL DEFAULT 'manual'")
+    if "inference_suggestion_id" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN inference_suggestion_id INTEGER")
+    if "provenance_json" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN provenance_json TEXT NOT NULL DEFAULT ''")
+
+
+def create_inference_tables(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS inference_batches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, trigger_type TEXT NOT NULL,
+            trigger_id INTEGER, status TEXT NOT NULL DEFAULT 'open',
+            created_at TEXT NOT NULL, dismissed_at TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS inference_suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            batch_id INTEGER NOT NULL REFERENCES inference_batches(id) ON DELETE CASCADE,
+            type TEXT NOT NULL,
+            source_entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            target_entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            started_at TEXT NOT NULL DEFAULT '', started_at_precision TEXT NOT NULL DEFAULT 'exact',
+            status TEXT NOT NULL DEFAULT 'pending', source_type TEXT NOT NULL DEFAULT 'deterministic_rule',
+            rule_key TEXT NOT NULL, supporting_relationship_ids TEXT NOT NULL,
+            evidence_fingerprint TEXT NOT NULL, created_at TEXT NOT NULL,
+            reviewed_at TEXT NOT NULL DEFAULT '',
+            CHECK (source_entity_id <> target_entity_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_inference_suggestions_status ON inference_suggestions(status, batch_id);
+        CREATE INDEX IF NOT EXISTS idx_inference_suggestions_pair ON inference_suggestions(type, source_entity_id, target_entity_id);
+        """
+    )
 
 
 SCHEMA_MIGRATIONS = (
@@ -268,6 +302,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_02_typed_entities", create_typed_entity_tables),
     ("20260628_03_relationships", create_relationship_table),
     ("20260628_04_entity_edit_history", create_entity_history_table),
+    ("20260628_05_relationship_inference", create_inference_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

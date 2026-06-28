@@ -153,3 +153,12 @@ Relationship integrity is evaluated by `app/integrity.py` from raw relationship 
 `app/entity_merge.py` provides a reusable same-type preview-and-commit workflow. A merge is transactional: compatible blank fields are filled, notes are combined, relationships are repointed, duplicate/self relationships are removed, and the retired record plus conflicts and relationship snapshots are retained in append-only edit history. Normal entity edits also add history events.
 
 Structured search filters are registry-driven in `app/structured_filters.py`. Each filter declares its key, label, applicable entity types, optional input and predicate; search applies the registry after shared text/type/favourite filtering. New filters should extend this registry rather than add route-specific query logic.
+
+
+## Deterministic relationship inference
+
+Family inference is implemented in `app/relationship_inference.py` as a reusable rule engine. Rules consume active person-to-person facts and return neutral, canonical candidates plus supporting relationship IDs. The initial rules cover grandparent/grandchild, full sibling, aunt/uncle and niece/nephew, and cousin. Parent/child remains manually entered source evidence. Full-sibling inference requires the same complete known parent set with at least two parents, so half relationships are not inferred accidentally.
+
+Inference is local and deterministic; it does not use AI. Mutation hooks rerun the engine after relationship changes and relevant person date changes. Candidates are fingerprinted from their rule, inferred date, and exact supporting rows. Manual records win conflicts. Self links, ancestry conflicts, duplicates, and cycles are filtered or rejected.
+
+Candidates enter an Inference Review Queue rather than the active relationship set. A batch groups suggestions created by one recomputation trigger. Confirmation creates a read-only relationship with `record_origin=inferred` and JSON provenance; rejection suppresses the same evidence fingerprint. Changed or removed evidence invalidates its suggestion and automatically removes any confirmed derived relationship. Confirmation triggers a fresh recomputation and any ripple suggestions go into a new batch.

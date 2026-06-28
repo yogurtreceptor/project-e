@@ -181,3 +181,10 @@ See also: Decision Support, Stage 1.
 Information captured in named fields or relationships rather than only in free text. Structured data should be used for facts that need filtering, validation, navigation or reuse.
 
 See also: Notes, Controlled Field.
+
+
+**Inference Review Queue** — Review-only workspace containing deterministic relationship suggestions that are not active records until confirmed.
+
+**Inferred relationship** — A read-only relationship confirmed by a user from deterministic supporting facts. It remains marked inferred and retains provenance; it is never converted into a manual record.
+
+**Evidence fingerprint** — Stable digest of an inference rule, inferred date, and supporting relationship rows, used to explain evidence changes and suppress unchanged rejected suggestions.

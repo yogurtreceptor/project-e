@@ -758,3 +758,12 @@ dd {
 .family-tree rect { fill: #fff; stroke: var(--accent); stroke-width: 2; }
 .family-tree a:hover rect, .family-tree a:focus rect { fill: #eaf5f1; }
 .family-tree text { fill: var(--ink); font-size: 14px; font-weight: 700; text-anchor: middle; }
+
+
+.origin-badge, .status-badge { display: inline-block; padding: .15rem .45rem; border-radius: 999px; font-size: .75rem; background: #e7edf5; color: #334155; }
+.origin-inferred, .status-confirmed { background: #dcfce7; color: #166534; }
+.status-pending { border-left: 4px solid #d97706; }
+.status-rejected, .status-invalidated { opacity: .72; }
+.inference-batch { margin-bottom: 1rem; }
+.inference-item { padding: 1rem 0; border-top: 1px solid #dbe3ec; }
+.inference-item form { display: flex; gap: .5rem; }

@@ -255,10 +255,7 @@ def entity_relationships_panel(record: EntityRecord, relationships: list[Relatio
                     <td>{escape(relationship.status)}</td>
                     <td>{format_relationship_dates(relationship)}</td>
                     <td class="row-actions">
-                        <a href="/relationships/{relationship.id}/edit?context_entity_id={record.id}">Edit</a>
-                        <form method="post" action="/relationships/{relationship.id}/delete?context_entity_id={record.id}">
-                            <button class="link-button" type="submit">Delete</button>
-                        </form>
+                        {f'<a href="/relationships/{relationship.id}/edit?context_entity_id={record.id}">Edit</a><form method="post" action="/relationships/{relationship.id}/delete?context_entity_id={record.id}"><button class="link-button" type="submit">Delete</button></form>' if relationship.record_origin == "manual" else '<span class="origin-badge origin-inferred">inferred / read-only</span>'}
                     </td>
                 </tr>
                 """

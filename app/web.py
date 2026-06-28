@@ -51,6 +51,7 @@ from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import extract_family_graph
+from app.relationship_inference import dismiss_batch, list_review_batches, review_suggestion
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
     create_inline_relationship_target as create_inline_target,
@@ -132,6 +133,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_new(query)
         elif len(parts) == 2 and parts[1] == "family-tree":
             self.handle_family_tree()
+        elif len(parts) == 2 and parts[1] == "inferences":
+            self.handle_inference_queue()
+        elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "review":
+            self.handle_inference_review(parts[2])
+        elif len(parts) == 5 and parts[1] == "inferences" and parts[2] == "batches" and parts[4] == "dismiss":
+            self.handle_inference_batch_dismiss(parts[3])
         elif len(parts) == 2:
             self.handle_relationship_detail(parts[1])
         elif len(parts) == 3 and parts[2] == "edit":
@@ -409,6 +416,39 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 )
         self.redirect(f"/{definition.slug}")
 
+    def handle_inference_queue(self) -> None:
+        with connect(self.database_path) as connection:
+            batches = list_review_batches(connection)
+            relationships_by_id = {item.id: item for item in list_relationships(connection)}
+        self.respond_page("Inference Review Queue", views.inference_review_page(batches, relationships_by_id), active_slug="relationships")
+
+    def handle_inference_review(self, raw_id: str) -> None:
+        suggestion_id = self.parse_entity_id(raw_id)
+        if self.command != "POST" or suggestion_id is None:
+            self.respond_not_found()
+            return
+        decision = self.read_form().get("decision", "")
+        try:
+            with connect(self.database_path) as connection:
+                review_suggestion(connection, suggestion_id, decision)
+        except ValueError:
+            self.respond_not_found()
+            return
+        self.redirect("/relationships/inferences")
+
+    def handle_inference_batch_dismiss(self, raw_id: str) -> None:
+        batch_id = self.parse_entity_id(raw_id)
+        if self.command != "POST" or batch_id is None:
+            self.respond_not_found()
+            return
+        try:
+            with connect(self.database_path) as connection:
+                dismiss_batch(connection, batch_id)
+        except ValueError:
+            self.respond_not_found()
+            return
+        self.redirect("/relationships/inferences")
+
     def handle_relationship_list(self) -> None:
         with connect(self.database_path) as connection:
             integrity_warnings = audit_relationships(connection)
@@ -485,7 +525,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if self.command == "POST":
             values = normalise_relationship_values(self.read_form())
             with connect(self.database_path) as connection:
-                errors = validate_relationship_values(connection, values)
+                errors = validate_relationship_values(connection, values, relationship_id)
                 entities = list_all_entities(connection)
                 if not errors:
                     update_relationship(connection, relationship_id, values)

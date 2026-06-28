@@ -56,6 +56,7 @@ from app.view_pages.entities import (
 from app.view_pages.relationships import (
     family_tree_page,
     relationship_list_page,
+    inference_review_page,
     relationship_detail_page,
     relationship_form_page,
     relationship_workflow_selector,

@@ -133,7 +133,11 @@ def update_entity(
     if before is not None:
         from app.entity_merge import record_entity_edit
         record_entity_edit(connection, entity_id, before.to_form_values(), values)
-    connection.commit()
+    if definition.type == "person" and before is not None and before.metadata.get("birthday", "") != values.get("birthday", ""):
+        from app.relationship_inference import recompute_inferences
+        recompute_inferences(connection, "person_date_updated", entity_id)
+    else:
+        connection.commit()
 
 
 def delete_entity(
@@ -142,7 +146,11 @@ def delete_entity(
     connection.execute(
         "DELETE FROM entities WHERE id = ? AND type = ?", (entity_id, definition.type)
     )
-    connection.commit()
+    if definition.type == "person":
+        from app.relationship_inference import recompute_inferences
+        recompute_inferences(connection, "person_deleted", entity_id)
+    else:
+        connection.commit()
 
 
 def with_canonical_person_name(

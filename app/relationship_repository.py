@@ -89,13 +89,18 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
             now,
         ),
     )
-    connection.commit()
-    return int(cursor.lastrowid)
+    relationship_id = int(cursor.lastrowid)
+    from app.relationship_inference import recompute_inferences
+    recompute_inferences(connection, "relationship_created", relationship_id)
+    return relationship_id
 
 
 def update_relationship(
     connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
 ) -> None:
+    existing = connection.execute("SELECT record_origin FROM relationships WHERE id=?", (relationship_id,)).fetchone()
+    if existing and existing["record_origin"] == "inferred":
+        raise ValueError("Confirmed inferred relationships are read-only.")
     normalise_relationship_direction(connection, values)
     connection.execute(
         """
@@ -118,12 +123,17 @@ def update_relationship(
             relationship_id,
         ),
     )
-    connection.commit()
+    from app.relationship_inference import recompute_inferences
+    recompute_inferences(connection, "relationship_updated", relationship_id)
 
 
 def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
+    existing = connection.execute("SELECT record_origin FROM relationships WHERE id=?", (relationship_id,)).fetchone()
+    if existing and existing["record_origin"] == "inferred":
+        raise ValueError("Confirmed inferred relationships are read-only.")
     connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
-    connection.commit()
+    from app.relationship_inference import recompute_inferences
+    recompute_inferences(connection, "relationship_deleted", relationship_id)
 
 
 def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
@@ -142,7 +152,7 @@ def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
 
 
 def validate_relationship_values(
-    connection: sqlite3.Connection, values: dict[str, str]
+    connection: sqlite3.Connection, values: dict[str, str], relationship_id: int | None = None
 ) -> list[str]:
     errors = []
     source_id = parse_int(values.get("source_entity_id", ""))
@@ -180,6 +190,31 @@ def validate_relationship_values(
 
     if values.get("ended_at_precision", "exact") not in DATE_PRECISIONS:
         errors.append("End date certainty is invalid.")
+
+    if source_id is not None and target_id is not None and type_key in RELATIONSHIP_TYPES_BY_KEY:
+        symmetric = not RELATIONSHIP_TYPES_BY_KEY[type_key].directional
+        params = [type_key, source_id, target_id]
+        reverse_sql = " OR (source_entity_id=? AND target_entity_id=?)" if symmetric else ""
+        if symmetric:
+            params.extend((target_id, source_id))
+        exclude_sql = " AND id<>?" if relationship_id is not None else ""
+        if relationship_id is not None:
+            params.append(relationship_id)
+        duplicate = connection.execute(f"SELECT 1 FROM relationships WHERE type=? AND ((source_entity_id=? AND target_entity_id=?){reverse_sql}){exclude_sql}", params).fetchone()
+        if duplicate:
+            errors.append("This relationship already exists.")
+        family_types = ("parent_child", "grandparent_child", "sibling_of", "aunt_uncle_niece_nephew", "cousin_of")
+        if type_key in family_types:
+            placeholders = ",".join("?" for _ in family_types)
+            conflict_exclude = " AND id<>?" if relationship_id is not None else ""
+            conflict_params = [source_id, target_id, target_id, source_id, *family_types, type_key]
+            if relationship_id is not None:
+                conflict_params.append(relationship_id)
+            conflict = connection.execute(f"SELECT 1 FROM relationships WHERE ((source_entity_id=? AND target_entity_id=?) OR (source_entity_id=? AND target_entity_id=?)) AND type IN ({placeholders}) AND type<>?{conflict_exclude}", conflict_params).fetchone()
+            if conflict:
+                errors.append("A conflicting bloodline relationship already connects these people.")
+        if type_key == "parent_child" and _parent_path_exists(connection, target_id, source_id, relationship_id):
+            errors.append("This parent relationship would create a family cycle.")
 
     for field_name, label in (("started_at", "Started"), ("ended_at", "Ended")):
         date_error = validate_structured_value(values.get(field_name, ""), "date", label)
@@ -239,4 +274,24 @@ def to_relationship_record(
         notes=row["notes"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        record_origin=row["record_origin"],
+        inference_suggestion_id=row["inference_suggestion_id"],
+        provenance_json=row["provenance_json"],
     )
+
+
+def _parent_path_exists(connection: sqlite3.Connection, start_id: int, goal_id: int, exclude_id: int | None = None) -> bool:
+    rows = connection.execute("SELECT id, source_entity_id, target_entity_id FROM relationships WHERE type='parent_child' AND status='active'").fetchall()
+    children = {}
+    for row in rows:
+        if exclude_id is not None and int(row["id"]) == exclude_id:
+            continue
+        children.setdefault(int(row["source_entity_id"]), set()).add(int(row["target_entity_id"]))
+    stack, seen = [start_id], set()
+    while stack:
+        node = stack.pop()
+        if node == goal_id:
+            return True
+        if node not in seen:
+            seen.add(node); stack.extend(children.get(node, ()))
+    return False

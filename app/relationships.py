@@ -23,6 +23,9 @@ class RelationshipRecord:
     notes: str
     created_at: str
     updated_at: str
+    record_origin: str = "manual"
+    inference_suggestion_id: int | None = None
+    provenance_json: str = ""
 
     @property
     def type(self) -> RelationshipType:
