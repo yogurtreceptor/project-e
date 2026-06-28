@@ -38,5 +38,5 @@ Reassess when representative data justifies it:
 
 Deferred beyond Stage 1:
 
-- decision support, automation and artificial intelligence
-- login, multi-user accounts, WAN/mobile access and complex integrations
+- decision support, autonomous goal-directed workflows, scheduling, consequential unattended actions and artificial intelligence
+- login, multi-user accounts, WAN-dependent core operation, mobile access and complex integrations

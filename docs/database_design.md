@@ -138,6 +138,8 @@ Duplicate merges are same-type, previewed, and committed in one transaction. The
 
 ## Relationship inference storage
 
+Automatic deterministic recomputation maintains suggestion state only. It does not create canonical relationships; explicit confirmation in the Inference Review Queue is required.
+
 Confirmed suggestions become normal editable relationship rows. `relationships.created_from_inference` preserves their audit origin, `inference_suggestion_id` links to the reviewed suggestion, and `provenance_json` snapshots the source type, batch ID, rule key, supporting relationship IDs, evidence fingerprint, and inference/confirmation timestamps. `inference_evidence_status` is `current` while the original support still matches and `changed` when it no longer does; this flag never locks or deletes the relationship.
 
 `inference_batches` stores review stacks and their trigger/status. `inference_suggestions` stores the canonical people/type pair, inferred date, deterministic rule, support IDs, fingerprint, and lifecycle status (`pending`, `confirmed`, `rejected`, or `invalidated`). Rejected fingerprints remain stored to prevent unchanged suggestions from reappearing. Batches are archived automatically after all suggestions are reviewed. Historic decisions can be undone: rejected suggestions return to pending, while confirmed suggestions also remove the relationship created by that confirmation before the batch reopens.

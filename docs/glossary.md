@@ -22,9 +22,9 @@ See also: Entity, Document, Location.
 
 ## Automation
 
-Future-stage capability where the platform performs actions or workflows with reduced manual effort. Automation is not part of Stage 1.
+Autonomous, goal-directed execution that can schedule work, perform consequential actions without review or create external side effects. This form of automation is not part of Stage 1. Ordinary deterministic application behaviour and reviewed assistance are not automation in this sense.
 
-See also: Stage 1, Decision Support, Artificial Intelligence.
+See also: Deterministic Assistance, Stage 1, Decision Support, Artificial Intelligence.
 
 ## Canonical Record
 
@@ -55,6 +55,12 @@ See also: Entity Page, Map Layer.
 Future-stage capability that helps interpret information or support decisions. It is separate from Stage 1 storage, navigation and relationship modelling.
 
 See also: Stage 2, Artificial Intelligence, Automation.
+
+## Deterministic Assistance
+
+Local, rule-based and explainable behaviour that preserves user control. It may calculate suggestions, warnings, derived views or internal maintenance state, but a consequential mutation requires explicit user confirmation. Deterministic assistance is permitted in Stage 1 and is distinct from autonomous automation.
+
+See also: Automation, Inference Review Queue, Stage 1.
 
 ## Detail Page
 
@@ -166,9 +172,9 @@ See also: Architecture Decision Record (ADR), Local-first.
 
 ## Stage 1
 
-The current stage of Operation Eddy: a local-first structured information platform for entities, relationships, navigation, forms, storage and useful documentation. Stage 1 excludes AI, chat, dispatcher architecture, automation, scheduling, decision support, WAN/mobile access and login.
+The current stage of Operation Eddy: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. Stage 1 permits deterministic assistance that preserves user control, but excludes AI, chat, dispatcher architecture, decision support, autonomous automation, scheduling, unreviewed consequential actions, autonomous external side effects, WAN-dependent core operation, mobile access, cloud dependencies, login and multi-user accounts.
 
-See also: Stage 2, Local-first.
+See also: Deterministic Assistance, Stage 2, Local-first.
 
 ## Stage 2
 

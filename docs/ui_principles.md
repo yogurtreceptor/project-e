@@ -60,6 +60,8 @@ Asset value entry should accept whole numbers only. Users should not type a doll
 
 ## Inference Review
 
+The deterministic engine may recompute suggestions automatically, but creating a canonical relationship is a consequential mutation and requires explicit user confirmation.
+
 - Keep pending suggestions separate from real relationship records.
 - Present one suggestion card at a time with clear Confirm and Reject actions, the people involved, rule/reason, source chain and any inferred date.
 - Advance through the active stack after each decision and archive a batch automatically after its final review.

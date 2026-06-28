@@ -19,12 +19,13 @@ Stage 1 does not include:
 - chat interfaces
 - dispatcher architecture
 - decision support
-- complex automation
+- autonomous goal-directed workflows
 - scheduling
+- unreviewed consequential actions or autonomous external side effects
 - login or multi-user accounts
-- WAN or cloud-dependent features
+- mobile access, cloud dependencies or WAN-dependent core operation
 
-Simple import and export tools are permitted when they support data entry, backup or migration.
+Deterministic, local and explainable assistance and internal maintenance are permitted when they preserve user control. A consequential mutation requires explicit user confirmation. Optional network aids are permitted only when core records and workflows remain usable without them. Simple import and export tools are permitted when they support data entry, backup or migration.
 
 ## Domains
 
@@ -50,10 +51,10 @@ Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP
 - Users can create, edit, delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
 - Users can upload an individual file to a Document entity; replacement and Document deletion clean up unreferenced owned files.
 - Users can connect Documents and Assets to other entities through relationships.
-- Safe deterministic family suggestions are reviewed before becoming normal editable relationships.
+- Safe deterministic family suggestions are reviewed before becoming normal editable relationships; automatic candidate recomputation does not bypass that confirmation boundary.
 - Confirmed inference-created relationships retain provenance; rejected evidence is suppressed until it materially changes; completed review batches remain available in searchable history with undo.
 - The platform remains usable without WAN access.
-- Stage 1 features do not require AI, automation, login or scheduling.
+- Stage 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
 
 Relationship creation and navigation are implemented as reusable Stage 1 platform features.
 
@@ -72,6 +73,6 @@ Implemented scope:
 - manual address and coordinate editing
 - graceful omission of records without valid coordinates
 
-Out of scope remains routing, journey planning, traffic analysis, public transport, AI, decision support and automation.
+Out of scope remains routing, journey planning, traffic analysis, public transport, AI, decision support and autonomous automation.
 
 Projects and Documents are never map markers.

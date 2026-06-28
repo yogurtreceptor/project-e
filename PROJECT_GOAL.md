@@ -12,8 +12,8 @@ The foundation is:
 - maintainable, lightweight and preferably free/open-source technology
 - useful operation without WAN access
 
-Deterministic relationship inference may assist data entry only when it is explainable and reviewed before creating a relationship.
+Stage 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. Deterministic relationship inference may assist data entry because suggestions are reviewed before creating a relationship.
 
-Stage 1 does not include AI, chat, dispatcher architecture, decision support, automation, scheduling, login or WAN/mobile features. Import and export are allowed when they directly help populate, migrate or protect local data.
+Stage 1 does not include AI, chat, dispatcher architecture, decision support, autonomous goal-directed workflows, scheduling, unreviewed consequential actions, autonomous external side effects, login, multi-user accounts, mobile access, cloud dependencies or WAN-dependent core operation. Optional network aids are allowed only when core records and workflows remain usable without them. Import and export are allowed when they directly help populate, migrate or protect local data.
 
 Possible later stages include decision support, automation and artificial intelligence. They are direction, not current commitments; Stage 1 must remain useful without them.

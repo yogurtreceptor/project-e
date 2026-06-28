@@ -45,7 +45,7 @@ A Location represents a place, address or meaningful area.
 
 Current fields include location name, address lookup, address, address line 1, address line 2, suburb, city, state, post code, country, latitude, longitude, source and notes.
 
-Maps are a later view over Location data, not the foundation of the Location model.
+Maps are a derived view over Location data, not the foundation of the Location model.
 
 ## Projects
 
@@ -146,7 +146,7 @@ Phone numbers, emails and websites remain simple direct fields in Stage 1. The r
 
 ## Deterministic Family Inference
 
-Manual parent/child relationships are source facts. The inference manager derives only safe bloodline candidates: grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin. It does not infer step, adoptive, half, foster, guardian, in-law or partner relationships.
+Manual parent/child relationships are source facts. The Inference Review Queue receives only safe bloodline candidates derived by the deterministic inference engine: grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin. It does not infer step, adoptive, half, foster, guardian, in-law or partner relationships.
 
 Suggestions are not relationships until confirmed. Confirmation creates a normal editable relationship while preserving its rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps. Rejection suppresses the same evidence fingerprint. Later source changes invalidate pending suggestions but only flag changed evidence on confirmed relationships.
 

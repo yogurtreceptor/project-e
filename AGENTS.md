@@ -1,6 +1,6 @@
 Project Scope
 -------------
-Operation Eddy is a local-first Personal Operational Intelligence Platform. Stage 1 stores, organises and navigates structured information about People, Organisations, Locations, Projects, Documents, Assets and Relationships.
+Operation Eddy is a local-first Personal Information Platform. Personal operational intelligence is the longer-term direction; Stage 1 stores, organises and navigates structured information about People, Organisations, Locations, Projects, Documents, Assets and Relationships.
 
 Design Principles
 -----------------
@@ -12,7 +12,7 @@ Design Principles
 
 Stage 1 Boundaries
 ------------------
-Do not introduce AI, chat, dispatcher architecture, decision support, automation, scheduling, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies. Do not broaden Stage 1 scope without explicit user direction.
+Stage 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. Consequential mutations require explicit user confirmation. Do not introduce AI, chat, dispatcher architecture, decision support, autonomous goal-directed workflows, scheduling, unreviewed consequential actions, autonomous external side effects, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies. Capabilities crossing those boundaries require explicit user direction.
 
 Repository-First Workflow
 -------------------------
