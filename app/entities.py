@@ -164,7 +164,6 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         plural="People",
         table="people",
         fields=(
-            FieldDefinition("title", "Title"),
             FieldDefinition("given_name", "Given name"),
             FieldDefinition("middle_name", "Middle name"),
             FieldDefinition("family_name", "Family name"),

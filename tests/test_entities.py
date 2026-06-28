@@ -915,6 +915,7 @@ class EntityDatabaseTests(unittest.TestCase):
         html = views.entity_form_page(self.definition, {}, [], "Create")
         self.assertNotIn('name="display_name"', html)
         self.assertNotIn('name="preferred_name"', html)
+        self.assertNotIn('name="title"', html)
         self.assertIn('name="given_name"', html)
         self.assertIn('name="middle_name"', html)
         self.assertIn('name="family_name"', html)

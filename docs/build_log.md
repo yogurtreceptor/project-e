@@ -2,6 +2,17 @@
 
 ## 2026-06-28
 
+Person title deferred.
+
+What changed:
+
+- Removed Title from the active Person form and model. Existing additive database columns are left intact for compatibility until optional fields are implemented later.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
 People naming simplified.
 
 What changed:
