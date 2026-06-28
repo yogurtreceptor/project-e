@@ -106,7 +106,7 @@ Relationships are editable and directly navigable from entity pages and the rela
 
 The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
 
-Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities with the inverse label derived automatically.
+Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities. Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
 
 ## Relationship Types
 
@@ -136,7 +136,7 @@ Current pair-aware groups include:
 - Document to Person or Organisation: belongs to, created by, issued to/by, references and Other.
 - Document to Asset or Project: belongs to, receipt/manual/references where relevant and Other.
 
-Person-to-Person family definitions use neutral canonical types such as Parent / child and Sibling rather than storing Brother, Mother or Father as new relationship types. Display labels may become sex-specific when the viewed Person has Sex recorded as Female or Male. If Sex is Other or Unknown, neutral labels are used. For example, Parent / child can display as father of, mother of or parent of from the parent side, and son of, daughter of or child of from the child side.
+Person-to-Person family definitions use neutral canonical types such as Parent / child and Sibling rather than storing Brother, Mother or Father as new relationship types. Profile role labels may become sex-specific when the connected Person has Sex recorded as Female or Male. If Sex is Other or Unknown, neutral labels are used. For example, a parent's profile displays the connected person as Daughter, Son or Child, while the child's profile displays the connected person as Mother, Father or Parent.
 
 Legacy generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing relationships still load. They are not offered for new pair-specific relationship creation. Safe legacy location relationships continue to feed Geography and Map views.
 

@@ -107,11 +107,11 @@ PERSON_PERSON_TYPES: tuple[RelationshipType, ...] = (
     rt("cousin_of", "person", "person", "Family", "Cousin", "cousin of", "cousin of", directional=False),
     rt("family_other", "person", "person", "Family", "Other family", "family of", "family of", directional=False),
     rt("coworker_of", "person", "person", "Work", "Coworker", "coworker of", "coworker of", directional=False),
-    rt("manager_person", "person", "person", "Work", "Manager / reports to", "manager of", "reports to"),
+    rt("manager_person", "person", "person", "Work", "Manager / reports to", "manager of", "reports to", roles=('Manager', 'Reports to')),
     rt("team_member_of", "person", "person", "Work", "Team member", "team member of", "team member of", directional=False),
-    rt("student_teacher", "person", "person", "Education", "Student / teacher", "teacher of", "student of"),
+    rt("student_teacher", "person", "person", "Education", "Student / teacher", "teacher of", "student of", roles=('Teacher', 'Student')),
     rt("classmate_of", "person", "person", "Education", "Classmate", "classmate of", "classmate of", directional=False),
-    rt("clinician_patient", "person", "person", "Health", "Clinician / patient", "clinician for", "patient of"),
+    rt("clinician_patient", "person", "person", "Health", "Clinician / patient", "clinician for", "patient of", roles=('Clinician', 'Patient')),
     rt("friend_of", "person", "person", "Social", "Friend", "friend of", "friend of", directional=False),
     rt("knows", "person", "person", "Social", "Other social", "knows", "knows", directional=False),
     rt("person_person_other", "person", "person", "Other", "Other", "related to", "related to", directional=False),
@@ -215,9 +215,9 @@ LEGACY_TYPES: tuple[RelationshipType, ...] = (
     rt("located_at", "entity", "location", "Location", "Located at", "located at", "location of", notes="Legacy location relationship. Existing records still load and map; new records use pair-specific location types.", selectable=False),
     rt("related_to", "entity", "entity", "Legacy / Other", "Related to", "related to", "related to", directional=False, notes="Legacy fallback. Preserved for existing relationships, not offered for specific supported pairs.", selectable=False),
     rt("associated_with", "entity", "entity", "Legacy / Other", "Associated with", "associated with", "associated with", directional=False, notes="Legacy fallback. Preserved for existing relationships, not offered for specific supported pairs.", selectable=False),
-    rt("mother_of", "person", "person", "Legacy / Family", "Mother", "mother of", "child of", notes="Legacy gendered type; use Parent / child for new records.", selectable=False),
-    rt("father_of", "person", "person", "Legacy / Family", "Father", "father of", "child of", notes="Legacy gendered type; use Parent / child for new records.", selectable=False),
-    rt("child_of", "person", "person", "Legacy / Family", "Child", "child of", "parent of", notes="Legacy directional type; use Parent / child for new records.", selectable=False),
+    rt("mother_of", "person", "person", "Legacy / Family", "Mother", "mother of", "child of", notes="Legacy gendered type; use Parent / child for new records.", selectable=False, roles=('Mother', 'Child')),
+    rt("father_of", "person", "person", "Legacy / Family", "Father", "father of", "child of", notes="Legacy gendered type; use Parent / child for new records.", selectable=False, roles=('Father', 'Child')),
+    rt("child_of", "person", "person", "Legacy / Family", "Child", "child of", "parent of", notes="Legacy directional type; use Parent / child for new records.", selectable=False, roles=('Child', 'Parent')),
 )
 
 

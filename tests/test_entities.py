@@ -720,6 +720,74 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertEqual(sibling_relationship.label_from(daughter_id), "sister of")
         self.assertEqual(sibling_relationship.label_from(unknown_sibling_id), "sibling of")
 
+    def test_profile_relationship_labels_describe_the_connected_person(self) -> None:
+        def person_values(name: str, sex: str) -> dict[str, str]:
+            return {
+                "display_name": name,
+                "summary": "",
+                "notes": "",
+                "title": "",
+                "given_name": name,
+                "middle_name": "",
+                "family_name": "",
+                "preferred_name": "",
+                "sex": sex,
+                "birthday": "",
+                "email": "",
+                "phone": "",
+            }
+
+        with connect(self.database_path) as connection:
+            father_id = create_entity(connection, self.definition, person_values("Test Dad", "Male"))
+            son_id = create_entity(connection, self.definition, person_values("Test Son", "Male"))
+            friend_id = create_entity(connection, self.definition, person_values("Test Friend", "Unknown"))
+            parent_relationship_id = create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(father_id),
+                    "target_entity_id": str(son_id),
+                    "type": "parent_child",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+            friend_relationship_id = create_relationship(
+                connection,
+                {
+                    "source_entity_id": str(son_id),
+                    "target_entity_id": str(friend_id),
+                    "type": "friend_of",
+                    "status": "active",
+                    "started_at": "",
+                    "started_at_precision": "exact",
+                    "ended_at": "",
+                    "ended_at_precision": "exact",
+                    "notes": "",
+                },
+            )
+            parent_relationship = get_relationship(connection, parent_relationship_id)
+            friend_relationship = get_relationship(connection, friend_relationship_id)
+            father = get_entity(connection, self.definition, father_id)
+            son = get_entity(connection, self.definition, son_id)
+            friend = get_entity(connection, self.definition, friend_id)
+
+        self.assertEqual(parent_relationship.display_label_from(son_id), "Father")
+        self.assertEqual(parent_relationship.display_label_from(father_id), "Son")
+        self.assertEqual(friend_relationship.display_label_from(son_id), "Friend")
+        self.assertEqual(friend_relationship.display_label_from(friend_id), "Friend")
+
+        son_html = views.entity_detail_page(son, [parent_relationship, friend_relationship])
+        father_html = views.entity_detail_page(father, [parent_relationship])
+        friend_html = views.entity_detail_page(friend, [friend_relationship])
+        self.assertIn('>Father</a>', son_html)
+        self.assertIn('>Son</a>', father_html)
+        self.assertIn('>Friend</a>', son_html)
+        self.assertIn('>Friend</a>', friend_html)
+
     def test_perspective_relationship_choice_sets_canonical_direction(self) -> None:
         with connect(self.database_path) as connection:
             parent_id = create_entity(

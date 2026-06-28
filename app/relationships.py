@@ -53,6 +53,12 @@ class RelationshipRecord:
             return relationship_label_for_entity(self.type, self.source, self.target, from_source=False)
         return self.type.label
 
+    def display_label_from(self, entity_id: int) -> str:
+        """Return the related entity's role from the viewing entity's perspective."""
+        other = self.other_entity(entity_id)
+        role = "source" if other.id == self.source.id else "target"
+        return self.type.role_label(role, other.metadata.get("sex", ""))
+
     def other_entity(self, entity_id: int) -> EntityRecord:
         if entity_id == self.source.id:
             return self.target

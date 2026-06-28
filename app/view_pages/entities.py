@@ -242,7 +242,7 @@ def entity_relationships_panel(record: EntityRecord, relationships: list[Relatio
                 f"""
                 <tr>
                     <td><a href="/{other.slug}/{other.id}">{escape(other.title)}</a></td>
-                    <td><a href="/relationships/{relationship.id}">{escape(relationship.label_from(record.id))}</a></td>
+                    <td><a href="/relationships/{relationship.id}">{escape(relationship.display_label_from(record.id))}</a></td>
                     <td>{escape(relationship.status)}</td>
                     <td>{format_relationship_dates(relationship)}</td>
                     <td class="row-actions">
