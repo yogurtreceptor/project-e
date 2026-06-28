@@ -50,6 +50,8 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
+from app.relationship_graph import extract_family_graph
+from app.graph_layout import layered_layout
 from app.relationship_workflow import (
     create_inline_relationship_target as create_inline_target,
     inline_entity_values as build_inline_entity_values,
@@ -128,6 +130,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_list()
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_relationship_new(query)
+        elif len(parts) == 2 and parts[1] == "family-tree":
+            self.handle_family_tree()
         elif len(parts) == 2:
             self.handle_relationship_detail(parts[1])
         elif len(parts) == 3 and parts[2] == "edit":
@@ -136,6 +140,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_delete(parts[1], query)
         else:
             self.respond_not_found()
+
+    def handle_family_tree(self) -> None:
+        with connect(self.database_path) as connection:
+            graph = extract_family_graph(list_relationships(connection))
+        self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph)), active_slug="relationships")
 
     def handle_dashboard(self) -> None:
         with connect(self.database_path) as connection:

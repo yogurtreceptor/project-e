@@ -11,9 +11,37 @@ from app.relationships import (
 )
 from app.view_pages.common import format_date_with_precision
 from app.view_pages.forms import custom_value_field, error_block, input_field, select_field
+from app.graph_layout import GraphLayout
 
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
+
+
+def family_tree_page(tree: GraphLayout) -> str:
+    if not tree.nodes:
+        visual = '<p class="empty">No supported family relationships yet. Add parent/child, grandparent, sibling, spouse or partner relationships between People first.</p>'
+    else:
+        positions = {node.id: node for node in tree.nodes}
+        lines = []
+        for edge in tree.edges:
+            source = positions.get(edge.source_id)
+            target = positions.get(edge.target_id)
+            if source is None or target is None:
+                continue
+            css_class = "family-edge family-edge-horizontal" if source.y == target.y else "family-edge"
+            if edge.cyclic:
+                css_class += " family-edge-cyclic"
+            lines.append(f'<line class="{css_class}" x1="{source.x}" y1="{source.y + 26}" x2="{target.x}" y2="{target.y - 26}" />')
+        nodes = "".join(f'<a href="{escape(node.href)}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
+        visual = f'<div class="family-tree-scroll"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
+    return f"""
+    <section class="page-heading split">
+        <div><p class="eyebrow">Relationship visualisation</p><h1>Family tree</h1><p>A derived view of existing family relationships. No separate family data is stored.</p></div>
+        <a class="button secondary" href="/relationships">Back to relationships</a>
+    </section>
+    <section class="panel family-tree-panel">{visual}</section>
+    <section class="panel"><h2>Included relationships</h2><p>Parent/child and grandparent links set generations. Sibling, spouse and partner links are shown on the same generation where the available data permits.</p></section>
+    """
 
 
 def relationship_list_page(relationships: list[RelationshipRecord], integrity_warnings: list = None) -> str:
@@ -57,6 +85,7 @@ def relationship_list_page(relationships: list[RelationshipRecord], integrity_wa
             <h1>Relationships</h1>
             <p>Browse first-class links between any entity types.</p>
         </div>
+        <a class="button secondary" href="/relationships/family-tree">View family tree</a>
     </section>
     {warning_html}
     <section class="panel">{content}</section>

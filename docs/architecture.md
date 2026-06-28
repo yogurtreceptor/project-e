@@ -91,6 +91,14 @@ Relationships are a central application model:
 
 Date uncertainty is represented as metadata beside structured calendar date values.
 
+### Relationship Visualisation Framework
+
+Relationship visualisations are derived views over canonical entity and relationship records; they do not introduce graph-specific persistence. `app/relationship_graph.py` separates relationship extraction from presentation by adapting `RelationshipRecord` instances into deduplicated `RelationshipGraph` nodes and edges. The family adapter currently maps Person parent/child, grandparent, sibling, spouse and partner records.
+
+`app/graph_layout.py` provides a presentation-neutral layered layout. Edges declare only a rank difference, allowing the same layout to support future organisation, project, document or mixed-entity graphs without family-specific rules. Positive-rank cycles are detected and marked rather than repeatedly traversed, and nodes are keyed by canonical entity ID. Server-rendered SVG in the relationship page is a separate rendering concern.
+
+The proof of concept favours deterministic, understandable placement over pedigree-chart optimisation. It does not infer unstored relationships, merge spouses into family units, route shared child connectors or guarantee ideal ordering in dense/disconnected graphs. Future visualisations should add an extractor (and, where necessary, a different reusable layout strategy) while retaining the same canonical graph contract.
+
 ## Discovery Architecture
 
 Discovery uses shared entity and relationship query primitives:

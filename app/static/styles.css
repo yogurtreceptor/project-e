@@ -739,3 +739,14 @@ dd {
     color: var(--muted);
     font-size: 13px;
 }
+
+
+.family-tree-panel { padding: 12px; }
+.family-tree-scroll { overflow: auto; }
+.family-tree { display: block; min-height: 220px; min-width: 100%; }
+.family-tree line { stroke: var(--line); stroke-width: 2; }
+.family-tree .family-edge-horizontal { stroke-dasharray: 5 4; }
+.family-tree .family-edge-cyclic { stroke: #b56a5a; stroke-dasharray: 3 5; }
+.family-tree rect { fill: #fff; stroke: var(--accent); stroke-width: 2; }
+.family-tree a:hover rect, .family-tree a:focus rect { fill: #eaf5f1; }
+.family-tree text { fill: var(--ink); font-size: 14px; font-weight: 700; text-anchor: middle; }

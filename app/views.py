@@ -53,6 +53,7 @@ from app.view_pages.entities import (
     entity_form_page,
 )
 from app.view_pages.relationships import (
+    family_tree_page,
     relationship_list_page,
     relationship_detail_page,
     relationship_form_page,
@@ -101,6 +102,7 @@ __all__ = [
     "format_date_with_precision",
     "entity_form_page",
     "relationship_list_page",
+    "family_tree_page",
     "relationship_detail_page",
     "relationship_form_page",
     "relationship_workflow_selector",

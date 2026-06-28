@@ -1,5 +1,33 @@
 # Build Log
 
+## 2026-06-28
+
+Family tree visualisation proof of concept completed.
+
+What changed:
+
+- Added a Family tree view to the relationship browser using only existing canonical Person relationships.
+- Added reusable relationship-to-graph extraction with canonical entity-ID node deduplication.
+- Added a generic layered graph layout based on edge rank differences, independent of family terminology.
+- Rendered parent and grandparent generations above descendants, with siblings naturally sharing a row and sibling/spouse/partner links shown as same-level connections where data permits.
+- Added deterministic cycle detection, safe empty states and tests for hierarchy, deduplication, unrelated relationship filtering and cyclic input.
+
+Current limitations:
+
+- The view is a simple whole-dataset diagram with deterministic row ordering; it does not yet offer focus, zoom controls, branch collapsing or pedigree-grade family-unit routing.
+- Aunt/uncle, cousin and generic family records are not inferred into generations because the view does not invent missing parent/child links.
+- Dense, disconnected or contradictory data may be visually wide; contradictory parent cycles are retained as dashed warning edges without affecting layout generation.
+
+Extension path:
+
+- New graph views can supply a relationship edge mapper to the extraction framework and reuse the layered layout and renderer contract.
+- Alternative generic layouts can consume the same `RelationshipGraph` when mixed-entity or highly connected graphs need force-directed, radial or component-aware placement.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+
 ## 2026-06-22
 
 Relationship question wording clarified.
