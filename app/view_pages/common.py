@@ -6,8 +6,12 @@ from app.relationships import RelationshipRecord
 def format_relationship_dates(relationship: RelationshipRecord) -> str:
     started = format_date_with_precision(relationship.started_at, relationship.started_at_precision)
     ended = format_date_with_precision(relationship.ended_at, relationship.ended_at_precision)
-    if started == "Not recorded" and ended == "Not recorded":
+    if not relationship.started_at and not relationship.ended_at:
         return "Not recorded"
+    if not relationship.ended_at:
+        return f"Since {escape(started)}"
+    if not relationship.started_at:
+        return escape(ended)
     return f"{escape(started)} to {escape(ended)}"
 
 

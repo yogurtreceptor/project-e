@@ -93,6 +93,11 @@ def relationship_list_page(relationships: list[RelationshipRecord], integrity_wa
 
 
 def relationship_detail_page(relationship: RelationshipRecord) -> str:
+    ended_date = (
+        f'<dt>Ended</dt><dd>{escape(format_date_with_precision(relationship.ended_at, relationship.ended_at_precision))}</dd>'
+        if relationship.ended_at
+        else ""
+    )
     return f"""
     <section class="page-heading split">
         <div>
@@ -114,7 +119,7 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
             <dt>Inverse</dt><dd>{escape(relationship.type.inverse_label)}</dd>
             <dt>Status</dt><dd>{escape(relationship.status)}</dd>
             <dt>Started</dt><dd>{escape(format_date_with_precision(relationship.started_at, relationship.started_at_precision))}</dd>
-            <dt>Ended</dt><dd>{escape(format_date_with_precision(relationship.ended_at, relationship.ended_at_precision))}</dd>
+            {ended_date}
         </dl>
     </section>
     <section class="panel">

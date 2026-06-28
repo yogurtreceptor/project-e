@@ -102,6 +102,8 @@ Relationships support:
 - notes
 - creation and update timestamps
 
+Relationships are treated as ongoing unless they are explicitly marked as former or have an end date. Displays show an end date only when one is recorded; an ongoing relationship with a start date is shown as `Since [start date]`.
+
 Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
 The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type: People, Organisations and Locations.
