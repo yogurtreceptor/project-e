@@ -125,7 +125,7 @@ def update_relationship(
         ),
     )
     from app.audit import record_audit_event
-    record_audit_event(connection, "relationship_change", [("relationship", relationship_id)], before=before.to_form_values() if before else None, after=values, notes="Relationship edited")
+    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], before=before.to_form_values() if before else None, after=values, notes="Relationship edited")
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_updated", relationship_id)
 
@@ -133,7 +133,7 @@ def update_relationship(
 def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
     before = get_relationship(connection, relationship_id)
     from app.audit import record_audit_event
-    record_audit_event(connection, "relationship_change", [("relationship", relationship_id)], before=before.to_form_values() if before else None, notes="Relationship deleted")
+    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), *(("entity", before.source.id), ("entity", before.target.id))] if before else [("relationship", relationship_id)], before=before.to_form_values() if before else None, notes="Relationship deleted")
     connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_deleted", relationship_id)

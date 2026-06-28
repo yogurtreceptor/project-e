@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from app.config import initialise_local_storage
 from app.db import connect, initialise_database
-from app.db_schema import SCHEMA_MIGRATION_IDS
+from app.db_schema import SCHEMA_MIGRATION_IDS, create_schema
 
 
 class SchemaMigrationTests(unittest.TestCase):
@@ -93,6 +93,22 @@ class SchemaMigrationTests(unittest.TestCase):
             ).fetchone()
         self.assertEqual(existing["display_name"], "Existing Person")
         self.assertEqual(existing["created_at"], "before")
+
+    def test_platform_audit_backfills_existing_canonical_timestamps(self) -> None:
+        initialise_database(self.database_path)
+        with connect(self.database_path) as connection:
+            connection.execute("DELETE FROM schema_migrations WHERE migration_id = '20260628_07_backfill_platform_audit'")
+            cursor = connection.execute("INSERT INTO entities(type,display_name,summary,notes,created_at,updated_at) VALUES('person','Historic Person','','','2020-01-01T00:00:00+00:00','2021-01-01T00:00:00+00:00')")
+            entity_id = int(cursor.lastrowid)
+            connection.execute("INSERT INTO people(entity_id,given_name,family_name) VALUES(?, 'Historic', 'Person')", (entity_id,))
+            connection.commit()
+            create_schema(connection)
+            events = connection.execute(
+                "SELECT event_type FROM audit_events a JOIN audit_event_records r ON r.event_id=a.id WHERE r.record_kind='entity' AND r.record_id=? ORDER BY a.id",
+                (entity_id,),
+            ).fetchall()
+        self.assertEqual(["create", "edit"], [row["event_type"] for row in events])
+
 
 
 if __name__ == "__main__":

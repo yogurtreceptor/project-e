@@ -149,3 +149,5 @@ Suggested dates are stored only when rule-specific DOB evidence is sufficient. D
 ## Audit, provenance, and finding state
 
 Migration `20260628_06_platform_infrastructure` adds append-only generic audit events with affected-record links, lightweight per-field/relationship provenance, and user disposition state for deterministic data-quality findings. These tables do not provide snapshots, rollback, versioning, or evidence storage.
+
+Migration `20260628_07_backfill_platform_audit` restores operational-history visibility for pre-audit databases by seeding create/edit events from canonical timestamps and relationship-create events from relationship timestamps. It is one-time and does not alter canonical records.

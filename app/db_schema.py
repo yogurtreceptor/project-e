@@ -72,6 +72,28 @@ def create_platform_tables(connection: sqlite3.Connection) -> None:
     """)
 
 
+def backfill_platform_audit_events(connection: sqlite3.Connection) -> None:
+    """Seed audit visibility for canonical records created before generic audit existed."""
+    for row in connection.execute("SELECT id, created_at, updated_at FROM entities ORDER BY id"):
+        created = connection.execute(
+            "INSERT INTO audit_events(event_type, occurred_at, actor, notes, provenance) VALUES('create', ?, 'system', 'Backfilled from canonical record timestamp', 'unknown')",
+            (row["created_at"],),
+        )
+        connection.execute("INSERT INTO audit_event_records VALUES(?, 'entity', ?)", (created.lastrowid, row["id"]))
+        updated = connection.execute(
+            "INSERT INTO audit_events(event_type, occurred_at, actor, notes, provenance) VALUES('edit', ?, 'system', 'Backfilled from canonical record timestamp', 'unknown')",
+            (row["updated_at"],),
+        )
+        connection.execute("INSERT INTO audit_event_records VALUES(?, 'entity', ?)", (updated.lastrowid, row["id"]))
+    for row in connection.execute("SELECT id, source_entity_id, target_entity_id, created_at FROM relationships ORDER BY id"):
+        event = connection.execute(
+            "INSERT INTO audit_events(event_type, occurred_at, actor, notes, provenance) VALUES('relationship_change', ?, 'system', 'Relationship created (backfilled)', 'unknown')",
+            (row["created_at"],),
+        )
+        references = ((event.lastrowid, "relationship", row["id"]), (event.lastrowid, "entity", row["source_entity_id"]), (event.lastrowid, "entity", row["target_entity_id"]))
+        connection.executemany("INSERT INTO audit_event_records VALUES(?, ?, ?)", references)
+
+
 def create_entity_history_table(connection: sqlite3.Connection) -> None:
     connection.executescript(
         """
@@ -325,6 +347,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_04_entity_edit_history", create_entity_history_table),
     ("20260628_05_relationship_inference", create_inference_tables),
     ("20260628_06_platform_infrastructure", create_platform_tables),
+    ("20260628_07_backfill_platform_audit", backfill_platform_audit_events),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
