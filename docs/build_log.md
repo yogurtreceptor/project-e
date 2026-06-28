@@ -38,6 +38,7 @@ What changed:
 - Rendered generations above descendants using adjacent parent/child edges only, with siblings naturally sharing a row and sibling/spouse/partner links shown as same-level connections where data permits. Stored multi-generation relationships are represented through the parent/child chain without redundant direct lines.
 - Added deterministic cycle detection, safe empty states and tests for hierarchy, deduplication, unrelated relationship filtering and cyclic input.
 - Aligned zero-rank relationship groups on a clean generational grid, kept partners and siblings together, rendered orthogonal parent/child connectors, and added distinct partner/spouse and sibling connector styles with an on-page key.
+- Aligned equivalent hierarchy endpoints before rank assignment, keeping co-parents and co-children on the same generation when one branch has deeper known ancestry and leaving visual space for missing ancestors.
 
 Current limitations:
 

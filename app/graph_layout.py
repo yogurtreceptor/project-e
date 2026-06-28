@@ -47,6 +47,16 @@ def layered_layout(graph: RelationshipGraph, horizontal_gap: int = 190, vertical
         if edge.rank_delta == 0:
             union(edge.source_id, edge.target_id)
 
+    equivalent_endpoints: dict[tuple[str, int, int], list[int]] = {}
+    for edge in graph.edges:
+        if edge.rank_delta <= 0:
+            continue
+        equivalent_endpoints.setdefault(("source", edge.target_id, edge.rank_delta), []).append(edge.source_id)
+        equivalent_endpoints.setdefault(("target", edge.source_id, edge.rank_delta), []).append(edge.target_id)
+    for node_ids in equivalent_endpoints.values():
+        for node_id in node_ids[1:]:
+            union(node_ids[0], node_id)
+
     group_edges: list[tuple[int, int, GraphEdge]] = []
     cyclic_keys: set[tuple[int, int, str, str]] = set()
     adjacency: dict[int, set[int]] = {}

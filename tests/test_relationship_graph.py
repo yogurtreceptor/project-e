@@ -46,6 +46,31 @@ class RelationshipGraphTests(unittest.TestCase):
         with patch("app.relationship_graph.family_edge", return_value=GraphEdge(1, 2, "future ancestor", 3)):
             self.assertIsNone(adjacent_family_edge(record))
 
+    def test_equivalent_hierarchy_endpoints_align_when_only_one_branch_has_ancestors(self) -> None:
+        grandparent, first_parent, second_parent, child = (
+            person(1, "Grandparent"), person(2, "First parent"), person(3, "Second parent"), person(4, "Child")
+        )
+        layout = layered_layout(extract_family_graph([
+            relationship(1, "parent_child", grandparent, first_parent),
+            relationship(2, "parent_child", first_parent, child),
+            relationship(3, "parent_child", second_parent, child),
+        ]))
+        positions = {node.id: node for node in layout.nodes}
+        self.assertEqual(positions[2].y, positions[3].y)
+        self.assertLess(positions[1].y, positions[2].y)
+        self.assertLess(positions[2].y, positions[4].y)
+        self.assertNotEqual(positions[1].y, positions[3].y)
+
+    def test_equivalent_targets_align_as_a_generic_layout_rule(self) -> None:
+        source, first, second = person(1, "Source"), person(2, "First"), person(3, "Second")
+        graph = extract_family_graph([
+            relationship(1, "parent_child", source, first),
+            relationship(2, "parent_child", source, second),
+        ])
+        layout = layered_layout(graph)
+        positions = {node.id: node for node in layout.nodes}
+        self.assertEqual(positions[2].y, positions[3].y)
+
     def test_zero_rank_groups_share_a_row_and_stay_adjacent(self) -> None:
         grandparent, parent, partner, child = (
             person(1, "Grandparent"), person(2, "Parent"), person(3, "Partner"), person(4, "Child")
