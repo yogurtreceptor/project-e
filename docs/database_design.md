@@ -53,6 +53,8 @@ Documents store document metadata plus local file metadata:
 
 Uploaded files are stored in `instance/documents/` through `app/document_storage.py`, which owns safe naming, metadata and path confinement. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
 
+A Document owns its uploaded file. A successful replacement deletes the superseded file only after the database points to the replacement; deleting a Document deletes its file only when no other Document still references it. Missing files are tolerated, unsafe paths are never deleted, and newly written files are removed if the corresponding database write fails. File metadata submitted through hidden form fields is not trusted.
+
 Assets store useful item metadata such as asset type, status, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
 
 ## Controlled Field Storage

@@ -54,7 +54,7 @@ Location forms include address lookup as an aid, not as a requirement. Records c
 
 Location address lookup should fill suburb, city, state, post code, country, coordinates and source when the provider returns those parts, while leaving all fields manually editable.
 
-Document forms include a file upload control, but Document records remain normal entities with editable metadata and relationships.
+Document forms include a file upload control, while stored file path, MIME type and size remain system-managed metadata. Document descriptive fields and relationships remain editable.
 
 Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 

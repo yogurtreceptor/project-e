@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.document_storage import (
     UploadedFile,
+    delete_stored_document,
     format_file_size,
     safe_file_name,
     store_document_upload,
@@ -35,6 +36,19 @@ class DocumentStorageTests(unittest.TestCase):
             self.assertIsNone(stored_document_path("../secret.txt", storage_dir))
             self.assertIsNone(stored_document_path("/tmp/secret.txt", storage_dir))
             self.assertIsNone(stored_document_path("other/file.txt", storage_dir))
+
+    def test_delete_removes_only_confined_regular_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage_dir = Path(temp_dir) / "documents"
+            metadata = store_document_upload(
+                UploadedFile("owned.txt", "text/plain", b"owned"), storage_dir
+            )
+            stored_path = stored_document_path(metadata["file_path"], storage_dir)
+
+            self.assertTrue(delete_stored_document(metadata["file_path"], storage_dir))
+            self.assertFalse(stored_path.exists())
+            self.assertFalse(delete_stored_document(metadata["file_path"], storage_dir))
+            self.assertFalse(delete_stored_document("../outside.txt", storage_dir))
 
     def test_filename_and_size_helpers_preserve_existing_rules(self) -> None:
         self.assertEqual(safe_file_name("../a strange?.pdf"), "a-strange-.pdf")

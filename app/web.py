@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import DATABASE_PATH
+from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR
 from app.db import (
     connect,
     count_entities,
@@ -38,11 +38,13 @@ from app.db import (
 )
 from app.document_storage import (
     UploadedFile,
+    delete_stored_document,
     format_file_size,
     safe_file_name,
     store_document_upload as persist_document_upload,
     stored_document_path as resolve_document_path,
 )
+from app.document_lifecycle import delete_unreferenced_document_file
 from app.duplicate_detection import find_duplicate_entities
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
@@ -55,6 +57,7 @@ from app.relationship_workflow import (
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 class EddyRequestHandler(BaseHTTPRequestHandler):
     database_path = DATABASE_PATH
+    document_storage_dir = DOCUMENT_STORAGE_DIR
 
     def do_GET(self) -> None:
         self.route_request()
@@ -209,6 +212,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_new(self, definition: EntityDefinition) -> None:
         if self.command == "POST":
             values, upload = self.read_entity_form(definition)
+            if definition.type == "document" and upload is None:
+                self.clear_document_file_values(values)
             errors = validate_entity_values(definition, values)
             duplicate_matches = []
             if not errors:
@@ -222,10 +227,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         duplicate_matches=duplicate_matches,
                     )
                     return
+                stored_metadata = None
                 if upload is not None:
-                    values.update(self.store_document_upload(upload))
-                with connect(self.database_path) as connection:
-                    entity_id = create_entity(connection, definition, values)
+                    stored_metadata = self.store_document_upload(upload)
+                    values.update(stored_metadata)
+                try:
+                    with connect(self.database_path) as connection:
+                        entity_id = create_entity(connection, definition, values)
+                except Exception:
+                    if stored_metadata is not None:
+                        self.delete_document_file(stored_metadata.get("file_path", ""))
+                    raise
                 self.redirect(f"/{definition.slug}/{entity_id}")
                 return
             self.respond_form(definition, values, errors, "Create")
@@ -247,6 +259,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if self.command == "POST":
             values, upload = self.read_entity_form(definition)
+            if definition.type == "document" and upload is None:
+                self.restore_document_file_values(values, record.metadata)
             errors = validate_entity_values(definition, values)
             duplicate_matches = []
             if not errors:
@@ -262,10 +276,24 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         duplicate_matches=duplicate_matches,
                     )
                     return
+                previous_file_path = record.metadata.get("file_path", "")
+                stored_metadata = None
                 if upload is not None:
-                    values.update(self.store_document_upload(upload))
-                with connect(self.database_path) as connection:
-                    update_entity(connection, definition, entity_id, values)
+                    stored_metadata = self.store_document_upload(upload)
+                    values.update(stored_metadata)
+                try:
+                    with connect(self.database_path) as connection:
+                        update_entity(connection, definition, entity_id, values)
+                except Exception:
+                    if stored_metadata is not None:
+                        self.delete_document_file(stored_metadata.get("file_path", ""))
+                    raise
+                current_file_path = values.get("file_path", "")
+                if previous_file_path and previous_file_path != current_file_path:
+                    with connect(self.database_path) as connection:
+                        delete_unreferenced_document_file(
+                            connection, previous_file_path, self.document_storage_dir
+                        )
                 self.redirect(f"/{definition.slug}/{entity_id}")
                 return
             self.respond_form(definition, values, errors, "Edit", entity_id)
@@ -324,7 +352,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_not_found()
             return
         with connect(self.database_path) as connection:
+            record = get_entity(connection, definition, entity_id)
+            file_path = (
+                record.metadata.get("file_path", "")
+                if record is not None and definition.type == "document"
+                else ""
+            )
             delete_entity(connection, definition, entity_id)
+            if file_path:
+                delete_unreferenced_document_file(
+                    connection, file_path, self.document_storage_dir
+                )
         self.redirect(f"/{definition.slug}")
 
     def handle_relationship_list(self) -> None:
@@ -590,11 +628,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             values[field_name] = metadata.get(field_name, "")
 
     def store_document_upload(self, upload: UploadedFile) -> dict[str, str]:
-        return persist_document_upload(upload)
+        return persist_document_upload(upload, self.document_storage_dir)
 
-    @staticmethod
-    def stored_document_path(value: str) -> Path | None:
-        return resolve_document_path(value)
+    def stored_document_path(self, value: str) -> Path | None:
+        return resolve_document_path(value, self.document_storage_dir)
+
+    def delete_document_file(self, value: str) -> bool:
+        return delete_stored_document(value, self.document_storage_dir)
 
     def respond_page(
         self,

@@ -58,7 +58,7 @@ Maps are a later Stage 1 view over Location data. Search and relationship naviga
 
 - Users can maintain one canonical record per real-world person, organisation, location, project, document or asset.
 - Users can create, edit, delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
-- Users can upload an individual file to a Document entity.
+- Users can upload an individual file to a Document entity; replacement and Document deletion clean up unreferenced owned files.
 - Users can connect Documents and Assets to other entities through relationships.
 - The platform remains usable without WAN access.
 - Stage 1 features do not require AI, automation, login or scheduling.

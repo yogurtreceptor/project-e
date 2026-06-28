@@ -134,7 +134,7 @@ Findings:
 Recommended changes:
 
 - Keep the "Schema Versioning" section current when migrations are appended.
-- Add file lifecycle policy when Document deletion/replacement behaviour is decided.
+- Keep the documented Document ownership and reference-aware cleanup policy current if file behavior changes.
 
 ## docs/ui_principles.md
 

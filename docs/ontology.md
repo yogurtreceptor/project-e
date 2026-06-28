@@ -57,7 +57,7 @@ Current fields include project name, project type, status, started date and note
 
 ## Documents
 
-A Document represents a first-class document record, optionally backed by a locally uploaded file.
+A Document represents a first-class document record, optionally backed by a locally uploaded file. The Document owns that file: replacement removes the superseded unreferenced file, and deleting the final referencing Document removes it from local storage.
 
 Documents should be linked to other entities through relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
 

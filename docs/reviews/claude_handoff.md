@@ -40,7 +40,7 @@ Do not build AI, chat, dispatcher architecture, automation, scheduling, decision
 
 Refactor for maintainability without changing behaviour:
 
-Define and implement the smallest safe Document file lifecycle policy. Decide how replacement and entity deletion treat stored files, preserve path confinement through `app/document_storage.py`, and add focused tests that prevent accidental orphaning or deletion.
+Add non-blocking warnings for exact duplicate active relationships between the same endpoints and type. Preserve deliberate historical relationships when dates or status differ, keep direction normalization intact, and add focused create-flow tests.
 
 ## Inspect First
 
@@ -62,6 +62,7 @@ Define and implement the smallest safe Document file lifecycle policy. Decide ho
 - `app/discovery_repository.py`
 - `app/web.py`
 - `app/document_storage.py`
+- `app/document_lifecycle.py`
 - `app/relationship_workflow.py`
 - `app/views.py`
 - `tests/test_entities.py`

@@ -56,3 +56,14 @@ def stored_document_path(
     if storage_root not in (path, *path.parents):
         return None
     return path
+
+
+def delete_stored_document(
+    value: str,
+    storage_dir: Path = DOCUMENT_STORAGE_DIR,
+) -> bool:
+    path = stored_document_path(value, storage_dir)
+    if path is None or not path.is_file():
+        return False
+    path.unlink()
+    return True

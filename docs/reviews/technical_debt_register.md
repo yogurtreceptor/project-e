@@ -118,11 +118,13 @@ Fix before new features: no. Reassess before large-volume import, not as a block
 
 Severity: medium
 
+Status: resolved 2026-06-28
+
 Affected area: Document uploads and deletion
 
 Why it matters: Replacing or deleting Document entities can leave local files behind, and file metadata is treated as editable hidden fields.
 
-Recommended fix: Define file lifecycle rules: retain old files intentionally, garbage collect unreferenced files, or delete on entity deletion. Then implement the smallest safe policy.
+Resolution: Documents own uploaded files. Successful replacement removes the superseded file, Document deletion removes its unreferenced file, failed database writes clean up newly stored files, shared legacy references are preserved, and file metadata is restored from the database rather than trusted from hidden form fields.
 
 Fix before new features: yes, before expanding document handling.
 
