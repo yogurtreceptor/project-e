@@ -99,6 +99,18 @@ class RelationshipInferenceTests(unittest.TestCase):
         dismiss_batch(self.connection, batch["id"])
         self.assertEqual(self.connection.execute("SELECT status FROM inference_batches WHERE id=?", (batch["id"],)).fetchone()[0], "dismissed")
 
+    def test_reconciliation_recovers_parent_chain_created_outside_repository_hooks(self):
+        gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")
+        now = utc_now()
+        for source, target in ((gp, parent), (parent, child)):
+            self.connection.execute("""INSERT INTO relationships
+                (source_entity_id,target_entity_id,type,status,created_at,updated_at)
+                VALUES(?,?,'parent_child','active',?,?)""", (source, target, now, now))
+        self.connection.commit()
+        self.assertFalse(self.pending())
+        recompute_inferences(self.connection, "queue_reconciliation")
+        self.assertTrue(any(item.type_key == "grandparent_child" and item.source.id == gp and item.target.id == child for item in self.pending()))
+
 
 if __name__ == "__main__":
     unittest.main()

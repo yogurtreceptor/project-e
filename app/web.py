@@ -51,7 +51,7 @@ from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import extract_family_graph
-from app.relationship_inference import dismiss_batch, list_review_batches, review_suggestion
+from app.relationship_inference import dismiss_batch, list_review_batches, recompute_inferences, review_suggestion
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
     create_inline_relationship_target as create_inline_target,
@@ -418,6 +418,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def handle_inference_queue(self) -> None:
         with connect(self.database_path) as connection:
+            # Reconcile on read as a safety net for imported, migrated, or previously
+            # missed relationship changes. This remains deterministic and creates
+            # review suggestions only; it never activates inferred relationships.
+            recompute_inferences(connection, "queue_reconciliation")
             batches = list_review_batches(connection)
             relationships_by_id = {item.id: item for item in list_relationships(connection)}
         self.respond_page("Inference Review Queue", views.inference_review_page(batches, relationships_by_id), active_slug="relationships")
