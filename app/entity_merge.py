@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from app.db_support import utc_now
 from app.entities import EntityRecord
-from app.entity_repository import get_entity_by_id, update_typed_row
+from app.entity_repository import get_entity_by_id, update_typed_row, with_canonical_person_name
 from app.relationships import RELATIONSHIP_TYPES_BY_KEY
 
 
@@ -37,7 +37,7 @@ def preview_entity_merge(connection: sqlite3.Connection, survivor_id: int, dupli
     if survivor.type != duplicate.type:
         raise ValueError("Only records of the same entity type can be merged.")
 
-    values = [("display_name", "Name", survivor.display_name, duplicate.display_name)]
+    values = [] if survivor.type == "person" else [("display_name", "Name", survivor.display_name, duplicate.display_name)]
     values.extend((field.name, field.label, survivor.metadata.get(field.name, ""), duplicate.metadata.get(field.name, "")) for field in survivor.definition.fields)
     values.append(("notes", "Notes", survivor.notes, duplicate.notes))
     fields = []
@@ -64,6 +64,7 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
         "duplicate_relationships_before": [dict(row) for row in connection.execute("SELECT * FROM relationships WHERE source_entity_id = ? OR target_entity_id = ?", (duplicate_id, duplicate_id))],
     }
     values = {field.name: field.result_value for field in preview.fields}
+    values = with_canonical_person_name(survivor.definition, values)
     now = utc_now()
     connection.execute("BEGIN")
     try:

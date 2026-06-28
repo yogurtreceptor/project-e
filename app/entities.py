@@ -168,7 +168,6 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("given_name", "Given name"),
             FieldDefinition("middle_name", "Middle name"),
             FieldDefinition("family_name", "Family name"),
-            FieldDefinition("preferred_name", "Preferred name"),
             FieldDefinition(
                 "sex",
                 "Sex",

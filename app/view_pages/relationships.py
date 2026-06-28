@@ -225,7 +225,9 @@ def new_entity_workflow(target_type: str | None, workflow_mode: str) -> str:
     values = {"new_entity_type": selected_type}
     fieldsets = []
     for definition in definitions:
-        fields = [input_field("new_display_name", f"{definition.singular} name", {})]
+        fields = []
+        if definition.type != "person":
+            fields.append(input_field("new_display_name", f"{definition.singular} name", {}))
         for field in inline_fields_for_definition(definition):
             prefixed_field = field
             fields.append(entity_field_control_for_name(f"new_{field.name}", prefixed_field, {}))
@@ -255,7 +257,7 @@ def relationship_metadata_fields(
 ) -> str:
     options = relationship_type_options(source_entity, connected_type, connected_sex)
     current_name = source_entity.title if source_entity else "the current entity"
-    connected_name = selected_target.title if selected_target else values.get("new_display_name", "").strip()
+    connected_name = selected_target.title if selected_target else inline_connected_name(connected_type, values)
     connected_label = connected_name or "the connected entity"
     prompt = f"What is {connected_label} in relation to {current_name}?"
     return f"""
@@ -275,12 +277,25 @@ def relationship_metadata_fields(
 
 def inline_fields_for_definition(definition: EntityDefinition):
     if definition.type == "person":
-        return [field for field in definition.fields if field.name in {"given_name", "family_name", "sex", "email", "phone"}]
+        return [field for field in definition.fields if field.name in {"given_name", "middle_name", "family_name", "sex", "email", "phone"}]
     if definition.type == "organisation":
         return [field for field in definition.fields if field.name in {"organisation_type", "website", "email", "phone"}]
     if definition.type == "location":
         return [field for field in definition.fields if field.name in {"formatted_address", "city", "state", "country"}]
     return []
+
+
+def inline_connected_name(entity_type: str, values: dict[str, str]) -> str:
+    if entity_type == "person":
+        return " ".join(
+            part
+            for part in (
+                values.get("new_given_name", "").strip(),
+                values.get("new_family_name", "").strip(),
+            )
+            if part
+        )
+    return values.get("new_display_name", "").strip()
 
 
 def entity_options(entities: list[EntityRecord]) -> list[tuple[str, str]]:
@@ -351,7 +366,7 @@ def relationship_form_script(
         const question = document.getElementById('relationship_question');
         const type = document.getElementById('type');
         const newType = document.getElementById('new_entity_type');
-        const newDisplayNames = Array.from(document.querySelectorAll('[name="new_display_name"]'));
+        const newNameFields = Array.from(document.querySelectorAll('[name="new_display_name"], [name="new_given_name"], [name="new_family_name"]'));
         const workflowModes = Array.from(document.querySelectorAll('input[name="workflow_mode"]'));
         const panels = Array.from(document.querySelectorAll('[data-workflow-panel]'));
         const entityById = new Map(entities.map((entity) => [entity.id, entity]));
@@ -391,16 +406,22 @@ def relationship_form_script(
             const currentName = question.dataset.currentName || 'the current entity';
             question.textContent = `What is ${{name}} in relation to ${{currentName}}?`;
         }};
-        const activeNewDisplayName = () => {{
+        const activeNewName = () => {{
             const activeType = newType ? newType.value : '';
             const activeSection = document.querySelector(`[data-inline-entity-type="${{activeType}}"]`);
-            return activeSection ? activeSection.querySelector('[name="new_display_name"]') : null;
+            if (!activeSection) return '';
+            if (activeType === 'person') {{
+                const given = activeSection.querySelector('[name="new_given_name"]');
+                const family = activeSection.querySelector('[name="new_family_name"]');
+                return [given ? given.value.trim() : '', family ? family.value.trim() : ''].filter(Boolean).join(' ');
+            }}
+            const displayName = activeSection.querySelector('[name="new_display_name"]');
+            return displayName ? displayName.value.trim() : '';
         }};
         const refreshRelationshipChoices = () => {{
             if (selectedMode() === 'create_new') {{
                 fillRelationshipChoices(choicesByType[newType ? newType.value : ''] || []);
-                const displayName = activeNewDisplayName();
-                updateQuestion(displayName ? displayName.value.trim() : '');
+                updateQuestion(activeNewName());
                 return;
             }}
             const selectedEntity = target ? entityById.get(target.value) : null;
@@ -434,7 +455,7 @@ def relationship_form_script(
         }};
         if (target) target.addEventListener('change', refreshRelationshipChoices);
         if (newType) newType.addEventListener('change', refreshPanels);
-        newDisplayNames.forEach((field) => field.addEventListener('input', refreshRelationshipChoices));
+        newNameFields.forEach((field) => field.addEventListener('input', refreshRelationshipChoices));
         document.querySelectorAll("[id^=\'new_sex\']").forEach((field) => field.addEventListener('change', refreshRelationshipChoices));
         workflowModes.forEach((item) => item.addEventListener('change', refreshPanels));
         filterTargets();

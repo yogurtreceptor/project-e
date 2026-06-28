@@ -2,6 +2,21 @@
 
 ## 2026-06-28
 
+People naming simplified.
+
+What changed:
+
+- Removed user-entered Person name and preferred name fields.
+- Made given name the only required Person naming field; middle and family names remain optional.
+- Generate the internal Person display name from given plus family name across normal forms, inline relationship creation and merges. Middle name remains stored but is not displayed in the normal name.
+- Preserved legacy stored display names until an existing Person is edited or merged; additive legacy columns are not destructively removed.
+
+Verification:
+
+- `python3 -m compileall app run.py tests`
+- `python3 -m unittest discover -s tests`
+- Local HTTP smoke test covered the People create form and structured-name submission.
+
 Family tree visualisation proof of concept completed.
 
 What changed:

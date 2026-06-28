@@ -49,7 +49,7 @@ Current domains inherit from a common entity architecture:
 - `EntityDefinition` describes each domain type, route slug, table, domain-specific fields and strong fields used for duplicate warnings.
 - `FieldDefinition` describes reusable field metadata, including overview visibility, input type, structured value kind, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup.
 - `EntityRecord` is the shared runtime model for all entity instances.
-- Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`.
+- Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`. For People, `display_name` is internal derived data generated from `given_name` plus `family_name`; it is not a separate user-entered field.
 - `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.
 - Domain-specific data is exposed as metadata on the same record object.
 - Entity profile pages are generated from entity definitions and shared page sections.

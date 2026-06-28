@@ -444,9 +444,9 @@ def entity_form_page(
     error_html = error_block(errors)
     duplicate_html = duplicate_warning(duplicate_matches or [], definition.type == "document")
 
-    fields = [
-        input_field("display_name", f"{definition.singular} name", values),
-    ]
+    fields = []
+    if definition.type != "person":
+        fields.append(input_field("display_name", f"{definition.singular} name", values))
     if definition.type == "location":
         fields.append(address_lookup_field())
     for field in definition.fields:

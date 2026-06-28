@@ -28,6 +28,8 @@ class DuplicateDetectionTests(unittest.TestCase):
                 self.people,
                 {
                     "display_name": name,
+                    "given_name": name.split(maxsplit=1)[0],
+                    "family_name": name.split(maxsplit=1)[1] if len(name.split(maxsplit=1)) > 1 else "",
                     "email": email,
                     "phone": phone,
                     "sex": "Unknown",
@@ -73,7 +75,7 @@ class DuplicateDetectionTests(unittest.TestCase):
         try:
             first_status, first_headers, first_body = self.post_person(
                 server.server_port,
-                {"display_name": "Ada Lovelace", "email": "new@example.test"},
+                {"given_name": "Ada", "family_name": "Lovelace", "email": "new@example.test"},
             )
             with connect(self.database_path) as connection:
                 count_after_warning = len(list_entities(connection, self.people))
@@ -81,7 +83,8 @@ class DuplicateDetectionTests(unittest.TestCase):
             second_status, second_headers, _second_body = self.post_person(
                 server.server_port,
                 {
-                    "display_name": "Ada Lovelace",
+                    "given_name": "Ada",
+                    "family_name": "Lovelace",
                     "email": "new@example.test",
                     "confirm_duplicate": "1",
                 },
@@ -112,7 +115,7 @@ class DuplicateDetectionTests(unittest.TestCase):
         try:
             warning_status, _warning_headers, warning_body = self.post_person(
                 server.server_port,
-                {"display_name": "Ada Lovelace"},
+                {"given_name": "Ada", "family_name": "Lovelace"},
                 path=f"/people/{edited_id}/edit",
             )
             with connect(self.database_path) as connection:
@@ -120,7 +123,7 @@ class DuplicateDetectionTests(unittest.TestCase):
 
             confirmed_status, confirmed_headers, _confirmed_body = self.post_person(
                 server.server_port,
-                {"display_name": "Ada Lovelace", "confirm_duplicate": "1"},
+                {"given_name": "Ada", "family_name": "Lovelace", "confirm_duplicate": "1"},
                 path=f"/people/{edited_id}/edit",
             )
             with connect(self.database_path) as connection:

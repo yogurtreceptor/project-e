@@ -20,7 +20,7 @@ class StructuredValueTests(unittest.TestCase):
         definition = DEFINITIONS_BY_SLUG["people"]
         values = normalise_form_values(
             definition,
-            {"display_name": "Example", "birthday": "2025-02-29"},
+            {"given_name": "Example", "birthday": "2025-02-29"},
         )
         self.assertEqual(
             validate_entity_values(definition, values),

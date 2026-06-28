@@ -22,7 +22,8 @@ class DataIntegrityMergeAndFilterTests(unittest.TestCase):
 
     def person(self, name, birthday="", email="", notes=""):
         with connect(self.database_path) as connection:
-            return create_entity(connection, self.people, {"display_name": name, "birthday": birthday, "email": email, "notes": notes, "sex": "Unknown"})
+            parts = name.split(maxsplit=1)
+            return create_entity(connection, self.people, {"display_name": name, "given_name": parts[0], "family_name": parts[1] if len(parts) > 1 else "", "birthday": birthday, "email": email, "notes": notes, "sex": "Unknown"})
 
     def test_integrity_audit_detects_duplicates_broken_types_and_suspicious_roles(self):
         first = self.person("First")

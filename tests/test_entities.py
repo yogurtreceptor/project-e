@@ -57,7 +57,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "Ada",
                     "email": "",
                     "phone": "",
                 },
@@ -80,7 +79,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Augusta Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "Ada",
                     "email": "ada@example.test",
                     "phone": "",
                 },
@@ -111,7 +109,12 @@ class EntityDatabaseTests(unittest.TestCase):
 
                 self.assertIsNotNone(record)
                 self.assertEqual(record.definition, definition)
-                self.assertEqual(record.display_name, f"Example {definition.singular}")
+                expected_name = (
+                    "Given name value Family name value"
+                    if definition.type == "person"
+                    else f"Example {definition.singular}"
+                )
+                self.assertEqual(record.display_name, expected_name)
                 self.assertNotIn("summary", record.to_form_values())
                 self.assertEqual(len(list_entities(connection, definition)), 1)
 
@@ -131,7 +134,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "birthday": "1815-12-10",
                     "email": "ada@example.test",
                     "phone": "",
@@ -168,7 +170,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "email": "",
                     "phone": "",
                 },
@@ -247,7 +248,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "birthday": "1815-12-10",
                     "email": "ada@example.test",
                     "phone": "",
@@ -354,7 +354,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "birthday": "",
                     "email": "",
                     "phone": "",
@@ -405,7 +404,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "sex": "Female",
                     "birthday": "",
                     "email": "",
@@ -436,7 +434,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Jane",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "sex": "Female",
                     "birthday": "",
                     "email": "",
@@ -495,7 +492,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "sex": "Female",
                     "birthday": "",
                     "email": "",
@@ -570,7 +566,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Test3",
                     "middle_name": "",
                     "family_name": "",
-                    "preferred_name": "",
                     "sex": "Unknown",
                     "birthday": "",
                     "email": "",
@@ -610,7 +605,8 @@ class EntityDatabaseTests(unittest.TestCase):
             {
                 "source_entity_id": str(organisation_id),
                 "workflow_mode": "create_new",
-                "new_display_name": "Jane Smith",
+                "new_given_name": "Jane",
+                "new_family_name": "Smith",
                 "type": "",
                 "status": "active",
             },
@@ -624,8 +620,8 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertIn("What is Test3 in relation to Test4?", existing_html)
         self.assertNotIn("What is this entity", existing_html)
         self.assertIn("What is Jane Smith in relation to Test4?", new_html)
-        self.assertIn("newDisplayNames.forEach((field) => field.addEventListener('input', refreshRelationshipChoices))", existing_html)
-        self.assertIn("activeNewDisplayName", existing_html)
+        self.assertIn("newNameFields.forEach((field) => field.addEventListener('input', refreshRelationshipChoices))", existing_html)
+        self.assertIn("activeNewName", existing_html)
         self.assertIn("question.textContent = `What is", existing_html)
 
     def test_family_relationship_labels_are_gender_aware_and_neutral(self) -> None:
@@ -641,7 +637,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Charles",
                     "middle_name": "",
                     "family_name": "Babbage",
-                    "preferred_name": "",
                     "sex": "Male",
                     "birthday": "",
                     "email": "",
@@ -659,7 +654,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "sex": "Female",
                     "birthday": "",
                     "email": "",
@@ -677,7 +671,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "",
                     "middle_name": "",
                     "family_name": "",
-                    "preferred_name": "",
                     "sex": "Unknown",
                     "birthday": "",
                     "email": "",
@@ -730,7 +723,6 @@ class EntityDatabaseTests(unittest.TestCase):
                 "given_name": name,
                 "middle_name": "",
                 "family_name": "",
-                "preferred_name": "",
                 "sex": sex,
                 "birthday": "",
                 "email": "",
@@ -801,7 +793,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "John",
                     "middle_name": "",
                     "family_name": "Smith",
-                    "preferred_name": "",
                     "sex": "Male",
                     "birthday": "",
                     "email": "",
@@ -819,7 +810,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Jane",
                     "middle_name": "",
                     "family_name": "Smith",
-                    "preferred_name": "",
                     "sex": "Female",
                     "birthday": "",
                     "email": "",
@@ -883,7 +873,6 @@ class EntityDatabaseTests(unittest.TestCase):
                 {
                     "target_mode": "create_new",
                     "new_entity_type": "person",
-                    "new_display_name": "Grace Hopper",
                     "new_given_name": "Grace",
                     "new_family_name": "Hopper",
                     "new_email": "grace@example.test",
@@ -908,10 +897,27 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertEqual(relationship.label_from(new_person.id), "employee of")
         self.assertEqual(relationship.label_from(organisation_id), "employer of")
 
-    def test_display_name_is_required(self) -> None:
-        values = normalise_form_values(self.definition, {"display_name": "  "})
-        errors = validate_entity_values(self.definition, values)
-        self.assertEqual(errors, ["Person name is required."])
+    def test_given_name_is_required_and_display_name_is_generated(self) -> None:
+        values = normalise_form_values(self.definition, {"given_name": "  "})
+        self.assertEqual(validate_entity_values(self.definition, values), ["Given name is required."])
+
+        values = normalise_form_values(
+            self.definition,
+            {"given_name": " John ", "middle_name": "Quincy", "family_name": " Smith "},
+        )
+        self.assertEqual(validate_entity_values(self.definition, values), [])
+        self.assertEqual(values["display_name"], "John Smith")
+
+        given_only = normalise_form_values(self.definition, {"given_name": "John"})
+        self.assertEqual(given_only["display_name"], "John")
+
+    def test_person_form_hides_manual_and_preferred_names(self) -> None:
+        html = views.entity_form_page(self.definition, {}, [], "Create")
+        self.assertNotIn('name="display_name"', html)
+        self.assertNotIn('name="preferred_name"', html)
+        self.assertIn('name="given_name"', html)
+        self.assertIn('name="middle_name"', html)
+        self.assertIn('name="family_name"', html)
 
     def test_summary_is_not_rendered_on_entity_forms(self) -> None:
         for definition in ENTITY_DEFINITIONS:
@@ -1109,7 +1115,6 @@ class EntityDatabaseTests(unittest.TestCase):
                     "given_name": "Ada",
                     "middle_name": "",
                     "family_name": "Lovelace",
-                    "preferred_name": "",
                     "birthday": "",
                     "email": "",
                     "phone": "",

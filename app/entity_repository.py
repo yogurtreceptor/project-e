@@ -83,6 +83,7 @@ def create_entity(
     values: dict[str, str],
     commit: bool = True,
 ) -> int:
+    values = with_canonical_person_name(definition, values)
     now = utc_now()
     cursor = connection.execute(
         """
@@ -111,6 +112,7 @@ def update_entity(
     entity_id: int,
     values: dict[str, str],
 ) -> None:
+    values = with_canonical_person_name(definition, values)
     before = get_entity(connection, definition, entity_id)
     connection.execute(
         """
@@ -143,11 +145,27 @@ def delete_entity(
     connection.commit()
 
 
+def with_canonical_person_name(
+    definition: EntityDefinition, values: dict[str, str]
+) -> dict[str, str]:
+    if definition.type != "person":
+        return values
+    canonical_values = dict(values)
+    canonical_values["display_name"] = " ".join(
+        part.strip()
+        for part in (values.get("given_name", ""), values.get("family_name", ""))
+        if part.strip()
+    )
+    return canonical_values
+
+
 def validate_entity_values(
     definition: EntityDefinition, values: dict[str, str]
 ) -> list[str]:
     errors = []
-    if not values.get("display_name", "").strip():
+    if definition.type == "person" and not values.get("given_name", "").strip():
+        errors.append("Given name is required.")
+    elif definition.type != "person" and not values.get("display_name", "").strip():
         errors.append(f"{definition.singular} name is required.")
     for field in definition.fields:
         value = values.get(field.name, "").strip()
@@ -169,6 +187,12 @@ def normalise_form_values(
     for field in definition.fields:
         raw_value = str(raw_values.get(field.name, field.default)).strip() or field.default
         values[field.name] = normalise_structured_value(raw_value, field.value_kind)
+    if definition.type == "person":
+        values["display_name"] = " ".join(
+            part
+            for part in (values.get("given_name", ""), values.get("family_name", ""))
+            if part
+        )
     return values
 
 

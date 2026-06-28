@@ -29,7 +29,7 @@ Each real-world object should have one canonical entity record. Create and edit 
 
 A Person represents a real person.
 
-Current fields include display name, title, given name, middle name, family name, preferred name, optional sex, birthday, email, phone and notes. Sex is optional and used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling. Email and phone remain direct Person fields for Stage 1 simplicity; contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
+Current user-entered fields include title, required given name, optional middle and family names, optional sex, birthday, email, phone and notes. A Person's internal display name is generated from given name plus family name; middle name is stored but is not part of the normal display name. Preferred name is not modelled in Stage 1. Sex is optional and used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling. Email and phone remain direct Person fields for Stage 1 simplicity; contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
 
 ## Organisations
 
