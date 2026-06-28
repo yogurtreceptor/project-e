@@ -23,7 +23,13 @@ def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecor
         ORDER BY updated_at DESC, id DESC
         """
     ).fetchall()
-    return [to_relationship_record(connection, row) for row in rows]
+    records = []
+    for row in rows:
+        try:
+            records.append(to_relationship_record(connection, row))
+        except ValueError:
+            continue
+    return records
 
 
 def list_relationships_for_entity(
@@ -38,7 +44,13 @@ def list_relationships_for_entity(
         """,
         (entity_id, entity_id),
     ).fetchall()
-    return [to_relationship_record(connection, row) for row in rows]
+    records = []
+    for row in rows:
+        try:
+            records.append(to_relationship_record(connection, row))
+        except ValueError:
+            continue
+    return records
 
 
 def get_relationship(

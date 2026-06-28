@@ -137,3 +137,11 @@ Address lookup is behind a small geocoder boundary. The current provider uses Op
 G-NAF is the preferred future option for Australian house-level geocoding, but it is intentionally deferred. It should be treated as an optional local address index or plugin-style data pack with setup instructions, not a mandatory dependency or a table inside the main entity database. Nominatim remains useful for lightweight lookup, places, fallback search and non-Australian addresses.
 
 Architectural correction: Organisation address fields were removed from the active entity definition. Organisation geography now comes from Location relationships so there is one canonical place record per real-world address or place.
+
+## Data Quality and Merge Architecture
+
+Relationship integrity is evaluated by `app/integrity.py` from raw relationship rows so orphan endpoints, unknown types, invalid/self references, duplicates and suspicious family combinations can be reported without preventing the audit itself. Warnings use the existing relationship browser and entity-profile surfaces.
+
+`app/entity_merge.py` provides a reusable same-type preview-and-commit workflow. A merge is transactional: compatible blank fields are filled, notes are combined, relationships are repointed, duplicate/self relationships are removed, and the retired record plus conflicts and relationship snapshots are retained in append-only edit history. Normal entity edits also add history events.
+
+Structured search filters are registry-driven in `app/structured_filters.py`. Each filter declares its key, label, applicable entity types, optional input and predicate; search applies the registry after shared text/type/favourite filtering. New filters should extend this registry rather than add route-specific query logic.

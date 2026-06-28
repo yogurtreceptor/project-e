@@ -16,7 +16,12 @@ from app.view_pages.forms import custom_value_field, error_block, input_field, s
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
 
-def relationship_list_page(relationships: list[RelationshipRecord]) -> str:
+def relationship_list_page(relationships: list[RelationshipRecord], integrity_warnings: list = None) -> str:
+    integrity_warnings = integrity_warnings or []
+    warning_html = ""
+    if integrity_warnings:
+        items = "".join(f"<li><strong>{escape(item.severity.title())}:</strong> {escape(item.message)}</li>" for item in integrity_warnings)
+        warning_html = f'<section class="warnings"><h2>Data integrity warnings</h2><ul>{items}</ul></section>'
     if not relationships:
         content = '<p class="empty">No relationships yet.</p>'
     else:
@@ -53,6 +58,7 @@ def relationship_list_page(relationships: list[RelationshipRecord]) -> str:
             <p>Browse first-class links between any entity types.</p>
         </div>
     </section>
+    {warning_html}
     <section class="panel">{content}</section>
     """
 

@@ -1,14 +1,19 @@
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS
+from app.structured_filters import FILTERS
 
 
-def search_page(query: str, entity_type: str, favourites_only: bool, results: list[dict[str, object]]) -> str:
+def search_page(query: str, entity_type: str, favourites_only: bool, results: list[dict[str, object]], filter_key: str = "", filter_value: str = "") -> str:
     type_options = ['<option value="">All entity types</option>']
     for definition in ENTITY_DEFINITIONS:
         selected = " selected" if definition.type == entity_type else ""
         type_options.append(f'<option value="{definition.type}"{selected}>{escape(definition.plural)}</option>')
     checked = " checked" if favourites_only else ""
+    filter_options = ['<option value="">No structured filter</option>']
+    for item in FILTERS:
+        selected = " selected" if item.key == filter_key else ""
+        filter_options.append(f'<option value="{item.key}"{selected}>{escape(item.label)}</option>')
     if results:
         cards = "".join(search_result_card(result) for result in results)
     else:
@@ -22,6 +27,8 @@ def search_page(query: str, entity_type: str, favourites_only: bool, results: li
         <form method="get" action="/search">
             <input name="q" value="{escape(query)}" placeholder="Search entities and relationships">
             <select name="type">{''.join(type_options)}</select>
+            <select name="filter">{''.join(filter_options)}</select>
+            <input name="filter_value" value="{escape(filter_value)}" placeholder="Month or year (when required)">
             <label class="inline-check"><input type="checkbox" name="favourites" value="1"{checked}> Favourites only</label>
             <button class="button" type="submit">Search</button>
             <a class="button secondary" href="/search">Clear</a>

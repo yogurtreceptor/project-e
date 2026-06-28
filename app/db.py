@@ -22,6 +22,7 @@ from app.db_schema import (
     migrate_field_value_aliases,
     create_relationship_table,
     ensure_relationship_columns,
+    create_entity_history_table,
 )
 from app.entity_repository import (
     list_entities,
@@ -72,6 +73,7 @@ __all__ = [
     "migrate_field_value_aliases",
     "create_relationship_table",
     "ensure_relationship_columns",
+    "create_entity_history_table",
     "list_entities",
     "list_all_entities",
     "count_entities",

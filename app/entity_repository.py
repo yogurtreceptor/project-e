@@ -111,6 +111,7 @@ def update_entity(
     entity_id: int,
     values: dict[str, str],
 ) -> None:
+    before = get_entity(connection, definition, entity_id)
     connection.execute(
         """
         UPDATE entities
@@ -127,6 +128,9 @@ def update_entity(
         ),
     )
     update_typed_row(connection, definition, entity_id, values)
+    if before is not None:
+        from app.entity_merge import record_entity_edit
+        record_entity_edit(connection, entity_id, before.to_form_values(), values)
     connection.commit()
 
 

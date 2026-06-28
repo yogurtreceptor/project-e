@@ -382,3 +382,11 @@ Verification:
 
 - `python3 -m compileall app run.py tests`
 - `python3 -m unittest discover -s tests`
+
+## Relationship integrity, merge and structured filters — 2026-06-28
+
+- Added raw-row relationship auditing for orphan/broken/self/duplicate links and suspicious family-role combinations.
+- Surfaced audit warnings in relationship and entity views.
+- Added transactional, preview-first duplicate record merging with relationship repointing/deduplication and append-only edit history.
+- Added a declarative structured-filter registry with birthday month/year/missing birthday and organisation-without-location filters.
+- Added migration, repository, UI and focused regression coverage; full suite passes.

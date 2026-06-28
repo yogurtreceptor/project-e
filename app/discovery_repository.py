@@ -5,6 +5,7 @@ from app.entities import EntityRecord
 from app.entity_repository import entity_matches_query, get_entity_by_id, list_all_entities
 from app.relationship_repository import list_relationships_for_entity
 from app.relationships import RelationshipRecord
+from app.structured_filters import apply_structured_filter
 
 
 def list_recent_entities(connection: sqlite3.Connection, limit: int = 8) -> list[EntityRecord]:
@@ -56,6 +57,8 @@ def search_entities(
     query: str = "",
     entity_type: str = "",
     favourites_only: bool = False,
+    filter_key: str = "",
+    filter_value: str = "",
 ) -> list[dict[str, object]]:
     query = query.strip()
     records = list_all_entities(connection)
@@ -63,6 +66,7 @@ def search_entities(
         records = [record for record in records if record.type == entity_type]
     if favourites_only:
         records = [record for record in records if record.is_favourite]
+    records = apply_structured_filter(connection, records, filter_key, filter_value)
 
     results = []
     for record in records:

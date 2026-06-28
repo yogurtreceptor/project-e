@@ -75,6 +75,7 @@ from app.view_pages.search import (
 from app.view_pages.map import (
     map_page,
 )
+from app.view_pages.merge import merge_select_page, merge_preview_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -127,4 +128,6 @@ __all__ = [
     "address_lookup_field",
     "address_lookup_script",
     "map_page",
+    "merge_select_page",
+    "merge_preview_page",
 ]

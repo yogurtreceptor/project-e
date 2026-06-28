@@ -46,6 +46,8 @@ from app.document_storage import (
 )
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.duplicate_detection import find_duplicate_entities
+from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
+from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
 from app.relationship_workflow import (
@@ -110,6 +112,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_detail(definition, parts[1])
         elif len(parts) == 3 and parts[2] == "download" and definition.type == "document":
             self.handle_document_download(parts[1])
+        elif len(parts) == 3 and parts[2] == "merge":
+            self.handle_merge(definition, parts[1], query)
         elif len(parts) == 3 and parts[2] == "edit":
             self.handle_edit(definition, parts[1])
         elif len(parts) == 3 and parts[2] == "delete":
@@ -148,11 +152,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         search_query = query.get("q", "")
         entity_type = query.get("type", "")
         favourites_only = query.get("favourites") == "1"
+        filter_key = query.get("filter", "")
+        filter_value = query.get("filter_value", "")
         with connect(self.database_path) as connection:
-            results = search_entities(connection, search_query, entity_type, favourites_only)
+            results = search_entities(connection, search_query, entity_type, favourites_only, filter_key, filter_value)
         self.respond_page(
             "Search",
-            views.search_page(search_query, entity_type, favourites_only, results),
+            views.search_page(search_query, entity_type, favourites_only, results, filter_key, filter_value),
             active_slug="search",
         )
 
@@ -199,13 +205,15 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 mark_entity_viewed(connection, entity_id)
                 record = get_entity(connection, definition, entity_id)
             relationships = list_relationships_for_entity(connection, entity_id) if record else []
+            integrity_warnings = warnings_for_entity(audit_relationships(connection), entity_id) if record else []
+            history = list_entity_history(connection, entity_id) if record else []
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships),
+            views.entity_detail_page(record, relationships, integrity_warnings, history),
             active_slug=definition.slug,
         )
 
@@ -301,6 +309,33 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         self.respond_form(definition, record.to_form_values(), [], "Edit", entity_id)
 
+    def handle_merge(self, definition: EntityDefinition, raw_id: str, query: dict[str, str]) -> None:
+        survivor_id = self.parse_entity_id(raw_id)
+        if survivor_id is None:
+            self.respond_not_found()
+            return
+        with connect(self.database_path) as connection:
+            survivor = get_entity(connection, definition, survivor_id)
+            if survivor is None:
+                self.respond_not_found()
+                return
+            duplicate_id = self.parse_entity_id(query.get("duplicate_id", "")) if self.command == "GET" else self.parse_entity_id(self.read_form().get("duplicate_id", ""))
+            if duplicate_id is None:
+                candidates = [item for item in list_entities(connection, definition) if item.id != survivor_id]
+                self.respond_page("Merge duplicate", views.merge_select_page(survivor, candidates), active_slug=definition.slug)
+                return
+            try:
+                preview = preview_entity_merge(connection, survivor_id, duplicate_id)
+                if self.command == "POST":
+                    merge_entities(connection, survivor_id, duplicate_id)
+                    self.redirect(f"/{definition.slug}/{survivor_id}")
+                    return
+            except ValueError as error:
+                candidates = [item for item in list_entities(connection, definition) if item.id != survivor_id]
+                self.respond_page("Merge duplicate", views.merge_select_page(survivor, candidates, str(error)), active_slug=definition.slug)
+                return
+        self.respond_page("Merge preview", views.merge_preview_page(preview), active_slug=definition.slug)
+
     def handle_document_download(self, raw_id: str) -> None:
         entity_id = self.parse_entity_id(raw_id)
         if entity_id is None:
@@ -367,10 +402,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def handle_relationship_list(self) -> None:
         with connect(self.database_path) as connection:
+            integrity_warnings = audit_relationships(connection)
             relationships = list_relationships(connection)
         self.respond_page(
             "Relationships",
-            views.relationship_list_page(relationships),
+            views.relationship_list_page(relationships, integrity_warnings),
             active_slug="relationships",
         )
 

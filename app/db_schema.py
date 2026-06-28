@@ -57,7 +57,23 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     ensure_entity_type_constraint(connection)
     create_typed_entity_tables(connection)
     create_relationship_table(connection)
+    create_entity_history_table(connection)
 
+
+def create_entity_history_table(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS entity_edit_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_id INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            details TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_entity_edit_history_entity
+            ON entity_edit_history (entity_id, created_at);
+        """
+    )
 
 def create_entity_table(connection: sqlite3.Connection) -> None:
     connection.executescript(
@@ -251,6 +267,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_01_core_entities", create_entity_table),
     ("20260628_02_typed_entities", create_typed_entity_tables),
     ("20260628_03_relationships", create_relationship_table),
+    ("20260628_04_entity_edit_history", create_entity_history_table),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

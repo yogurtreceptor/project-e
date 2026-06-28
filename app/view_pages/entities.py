@@ -72,10 +72,19 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], 
 def entity_detail_page(
     record: EntityRecord,
     relationships: list[RelationshipRecord],
+    integrity_warnings: list = None,
+    history: list = None,
 ) -> str:
+    integrity_warnings = integrity_warnings or []
+    history = history or []
+    warning_html = ""
+    if integrity_warnings:
+        items = "".join(f"<li>{escape(item.message)}</li>" for item in integrity_warnings)
+        warning_html = f'<section class="warnings"><h2>Data integrity warnings</h2><ul>{items}</ul></section>'
     return f"""
     <article class="entity-profile">
         {entity_profile_header(record)}
+        {warning_html}
         <div class="profile-grid">
             <div class="profile-main">
                 {entity_overview_section(record)}
@@ -87,7 +96,7 @@ def entity_detail_page(
             <aside class="profile-side">
                 {document_file_section(record)}
                 {linked_documents_section(record, relationships)}
-                {timeline_section(record, relationships)}
+                {timeline_section(record, relationships, history)}
                 {metadata_section(record, relationships)}
             </aside>
         </div>
@@ -107,6 +116,7 @@ def entity_profile_header(record: EntityRecord) -> str:
             <a class="button secondary" href="/{definition.slug}">Back</a>
             {favourite_form(record)}
             <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
+            <a class="button secondary" href="/{definition.slug}/{record.id}/merge">Merge duplicate</a>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
             <form method="post" action="/{definition.slug}/{record.id}/delete">
                 <button class="button danger" type="submit">Delete</button>
@@ -375,19 +385,25 @@ def linked_documents_section(record: EntityRecord, relationships: list[Relations
     """
 
 
-def timeline_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+def timeline_section(record: EntityRecord, relationships: list[RelationshipRecord], history: list = None) -> str:
+    history = history or []
     relationship_events = "".join(
         f"<li><span>{escape(relationship.created_at)}</span> Relationship added: {escape(relationship.label)}</li>"
         for relationship in relationships[:5]
     )
-    if not relationship_events:
-        relationship_events = '<li><span>Not yet</span> No relationship events recorded.</li>'
+    history_events = "".join(
+        f"<li><span>{escape(row['created_at'])}</span> Record {escape(row['event_type'].replace('_', ' '))}.</li>"
+        for row in history[:5]
+    )
+    if not relationship_events and not history_events:
+        relationship_events = '<li><span>Not yet</span> No relationship or edit events recorded.</li>'
     return f"""
     <section class="panel profile-section">
         <h2>Timeline</h2>
         <ol class="timeline-list">
             <li><span>{escape(record.created_at)}</span> Entity created.</li>
             <li><span>{escape(record.updated_at)}</span> Entity modified.</li>
+            {history_events}
             {relationship_events}
         </ol>
     </section>
