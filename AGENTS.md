@@ -1,80 +1,62 @@
-Project
--------
-Operation Eddy
-
-Purpose
--------
-Build a local-first Personal Operational Intelligence Platform.
-
-Current Stage
+Project Scope
 -------------
-Stage 1 only.
+Operation Eddy is a local-first Personal Operational Intelligence Platform. Stage 1 stores, organises and navigates structured information about People, Organisations, Locations, Projects, Documents, Assets and Relationships.
 
-Primary Goal
-------------
-Store, organise and navigate structured information.
+Design Principles
+-----------------
+- Entity-first and relationship-first.
+- One canonical record per real-world object, with multiple views over the same data.
+- Local-first: core records and workflows must remain usable without WAN access; optional map resources may use replaceable network services.
+- Prefer maintainable, simple architecture and free/open-source software.
+- Use SQLite and conservative dependencies. Add a dependency only when the standard library and existing code cannot reasonably meet the need, and document the reason.
 
-Core Domains
-------------
-People
-Organisations
-Locations
-Relationships
-
-Core Principles
----------------
-- Entity-first
-- Relationship-first
-- Local-first
-- One canonical record per real-world object
-- Multiple views over the same data
-- Prefer maintainable solutions
-- Prefer free/open-source software
-
-Stage 1 Exclusions
+Stage 1 Boundaries
 ------------------
-No AI
-No chat interface
-No dispatcher
-No automation
-No scheduling
-No login
-No WAN
+Do not introduce AI, chat, dispatcher architecture, decision support, automation, scheduling, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies. Do not broaden Stage 1 scope without explicit user direction.
 
-Implementation Preferences
---------------------------
-- Lightweight dependencies
-- Simple architecture
-- SQLite or equivalent local database
-- Clean UI
-- Meaningful tests only
-- Concise documentation
+Repository-First Workflow
+-------------------------
+- Treat current code and repository documentation as the source of truth; do not rely on assumptions or prior-session handoffs.
+- Implementation prompts define the authorised task. Roadmap items provide context, not permission to implement them.
+- Review, diagnosis and audit requests are read-only unless the user explicitly requests changes.
+- Inspect the working tree before editing and preserve unrelated changes. Never overwrite or revert user work outside the requested scope.
+- Prefer established module boundaries and stable facades. Make the smallest maintainable change that fully satisfies the task.
+- Add focused tests for changed behaviour and regressions. Before finishing implementation, run `python3 -m unittest discover -s tests` and `python3 -m compileall app run.py tests`, or report why a check could not run.
+- Schema changes must use migration-safe evolution. Where applicable, verify both fresh database creation and upgrade from an existing schema.
+- For UI work, smoke-test the relevant workflow in the running application where practical, in addition to automated tests.
+- Commit completed changes unless the user explicitly says not to commit. Use a concise, descriptive subject explaining the delivered change and finish the message with an `Agent: Codex` trailer (or the active implementation agent).
 
-Documentation
--------------
-- Treat documentation as part of every feature, behaviour, schema, workflow, and architecture change.
-- Before finishing work, audit the relevant planning and reference documents and update every affected one; do not update only the architecture document.
-- Keep feature status, roadmap/planning, architecture, database design, glossary/ontology, user workflow, and build log documentation aligned with the current code where relevant.
-- Record important implementation decisions, constraints, exclusions, migrations, and follow-up work concisely so future agents can reconstruct the current state from the repository.
-- If no documentation change is needed, explicitly verify that during review rather than assuming it.
-- Consult `docs/glossary.md` when project terminology is unclear and add or revise terms when a feature introduces new language.
+Documentation Responsibilities
+------------------------------
+Documentation is part of implementation. Proactively update every existing document made inaccurate by a change; prefer updating an appropriate document over creating a new one. Before finishing, audit relevant documents and either update them or explicitly verify that no documentation change is needed.
 
-Agent Workflow
---------------
-- Codex is the current primary implementation and review tool. Claude Code is optional and not part of the active workflow.
-- All agents should rely on repository docs and current code, not assumptions from previous sessions.
-- Point-in-time reviews and handoffs are not active guidance; use current code, the roadmap and the live technical-debt register.
-- Codex-specific sandbox/workspace notes are not universal instructions for other tools.
-- Commit messages must have a concise, descriptive subject explaining the delivered change; never use agent attribution as the subject or sole description.
-- When committing, add a lightweight final trailer such as `Agent: Codex` (or `Agent: Claude` if Claude Code is used later) after the descriptive message.
-- Do not add per-file signatures or "written by" banners.
-- Do not create separate duplicate instructions for each agent unless a workflow difference actually matters.
+Repository documents have distinct responsibilities:
+- `PROJECT_GOAL.md`: durable product purpose, scope and principles.
+- `docs/stage_1_spec.md`: current Stage 1 behaviour and acceptance criteria.
+- `ROADMAP.md`: delivered, active, next and deferred work; not implementation authority.
+- `docs/architecture.md`: current application structure and boundaries.
+- `docs/database_design.md`: persistence, schema and migration rules.
+- `docs/ontology.md`: entity and relationship semantics.
+- `docs/glossary.md`: canonical terminology; consult it when language is unclear and update it when new terms are introduced.
+- `docs/ui_principles.md`: durable interaction and presentation conventions.
+- `ARCHITECTURE_DECISIONS.md`: durable architectural decisions and consequences.
+- `docs/reviews/technical_debt_register.md`: unresolved actionable debt only; remove resolved items.
+- `docs/build_log.md`: concise history of completed work.
 
-Codex Workspace Tool Notes
---------------------------
-- These troubleshooting notes apply to Codex only.
-- In this workspace, sandboxed shell commands have often failed to start with `No such file or directory`.
-- If that happens, retry ordinary read/test/run commands with `sandbox_permissions="require_escalated"` and a short justification.
-- `sed`, `find`, `git status`, `python3 -m unittest discover -s tests`, and `python3 -m compileall app run.py tests` have worked well when run this way.
-- If `apply_patch` fails or sandbox restrictions prevent it, diagnose once, then use a safe, tightly scoped Python/file rewrite instead of repeatedly retrying `apply_patch`.
-- For local app checks, start `python3 run.py` on a temporary port, smoke-test with `urllib.request`, then stop it with Ctrl+C through the running command session.
+Record important behaviour, constraints, migrations and follow-up work in the document responsible for that information, keeping feature status and reference documentation aligned with current code.
+
+Repository Evolution
+--------------------
+If implementation uncovers a new long-term architectural decision, repository convention, project goal, documentation convention or workflow that is not documented, update the appropriate existing documentation when it is an obvious consequence of the requested work. If it materially changes project direction or establishes a new long-term convention, ask the user before making it permanent.
+
+Privacy and Generated Files
+---------------------------
+- Never commit databases, SQLite runtime files, uploaded documents, runtime data, personal data, logs, caches, exports, backups or other generated artifacts.
+- Keep local data under Git-ignored locations such as `instance/`. Tracked fixtures must be clearly fictional, intentional and reviewed.
+
+Codex Workspace Troubleshooting
+-------------------------------
+These notes apply only to Codex in this workspace.
+- Use the most appropriate editing method available in the current environment. If `apply_patch` is unavailable, edit files directly with Python or standard shell tools. Do not retry unavailable tooling.
+- Sandboxed commands may fail to start with `No such file or directory`. Use the working alternative directly, including `sandbox_permissions="require_escalated"` with a short justification when required.
+- For application smoke tests, run `python3 run.py` on a temporary port, probe it locally, and stop the process afterward.
