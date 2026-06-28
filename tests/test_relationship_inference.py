@@ -4,7 +4,7 @@ import unittest
 
 from app.db_schema import create_schema
 from app.db_support import utc_now
-from app.relationship_inference import dismiss_batch, list_review_batches, recompute_inferences, review_suggestion
+from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.relationship_repository import create_relationship, delete_relationship, get_relationship, list_relationships, update_relationship
 from app.view_pages.relationships import inference_review_page
 
@@ -99,16 +99,30 @@ class RelationshipInferenceTests(unittest.TestCase):
         self.parent(c,a)
         self.assertFalse(any(x.source.id == x.target.id for x in self.pending()))
 
-    def test_batch_requires_full_review_before_dismissal(self):
+    def test_batch_auto_archives_after_final_review_and_rejection_can_be_undone(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")
         self.parent(gp,parent); self.parent(parent,child)
         batch, items = list_review_batches(self.connection)[0]
-        with self.assertRaises(ValueError):
-            dismiss_batch(self.connection, batch["id"])
         for item in items:
             review_suggestion(self.connection, item.id, "reject")
-        dismiss_batch(self.connection, batch["id"])
-        self.assertEqual(self.connection.execute("SELECT status FROM inference_batches WHERE id=?", (batch["id"],)).fetchone()[0], "dismissed")
+        stored = self.connection.execute("SELECT status,dismissed_at FROM inference_batches WHERE id=?", (batch["id"],)).fetchone()
+        self.assertEqual(stored["status"], "dismissed")
+        self.assertTrue(stored["dismissed_at"])
+        self.assertFalse(list_review_batches(self.connection))
+        undo_suggestion_review(self.connection, items[0].id)
+        self.assertEqual(self.connection.execute("SELECT status FROM inference_batches WHERE id=?", (batch["id"],)).fetchone()[0], "open")
+        self.assertEqual(self.connection.execute("SELECT status FROM inference_suggestions WHERE id=?", (items[0].id,)).fetchone()[0], "pending")
+
+    def test_undo_confirmation_removes_created_relationship_and_reopens_batch(self):
+        gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")
+        self.parent(gp,parent); self.parent(parent,child)
+        item = next(x for x in self.pending() if x.type_key == "grandparent_child")
+        review_suggestion(self.connection, item.id, "confirm")
+        self.assertTrue(self.connection.execute("SELECT 1 FROM relationships WHERE inference_suggestion_id=?", (item.id,)).fetchone())
+        undo_suggestion_review(self.connection, item.id)
+        self.assertFalse(self.connection.execute("SELECT 1 FROM relationships WHERE inference_suggestion_id=?", (item.id,)).fetchone())
+        self.assertEqual(self.connection.execute("SELECT status FROM inference_suggestions WHERE id=?", (item.id,)).fetchone()[0], "pending")
+        self.assertTrue(list_review_batches(self.connection))
 
     def test_review_queue_shows_one_pending_card_then_advances(self):
         gp1, gp2, parent, child = (self.person("GP1"), self.person("GP2"), self.person("Parent"), self.person("Child"))
@@ -124,6 +138,18 @@ class RelationshipInferenceTests(unittest.TestCase):
         html = inference_review_page(list_review_batches(self.connection), relationships)
         self.assertIn("Suggestion 2 of 2", html)
         self.assertIn(pending[1].source.title, html)
+
+    def test_history_section_exposes_undo_for_completed_decisions(self):
+        gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")
+        self.parent(gp,parent); self.parent(parent,child)
+        item = next(x for x in self.pending() if x.type_key == "grandparent_child")
+        review_suggestion(self.connection, item.id, "reject")
+        all_batches = list_review_batches(self.connection, include_closed=True)
+        history = [(batch, items) for batch, items in all_batches if batch["status"] == "dismissed"]
+        html = inference_review_page([], {r.id: r for r in list_relationships(self.connection)}, history)
+        self.assertIn("Historic batches", html)
+        self.assertIn(f'/relationships/inferences/{item.id}/undo', html)
+        self.assertIn("rejected", html)
 
     def test_reconciliation_recovers_parent_chain_created_outside_repository_hooks(self):
         gp, parent, child = self.person("GP"), self.person("Parent"), self.person("Child")

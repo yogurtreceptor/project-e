@@ -620,7 +620,8 @@ def inference_audit_panel(relationship: RelationshipRecord) -> str:
     </dl></section>'''
 
 
-def inference_review_page(batches, relationships_by_id) -> str:
+def inference_review_page(batches, relationships_by_id, history_batches=None) -> str:
+    history_batches = history_batches or []
     stacks = []
     for batch, suggestions in batches:
         pending = [item for item in suggestions if item.status == "pending"]
@@ -647,8 +648,25 @@ def inference_review_page(batches, relationships_by_id) -> str:
                     <button class="button secondary" name="decision" value="reject">Reject suggestion</button>
                 </form></article>'''
         else:
-            card = f'''<div class="inference-complete"><h3>Batch complete</h3><p>All {len(suggestions)} suggestions have been reviewed.</p>
-                <form method="post" action="/relationships/inferences/batches/{batch['id']}/dismiss"><button class="button secondary">Dismiss completed batch</button></form></div>'''
+            card = '<div class="inference-complete"><h3>Batch complete</h3><p>This batch will be archived automatically.</p></div>'
         stacks.append(f'''<section class="panel inference-batch"><div><p class="eyebrow">Review batch {batch['id']}</p><h2>{escape(batch['trigger_type'].replace('_', ' ').title())}</h2></div>{card}</section>''')
     content = "".join(stacks) if stacks else '<p class="empty">No inference batches await review.</p>'
-    return f'''<section class="page-heading split"><div><h1>Inference Review Queue</h1><p>Review one deterministic suggestion at a time. Suggestions are not relationships until confirmed.</p></div><a class="button secondary" href="/relationships">Relationships</a></section>{content}'''
+    history = inference_history_section(history_batches)
+    return f'''<section class="page-heading split"><div><h1>Inference Review Queue</h1><p>Review one deterministic suggestion at a time. Suggestions are not relationships until confirmed.</p></div><a class="button secondary" href="/relationships">Relationships</a></section>{content}{history}'''
+
+
+def inference_history_section(history_batches) -> str:
+    if not history_batches:
+        return '<section class="panel inference-history"><h2>Historic batches</h2><p class="empty">No completed batches yet.</p></section>'
+    batches = []
+    for batch, suggestions in history_batches:
+        items = []
+        for item in suggestions:
+            relationship_type = RELATIONSHIP_TYPES_BY_KEY[item.type_key]
+            label = relationship_type.label_for_role("source", item.source.metadata.get("sex", ""))
+            undo = ""
+            if item.status in {"confirmed", "rejected"}:
+                undo = f'''<form method="post" action="/relationships/inferences/{item.id}/undo"><button class="link-button" type="submit">Undo</button></form>'''
+            items.append(f'''<li><span><strong>{escape(item.source.title)} {escape(label)} {escape(item.target.title)}</strong><small>{escape(item.status)} / reviewed {escape(item.reviewed_at or "unknown")}</small></span>{undo}</li>''')
+        batches.append(f'''<details class="history-batch"><summary>Batch {batch['id']} / {escape(batch['trigger_type'].replace('_', ' ').title())} / {len(suggestions)} suggestions</summary><ul>{''.join(items)}</ul></details>''')
+    return f'''<section class="panel inference-history"><h2>Historic batches</h2><p>Completed batches are archived automatically. Undo reopens the batch and returns that suggestion to review.</p>{''.join(batches)}</section>'''

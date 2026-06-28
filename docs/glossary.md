@@ -183,7 +183,7 @@ Information captured in named fields or relationships rather than only in free t
 See also: Notes, Controlled Field.
 
 
-**Inference Review Queue** — Review-only workspace containing deterministic relationship suggestions that are not active records until confirmed.
+**Inference Review Queue** — Review-only workspace containing deterministic relationship suggestions that are not active records until confirmed. Completed batches move automatically into its historic section, where decisions can be undone.
 
 **Inference-created relationship** — A normal editable relationship created when a user confirms a deterministic suggestion. It behaves like a manually entered relationship while retaining inference provenance and evidence-health metadata for auditability.
 

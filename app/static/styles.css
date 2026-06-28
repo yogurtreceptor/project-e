@@ -771,3 +771,10 @@ dd {
 .inference-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
 .inference-complete { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
 .warning-text { background: #fff7ed; border-left: 4px solid #d97706; padding: .75rem 1rem; }
+
+.inference-history { margin-top: 1.5rem; }
+.history-batch { border-top: 1px solid var(--line); padding: .85rem 0; }
+.history-batch summary { cursor: pointer; font-weight: 700; }
+.history-batch ul { list-style: none; margin: .75rem 0 0; padding: 0; }
+.history-batch li { align-items: center; border-top: 1px solid #edf1f5; display: flex; gap: 1rem; justify-content: space-between; padding: .65rem 0; }
+.history-batch small { color: var(--muted); display: block; margin-top: .2rem; }

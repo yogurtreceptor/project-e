@@ -264,6 +264,24 @@ def dismiss_batch(connection: sqlite3.Connection, batch_id: int) -> None:
     connection.commit()
 
 
+def undo_suggestion_review(connection: sqlite3.Connection, suggestion_id: int) -> None:
+    row = connection.execute("SELECT * FROM inference_suggestions WHERE id=? AND status IN ('confirmed','rejected')", (suggestion_id,)).fetchone()
+    if not row:
+        raise ValueError("Only confirmed or rejected suggestions can be undone.")
+    if row["status"] == "confirmed":
+        connection.execute("DELETE FROM relationships WHERE inference_suggestion_id=?", (suggestion_id,))
+    connection.execute("UPDATE inference_suggestions SET status='pending', reviewed_at='' WHERE id=?", (suggestion_id,))
+    connection.execute("UPDATE inference_batches SET status='open', dismissed_at='' WHERE id=?", (row["batch_id"],))
+    connection.commit()
+    recompute_inferences(connection, "inference_review_undo", suggestion_id)
+
+
 def _close_reviewed_batches(connection):
-    # Fully reviewed batches stay visible until explicitly dismissed.
-    return None
+    now = utc_now()
+    connection.execute("""UPDATE inference_batches
+        SET status='dismissed', dismissed_at=?
+        WHERE status='open'
+          AND NOT EXISTS (
+              SELECT 1 FROM inference_suggestions
+              WHERE batch_id=inference_batches.id AND status='pending'
+          )""", (now,))

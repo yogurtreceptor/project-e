@@ -51,7 +51,7 @@ from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import extract_family_graph
-from app.relationship_inference import dismiss_batch, list_review_batches, recompute_inferences, review_suggestion
+from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
     create_inline_relationship_target as create_inline_target,
@@ -137,8 +137,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_inference_queue()
         elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "review":
             self.handle_inference_review(parts[2])
-        elif len(parts) == 5 and parts[1] == "inferences" and parts[2] == "batches" and parts[4] == "dismiss":
-            self.handle_inference_batch_dismiss(parts[3])
+        elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "undo":
+            self.handle_inference_undo(parts[2])
         elif len(parts) == 2:
             self.handle_relationship_detail(parts[1])
         elif len(parts) == 3 and parts[2] == "edit":
@@ -423,8 +423,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             # review suggestions only; it never activates inferred relationships.
             recompute_inferences(connection, "queue_reconciliation")
             batches = list_review_batches(connection)
+            history = [(batch, items) for batch, items in list_review_batches(connection, include_closed=True) if batch["status"] != "open"]
             relationships_by_id = {item.id: item for item in list_relationships(connection)}
-        self.respond_page("Inference Review Queue", views.inference_review_page(batches, relationships_by_id), active_slug="relationships")
+        self.respond_page("Inference Review Queue", views.inference_review_page(batches, relationships_by_id, history), active_slug="relationships")
 
     def handle_inference_review(self, raw_id: str) -> None:
         suggestion_id = self.parse_entity_id(raw_id)
@@ -440,14 +441,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         self.redirect("/relationships/inferences")
 
-    def handle_inference_batch_dismiss(self, raw_id: str) -> None:
-        batch_id = self.parse_entity_id(raw_id)
-        if self.command != "POST" or batch_id is None:
+    def handle_inference_undo(self, raw_id: str) -> None:
+        suggestion_id = self.parse_entity_id(raw_id)
+        if self.command != "POST" or suggestion_id is None:
             self.respond_not_found()
             return
         try:
             with connect(self.database_path) as connection:
-                dismiss_batch(connection, batch_id)
+                undo_suggestion_review(connection, suggestion_id)
         except ValueError:
             self.respond_not_found()
             return
