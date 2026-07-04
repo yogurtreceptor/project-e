@@ -50,6 +50,7 @@ Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP
 - Users can maintain one canonical record per real-world person, organisation, location, project, document or asset.
 - Users can create, edit, delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
 - Person detail pages provide chronological plain-text journal entries with create, edit, archive and delete actions. Active entries show their creation time and edited entries also show their last edit time; archive is the primary removal path.
+- Person create and edit forms provide an Add field section for optional data. Alias and Nickname are available there and appear in the Person overview only when populated.
 - Users can upload an individual file to a Document entity; replacement and Document deletion clean up unreferenced owned files.
 - Users can connect Documents and Assets to other entities through relationships.
 - Safe deterministic family suggestions are reviewed before becoming normal editable relationships; automatic candidate recomputation does not bypass that confirmation boundary.

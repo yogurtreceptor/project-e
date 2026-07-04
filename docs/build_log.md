@@ -31,3 +31,4 @@ Established the standard-library Python/SQLite local application, reusable entit
 - 2026-06-28: Restored entity change history as a separate audit section alongside real-world timelines, including legacy edit-history visibility.
 
 - 2026-06-28: Backfilled generic audit history for existing canonical records and linked relationship changes to both endpoint entities.
+- 2026-07-04: Added reusable on-demand optional field presentation for entity forms, with Alias and Nickname as the first Person optional fields, additive typed-column migration and populated-only detail display.

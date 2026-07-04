@@ -26,7 +26,7 @@ Every real-world object starts in `entities` with:
 - timestamps
 - discovery metadata such as favourite and last viewed state
 
-For Person records, `entities.display_name` is maintained automatically from `people.given_name` plus `people.family_name`. Existing records retain their stored display names until edited or merged, preserving legacy local data; new writes never require users to enter both forms of the name. Legacy `preferred_name` columns may remain physically present after an additive upgrade but are no longer active model fields.
+For Person records, `entities.display_name` is maintained automatically from `people.given_name` plus `people.family_name`. `people.alias` and `people.nickname` are additive optional columns and use the standard definition-driven typed-column migration. Existing records retain their stored display names until edited or merged, preserving legacy local data; new writes never require users to enter both forms of the name. Legacy `preferred_name` columns may remain physically present after an additive upgrade but are no longer active model fields.
 
 Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, missing typed columns are added during startup and the central entity type constraint is rebuilt when new entity domains are introduced so local databases can evolve additively.
 

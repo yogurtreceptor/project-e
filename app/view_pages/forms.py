@@ -79,15 +79,60 @@ def entity_form_fields(
     fields = []
     if definition.type != "person":
         fields.append(input_field(f"{name_prefix}display_name", f"{definition.singular} name", values))
+    optional_fields = []
     for field in definition.fields:
         name = f"{name_prefix}{field.name}"
         if field.editable:
-            fields.append(entity_field_control(field, values, name))
+            control = entity_field_control(field, values, name)
+            if field.optional:
+                optional_fields.append((field, name, control))
+            else:
+                fields.append(control)
         else:
             fields.append(hidden_field(name, values))
+    if optional_fields:
+        fields.append(optional_fields_section(optional_fields, values))
     if definition.type != "person":
         fields.append(input_field(f"{name_prefix}notes", "Notes", values, multiline=True))
     return "".join(fields)
+
+
+def optional_fields_section(optional_fields: list[tuple], values: dict[str, str]) -> str:
+    choices = "".join(
+        f'<button class="button secondary optional-field-add" type="button" data-field="{escape(name)}">{escape(field.label)}</button>'
+        for field, name, _ in optional_fields
+        if not str(values.get(name, "")).strip()
+    )
+    controls = "".join(
+        f'<div class="optional-field" data-optional-field="{escape(name)}"{("" if str(values.get(name, "")).strip() else " hidden")}>{control}</div>'
+        for _, name, control in optional_fields
+    )
+    empty = "" if choices else ' hidden'
+    return f"""
+    <section class="optional-fields">
+        <h2>Add field</h2>
+        <p class="muted">Add extra information when it is useful.</p>
+        <div class="optional-field-choices"{empty}>{choices}</div>
+        {controls}
+    </section>
+    <script>
+    (() => {{
+        document.querySelectorAll('.optional-field-add').forEach((button) => {{
+            button.addEventListener('click', () => {{
+                const field = document.querySelector(`[data-optional-field="${{button.dataset.field}}"]`);
+                if (field) {{
+                    field.hidden = false;
+                    const input = field.querySelector('input, textarea, select');
+                    if (input) input.focus();
+                }}
+                button.remove();
+                const choices = document.querySelector('.optional-field-choices');
+                if (choices && !choices.children.length) choices.hidden = true;
+            }});
+        }});
+    }})();
+    </script>
+    """
 
 
 def custom_value_field(

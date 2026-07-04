@@ -257,6 +257,25 @@ th {
     gap: 16px;
 }
 
+.optional-fields {
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 12px;
+    margin-top: 4px;
+    padding-top: 16px;
+}
+
+.optional-fields h2,
+.optional-fields p {
+    margin: 0;
+}
+
+.optional-field-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 label {
     display: grid;
     gap: 6px;

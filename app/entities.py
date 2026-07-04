@@ -17,6 +17,7 @@ class FieldDefinition:
     display_prefix: str = ""
     default: str = ""
     value_aliases: tuple[tuple[str, str], ...] = ()
+    optional: bool = False
 
 
 @dataclass(frozen=True)
@@ -184,6 +185,8 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("birthday", "Birthday", input_type="date", value_kind="date"),
             FieldDefinition("email", "Email"),
             FieldDefinition("phone", "Phone"),
+            FieldDefinition("alias", "Alias", optional=True),
+            FieldDefinition("nickname", "Nickname", optional=True),
         ),
         duplicate_fields=("email", "phone"),
     ),

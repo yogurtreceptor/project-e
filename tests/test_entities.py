@@ -925,6 +925,36 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertIn('name="middle_name"', html)
         self.assertIn('name="family_name"', html)
 
+    def test_person_optional_fields_are_available_without_cluttering_form(self) -> None:
+        create_html = views.entity_form_page(self.definition, {}, [], "Create")
+        self.assertIn("<h2>Add field</h2>", create_html)
+        self.assertIn('data-field="alias">Alias</button>', create_html)
+        self.assertIn('data-field="nickname">Nickname</button>', create_html)
+        self.assertIn('data-optional-field="alias" hidden', create_html)
+        self.assertIn('data-optional-field="nickname" hidden', create_html)
+
+        edit_html = views.entity_form_page(
+            self.definition, {"alias": "The Enchantress", "nickname": "Ada"}, [], "Edit", 1
+        )
+        self.assertIn('data-optional-field="alias"><label', edit_html)
+        self.assertIn('value="The Enchantress"', edit_html)
+        self.assertNotIn('data-field="alias">Alias</button>', edit_html)
+
+    def test_person_optional_fields_persist_and_only_populated_values_display(self) -> None:
+        values = normalise_form_values(
+            self.definition,
+            {"given_name": "Augusta", "family_name": "King", "alias": "Ada Lovelace"},
+        )
+        with connect(self.database_path) as connection:
+            entity_id = create_entity(connection, self.definition, values)
+            record = get_entity(connection, self.definition, entity_id)
+
+        self.assertEqual(record.metadata["alias"], "Ada Lovelace")
+        self.assertEqual(record.metadata["nickname"], "")
+        detail_html = views.entity_detail_page(record, [])
+        self.assertIn("<dt>Alias</dt><dd>Ada Lovelace</dd>", detail_html)
+        self.assertNotIn("<dt>Nickname</dt>", detail_html)
+
     def test_summary_is_not_rendered_on_entity_forms(self) -> None:
         for definition in ENTITY_DEFINITIONS:
             html = views.entity_form_page(definition, {}, [], "Create")
