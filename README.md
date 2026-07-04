@@ -4,7 +4,7 @@ Operation Eddy is a local-first Personal Information Platform for structured, co
 
 ## Stage 1
 
-Stage 1 supports People, Organisations, Locations, Projects, Documents, Assets and first-class Relationships. It includes CRUD, search, favourites, recent records, structured filters, maps, duplicate warnings and merges, document uploads, relationship integrity checks, and reviewed deterministic family inference.
+Stage 1 supports People, Organisations, Locations, Projects, Documents, Assets and first-class Relationships. It includes CRUD with a Recycle Bin, search, favourites, recent records, structured filters, maps, duplicate warnings and merges, document uploads, People journals, a Universal Timeline, shared reference data and measurements, reusable taxonomies, relationship integrity checks, and reviewed deterministic family inference.
 
 Stage 1 permits deterministic, local and explainable assistance that preserves user control. It excludes AI, chat, dispatcher architecture, decision support, autonomous goal-directed workflows, scheduling, unreviewed consequential actions, autonomous external side effects, login, multi-user accounts, mobile access, cloud dependencies and WAN-dependent core operation. Optional map tiles and address lookup may use network services; core records and workflows remain usable without them.
 

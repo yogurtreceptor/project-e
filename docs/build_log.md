@@ -20,6 +20,8 @@ Expanded Languages and Nationalities from demonstrative seeds to a reproducible,
 
 Added optional multi-value Person Ethnicities using the same searchable reference picker and a reproducible 276-group catalogue generated from ABS ASCCEG 2025. Documented ethnicity as explicit self-identification that must never be inferred from other records.
 
+Added reusable on-demand optional field presentation for entity forms, with Alias and Nickname as the first Person optional fields, additive typed-column migration and populated-only detail display.
+
 ## 2026-06-28
 
 Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.
@@ -27,6 +29,10 @@ Refactored the family tree into reusable full-component and person-centred graph
 Clarified the durable Stage 1 boundary between permitted deterministic assistance and prohibited autonomous automation, and aligned repository scope, architecture and terminology documentation.
 
 Completed schema migration tracking, structured value validation, duplicate detection and preview-first entity merging with edit history. Added relationship integrity auditing and exact-duplicate prevention, structured discovery filters, robust Document file ownership/cleanup, and definition-driven inline entity creation in relationship workflows. Implemented deterministic family inference as reviewable suggestions with provenance, suppression, archived batches and undo. Expanded automated coverage for these behaviours.
+
+Added registry-driven audit/provenance, advanced search, data-quality, and real-world timeline infrastructure.
+
+Restored entity change history as a separate audit section alongside real-world timelines, including legacy edit-history visibility, and backfilled generic audit history for existing canonical records while linking relationship changes to both endpoint entities.
 
 ## 2026-06-27
 
@@ -39,10 +45,3 @@ Standardised structured entity forms and controlled values. Redesigned relations
 ## 2026-06-21
 
 Established the standard-library Python/SQLite local application, reusable entity definitions and CRUD, first-class relationships, entity profiles, search/favourites/recent discovery, and the geographic view. Added Projects, Documents and Assets through the shared architecture; introduced local Document uploads and optional Leaflet/OpenStreetMap/Nominatim map support. Recorded G-NAF as an optional future Australian address index. Early attachment and organisation-address concepts were superseded by first-class Document entities and Location relationships.
-
-- 2026-06-28: Added registry-driven audit/provenance, advanced search, data-quality, and real-world timeline infrastructure.
-
-- 2026-06-28: Restored entity change history as a separate audit section alongside real-world timelines, including legacy edit-history visibility.
-
-- 2026-06-28: Backfilled generic audit history for existing canonical records and linked relationship changes to both endpoint entities.
-- 2026-07-04: Added reusable on-demand optional field presentation for entity forms, with Alias and Nickname as the first Person optional fields, additive typed-column migration and populated-only detail display.

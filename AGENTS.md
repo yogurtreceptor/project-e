@@ -24,7 +24,7 @@ Repository-First Workflow
 - Add focused tests for changed behaviour and regressions. Before finishing implementation, run `python3 -m unittest discover -s tests` and `python3 -m compileall app run.py tests`, or report why a check could not run.
 - Schema changes must use migration-safe evolution. Where applicable, verify both fresh database creation and upgrade from an existing schema.
 - For UI work, smoke-test the relevant workflow in the running application where practical, in addition to automated tests.
-- Commit completed changes unless the user explicitly says not to commit. Use a concise, descriptive subject explaining the delivered change and finish the message with an `Agent: Codex` trailer (or the active implementation agent).
+- Commit completed changes unless the user explicitly says not to commit. Use a concise, descriptive subject and a commit body that records what changed and why. Do not add agent, model or tool attribution to the commit message.
 
 Documentation Responsibilities
 ------------------------------
