@@ -49,9 +49,37 @@ def input_field(
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
 
 
-def entity_field_control(field, values: dict[str, str], name: str | None = None) -> str:
+def entity_field_control(
+    field, values: dict[str, str], name: str | None = None,
+    field_options: dict[str, list[tuple[str, str]]] | None = None,
+) -> str:
     name = name or field.name
+    field_options = field_options or {}
     field_values = values
+    if field.storage_kind == "reference":
+        selected = {
+            part for part in str(values.get(f"{field.name}__ids", values.get(name, ""))).split(",")
+            if part
+        }
+        options = []
+        for value, text in field_options.get(field.name, []):
+            options.append(
+                f'<option value="{escape(value)}"{" selected" if value in selected else ""}>{escape(text)}</option>'
+            )
+        multiple = " multiple" if field.multiple else ""
+        return f'<label for="{name}"><span>{escape(field.label)}</span><select id="{name}" name="{name}"{multiple}>{"".join(options)}</select></label>'
+    if field.storage_kind == "measurement":
+        value = escape(str(values.get(f"{field.name}__value", values.get(name, ""))))
+        current_unit = str(values.get(f"{field.name}__unit", ""))
+        options = ['<option value="">Select unit...</option>']
+        for unit_id, text in field_options.get(field.name, []):
+            selected = " selected" if unit_id == current_unit else ""
+            options.append(f'<option value="{escape(unit_id)}"{selected}>{escape(text)}</option>')
+        return (
+            f'<fieldset class="measurement-field"><legend>{escape(field.label)}</legend>'
+            f'<label for="{name}"><span>Value</span><input id="{name}" name="{name}" type="number" min="0" step="any" value="{value}"></label>'
+            f'<label for="{name}__unit"><span>Unit</span><select id="{name}__unit" name="{name}__unit">{"".join(options)}</select></label></fieldset>'
+        )
     if field.default and not str(values.get(name, "")):
         field_values = {**values, name: field.default}
     if field.options and field.allow_custom:
@@ -74,6 +102,7 @@ def entity_form_fields(
     definition: EntityDefinition,
     values: dict[str, str],
     name_prefix: str = "",
+    field_options: dict[str, list[tuple[str, str]]] | None = None,
 ) -> str:
     """Render the shared editable fields used to create an entity."""
     fields = []
@@ -83,7 +112,7 @@ def entity_form_fields(
     for field in definition.fields:
         name = f"{name_prefix}{field.name}"
         if field.editable:
-            control = entity_field_control(field, values, name)
+            control = entity_field_control(field, values, name, field_options)
             if field.optional:
                 optional_fields.append((field, name, control))
             else:

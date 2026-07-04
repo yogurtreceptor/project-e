@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from app.db_support import utc_now
 from app.entities import EntityRecord
 from app.entity_repository import get_entity_by_id, update_typed_row, with_canonical_person_name
+from app.reference_data import list_entity_reference_values, replace_entity_reference_values
+from app.units import get_measurement, set_measurement
 from app.relationships import RELATIONSHIP_TYPES_BY_KEY
 
 
@@ -70,6 +72,7 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
     try:
         connection.execute("UPDATE entities SET display_name = ?, notes = ?, updated_at = ? WHERE id = ?", (values["display_name"], values["notes"], now, survivor_id))
         update_typed_row(connection, survivor.definition, survivor_id, values)
+        _merge_external_values(connection, survivor, duplicate)
         existing = {_relationship_key(row, survivor_id, duplicate_id) for row in connection.execute("SELECT * FROM relationships WHERE source_entity_id = ? OR target_entity_id = ?", (survivor_id, survivor_id))}
         for row in connection.execute("SELECT * FROM relationships WHERE source_entity_id = ? OR target_entity_id = ?", (duplicate_id, duplicate_id)).fetchall():
             key = _relationship_key(row, survivor_id, duplicate_id)
@@ -91,6 +94,30 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
         connection.rollback()
         raise
     return preview
+
+
+def _merge_external_values(
+    connection: sqlite3.Connection, survivor: EntityRecord, duplicate: EntityRecord
+) -> None:
+    for field in survivor.definition.fields:
+        if field.storage_kind == "reference":
+            survivor_items = list_entity_reference_values(connection, survivor.id, field.name)
+            duplicate_items = list_entity_reference_values(connection, duplicate.id, field.name)
+            item_ids = list(dict.fromkeys(
+                [item.id for item in survivor_items] + [item.id for item in duplicate_items]
+            ))
+            replace_entity_reference_values(
+                connection, survivor.id, field.name, item_ids, field.reference_type
+            )
+        elif field.storage_kind == "measurement":
+            measurement = get_measurement(connection, survivor.id, field.name)
+            if measurement is None:
+                measurement = get_measurement(connection, duplicate.id, field.name)
+                if measurement:
+                    set_measurement(
+                        connection, survivor.id, field.name, field.measurement_category,
+                        measurement.display_value, measurement.display_unit.id,
+                    )
 
 
 def list_entity_history(connection: sqlite3.Connection, entity_id: int) -> list[sqlite3.Row]:

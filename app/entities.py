@@ -18,6 +18,14 @@ class FieldDefinition:
     default: str = ""
     value_aliases: tuple[tuple[str, str], ...] = ()
     optional: bool = False
+    storage_kind: str = "scalar"
+    reference_type: str = ""
+    multiple: bool = False
+    measurement_category: str = ""
+
+    @property
+    def typed_column(self) -> bool:
+        return self.storage_kind == "scalar"
 
 
 @dataclass(frozen=True)
@@ -32,7 +40,7 @@ class EntityDefinition:
 
     @property
     def field_names(self) -> tuple[str, ...]:
-        return tuple(field.name for field in self.fields)
+        return tuple(field.name for field in self.fields if field.typed_column)
 
 
 @dataclass(frozen=True)
@@ -192,6 +200,22 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
             FieldDefinition("phone", "Phone"),
             FieldDefinition("alias", "Alias", optional=True),
             FieldDefinition("nickname", "Nickname", optional=True),
+            FieldDefinition(
+                "height", "Height", optional=True, storage_kind="measurement",
+                measurement_category="length",
+            ),
+            FieldDefinition(
+                "weight", "Weight", optional=True, storage_kind="measurement",
+                measurement_category="mass",
+            ),
+            FieldDefinition(
+                "languages", "Languages", optional=True, storage_kind="reference",
+                reference_type="language", multiple=True,
+            ),
+            FieldDefinition(
+                "nationalities", "Nationalities", optional=True, storage_kind="reference",
+                reference_type="country", multiple=True,
+            ),
         ),
         duplicate_fields=("email", "phone"),
     ),
@@ -314,5 +338,8 @@ def to_entity_record(definition: EntityDefinition, row: Any) -> EntityRecord:
         last_viewed_at=row["last_viewed_at"],
         is_favourite=bool(row["is_favourite"]),
         deleted_at=row["deleted_at"],
-        metadata={field.name: row[field.name] for field in definition.fields},
+        metadata={
+            field.name: row[field.name] if field.typed_column else ""
+            for field in definition.fields
+        },
     )

@@ -1,4 +1,5 @@
 import sqlite3
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from app.db_support import sql_identifier, utc_now
@@ -10,6 +11,8 @@ from app.entities import (
     to_entity_record,
 )
 from app.structured_values import normalise_structured_value, validate_structured_value
+from app.reference_data import list_entity_reference_values, replace_entity_reference_values
+from app.units import clear_measurement, get_measurement, get_unit, set_measurement
 
 
 def list_entities(
@@ -66,7 +69,9 @@ def get_entity(
     ).fetchone()
     if row is None:
         return None
-    return to_entity_record(definition, row)
+    record = to_entity_record(definition, row)
+    hydrate_external_fields(connection, record)
+    return record
 
 
 def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_deleted: bool = False) -> EntityRecord | None:
@@ -114,6 +119,7 @@ def create_entity(
     )
     entity_id = int(cursor.lastrowid)
     insert_typed_row(connection, definition, entity_id, values)
+    sync_external_fields(connection, definition, entity_id, values)
     from app.audit import record_audit_event, set_provenance
     record_audit_event(connection, "create", [("entity", entity_id)], after=values)
     for field, value in values.items():
@@ -147,6 +153,7 @@ def update_entity(
         ),
     )
     update_typed_row(connection, definition, entity_id, values)
+    sync_external_fields(connection, definition, entity_id, values)
     if before is not None:
         from app.audit import record_audit_event
         record_audit_event(connection, "edit", [("entity", entity_id)], before=before.to_form_values(), after=values)
@@ -219,7 +226,8 @@ def with_canonical_person_name(
 
 
 def validate_entity_values(
-    definition: EntityDefinition, values: dict[str, str]
+    definition: EntityDefinition, values: dict[str, str],
+    connection: sqlite3.Connection | None = None,
 ) -> list[str]:
     errors = []
     if definition.type == "person" and not values.get("given_name", "").strip():
@@ -228,6 +236,35 @@ def validate_entity_values(
         errors.append(f"{definition.singular} name is required.")
     for field in definition.fields:
         value = values.get(field.name, "").strip()
+        if field.storage_kind == "measurement":
+            if value:
+                try:
+                    number = Decimal(value)
+                    if not number.is_finite() or number <= 0:
+                        raise InvalidOperation
+                except (InvalidOperation, ValueError):
+                    errors.append(f"{field.label} must be a positive number.")
+                if not values.get(f"{field.name}__unit", ""):
+                    errors.append(f"{field.label} requires a unit.")
+                elif connection is not None:
+                    unit_id = values[f"{field.name}__unit"]
+                    unit = get_unit(connection, int(unit_id)) if unit_id.isdecimal() else None
+                    if unit is None or unit.category != field.measurement_category:
+                        errors.append(f"{field.label} unit is invalid.")
+            continue
+        if field.storage_kind == "reference":
+            if value and parse_reference_ids(value) is None:
+                errors.append(f"{field.label} selection is invalid.")
+            elif value and connection is not None:
+                item_ids = parse_reference_ids(value) or []
+                placeholders = ",".join("?" for _ in item_ids)
+                count = connection.execute(
+                    f"SELECT COUNT(*) FROM reference_data_items WHERE id IN ({placeholders}) AND type_key=? AND active=1",
+                    (*item_ids, field.reference_type),
+                ).fetchone()[0]
+                if count != len(set(item_ids)):
+                    errors.append(f"{field.label} selection is invalid.")
+            continue
         if field.options and not field.allow_custom and value and value not in field.options:
             errors.append(f"{field.label} is invalid.")
         structured_error = validate_structured_value(value, field.value_kind, field.label)
@@ -245,7 +282,11 @@ def normalise_form_values(
     }
     for field in definition.fields:
         raw_value = str(raw_values.get(field.name, field.default)).strip() or field.default
+        if field.storage_kind == "reference":
+            raw_value = str(raw_values.get(field.name, "")).strip()
         values[field.name] = normalise_structured_value(raw_value, field.value_kind)
+        if field.storage_kind == "measurement":
+            values[f"{field.name}__unit"] = str(raw_values.get(f"{field.name}__unit", "")).strip()
     if definition.type == "person":
         values["display_name"] = " ".join(
             part
@@ -281,7 +322,7 @@ def update_typed_row(
     values: dict[str, str],
 ) -> None:
     assignments = ", ".join(
-        f"{sql_identifier(field.name)} = ?" for field in definition.fields
+        f"{sql_identifier(field.name)} = ?" for field in definition.fields if field.typed_column
     )
     if not assignments:
         return
@@ -290,8 +331,57 @@ def update_typed_row(
             table=sql_identifier(definition.table),
             assignments=assignments,
         ),
-        [*[values.get(field.name, "") for field in definition.fields], entity_id],
+        [*[values.get(field.name, "") for field in definition.fields if field.typed_column], entity_id],
     )
+
+
+def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord) -> None:
+    for field in record.definition.fields:
+        if field.storage_kind == "reference":
+            items = list_entity_reference_values(connection, record.id, field.name)
+            record.metadata[field.name] = ", ".join(item.name for item in items)
+            record.metadata[f"{field.name}__ids"] = ",".join(str(item.id) for item in items)
+        elif field.storage_kind == "measurement":
+            measurement = get_measurement(connection, record.id, field.name)
+            if measurement:
+                record.metadata[field.name] = measurement.display_text
+                record.metadata[f"{field.name}__value"] = format(measurement.display_value.normalize(), "f")
+                record.metadata[f"{field.name}__unit"] = str(measurement.display_unit.id)
+
+
+def sync_external_fields(
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    entity_id: int,
+    values: dict[str, str],
+) -> None:
+    for field in definition.fields:
+        if field.storage_kind == "reference":
+            raw = values.get(field.name, "")
+            item_ids = parse_reference_ids(raw)
+            if item_ids is not None:
+                replace_entity_reference_values(
+                    connection, entity_id, field.name, item_ids, field.reference_type
+                )
+        elif field.storage_kind == "measurement":
+            value = values.get(field.name, "").strip()
+            unit_id = values.get(f"{field.name}__unit", "").strip()
+            if not value and not unit_id:
+                clear_measurement(connection, entity_id, field.name)
+            elif value and unit_id.isdecimal():
+                set_measurement(
+                    connection, entity_id, field.name, field.measurement_category,
+                    value, int(unit_id),
+                )
+
+
+def parse_reference_ids(value: str) -> list[int] | None:
+    if not value.strip():
+        return []
+    parts = [part.strip() for part in value.split(",") if part.strip()]
+    if not all(part.isascii() and part.isdecimal() for part in parts):
+        return None
+    return [int(part) for part in parts]
 
 
 def entity_matches_query(record: EntityRecord, query: str) -> bool:

@@ -224,7 +224,7 @@ def create_typed_table(connection: sqlite3.Connection, definition: EntityDefinit
     table = sql_identifier(definition.table)
     field_columns = ",\n            ".join(
         f"{sql_identifier(field.name)} TEXT NOT NULL DEFAULT ''"
-        for field in definition.fields
+        for field in definition.fields if field.typed_column
     )
     columns_sql = ",\n            " + field_columns if field_columns else ""
     connection.executescript(
@@ -240,6 +240,8 @@ def ensure_typed_columns(connection: sqlite3.Connection, definition: EntityDefin
     table = sql_identifier(definition.table)
     columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
     for field in definition.fields:
+        if not field.typed_column:
+            continue
         if field.name not in columns:
             connection.execute(
                 f"ALTER TABLE {table} ADD COLUMN {sql_identifier(field.name)} TEXT NOT NULL DEFAULT ''"

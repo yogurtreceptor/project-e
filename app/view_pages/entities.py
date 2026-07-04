@@ -498,6 +498,7 @@ def entity_form_page(
     action: str,
     entity_id: int | None = None,
     duplicate_matches: list | None = None,
+    field_options: dict[str, list[tuple[str, str]]] | None = None,
 ) -> str:
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
@@ -508,7 +509,7 @@ def entity_form_page(
     fields = []
     if definition.type == "location":
         fields.append(address_lookup_field())
-    fields.append(entity_form_fields(definition, values))
+    fields.append(entity_form_fields(definition, values, field_options=field_options))
     if definition.type == "document":
         fields.append(file_upload_field(values))
 

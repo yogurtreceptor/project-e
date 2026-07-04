@@ -45,6 +45,8 @@ from app.db import (
     update_journal_entry,
     archive_journal_entry,
     delete_journal_entry,
+    list_reference_items,
+    list_units,
 )
 from app.document_storage import (
     UploadedFile,
@@ -333,7 +335,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             values, upload = self.read_entity_form(definition)
             if definition.type == "document" and upload is None:
                 self.clear_document_file_values(values)
-            errors = validate_entity_values(definition, values)
+            with connect(self.database_path) as connection:
+                errors = validate_entity_values(definition, values, connection)
             duplicate_matches = []
             if not errors:
                 with connect(self.database_path) as connection:
@@ -382,7 +385,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 values["notes"] = record.notes
             if definition.type == "document" and upload is None:
                 self.restore_document_file_values(values, record.metadata)
-            errors = validate_entity_values(definition, values)
+            with connect(self.database_path) as connection:
+                errors = validate_entity_values(definition, values, connection)
             duplicate_matches = []
             if not errors:
                 with connect(self.database_path) as connection:
@@ -725,10 +729,24 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         entity_id: int | None = None,
         duplicate_matches: list | None = None,
     ) -> None:
+        field_options: dict[str, list[tuple[str, str]]] = {}
+        with connect(self.database_path) as connection:
+            for field in definition.fields:
+                if field.storage_kind == "reference":
+                    field_options[field.name] = [
+                        (str(item.id), item.name)
+                        for item in list_reference_items(connection, field.reference_type)
+                    ]
+                elif field.storage_kind == "measurement":
+                    field_options[field.name] = [
+                        (str(unit.id), f"{unit.name} ({unit.symbol})")
+                        for unit in list_units(connection, field.measurement_category)
+                    ]
         self.respond_page(
             f"{action} {definition.singular}",
             views.entity_form_page(
-                definition, values, errors, action, entity_id, duplicate_matches
+                definition, values, errors, action, entity_id, duplicate_matches,
+                field_options,
             ),
             active_slug=definition.slug,
         )
@@ -814,7 +832,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length).decode("utf-8")
         parsed = parse_qs(body, keep_blank_values=True)
-        return {key: values[0] for key, values in parsed.items()}
+        return {key: ",".join(values) for key, values in parsed.items()}
 
     def read_entity_form(self, definition: EntityDefinition) -> tuple[dict[str, str], UploadedFile | None]:
         if definition.type != "document" or not self.headers.get("Content-Type", "").startswith("multipart/form-data"):
