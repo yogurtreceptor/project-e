@@ -24,6 +24,15 @@ from app.db_schema import (
     ensure_relationship_columns,
     create_entity_history_table,
     create_journal_table,
+    create_reference_data_tables,
+)
+from app.reference_data import (
+    ReferenceItem,
+    create_reference_item,
+    get_reference_item,
+    list_reference_items,
+    list_entity_reference_values,
+    replace_entity_reference_values,
 )
 from app.journal_repository import (
     list_journal_entries,
@@ -88,6 +97,13 @@ __all__ = [
     "ensure_relationship_columns",
     "create_entity_history_table",
     "create_journal_table",
+    "create_reference_data_tables",
+    "ReferenceItem",
+    "create_reference_item",
+    "get_reference_item",
+    "list_reference_items",
+    "list_entity_reference_values",
+    "replace_entity_reference_values",
     "list_journal_entries",
     "get_journal_entry",
     "create_journal_entry",
