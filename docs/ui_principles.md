@@ -5,7 +5,7 @@ Operation Eddy's Stage 1 UI should stay quiet, structured and useful for repeate
 ## Navigation
 
 - Entity types are first-class navigation items.
-- Relationships, Search, Map and Recycle Bin are global views over the same entity system.
+- Relationships, Timeline, Search, Map and Recycle Bin are global views over the same entity system.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
 ## Entity Pages
@@ -20,6 +20,8 @@ Entity pages should expose reusable sections rather than one-off layouts:
 - Documents
 - Timeline
 - Metadata
+
+The Universal Timeline is a chronological global view derived from those same canonical records. Each entry links to its originating entity or relationship. Filtering stays intentionally simple: entity type, date range, and directly related Person, Organisation or Project.
 
 People, Organisations and Assets show geographic context through linked Location entities where appropriate. Assets may also show direct coordinate metadata. Location pages show their own address, coordinates, source and map jump.
 

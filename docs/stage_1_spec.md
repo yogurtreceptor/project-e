@@ -41,7 +41,7 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 
 ## Delivery Status
 
-Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, a derived timeline and deterministic family inference.
+Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
 Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP.md) for current ordering; this specification defines scope rather than task priority.
 
@@ -56,6 +56,7 @@ Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP
 - Person create and edit forms provide an Add field section for optional data. Alias and Nickname are available there and appear in the Person overview only when populated.
 - Users can upload an individual file to a Document entity; replacement cleans up the superseded unreferenced file, soft deletion retains the current file for restoration, and permanent deletion cleans it up when unreferenced.
 - Users can connect Documents and Assets to other entities through relationships.
+- Users can browse one chronological Universal Timeline derived from dated fields and relationship dates across all supported entity types. Entries link to their canonical origin and can be filtered by entity type, date range, or a related Person, Organisation or Project.
 - Safe deterministic family suggestions are reviewed before becoming normal editable relationships; automatic candidate recomputation does not bypass that confirmation boundary.
 - Confirmed inference-created relationships retain provenance; rejected evidence is suppressed until it materially changes; completed review batches remain available in searchable history with undo.
 - The platform remains usable without WAN access.
@@ -86,7 +87,7 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and real-world timelines derived from canonical dates and relationships. Audit and timeline histories remain separate.
+Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 
 ### Family graph view
 

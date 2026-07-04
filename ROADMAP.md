@@ -19,6 +19,7 @@ Delivered:
 - responsibility-focused database, view and workflow modules behind stable facades
 - People journals with independent chronological entries and lifecycle actions
 - platform-wide entity soft deletion, Recycle Bin restore and confirmed permanent deletion
+- Universal Timeline with canonical origin links and simple entity, date and related-record filters
 
 Active:
 
@@ -29,7 +30,6 @@ Active:
 Next:
 
 - import/export tools that protect local data quality
-- richer derived timeline views
 - additional domain-specific list columns beyond People DOB
 
 Reassess when representative data justifies it:

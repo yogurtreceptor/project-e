@@ -68,6 +68,7 @@ from app.relationship_workflow import (
     create_inline_relationship_target as create_inline_target,
     inline_entity_values as build_inline_entity_values,
 )
+from app.timeline import TimelineFilters, registry as timeline_registry
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -99,6 +100,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "search":
             self.handle_search(query)
+            return
+
+        if parts[0] == "timeline":
+            self.handle_timeline(query)
             return
 
         if parts[0] == "recycle-bin":
@@ -235,6 +240,29 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "Search",
             views.search_page(search_query, entity_type, favourites_only, results, filter_key, filter_value),
             active_slug="search",
+        )
+
+    def handle_timeline(self, query: dict[str, str]) -> None:
+        filters = TimelineFilters(
+            entity_type=query.get("type", "") if query.get("type", "") in {definition.type for definition in DEFINITIONS_BY_SLUG.values()} else "",
+            date_from=query.get("from", ""),
+            date_to=query.get("to", ""),
+            related_person_id=self.parse_entity_id(query.get("person", "")),
+            related_organisation_id=self.parse_entity_id(query.get("organisation", "")),
+            related_project_id=self.parse_entity_id(query.get("project", "")),
+        )
+        with connect(self.database_path) as connection:
+            records = list_all_entities(connection)
+            relationships = list_relationships(connection)
+        events = timeline_registry.derive_all(records, relationships, filters)
+        related_options = {
+            entity_type: [record for record in records if record.type == entity_type]
+            for entity_type in ("person", "organisation", "project")
+        }
+        self.respond_page(
+            "Universal Timeline",
+            views.universal_timeline_page(events, filters, related_options),
+            active_slug="timeline",
         )
 
 
