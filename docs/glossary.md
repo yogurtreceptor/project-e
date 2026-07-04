@@ -32,6 +32,12 @@ The single preferred record for one real-world object. Duplicate records should 
 
 See also: Entity, Repository Source of Truth.
 
+## Canonical Unit
+
+The designated storage unit for a measurement category. Values entered in another unit are converted to the canonical unit for persistence and converted back through a selected display unit for presentation.
+
+See also: Measurement, Structured Data.
+
 ## Controlled Field
 
 A structured field with known allowed or suggested values, such as status or type. Some controlled fields may allow a custom value when the preset list is too narrow.
@@ -91,6 +97,18 @@ See also: Canonical Record, Domain, Relationship.
 The main page for viewing and working from a single entity. It should expose structured fields, relationships, notes and related views for that entity.
 
 See also: Detail Page, Relationship, Notes.
+
+## Measurement
+
+A numeric value associated with a unit and category, such as length, mass or temperature. Measurements are stored in their category's canonical unit independently of how they are displayed.
+
+See also: Canonical Unit, Structured Data.
+
+## Reference Data
+
+Shared controlled records, such as countries, languages, currencies or measurement units, that entity fields link to instead of duplicating labels as text.
+
+See also: Controlled Field, Structured Data.
 
 ## Export
 

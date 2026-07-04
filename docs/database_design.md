@@ -31,6 +31,8 @@ For Person records, `entities.display_name` is maintained automatically from `pe
 
 Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, missing typed columns are added during startup and the central entity type constraint is rebuilt when new entity domains are introduced so local databases can evolve additively.
 
+Migrations `20260704_10_reference_data` and `20260704_11_measurement_units` add normalized platform stores. `reference_data_types` and `reference_data_items` define reusable local catalogue values, including optional parent links. `entity_reference_values` links any entity field to one or more catalogue rows in a stable order. `measurement_units` adds symbols, categories, canonical flags, conversion factors and offsets to unit catalogue items. `entity_measurements` stores one canonical decimal text value and selected display-unit foreign key per entity field. These tables cascade entity-owned values on permanent deletion while catalogue rows remain shared.
+
 The `entities.summary` column remains in existing and new databases as a legacy compatibility/search field, but it is no longer part of active creation or edit forms. Notes are the flexible free-text area.
 
 Migration `20260704_09_entity_soft_delete` adds `entities.deleted_at`. Repository reads exclude timestamped rows by default, including relationship hydration, so any relationship with a deleted endpoint is preserved but hidden. Recycle Bin reads opt in explicitly. Restore clears only the selected entity's timestamp. Permanent deletion is restricted to Recycle Bin records and then uses the existing foreign-key cascades for typed data, relationships, journal entries and inference dependencies; unrelated entities are never deleted. Generic audit rows have no entity foreign key and therefore survive permanent deletion.
@@ -68,6 +70,8 @@ Assets store useful item metadata such as asset type, status, serial number / as
 ## Controlled Field Storage
 
 Controlled dropdown values are stored as text in the relevant typed table column. Preset-backed custom values use the same column rather than a separate lookup table in Stage 1.
+
+This text-backed rule applies to small domain controls such as statuses and types. Reusable cross-domain facts use the reference-data catalogue instead. Person Languages and Nationalities therefore store foreign-key links rather than copied labels. Person Height and Weight store canonical measurements (metres and kilograms respectively) while retaining the user's selected display unit.
 
 Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
 

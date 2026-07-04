@@ -275,6 +275,23 @@ th {
     gap: 8px;
 }
 
+.measurement-field {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, .6fr);
+    margin: 0;
+    padding: 12px;
+}
+
+.measurement-field legend {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 0 6px;
+}
+
 label {
     display: grid;
     gap: 6px;

@@ -49,7 +49,7 @@ The application should not depend on WAN access for normal operation. Optional n
 Current domains inherit from a common entity architecture:
 
 - `EntityDefinition` describes each domain type, route slug, table, domain-specific fields and strong fields used for duplicate warnings.
-- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, input type, structured value kind, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup. Optional fields use the same typed storage and validation paths as default fields; the presentation flag keeps them out of the default form until selected or already populated.
+- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, input type, structured value kind, storage strategy, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup. Scalar fields use typed-table columns; reference-backed and measurement-backed fields use shared normalized stores. The optional presentation flag keeps any strategy out of the default form until selected or populated.
 - `EntityRecord` is the shared runtime model for all entity instances.
 - Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`. For People, `display_name` is internal derived data generated from `given_name` plus `family_name`; it is not a separate user-entered field.
 - `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.
@@ -57,6 +57,8 @@ Current domains inherit from a common entity architecture:
 - Entity profile pages are generated from entity definitions and shared page sections.
 
 People, Organisations, Locations, Projects, Documents and Assets all use this structure.
+
+`app/reference_data.py` provides a platform catalogue of typed, stable reference items and ordered entity-to-item links. Small local seeds demonstrate countries, states/regions, languages, currencies and measurement units; the catalogue is deliberately not a comprehensive global dataset. `app/units.py` extends measurement-unit reference items with category, symbol, canonical designation and affine conversion parameters. Entity measurements store a canonical value plus the selected display unit, keeping persistence independent from presentation. New reference types, items and measurement categories do not require entity-specific tables or form code.
 
 Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. The central `entities.type` SQLite `CHECK` constraint is also rebuilt when entity definitions add new types. Field renames use `FieldDefinition.previous_names` so data from old columns can be copied into renamed active columns without deleting the legacy column. Controlled fields can use value aliases to clean up legacy values such as lowercase statuses. This prevents future entity field or domain additions from breaking existing local databases.
 

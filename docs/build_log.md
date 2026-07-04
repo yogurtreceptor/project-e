@@ -10,6 +10,8 @@ Added platform-wide soft deletion for every entity type, default exclusion from 
 
 Added People journals as separate chronological plain-text records with create, edit, archive and secondary delete actions, message-style Person detail rendering, created/edited timestamps and migration-safe storage. Updated the People browse table to show DOB instead of Notes.
 
+Added reusable local reference-data catalogues and unit normalization with canonical length, mass and temperature storage. Integrated optional Person Height, Weight, Languages and Nationalities through shared measurement/reference field strategies, including multi-value references, display-unit conversion and merge-safe persistence.
+
 ## 2026-06-28
 
 Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.

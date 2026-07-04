@@ -53,7 +53,8 @@ Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP
 - Restoring an entity exposes its preserved relationships only when their other endpoint is active; it never restores another deleted entity. Soft deletion never cascades to related entities.
 - Archived means inactive content retained in its normal domain workflow; deleted means an entity is hidden platform-wide and recoverable from the Recycle Bin.
 - Person detail pages provide chronological plain-text journal entries with create, edit, archive and delete actions. Active entries show their creation time and edited entries also show their last edit time; archive is the primary removal path.
-- Person create and edit forms provide an Add field section for optional data. Alias and Nickname are available there and appear in the Person overview only when populated.
+- Person create and edit forms provide an Add field section for optional data. Alias, Nickname, Height, Weight, Languages and Nationalities are available there and appear in the Person overview only when populated. Height and Weight use unit-aware canonical storage; Languages and Nationalities select one or more shared reference records.
+- The local reference-data catalogue provides reusable countries, states/regions, languages, currencies and measurement units without requiring comprehensive global datasets or network access.
 - Users can upload an individual file to a Document entity; replacement cleans up the superseded unreferenced file, soft deletion retains the current file for restoration, and permanent deletion cleans it up when unreferenced.
 - Users can connect Documents and Assets to other entities through relationships.
 - Users can browse one chronological Universal Timeline derived from dated fields and relationship dates across all supported entity types. Entries link to their canonical origin and can be filtered by entity type, date range, or a related Person, Organisation or Project.
