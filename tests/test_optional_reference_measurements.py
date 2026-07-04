@@ -36,6 +36,10 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
             if item.key in {"en", "fr"}
         ]
         countries = list_reference_items(self.connection, "country")
+        ethnicities = [
+            item for item in list_reference_items(self.connection, "ethnicity")
+            if item.key in {"1102", "2201"}
+        ]
         centimetres = next(
             unit for unit in list_units(self.connection, "length") if unit.key == "centimetre"
         )
@@ -53,6 +57,7 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
                 "weight__unit": str(kilograms.id),
                 "languages": ",".join(str(item.id) for item in languages),
                 "nationalities": str(next(item.id for item in countries if item.key == "au")),
+                "ethnicities": ",".join(str(item.id) for item in ethnicities),
             },
         )
         self.assertEqual([], validate_entity_values(self.people, values, self.connection))
@@ -65,9 +70,11 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
         self.assertEqual("75 kg", person.metadata["weight"])
         self.assertEqual("English, French", person.metadata["languages"])
         self.assertEqual("Australia", person.metadata["nationalities"])
+        self.assertEqual("Australian Aboriginal, Irish", person.metadata["ethnicities"])
         detail = views.entity_detail_page(person, [])
         self.assertIn("180 cm", detail)
         self.assertIn("English, French", detail)
+        self.assertIn("Australian Aboriginal, Irish", detail)
 
     def test_optional_fields_can_be_cleared_on_edit(self) -> None:
         english = list_reference_items(self.connection, "language")[0]
@@ -90,6 +97,7 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
         options = {
             "languages": [("1", "English"), ("2", "French")],
             "nationalities": [("3", "Australia")],
+            "ethnicities": [("6", "Australian Aboriginal"), ("7", "Irish")],
             "height": [("4", "Centimetre (cm)")],
             "weight": [("5", "Kilogram (kg)")],
         }
@@ -101,7 +109,9 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
         self.assertIn("data-reference-search", html)
         self.assertIn('name="height__unit"', html)
         self.assertIn("Centimetre (cm)", html)
-        for field in ("Height", "Weight", "Languages", "Nationalities"):
+        self.assertIn('id="ethnicities__search" type="search"', html)
+        self.assertIn('type="checkbox" name="ethnicities" value="6"', html)
+        for field in ("Height", "Weight", "Languages", "Nationalities", "Ethnicities"):
             self.assertIn(f">{field}</button>", html)
 
     def test_invalid_cross_type_reference_and_unit_are_rejected(self) -> None:

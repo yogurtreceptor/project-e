@@ -43,6 +43,8 @@ Possible duplicate entities should appear as a warning with links to existing re
 
 People and Organisations keep phone/email as simple direct fields for now. People may record optional Sex for relationship label display, but it must never be required. Sex uses controlled values: Male, Female, Other and Unknown. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
 
+Sensitive identity fields such as Ethnicities are optional and self-assessed. The interface may provide a searchable classification and allow multiple selections, but it must not infer ethnicity from nationality, language, family relationships or other stored data.
+
 Relationship creation should be entity-first and perspective-based:
 
 - Start from the known entity page.

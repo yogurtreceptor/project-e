@@ -75,6 +75,8 @@ This text-backed rule applies to small domain controls such as statuses and type
 
 The tracked language and country catalogue is generated from the IANA Language Subtag Registry snapshot recorded in `app/reference_catalogue.py`. Startup seeding is additive, so existing databases receive newly tracked catalogue rows without replacing entity links or requiring network access. The generator selects active two-letter language and region subtags and can be rerun explicitly when the project chooses to adopt a newer snapshot.
 
+The tracked ethnicity catalogue is generated from ABS ASCCEG 2025 Table 1.3 by `tools/update_ethnicity_catalogue.py`. Its stable four-digit ASCCEG codes become reference item keys. Person Ethnicities are ordered, multi-value links in `entity_reference_values`; no ethnicity is inferred or stored as duplicated text.
+
 Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
 
 Current controlled fields are:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import sqlite3
 
 from app.reference_catalogue import COUNTRIES, LANGUAGES
+from app.ethnicity_catalogue import ETHNICITIES
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,9 @@ REFERENCE_DATA_SEED = {
     ),
     "currency": (
         ("aud", "Australian dollar", "AUD", None),
+    ),
+    "ethnicity": tuple(
+        (code, name, code, None) for code, name in ETHNICITIES
     ),
 }
 
@@ -71,6 +75,7 @@ def seed_reference_data(connection: sqlite3.Connection) -> None:
         "region": "States / regions",
         "language": "Languages",
         "currency": "Currencies",
+        "ethnicity": "Ethnicities",
     }
     for type_key, name in labels.items():
         connection.execute(

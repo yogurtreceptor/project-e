@@ -30,6 +30,7 @@ class ReferenceDataTests(unittest.TestCase):
         countries = list_reference_items(self.connection, "country")
         languages = list_reference_items(self.connection, "language")
         regions = list_reference_items(self.connection, "region")
+        ethnicities = list_reference_items(self.connection, "ethnicity")
 
         self.assertGreaterEqual(len(countries), 240)
         self.assertGreaterEqual(len(languages), 180)
@@ -37,6 +38,9 @@ class ReferenceDataTests(unittest.TestCase):
         self.assertIn("United Kingdom", [item.name for item in countries])
         self.assertIn("English", [item.name for item in languages])
         self.assertIn("French", [item.name for item in languages])
+        self.assertEqual(276, len(ethnicities))
+        self.assertIn("Australian Aboriginal", [item.name for item in ethnicities])
+        self.assertIn("Irish", [item.name for item in ethnicities])
         australia = next(item for item in countries if item.code == "AU")
         self.assertEqual(australia.id, regions[0].parent_id)
 

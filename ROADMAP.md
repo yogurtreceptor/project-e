@@ -21,7 +21,7 @@ Delivered:
 - platform-wide entity soft deletion, Recycle Bin restore and confirmed permanent deletion
 - Universal Timeline with canonical origin links and simple entity, date and related-record filters
 - reusable local reference-data catalogue and canonical measurement-unit infrastructure
-- optional Person Height, Weight, Languages and Nationalities using shared field storage strategies
+- optional Person Height, Weight, Languages, Nationalities and Ethnicities using shared field storage strategies
 
 Active:
 

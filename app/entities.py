@@ -216,6 +216,10 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
                 "nationalities", "Nationalities", optional=True, storage_kind="reference",
                 reference_type="country", multiple=True,
             ),
+            FieldDefinition(
+                "ethnicities", "Ethnicities", optional=True, storage_kind="reference",
+                reference_type="ethnicity", multiple=True,
+            ),
         ),
         duplicate_fields=("email", "phone"),
     ),

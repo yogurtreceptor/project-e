@@ -14,6 +14,8 @@ Added reusable local reference-data catalogues and unit normalization with canon
 
 Expanded Languages and Nationalities from demonstrative seeds to a reproducible, pinned IANA-derived local catalogue. Added searchable checkbox pickers so large reference lists filter as the user types while retaining multiple independent selections.
 
+Added optional multi-value Person Ethnicities using the same searchable reference picker and a reproducible 276-group catalogue generated from ABS ASCCEG 2025. Documented ethnicity as explicit self-identification that must never be inferred from other records.
+
 ## 2026-06-28
 
 Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.
