@@ -31,7 +31,10 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_person_optional_fields_use_normalised_storage_and_display_labels(self) -> None:
-        languages = list_reference_items(self.connection, "language")
+        languages = [
+            item for item in list_reference_items(self.connection, "language")
+            if item.key in {"en", "fr"}
+        ]
         countries = list_reference_items(self.connection, "country")
         centimetres = next(
             unit for unit in list_units(self.connection, "length") if unit.key == "centimetre"
@@ -49,7 +52,7 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
                 "weight": "75",
                 "weight__unit": str(kilograms.id),
                 "languages": ",".join(str(item.id) for item in languages),
-                "nationalities": str(countries[0].id),
+                "nationalities": str(next(item.id for item in countries if item.key == "au")),
             },
         )
         self.assertEqual([], validate_entity_values(self.people, values, self.connection))
@@ -92,8 +95,10 @@ class OptionalReferenceMeasurementTests(unittest.TestCase):
         }
         html = views.entity_form_page(self.people, {}, [], "Create", field_options=options)
 
-        self.assertIn('name="languages" multiple', html)
-        self.assertIn('value="1">English</option>', html)
+        self.assertIn('id="languages__search" type="search"', html)
+        self.assertIn('type="checkbox" name="languages" value="1"', html)
+        self.assertIn('data-search-text="english"', html)
+        self.assertIn("data-reference-search", html)
         self.assertIn('name="height__unit"', html)
         self.assertIn("Centimetre (cm)", html)
         for field in ("Height", "Weight", "Languages", "Nationalities"):

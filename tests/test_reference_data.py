@@ -31,18 +31,22 @@ class ReferenceDataTests(unittest.TestCase):
         languages = list_reference_items(self.connection, "language")
         regions = list_reference_items(self.connection, "region")
 
-        self.assertEqual(["Australia", "United Kingdom"], [item.name for item in countries])
-        self.assertEqual(["English", "French"], [item.name for item in languages])
+        self.assertGreaterEqual(len(countries), 240)
+        self.assertGreaterEqual(len(languages), 180)
+        self.assertIn("Australia", [item.name for item in countries])
+        self.assertIn("United Kingdom", [item.name for item in countries])
+        self.assertIn("English", [item.name for item in languages])
+        self.assertIn("French", [item.name for item in languages])
         australia = next(item for item in countries if item.code == "AU")
         self.assertEqual(australia.id, regions[0].parent_id)
 
     def test_catalogue_is_extensible_without_schema_changes(self) -> None:
         item_id = create_reference_item(
-            self.connection, "language", "de", "German", code="de"
+            self.connection, "language", "example-language", "Example language", code="x-example"
         )
         item = get_reference_item(self.connection, item_id)
 
-        self.assertEqual("German", item.name)
+        self.assertEqual("Example language", item.name)
         self.assertIn(item, list_reference_items(self.connection, "language"))
 
     def test_entity_values_reference_catalogue_rows_and_preserve_order(self) -> None:

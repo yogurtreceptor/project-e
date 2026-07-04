@@ -73,6 +73,8 @@ Controlled dropdown values are stored as text in the relevant typed table column
 
 This text-backed rule applies to small domain controls such as statuses and types. Reusable cross-domain facts use the reference-data catalogue instead. Person Languages and Nationalities therefore store foreign-key links rather than copied labels. Person Height and Weight store canonical measurements (metres and kilograms respectively) while retaining the user's selected display unit.
 
+The tracked language and country catalogue is generated from the IANA Language Subtag Registry snapshot recorded in `app/reference_catalogue.py`. Startup seeding is additive, so existing databases receive newly tracked catalogue rows without replacing entity links or requiring network access. The generator selects active two-letter language and region subtags and can be rerun explicitly when the project chooses to adopt a newer snapshot.
+
 Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
 
 Current controlled fields are:

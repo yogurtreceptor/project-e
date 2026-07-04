@@ -57,6 +57,8 @@ def entity_field_control(
     field_options = field_options or {}
     field_values = values
     if field.storage_kind == "reference":
+        if not field_options.get(field.name):
+            return hidden_field(name, values)
         selected = {
             part for part in str(values.get(f"{field.name}__ids", values.get(name, ""))).split(",")
             if part
@@ -64,10 +66,21 @@ def entity_field_control(
         options = []
         for value, text in field_options.get(field.name, []):
             options.append(
-                f'<option value="{escape(value)}"{" selected" if value in selected else ""}>{escape(text)}</option>'
+                f'<label class="reference-picker-option" data-search-text="{escape(text.casefold())}">'
+                f'<input type="checkbox" name="{escape(name)}" value="{escape(value)}"'
+                f'{" checked" if value in selected else ""}>'
+                f'<span>{escape(text)}</span></label>'
             )
-        multiple = " multiple" if field.multiple else ""
-        return f'<label for="{name}"><span>{escape(field.label)}</span><select id="{name}" name="{name}"{multiple}>{"".join(options)}</select></label>'
+        return (
+            f'<fieldset class="reference-picker" data-reference-picker>'
+            f'<legend>{escape(field.label)}</legend>'
+            f'<label for="{name}__search"><span>Search {escape(field.label.lower())}</span>'
+            f'<input id="{name}__search" type="search" autocomplete="off" '
+            f'placeholder="Type to filter..." data-reference-search></label>'
+            f'<div class="reference-picker-options" data-reference-options>{"".join(options)}</div>'
+            f'<p class="reference-picker-empty" data-reference-empty hidden>No matching options.</p>'
+            f'</fieldset>'
+        )
     if field.storage_kind == "measurement":
         value = escape(str(values.get(f"{field.name}__value", values.get(name, ""))))
         current_unit = str(values.get(f"{field.name}__unit", ""))
@@ -167,6 +180,22 @@ def optional_fields_section(optional_fields: list[tuple], values: dict[str, str]
                     toggle.setAttribute('aria-expanded', 'false');
                     if (choices && !choices.children.length) toggle.hidden = true;
                 }}
+            }});
+        }});
+        document.querySelectorAll('[data-reference-picker]').forEach((picker) => {{
+            const search = picker.querySelector('[data-reference-search]');
+            const options = [...picker.querySelectorAll('.reference-picker-option')];
+            const empty = picker.querySelector('[data-reference-empty]');
+            if (!search) return;
+            search.addEventListener('input', () => {{
+                const query = search.value.trim().toLocaleLowerCase();
+                let visible = 0;
+                options.forEach((option) => {{
+                    const matches = !query || option.dataset.searchText.includes(query);
+                    option.hidden = !matches;
+                    if (matches) visible += 1;
+                }});
+                if (empty) empty.hidden = visible !== 0;
             }});
         }});
     }})();

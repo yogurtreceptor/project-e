@@ -12,6 +12,8 @@ Added People journals as separate chronological plain-text records with create, 
 
 Added reusable local reference-data catalogues and unit normalization with canonical length, mass and temperature storage. Integrated optional Person Height, Weight, Languages and Nationalities through shared measurement/reference field strategies, including multi-value references, display-unit conversion and merge-safe persistence.
 
+Expanded Languages and Nationalities from demonstrative seeds to a reproducible, pinned IANA-derived local catalogue. Added searchable checkbox pickers so large reference lists filter as the user types while retaining multiple independent selections.
+
 ## 2026-06-28
 
 Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.

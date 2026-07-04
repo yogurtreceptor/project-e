@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 import sqlite3
 
+from app.reference_catalogue import COUNTRIES, LANGUAGES
+
 
 @dataclass(frozen=True)
 class ReferenceItem:
@@ -15,16 +17,14 @@ class ReferenceItem:
 
 
 REFERENCE_DATA_SEED = {
-    "country": (
-        ("au", "Australia", "AU", None),
-        ("gb", "United Kingdom", "GB", None),
+    "country": tuple(
+        (code, name, code.upper(), None) for code, name in COUNTRIES
     ),
     "region": (
         ("au-qld", "Queensland", "QLD", ("country", "au")),
     ),
-    "language": (
-        ("en", "English", "en", None),
-        ("fr", "French", "fr", None),
+    "language": tuple(
+        (code, name, code, None) for code, name in LANGUAGES
     ),
     "currency": (
         ("aud", "Australian dollar", "AUD", None),

@@ -292,6 +292,63 @@ th {
     padding: 0 6px;
 }
 
+.reference-picker {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 12px;
+}
+
+.reference-picker legend {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 0 6px;
+}
+
+.reference-picker-options {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: grid;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.reference-picker-option {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    display: flex;
+    gap: 9px;
+    padding: 8px 10px;
+}
+
+.reference-picker-option:last-child {
+    border-bottom: 0;
+}
+
+.reference-picker-option:hover {
+    background: #f7faf8;
+}
+
+.reference-picker-option input {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.reference-picker-option span {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.reference-picker-empty {
+    color: var(--muted);
+    margin: 0;
+}
+
 label {
     display: grid;
     gap: 6px;
