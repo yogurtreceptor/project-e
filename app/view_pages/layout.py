@@ -13,13 +13,10 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
         for definition in ENTITY_DEFINITIONS
     )
     relationship_class = "active" if active_slug == "relationships" else ""
-    search_class = "active" if active_slug == "search" else ""
     map_class = "active" if active_slug == "map" else ""
     timeline_class = "active" if active_slug == "timeline" else ""
-    quality_class = "active" if active_slug == "data-quality" else ""
-    recycle_class = "active" if active_slug == "recycle-bin" else ""
-    taxonomy_class = "active" if active_slug == "taxonomies" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{taxonomy_class}" href="/taxonomies">Taxonomies</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{search_class}" href="/search">Search</a><a class="{map_class}" href="/map">Map</a><a class="{quality_class}" href="/data-quality">Data Quality</a><a class="{recycle_class}" href="/recycle-bin">Recycle Bin</a>'
+    system_tools_class = "active" if active_slug == "system-tools" else ""
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{map_class}" href="/map">Map</a><a class="{system_tools_class}" href="/system-tools">System Tools</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -38,5 +35,6 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
         </form>
     </header>
     <main>{content}</main>
+    <script src="/static/taxonomy.js"></script>
 </body>
 </html>"""

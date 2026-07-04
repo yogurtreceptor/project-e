@@ -9,10 +9,14 @@ from app.relationships import (
     RELATIONSHIP_TYPES,
     RELATIONSHIP_TYPES_BY_KEY,
     RelationshipRecord,
+    relationship_choice_value,
     relationship_choices_for_context,
+    role_label,
+    split_relationship_choice,
 )
+from app.taxonomy import TaxonomyChoice
 from app.view_pages.common import format_date_with_precision
-from app.view_pages.forms import entity_form_fields, error_block, input_field, select_field
+from app.view_pages.forms import entity_form_fields, error_block, input_field, select_field, taxonomy_field
 from app.graph_layout import GraphLayout
 
 
@@ -294,6 +298,7 @@ def relationship_form_page(
     relationship_id: int | None = None,
     context_entity: EntityRecord | None = None,
     target_type: str | None = None,
+    inline_field_options: dict[str, list] | None = None,
 ) -> str:
     query = []
     if context_entity is not None:
@@ -322,7 +327,7 @@ def relationship_form_page(
     fields.extend([
         relationship_workflow_selector(workflow_mode),
         existing_entity_workflow(target_entities, values, workflow_mode),
-        new_entity_workflow(target_type, workflow_mode, values),
+        new_entity_workflow(target_type, workflow_mode, values, inline_field_options),
         relationship_metadata_fields(source_entity, connected_type, connected_sex, selected_target, values),
     ])
     return f"""
@@ -367,7 +372,10 @@ def existing_entity_workflow(entities: list[EntityRecord], values: dict[str, str
     """
 
 
-def new_entity_workflow(target_type: str | None, workflow_mode: str, values: dict[str, str] | None = None) -> str:
+def new_entity_workflow(
+    target_type: str | None, workflow_mode: str, values: dict[str, str] | None = None,
+    field_options: dict[str, list] | None = None,
+) -> str:
     values = values or {}
     hidden = " hidden" if workflow_mode != "create_new" else ""
     definitions = [
@@ -384,7 +392,7 @@ def new_entity_workflow(target_type: str | None, workflow_mode: str, values: dic
         fieldsets.append(
             f"""
             <div class="inline-entity-fields" data-inline-entity-type="{escape(definition.type)}">
-                {entity_form_fields(definition, values, name_prefix="new_")}
+                {entity_form_fields(definition, values, name_prefix="new_", field_options=field_options)}
             </div>
             """
         )
@@ -404,7 +412,14 @@ def relationship_metadata_fields(
     selected_target: EntityRecord | None,
     values: dict[str, str],
 ) -> str:
-    options = relationship_type_options(source_entity, connected_type, connected_sex)
+    options = relationship_taxonomy_choices(source_entity, connected_type, connected_sex, values.get("type", ""))
+    selector_values = values
+    current_type = values.get("type", "")
+    if current_type and "::" not in current_type:
+        matches = [item.value for item in options if item.value.startswith(current_type + "::")]
+        if matches:
+            selected_value = next((value for value in matches if value.endswith("::target")), matches[0])
+            selector_values = {**values, "type": selected_value}
     current_name = source_entity.title if source_entity else "the current entity"
     connected_name = selected_target.title if selected_target else inline_connected_name(connected_type, values)
     connected_label = connected_name or "the connected entity"
@@ -413,8 +428,7 @@ def relationship_metadata_fields(
     <fieldset class="relationship-step relationship-metadata">
         <legend>Relationship details</legend>
         <p class="relationship-question" id="relationship_question" data-current-name="{escape(current_name)}">{escape(prompt)}</p>
-        <label for="relationship_type_search"><span>Search relationship types</span><input id="relationship_type_search" type="search" autocomplete="off" placeholder="Type to filter..."></label>
-        {select_field("type", "Relationship", options, values)}
+        {taxonomy_field("type", "Relationship", options, selector_values, "Browse relevant relationship paths or type to search the full taxonomy.")}
         {select_field("status", "Status", [(status, status.title()) for status in RELATIONSHIP_STATUSES], values)}
         {input_field("started_at", "Started", values, input_type="date")}
         {select_field("started_at_precision", "Start date certainty", date_precision_options(), values)}
@@ -422,7 +436,6 @@ def relationship_metadata_fields(
         {select_field("ended_at_precision", "End date certainty", date_precision_options(), values)}
         {input_field("notes", "Notes", values, multiline=True)}
     </fieldset>
-    <script>(()=>{{const q=document.getElementById('relationship_type_search');const s=document.getElementById('type');if(q&&s)q.addEventListener('input',()=>{{const v=q.value.trim().toLocaleLowerCase();[...s.options].forEach((o,i)=>{{if(i)o.hidden=!!v&&!o.text.toLocaleLowerCase().includes(v);}});}});}})();</script>
     """
 
 
@@ -457,6 +470,47 @@ def relationship_option_text(relationship_type) -> str:
     return relationship_type.display_label
 
 
+def relationship_taxonomy_choices(
+    source_entity: EntityRecord | None = None,
+    target_type: str | None = None,
+    target_sex: str = "Unknown",
+    include_type_key: str = "",
+) -> list[TaxonomyChoice]:
+    options = relationship_type_options(source_entity, target_type, target_sex)
+    choices = []
+    for value, label in options:
+        key, _role = split_relationship_choice(value)
+        relationship_type = RELATIONSHIP_TYPES_BY_KEY[key]
+        path = relationship_type.taxonomy_path or relationship_type.display_label
+        choices.append(TaxonomyChoice(value, label, path, path.count(" › ")))
+    include_type_key, _role = split_relationship_choice(include_type_key)
+    if include_type_key and all(split_relationship_choice(item.value)[0] != include_type_key for item in choices):
+        relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(include_type_key)
+        if relationship_type and source_entity and target_type and relationship_type.supports_pair(source_entity.type, target_type):
+            if relationship_type.source_type == relationship_type.target_type == source_entity.type == target_type:
+                connected_role = "source" if not relationship_type.directional else "target"
+            elif relationship_type._matches(source_entity.type, target_type):
+                connected_role = "target"
+            else:
+                connected_role = "source"
+            path = relationship_type.taxonomy_path or relationship_type.display_label
+            choices.append(TaxonomyChoice(
+                relationship_choice_value(relationship_type, connected_role),
+                role_label(relationship_type, connected_role, target_sex), path,
+                path.count(" › "), available=False,
+            ))
+    return choices
+
+
+def relationship_taxonomy_payload(context_type: str, connected_type: str, sex: str = "Unknown") -> list[dict]:
+    source = type("RelationshipChoiceContext", (), {"type": context_type})()
+    return [
+        {"value": item.value, "label": item.label, "path": item.path, "depth": item.depth,
+         "available": item.available, "display": item.display_text}
+        for item in relationship_taxonomy_choices(source, connected_type, sex)
+    ]
+
+
 def relationship_form_script(
     entities: list[EntityRecord],
     target_type: str | None = None,
@@ -468,20 +522,20 @@ def relationship_form_script(
             "type": entity.type,
             "sex": entity.metadata.get("sex", "Unknown"),
             "label": f"{entity.title} ({entity.definition.singular})",
-            "choices": relationship_choices_for_context(source_entity.type, entity.type, entity.metadata.get("sex", "Unknown")) if source_entity else [],
+            "choices": relationship_taxonomy_payload(source_entity.type, entity.type, entity.metadata.get("sex", "Unknown")) if source_entity else [],
         }
         for entity in entities
         if entity.id != (source_entity.id if source_entity else None)
     ]
     choice_types = sorted({entity.type for entity in entities} | {target_type or ""} - {""})
     choices_by_type = {
-        entity_type: relationship_choices_for_context(source_entity.type, entity_type, "Unknown")
+        entity_type: relationship_taxonomy_payload(source_entity.type, entity_type, "Unknown")
         for entity_type in choice_types
         if source_entity is not None
     }
     choices_by_type_and_sex = {
         sex: {
-            entity_type: relationship_choices_for_context(source_entity.type, entity_type, sex)
+            entity_type: relationship_taxonomy_payload(source_entity.type, entity_type, sex)
             for entity_type in choice_types
         }
         for sex in ("Male", "Female", "Other", "Unknown")
@@ -495,6 +549,7 @@ def relationship_form_script(
         const target = document.getElementById('target_entity_id');
         const question = document.getElementById('relationship_question');
         const type = document.getElementById('type');
+        const typePicker = type ? type.closest('[data-taxonomy-combobox]') : null;
         const newType = document.getElementById('new_entity_type');
         const newNameFields = Array.from(document.querySelectorAll('[name="new_display_name"], [name="new_given_name"], [name="new_family_name"]'));
         const workflowModes = Array.from(document.querySelectorAll('input[name="workflow_mode"]'));
@@ -517,17 +572,10 @@ def relationship_form_script(
             refreshRelationshipChoices();
         }};
         const fillRelationshipChoices = (choices) => {{
-            if (!type) return;
-            const current = type.value;
-            type.innerHTML = '<option value="">Select...</option>';
-            (choices || []).forEach(([value, label]) => {{
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = label;
-                if (value === current) option.selected = true;
-                type.appendChild(option);
-            }});
-            if (current && !(choices || []).some(([value]) => value === current)) type.value = '';
+            if (!typePicker) return;
+            const data = typePicker.querySelector('[data-taxonomy-data]');
+            if (data) data.textContent = JSON.stringify(choices || []);
+            typePicker.dispatchEvent(new CustomEvent('taxonomy:replace', {{detail: choices || []}}));
         }};
         const connectedNameFromLabel = (label) => (label || '').replace(/ \\([^)]*\\)$/, '');
         const updateQuestion = (connectedName) => {{

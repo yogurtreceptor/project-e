@@ -380,6 +380,276 @@ select {
     background: #ffffff;
 }
 
+.field-help {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+.taxonomy-combobox {
+    position: relative;
+}
+
+.taxonomy-combobox-input {
+    display: flex;
+    position: relative;
+}
+
+.taxonomy-combobox-input input {
+    padding-right: 44px;
+}
+
+.taxonomy-combobox-input button {
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    width: 40px;
+    height: calc(100% - 4px);
+}
+
+.taxonomy-combobox-list {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(30, 36, 38, .12);
+    left: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+}
+
+.taxonomy-combobox-option {
+    border-bottom: 1px solid #edf0ed;
+    cursor: pointer;
+    display: grid;
+    gap: 2px;
+    padding: 9px 12px 9px calc(12px + var(--taxonomy-depth, 0) * 14px);
+}
+
+.taxonomy-combobox-option:last-child {
+    border-bottom: 0;
+}
+
+.taxonomy-combobox-option:hover,
+.taxonomy-combobox-option.active {
+    background: #edf7f5;
+}
+
+.taxonomy-combobox-option[aria-disabled="true"] {
+    cursor: default;
+    opacity: .6;
+}
+
+.taxonomy-combobox-option strong {
+    font-size: 14px;
+}
+
+.taxonomy-combobox-option span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.taxonomy-combobox-empty {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--muted);
+    margin: 4px 0 0;
+    padding: 10px 12px;
+    position: absolute;
+    width: 100%;
+    z-index: 20;
+}
+
+.system-tool-card {
+    color: var(--text);
+    display: grid;
+    gap: 8px;
+    margin-bottom: 0;
+    min-height: 170px;
+    transition: border-color .15s, transform .15s;
+}
+
+.system-tool-card:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.system-tool-card h2,
+.system-tool-card p {
+    margin: 0;
+}
+
+.system-tool-card p {
+    color: var(--muted);
+}
+
+.system-tool-card span {
+    align-self: end;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.taxonomy-management {
+    display: grid;
+    gap: 24px;
+}
+
+.taxonomy-manager {
+    padding: 24px;
+}
+
+.taxonomy-manager-header,
+.taxonomy-manager-toolbar,
+.taxonomy-counts,
+.taxonomy-create-basics,
+.taxonomy-label-grid {
+    display: flex;
+    gap: 16px;
+}
+
+.taxonomy-manager-header {
+    align-items: start;
+    justify-content: space-between;
+}
+
+.taxonomy-manager-header h2,
+.taxonomy-manager-header p {
+    margin-bottom: 4px;
+}
+
+.taxonomy-manager-header p {
+    color: var(--muted);
+}
+
+.taxonomy-counts {
+    flex: 0 0 auto;
+}
+
+.taxonomy-counts span,
+.status-badge,
+.taxonomy-level {
+    background: #edf2ef;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+}
+
+.taxonomy-manager-toolbar {
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    margin: 18px 0 0;
+    padding-bottom: 16px;
+}
+
+.taxonomy-manager-toolbar > label:first-child {
+    flex: 1;
+}
+
+.taxonomy-archive-toggle {
+    padding-bottom: 10px;
+}
+
+.taxonomy-tree-row {
+    align-items: center;
+    border-bottom: 1px solid #edf0ed;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(210px, 1.1fr) minmax(220px, 1.4fr) auto 70px;
+    min-height: 54px;
+    padding: 8px 4px;
+}
+
+.taxonomy-tree-entry {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    padding-left: calc(var(--taxonomy-depth, 0) * 22px);
+}
+
+.taxonomy-tree-branch::before {
+    color: var(--line);
+    content: "└";
+    display: inline-block;
+    width: 10px;
+}
+
+.taxonomy-tree-row[style="--taxonomy-depth:0"] .taxonomy-tree-branch {
+    display: none;
+}
+
+.taxonomy-tree-path {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.status-badge.active {
+    background: #e5f4ee;
+    color: #276849;
+}
+
+.status-badge.archived {
+    background: #f1eeee;
+    color: #766a6a;
+}
+
+.taxonomy-tree-action form {
+    margin: 0;
+}
+
+.taxonomy-create-panel {
+    border-top: 1px solid var(--line);
+    margin-top: 18px;
+    padding-top: 16px;
+}
+
+.taxonomy-create-panel summary {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.taxonomy-create-panel form {
+    margin-top: 16px;
+}
+
+.taxonomy-create-basics > label,
+.taxonomy-label-grid > label {
+    flex: 1;
+}
+
+.taxonomy-relationship-fields {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+}
+
+.taxonomy-label-grid {
+    flex-wrap: wrap;
+}
+
+.taxonomy-label-grid > label {
+    flex-basis: calc(50% - 8px);
+}
+
+.taxonomy-manager-empty {
+    color: var(--muted);
+    padding: 18px 4px;
+}
+
 dl {
     display: grid;
     gap: 8px 20px;
@@ -464,6 +734,24 @@ dd {
     .row-actions {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .taxonomy-manager-header,
+    .taxonomy-manager-toolbar,
+    .taxonomy-create-basics,
+    .taxonomy-label-grid {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .taxonomy-tree-row {
+        grid-template-columns: 1fr auto;
+    }
+
+    .taxonomy-tree-path {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        padding-left: calc(var(--taxonomy-depth, 0) * 22px);
     }
 }
 

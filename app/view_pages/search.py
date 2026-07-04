@@ -19,9 +19,10 @@ def search_page(query: str, entity_type: str, favourites_only: bool, results: li
     else:
         cards = '<p class="empty">No matching entities yet.</p>'
     return f"""
-    <section class="page-heading">
-        <h1>Search</h1>
-        <p>Find entities by their fields, notes and relationship context.</p>
+    <section class="page-heading split">
+        <div><p class="eyebrow">System Tools</p><h1>Search</h1>
+        <p>Find entities by their fields, notes and relationship context.</p></div>
+        <a class="button secondary" href="/system-tools">Back to System Tools</a>
     </section>
     <section class="panel search-panel">
         <form method="get" action="/search">

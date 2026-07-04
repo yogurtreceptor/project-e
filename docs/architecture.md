@@ -20,6 +20,8 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, the append-only migration ledger and additive schema repair; entity, relationship, journal and discovery persistence live in focused repository modules.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/taxonomy.py` owns reusable three-level taxonomy persistence, migration and lookup. Relationship-specific pair, direction and inverse-label metadata is attached to relationship taxonomy entries; `app/relationships.py` remains the stable selection and bidirectional-behaviour facade.
+- `TaxonomyChoice` is the shared presentation boundary for Organisation and Relationship comboboxes. It carries the submitted value, contextual label, complete path, depth and availability without changing either domain's persistence contract.
+- `/system-tools` is a navigation hub over the existing Search, Data Quality, Taxonomies and Recycle Bin routes; child pages share its active navigation state.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 

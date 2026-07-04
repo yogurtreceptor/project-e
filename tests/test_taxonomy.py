@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.db import connect, create_entity, create_relationship, get_entity, initialise_database
+from app.db import connect, create_entity, create_relationship, get_entity, get_relationship, initialise_database
 from app.entities import DEFINITIONS_BY_SLUG
 from app.relationships import relationship_types_for_pair
 from app.taxonomy import (
@@ -12,9 +12,11 @@ from app.taxonomy import (
     list_entries,
     load_relationship_catalog,
     organisation_options,
+    organisation_choices,
     reparent_entry,
 )
 from app.view_pages.forms import taxonomy_field
+from app import views
 
 
 class TaxonomyTests(unittest.TestCase):
@@ -30,11 +32,16 @@ class TaxonomyTests(unittest.TestCase):
         with connect(self.path) as connection:
             entries = list_entries(connection, "organisation_classification")
             bank = next(item for item in entries if item.key == "bank")
-            html = taxonomy_field("organisation_type", "Organisation classification", organisation_options(connection), {"organisation_type": str(bank.id)})
+            choices = organisation_choices(connection)
+            html = taxonomy_field("organisation_type", "Organisation classification", choices, {"organisation_type": str(bank.id)})
         self.assertEqual("Business › Finance › Bank", bank.path)
-        self.assertIn('type="search"', html)
-        self.assertIn('data-taxonomy-level="1"', html)
-        self.assertIn('data-taxonomy-level="2"', html)
+        doctor = next(choice for choice in choices if "Doctor's Practice" in choice.path)
+        self.assertEqual("Business › Health › Doctor's Practice", doctor.path)
+        self.assertIn('role="combobox"', html)
+        self.assertIn('Browse or type to search...', html)
+        self.assertIn('Business \\u203a Health \\u203a Doctor\'s Practice', html)
+        self.assertIn('value="Business › Finance › Bank"', html)
+        self.assertNotIn('data-taxonomy-level=', html)
 
     def test_creation_depth_duplicate_and_archival_rules(self):
         with connect(self.path) as connection:
@@ -88,6 +95,40 @@ class TaxonomyTests(unittest.TestCase):
             key = connection.execute("SELECT key FROM taxonomy_entries WHERE id=?", (row["taxonomy_entry_id"],)).fetchone()["key"]
         self.assertEqual("friend_of", row["type"])
         self.assertEqual("friend_of", key)
+
+    def test_archived_relationship_type_remains_visible_on_edit(self):
+        definition = DEFINITIONS_BY_SLUG["people"]
+        with connect(self.path) as connection:
+            values = {"notes": "", "middle_name": "", "email": "", "phone": "", "sex": "Unknown", "birthday": ""}
+            first = create_entity(connection, definition, {**values, "display_name": "First Person", "given_name": "First", "family_name": "Person"})
+            second = create_entity(connection, definition, {**values, "display_name": "Second Person", "given_name": "Second", "family_name": "Person"})
+            relationship_id = create_relationship(connection, {"source_entity_id": str(first), "target_entity_id": str(second), "type": "friend_of", "status": "active"})
+            entry = next(item for item in list_entries(connection, "relationship_type") if item.key == "friend_of")
+            archive_entry(connection, entry.id)
+            load_relationship_catalog(connection)
+            relationship = get_relationship(connection, relationship_id)
+            entities = [get_entity(connection, definition, first), get_entity(connection, definition, second)]
+        html = views.relationship_form_page(relationship.to_form_values(), [], entities, "Edit", relationship_id)
+        self.assertIn('value="Friend — Social › Friend"', html)
+        self.assertIn('"available": false', html)
+        self.assertIn('value="friend_of::source"', html)
+
+    def test_management_page_groups_statuses_and_controls(self):
+        with connect(self.path) as connection:
+            bank = next(entry for entry in list_entries(connection, "organisation_classification") if entry.key == "bank")
+            archive_entry(connection, bank.id)
+            entries = {
+                key: list_entries(connection, key, include_archived=True)
+                for key in ("organisation_classification", "relationship_type")
+            }
+        html = views.taxonomies_page(entries)
+        self.assertIn("Organisation classifications", html)
+        self.assertIn("Relationship types", html)
+        self.assertIn("Show archived", html)
+        self.assertIn('data-archived="true"', html)
+        self.assertIn("Specific subtype", html)
+        self.assertIn("Relationship behavior", html)
+        self.assertIn("No entries match this filter.", html)
 
 
 if __name__ == "__main__":

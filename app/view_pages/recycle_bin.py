@@ -16,8 +16,8 @@ def recycle_bin_page(records: list[EntityRecord]) -> str:
         f"<table><thead><tr><th>Name</th><th>Type</th><th>Deleted</th><th></th></tr></thead><tbody>{rows}</tbody></table>"
         if rows else '<p class="empty">The Recycle Bin is empty.</p>'
     )
-    return f"""<section class="page-heading"><h1>Recycle Bin</h1>
-    <p>Deleted records are hidden throughout the platform but can be restored here. Archived records remain active platform records and do not appear here.</p></section>
+    return f"""<section class="page-heading split"><div><p class="eyebrow">System Tools</p><h1>Recycle Bin</h1>
+    <p>Deleted records are hidden throughout the platform but can be restored here. Archived records remain active platform records and do not appear here.</p></div><a class="button secondary" href="/system-tools">Back to System Tools</a></section>
     <section class="panel">{content}</section>"""
 
 

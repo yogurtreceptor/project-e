@@ -4,6 +4,8 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-04
 
+Unified Organisation and Relationship taxonomy selection into one full-path searchable, hierarchy-browsable combobox; clarified taxonomy management hierarchy, status and creation controls; and consolidated Search, Data Quality, Taxonomies and Recycle Bin under a System Tools hub while retaining existing routes and global header search.
+
 Added a reusable local three-level taxonomy framework and management page. Migrated Organisation classification and Relationship types to taxonomy assignments with legacy-safe archived mappings, searchable hierarchical selection, database-backed direction/inverse metadata, audit events and regression coverage.
 
 Added a Universal Timeline derived from canonical dated entity fields and relationship dates across every supported entity type, with direct origin links, chronological de-duplication, entity/date/related-record filters and an extensible date-field registry.

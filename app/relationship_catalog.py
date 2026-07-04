@@ -30,6 +30,7 @@ class RelationshipType:
     selectable: bool = True
     role_labels: tuple[LabelSet, LabelSet] | None = None
     display_labels: tuple[LabelSet, LabelSet] | None = None
+    taxonomy_path: str = ""
 
     @property
     def display_label(self) -> str:

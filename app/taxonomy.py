@@ -21,6 +21,19 @@ class TaxonomyEntry:
         return not self.archived_at
 
 
+@dataclass(frozen=True)
+class TaxonomyChoice:
+    value: str
+    label: str
+    path: str
+    depth: int
+    available: bool = True
+
+    @property
+    def display_text(self) -> str:
+        return self.path if self.label == self.path else f"{self.label} — {self.path}"
+
+
 def create_taxonomy_tables(connection: sqlite3.Connection) -> None:
     connection.executescript(
         """
@@ -312,6 +325,20 @@ def organisation_options(connection, include_entry_id: int | None = None):
     return [(str(e.id), e.path) for e in entries]
 
 
+def organisation_choices(connection, include_entry_id: int | None = None) -> list[TaxonomyChoice]:
+    active_ids = {entry.id for entry in list_entries(connection, "organisation_classification")}
+    entries_by_id = {
+        entry.id: entry
+        for entry in list_entries(connection, "organisation_classification", include_archived=True)
+    }
+    option_ids = [int(value) for value, _path in organisation_options(connection, include_entry_id)]
+    return [
+        TaxonomyChoice(str(entry_id), entries_by_id[entry_id].path, entries_by_id[entry_id].path,
+                       entries_by_id[entry_id].depth, entry_id in active_ids)
+        for entry_id in option_ids
+    ]
+
+
 def assign_organisation_value(connection, entity_id: int, value: str) -> None:
     if value.isdecimal():
         connection.execute("UPDATE organisations SET taxonomy_entry_id=? WHERE entity_id=?", (int(value), entity_id))
@@ -342,10 +369,13 @@ def load_relationship_catalog(connection) -> None:
         """SELECT e.key,e.label,e.archived_at,d.* FROM taxonomy_entries e JOIN taxonomies t ON t.id=e.taxonomy_id
            JOIN relationship_type_definitions d ON d.taxonomy_entry_id=e.id WHERE t.key='relationship_type'"""
     ).fetchall()
+    all_entries = list_entries(connection, "relationship_type", include_archived=True)
+    entries_by_id = {entry.id: entry for entry in all_entries}
     active_ids = {entry.id for entry in list_entries(connection, "relationship_type")}
     for r in rows:
         previous = RELATIONSHIP_TYPES_BY_KEY.get(r["key"])
         roles = (LabelSet(r["source_role"],r["source_role_male"],r["source_role_female"]), LabelSet(r["target_role"],r["target_role_male"],r["target_role_female"]))
         labels = (LabelSet(r["source_label"],r["source_label_male"],r["source_label_female"]), LabelSet(r["target_label"],r["target_label_male"],r["target_label_female"]))
         category = previous.category if previous else "Other"
-        RELATIONSHIP_TYPES_BY_KEY[r["key"]] = RelationshipType(r["key"],r["source_entity_type"],r["target_entity_type"],category,r["label"],r["source_label"],r["target_label"],bool(r["directional"]),r["notes"],bool(r["selectable"] and int(r["taxonomy_entry_id"]) in active_ids),roles,labels)
+        entry_id = int(r["taxonomy_entry_id"])
+        RELATIONSHIP_TYPES_BY_KEY[r["key"]] = RelationshipType(r["key"],r["source_entity_type"],r["target_entity_type"],category,r["label"],r["source_label"],r["target_label"],bool(r["directional"]),r["notes"],bool(r["selectable"] and entry_id in active_ids),roles,labels,entries_by_id[entry_id].path)

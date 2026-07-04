@@ -5,7 +5,7 @@ Operation Eddy's Stage 1 UI should stay quiet, structured and useful for repeate
 ## Navigation
 
 - Entity types are first-class navigation items.
-- Relationships, Timeline, Search, Map and Recycle Bin are global views over the same entity system.
+- Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies and Recycle Bin are grouped under System Tools, while compact global search remains available in the header.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
 ## Entity Pages
@@ -37,7 +37,7 @@ Person detail pages use short, separate journal entries instead of presenting th
 
 Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible and calls out relationships or dependent records that will also be removed.
 
-Controlled fields use dropdowns for known statuses, preset-backed custom inputs where local vocabulary remains appropriate, and taxonomy pickers for reusable hierarchical classifications. Taxonomy controls provide full-path search, reveal child levels only when present, and store one terminal selection. Organisation classification and relationship types use taxonomies; Project, Document and Asset type controls remain unchanged.
+Controlled fields use dropdowns for known statuses, preset-backed custom inputs where local vocabulary remains appropriate, and taxonomy comboboxes for reusable hierarchical classifications. A taxonomy combobox is one combined browse/search control: opening it shows the hierarchy, typing searches complete paths, and selecting any deep result stores its terminal entry while displaying the full path. Relationship choices add the perspective-specific role without hiding path context. Organisation classification and relationship types use this control; Project, Document and Asset type controls remain unchanged.
 
 Possible duplicate entities should appear as a warning with links to existing records and an explicit Save anyway action. Warnings must not silently block legitimate records or become database uniqueness constraints.
 

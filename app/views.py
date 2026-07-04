@@ -84,6 +84,7 @@ from app.view_pages.merge import merge_select_page, merge_preview_page
 from app.view_pages.recycle_bin import recycle_bin_page, permanent_delete_confirmation_page
 from app.view_pages.timeline import universal_timeline_page
 from app.view_pages.taxonomies import taxonomies_page
+from app.view_pages.system_tools import system_tools_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -140,6 +141,7 @@ __all__ = [
     "file_upload_field",
     "select_field",
     "taxonomies_page",
+    "system_tools_page",
     "existing_location_action",
     "address_lookup_field",
     "address_lookup_script",

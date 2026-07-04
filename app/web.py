@@ -104,6 +104,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_search(query)
             return
 
+        if parts[0] == "system-tools" and len(parts) == 1:
+            self.respond_page("System Tools", views.system_tools_page(), active_slug="system-tools")
+            return
+
         if parts[0] == "timeline":
             self.handle_timeline(query)
             return
@@ -210,13 +214,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             error = str(exc)
             with connect(self.database_path) as connection:
                 entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
-        self.respond_page("Taxonomies", views.taxonomies_page(entries, error), active_slug="taxonomies")
+        self.respond_page("Taxonomies", views.taxonomies_page(entries, error), active_slug="system-tools")
 
     def route_recycle_bin_request(self, parts: list[str]) -> None:
         if len(parts) == 1 and self.command == "GET":
             with connect(self.database_path) as connection:
                 records = list_deleted_entities(connection)
-            self.respond_page("Recycle Bin", views.recycle_bin_page(records), active_slug="recycle-bin")
+            self.respond_page("Recycle Bin", views.recycle_bin_page(records), active_slug="system-tools")
             return
         entity_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
         if entity_id is None:
@@ -238,7 +242,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     return
                 if self.command == "GET":
                     dependencies = entity_dependency_counts(connection, entity_id)
-                    self.respond_page("Confirm permanent deletion", views.permanent_delete_confirmation_page(record, dependencies), active_slug="recycle-bin")
+                    self.respond_page("Confirm permanent deletion", views.permanent_delete_confirmation_page(record, dependencies), active_slug="system-tools")
                     return
                 if self.command == "POST" and self.read_form().get("confirm") == "yes":
                     _record_type, file_path = permanent_delete_entity(connection, entity_id)
@@ -275,7 +279,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         self.respond_page(
             "Search",
             views.search_page(search_query, entity_type, favourites_only, results, filter_key, filter_value),
-            active_slug="search",
+            active_slug="system-tools",
         )
 
     def handle_timeline(self, query: dict[str, str]) -> None:
@@ -306,7 +310,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         from app.data_quality import registry
         with connect(self.database_path) as connection:
             findings = registry.evaluate(connection)
-        self.respond_page("Data Quality Centre", views.data_quality_page(findings), active_slug="data-quality")
+        self.respond_page("Data Quality Centre", views.data_quality_page(findings), active_slug="system-tools")
 
     def handle_map(self, query: dict[str, str]) -> None:
         with connect(self.database_path) as connection:
@@ -777,9 +781,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         for unit in list_units(connection, field.measurement_category)
                     ]
                 elif field.storage_kind == "taxonomy":
-                    from app.taxonomy import organisation_options
+                    from app.taxonomy import organisation_choices
                     current = values.get(f"{field.name}__taxonomy_entry_id", values.get(field.name, ""))
-                    field_options[field.name] = organisation_options(
+                    field_options[field.name] = organisation_choices(
                         connection, int(current) if current.isdecimal() else None
                     )
         self.respond_page(
@@ -801,6 +805,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         context_entity=None,
         target_type: str | None = None,
     ) -> None:
+        from app.taxonomy import organisation_choices
+        with connect(self.database_path) as connection:
+            inline_field_options = {"organisation_type": organisation_choices(connection)}
         self.respond_page(
             f"{action} Relationship",
             views.relationship_form_page(
@@ -811,6 +818,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 relationship_id,
                 context_entity=context_entity,
                 target_type=target_type,
+                inline_field_options=inline_field_options,
             ),
             active_slug=context_entity.slug if context_entity else "relationships",
         )
@@ -858,12 +866,16 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         return f"/{entity.slug}/{entity.id}"
 
     def serve_static(self, relative_path: str) -> None:
-        if relative_path != "styles.css":
+        content_types = {
+            "styles.css": "text/css; charset=utf-8",
+            "taxonomy.js": "text/javascript; charset=utf-8",
+        }
+        if relative_path not in content_types:
             self.respond_not_found()
             return
-        content = (STATIC_DIR / "styles.css").read_bytes()
+        content = (STATIC_DIR / relative_path).read_bytes()
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "text/css; charset=utf-8")
+        self.send_header("Content-Type", content_types[relative_path])
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)

@@ -67,6 +67,8 @@ Relationship creation and navigation are implemented as reusable Stage 1 platfor
 
 Organisation classification and Relationship types are database-backed taxonomy paths containing Type, optional Subtype and optional Specific subtype. The local Taxonomies page creates and archives reusable entries. Archived branches remain visible on existing records but unavailable for new selection; archiving never rewrites canonical records. Relationship definitions retain one canonical stored direction and derive inverse display from metadata attached to their taxonomy entry.
 
+Taxonomy-backed forms use one combined combobox for hierarchy browsing and full-path search, including direct selection of deep nodes. The Taxonomies manager separates Organisation and Relationship taxonomies, displays hierarchy and archive status, and retains confirmed create/archive workflows. Search, Data Quality, Taxonomies and Recycle Bin are available from the System Tools hub at their existing routes.
+
 People browse pages show name and date of birth. Person journals are intentionally People-only in this milestone and do not include tags, sources, confidence, revision history or universal-timeline integration.
 
 ## Maps Acceptance

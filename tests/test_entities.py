@@ -472,11 +472,11 @@ class EntityDatabaseTests(unittest.TestCase):
             target_type="person",
         )
 
-        self.assertIn(">Employee</option>", org_to_person_html)
+        self.assertIn('"label": "Employee"', org_to_person_html)
         self.assertNotIn("Family: Parent / child", org_to_person_html)
         self.assertNotIn("Family: Sibling", org_to_person_html)
-        self.assertIn(">Daughter</option>", person_to_person_html)
-        self.assertIn(">Sister</option>", person_to_person_html)
+        self.assertIn('"label": "Daughter"', person_to_person_html)
+        self.assertIn('"label": "Sister"', person_to_person_html)
 
     def test_relationship_workflows_are_mutually_exclusive_in_markup_and_css(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -973,9 +973,9 @@ class EntityDatabaseTests(unittest.TestCase):
         project_html = views.entity_form_page(project_definition, {}, [], "Create")
         asset_html = views.entity_form_page(asset_definition, {}, [], "Create")
 
-        self.assertIn('data-taxonomy-picker', organisation_html)
-        self.assertIn('data-taxonomy-level="0"', organisation_html)
-        self.assertIn('Specific subtype', organisation_html)
+        self.assertIn('data-taxonomy-combobox', organisation_html)
+        self.assertIn('role="combobox"', organisation_html)
+        self.assertNotIn('data-taxonomy-level=', organisation_html)
         self.assertIn('<option value="Active" selected>Active</option>', project_html)
         self.assertIn('value="Owned"', asset_html)
         self.assertIn('pattern="[0-9]*"', asset_html)
