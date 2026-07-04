@@ -137,6 +137,8 @@ Person Sex is stored as a controlled optional Person field with Male, Female, Ot
 
 `relationships.taxonomy_entry_id` is canonical while `type` remains an incremental compatibility snapshot for inference, graphs and upgrades. Legacy generic or gendered keys map to archived entries and remain loadable but non-selectable. Safe legacy `located_at` rows still contribute to Geography and Map views.
 
+`tools/convert_legacy_family_relationships.py` provides an explicit, one-time cleanup path for gendered family keys. It is read-only by default, maps direction into the canonical neutral family definitions, creates an SQLite backup before `--apply`, and leaves duplicate or unknown relationships unresolved rather than guessing.
+
 The relationship UI has independent existing-entity and new-entity workflows. Inline relationship creation reuses the standard definition-driven fields for supported entity types inside the new-entity workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
 
 ## Map Storage

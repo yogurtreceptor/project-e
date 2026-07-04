@@ -4,6 +4,8 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-04
 
+Added a dry-run-first, backup-protected converter for pre-taxonomy gendered family relationship records, including direction-safe canonical mappings and duplicate detection.
+
 Refreshed the repository documentation around the Project E name and long-term Personal Information Platform direction. Added a phased capability roadmap, future architecture and Odysseus guidance, and a concise GitHub landing page with philosophy, status, architecture and documentation navigation.
 
 Unified Organisation and Relationship taxonomy selection into one full-path searchable, hierarchy-browsable combobox; clarified taxonomy management hierarchy, status and creation controls; and consolidated Search, Data Quality, Taxonomies and Recycle Bin under a System Tools hub while retaining existing routes and global header search.
