@@ -927,7 +927,10 @@ class EntityDatabaseTests(unittest.TestCase):
 
     def test_person_optional_fields_are_available_without_cluttering_form(self) -> None:
         create_html = views.entity_form_page(self.definition, {}, [], "Create")
-        self.assertIn("<h2>Add field</h2>", create_html)
+        self.assertIn('class="button secondary optional-fields-toggle"', create_html)
+        self.assertIn('aria-expanded="false"', create_html)
+        self.assertIn('>Add field</button>', create_html)
+        self.assertIn('id="optional-field-choices" hidden', create_html)
         self.assertIn('data-field="alias">Alias</button>', create_html)
         self.assertIn('data-field="nickname">Nickname</button>', create_html)
         self.assertIn('data-optional-field="alias" hidden', create_html)

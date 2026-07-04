@@ -107,16 +107,23 @@ def optional_fields_section(optional_fields: list[tuple], values: dict[str, str]
         f'<div class="optional-field" data-optional-field="{escape(name)}"{("" if str(values.get(name, "")).strip() else " hidden")}>{control}</div>'
         for _, name, control in optional_fields
     )
-    empty = "" if choices else ' hidden'
+    has_choices = bool(choices)
     return f"""
     <section class="optional-fields">
-        <h2>Add field</h2>
-        <p class="muted">Add extra information when it is useful.</p>
-        <div class="optional-field-choices"{empty}>{choices}</div>
+        <button class="button secondary optional-fields-toggle" type="button" aria-expanded="false" aria-controls="optional-field-choices"{' hidden' if not has_choices else ''}>Add field</button>
+        <div class="optional-field-choices" id="optional-field-choices" hidden>{choices}</div>
         {controls}
     </section>
     <script>
     (() => {{
+        const toggle = document.querySelector('.optional-fields-toggle');
+        const choices = document.querySelector('.optional-field-choices');
+        if (toggle && choices) {{
+            toggle.addEventListener('click', () => {{
+                choices.hidden = !choices.hidden;
+                toggle.setAttribute('aria-expanded', String(!choices.hidden));
+            }});
+        }}
         document.querySelectorAll('.optional-field-add').forEach((button) => {{
             button.addEventListener('click', () => {{
                 const field = document.querySelector(`[data-optional-field="${{button.dataset.field}}"]`);
@@ -126,8 +133,11 @@ def optional_fields_section(optional_fields: list[tuple], values: dict[str, str]
                     if (input) input.focus();
                 }}
                 button.remove();
-                const choices = document.querySelector('.optional-field-choices');
-                if (choices && !choices.children.length) choices.hidden = true;
+                if (choices) choices.hidden = true;
+                if (toggle) {{
+                    toggle.setAttribute('aria-expanded', 'false');
+                    if (choices && !choices.children.length) toggle.hidden = true;
+                }}
             }});
         }});
     }})();

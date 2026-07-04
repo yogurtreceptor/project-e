@@ -265,9 +265,8 @@ th {
     padding-top: 16px;
 }
 
-.optional-fields h2,
-.optional-fields p {
-    margin: 0;
+.optional-fields-toggle {
+    justify-self: start;
 }
 
 .optional-field-choices {
