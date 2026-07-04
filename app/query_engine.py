@@ -12,8 +12,8 @@ class QueryRegistry:
   return records," ".join(terms)
 registry=QueryRegistry()
 registry.register("missing",lambda c,r,v:not(r.metadata.get(v) or getattr(r,v,"")));registry.register("has",lambda c,r,v:bool(r.metadata.get(v) or getattr(r,v,"")))
-registry.register("relationship",lambda c,r,v:bool(c.execute("SELECT 1 FROM relationships WHERE type=? AND (source_entity_id=? OR target_entity_id=?)",(v,r.id,r.id)).fetchone()))
-def related(kind):return lambda c,r,v:bool(c.execute("SELECT 1 FROM relationships x JOIN entities e ON e.id=CASE WHEN x.source_entity_id=? THEN x.target_entity_id ELSE x.source_entity_id END WHERE (x.source_entity_id=? OR x.target_entity_id=?) AND e.type=? AND lower(e.display_name) LIKE ?",(r.id,r.id,r.id,kind,"%"+v.lower()+"%")).fetchone())
+registry.register("relationship",lambda c,r,v:bool(c.execute("SELECT 1 FROM relationships x JOIN entities e ON e.id=CASE WHEN x.source_entity_id=? THEN x.target_entity_id ELSE x.source_entity_id END WHERE x.type=? AND (x.source_entity_id=? OR x.target_entity_id=?) AND e.deleted_at=''",(r.id,v,r.id,r.id)).fetchone()))
+def related(kind):return lambda c,r,v:bool(c.execute("SELECT 1 FROM relationships x JOIN entities e ON e.id=CASE WHEN x.source_entity_id=? THEN x.target_entity_id ELSE x.source_entity_id END WHERE (x.source_entity_id=? OR x.target_entity_id=?) AND e.type=? AND e.deleted_at='' AND lower(e.display_name) LIKE ?",(r.id,r.id,r.id,kind,"%"+v.lower()+"%")).fetchone())
 registry.register("organisation",related("organisation"));registry.register("location",related("location"))
 def recent(value,spec):
  days={"last30days":30,"last7days":7}.get(spec)

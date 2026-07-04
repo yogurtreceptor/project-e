@@ -24,7 +24,7 @@ class DocumentLifecycleTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def test_shared_legacy_reference_is_deleted_only_after_last_document(self) -> None:
+    def test_soft_deleted_documents_keep_their_shared_file_for_restore(self) -> None:
         metadata = store_document_upload(
             UploadedFile("shared.txt", "text/plain", b"shared"), self.storage_dir
         )
@@ -46,10 +46,10 @@ class DocumentLifecycleTests(unittest.TestCase):
             )
 
         self.assertFalse(first_cleanup)
-        self.assertTrue(final_cleanup)
-        self.assertFalse(stored_path.exists())
+        self.assertFalse(final_cleanup)
+        self.assertTrue(stored_path.exists())
 
-    def test_http_replacement_and_deletion_clean_up_owned_files(self) -> None:
+    def test_http_replacement_cleans_old_file_and_soft_delete_keeps_current_file(self) -> None:
         EddyRequestHandler.database_path = self.database_path
         EddyRequestHandler.document_storage_dir = self.storage_dir
         server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
@@ -103,7 +103,7 @@ class DocumentLifecycleTests(unittest.TestCase):
         self.assertFalse(original_exists_after_edit)
         self.assertTrue(replacement_exists_after_edit)
         self.assertEqual(delete_status, 303)
-        self.assertFalse(replacement_exists_after_delete)
+        self.assertTrue(replacement_exists_after_delete)
         self.assertIsNone(deleted_record)
 
     def test_client_supplied_file_metadata_is_not_trusted(self) -> None:

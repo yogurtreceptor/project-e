@@ -14,6 +14,10 @@ from app.db import (
     create_entity,
     create_relationship,
     delete_entity,
+    restore_entity,
+    permanent_delete_entity,
+    list_deleted_entities,
+    entity_dependency_counts,
     delete_relationship,
     get_entity,
     get_entity_by_id,
@@ -97,6 +101,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_search(query)
             return
 
+        if parts[0] == "recycle-bin":
+            self.route_recycle_bin_request(parts)
+            return
+
         if parts[0] == "data-quality":
             self.handle_data_quality()
             return
@@ -162,6 +170,42 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_delete(parts[1], query)
         else:
             self.respond_not_found()
+
+    def route_recycle_bin_request(self, parts: list[str]) -> None:
+        if len(parts) == 1 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                records = list_deleted_entities(connection)
+            self.respond_page("Recycle Bin", views.recycle_bin_page(records), active_slug="recycle-bin")
+            return
+        entity_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
+        if entity_id is None:
+            self.respond_not_found()
+            return
+        if len(parts) == 3 and parts[2] == "restore" and self.command == "POST":
+            with connect(self.database_path) as connection:
+                restored = restore_entity(connection, entity_id)
+            if not restored:
+                self.respond_not_found()
+                return
+            self.redirect("/recycle-bin")
+            return
+        if len(parts) == 3 and parts[2] == "permanent-delete":
+            with connect(self.database_path) as connection:
+                record = get_entity_by_id(connection, entity_id, include_deleted=True)
+                if record is None or not record.is_deleted:
+                    self.respond_not_found()
+                    return
+                if self.command == "GET":
+                    dependencies = entity_dependency_counts(connection, entity_id)
+                    self.respond_page("Confirm permanent deletion", views.permanent_delete_confirmation_page(record, dependencies), active_slug="recycle-bin")
+                    return
+                if self.command == "POST" and self.read_form().get("confirm") == "yes":
+                    _record_type, file_path = permanent_delete_entity(connection, entity_id)
+                    if file_path:
+                        delete_unreferenced_document_file(connection, file_path, self.document_storage_dir)
+                    self.redirect("/recycle-bin")
+                    return
+        self.respond_not_found()
 
     def handle_family_tree(self) -> None:
         with connect(self.database_path) as connection:
@@ -429,16 +473,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         with connect(self.database_path) as connection:
             record = get_entity(connection, definition, entity_id)
-            file_path = (
-                record.metadata.get("file_path", "")
-                if record is not None and definition.type == "document"
-                else ""
-            )
+            if record is None:
+                self.respond_not_found()
+                return
             delete_entity(connection, definition, entity_id)
-            if file_path:
-                delete_unreferenced_document_file(
-                    connection, file_path, self.document_storage_dir
-                )
         self.redirect(f"/{definition.slug}")
 
     def handle_journal_create(self, raw_person_id: str) -> None:

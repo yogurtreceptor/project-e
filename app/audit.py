@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from app.db_support import utc_now
-EVENT_TYPES={"create","edit","delete","relationship_change","inference","validation","merge","import","manual_override"}
+EVENT_TYPES={"create","edit","delete","restore","permanent_delete","relationship_change","inference","validation","merge","import","manual_override"}
 PROVENANCE_TYPES={"manual","inferred","imported","document","contact_import","user_confirmed","unknown"}
 @dataclass(frozen=True)
 class AuditEvent:

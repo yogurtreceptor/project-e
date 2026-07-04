@@ -5,7 +5,7 @@ Operation Eddy's Stage 1 UI should stay quiet, structured and useful for repeate
 ## Navigation
 
 - Entity types are first-class navigation items.
-- Relationships, Search and Map are global views over the same entity system.
+- Relationships, Search, Map and Recycle Bin are global views over the same entity system.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
 ## Entity Pages
@@ -32,6 +32,8 @@ Forms should keep manual entry available. Helpful lookup tools may prefill field
 Entity forms should avoid generic `summary` fields. Notes are the flexible free-text area; important categories and statuses should be captured through controlled inputs.
 
 Person detail pages use short, separate journal entries instead of presenting the Person Notes field. Entries appear oldest first as message-style bubbles, show their creation time, and show an edited marker with the last edit time when changed. Archive is the prominent removal action; permanent delete remains available with quieter visual treatment.
+
+Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible and calls out relationships or dependent records that will also be removed.
 
 Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
 

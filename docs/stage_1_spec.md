@@ -48,10 +48,13 @@ Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP
 ## Acceptance Criteria
 
 - Users can maintain one canonical record per real-world person, organisation, location, project, document or asset.
-- Users can create, edit, delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
+- Users can create, edit, soft-delete, restore, permanently delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
+- Soft-deleted entities are absent from normal lists, search, maps, discovery and relationship navigation. The Recycle Bin lists every deleted entity type and provides restore and confirmed permanent deletion.
+- Restoring an entity exposes its preserved relationships only when their other endpoint is active; it never restores another deleted entity. Soft deletion never cascades to related entities.
+- Archived means inactive content retained in its normal domain workflow; deleted means an entity is hidden platform-wide and recoverable from the Recycle Bin.
 - Person detail pages provide chronological plain-text journal entries with create, edit, archive and delete actions. Active entries show their creation time and edited entries also show their last edit time; archive is the primary removal path.
 - Person create and edit forms provide an Add field section for optional data. Alias and Nickname are available there and appear in the Person overview only when populated.
-- Users can upload an individual file to a Document entity; replacement and Document deletion clean up unreferenced owned files.
+- Users can upload an individual file to a Document entity; replacement cleans up the superseded unreferenced file, soft deletion retains the current file for restoration, and permanent deletion cleans it up when unreferenced.
 - Users can connect Documents and Assets to other entities through relationships.
 - Safe deterministic family suggestions are reviewed before becoming normal editable relationships; automatic candidate recomputation does not bypass that confirmation boundary.
 - Confirmed inference-created relationships retain provenance; rejected evidence is suppressed until it materially changes; completed review batches remain available in searchable history with undo.

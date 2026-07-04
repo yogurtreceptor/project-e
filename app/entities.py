@@ -47,6 +47,7 @@ class EntityRecord:
     last_viewed_at: str
     is_favourite: bool
     metadata: dict[str, str]
+    deleted_at: str = ""
 
     @property
     def type(self) -> str:
@@ -55,6 +56,10 @@ class EntityRecord:
     @property
     def slug(self) -> str:
         return self.definition.slug
+
+    @property
+    def is_deleted(self) -> bool:
+        return bool(self.deleted_at)
 
     @property
     def title(self) -> str:
@@ -308,5 +313,6 @@ def to_entity_record(definition: EntityDefinition, row: Any) -> EntityRecord:
         updated_at=row["updated_at"],
         last_viewed_at=row["last_viewed_at"],
         is_favourite=bool(row["is_favourite"]),
+        deleted_at=row["deleted_at"],
         metadata={field.name: row[field.name] for field in definition.fields},
     )

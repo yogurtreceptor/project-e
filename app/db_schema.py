@@ -140,7 +140,8 @@ def create_entity_table(connection: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             last_viewed_at TEXT NOT NULL DEFAULT '',
-            is_favourite INTEGER NOT NULL DEFAULT 0
+            is_favourite INTEGER NOT NULL DEFAULT 0,
+            deleted_at TEXT NOT NULL DEFAULT ''
         );
 
         CREATE INDEX IF NOT EXISTS idx_entities_type_name
@@ -161,6 +162,9 @@ def ensure_entity_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE entities ADD COLUMN last_viewed_at TEXT NOT NULL DEFAULT ''")
     if "is_favourite" not in columns:
         connection.execute("ALTER TABLE entities ADD COLUMN is_favourite INTEGER NOT NULL DEFAULT 0")
+    if "deleted_at" not in columns:
+        connection.execute("ALTER TABLE entities ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''")
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_entities_deleted_at ON entities(deleted_at)")
 
 
 def ensure_entity_type_constraint(connection: sqlite3.Connection) -> None:
@@ -185,16 +189,17 @@ def ensure_entity_type_constraint(connection: sqlite3.Connection) -> None:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 last_viewed_at TEXT NOT NULL DEFAULT '',
-                is_favourite INTEGER NOT NULL DEFAULT 0
+                is_favourite INTEGER NOT NULL DEFAULT 0,
+                deleted_at TEXT NOT NULL DEFAULT ''
             );
 
             INSERT INTO entities_new (
                 id, type, display_name, summary, notes,
-                created_at, updated_at, last_viewed_at, is_favourite
+                created_at, updated_at, last_viewed_at, is_favourite, deleted_at
             )
             SELECT
                 id, type, display_name, summary, notes,
-                created_at, updated_at, last_viewed_at, is_favourite
+                created_at, updated_at, last_viewed_at, is_favourite, deleted_at
             FROM entities;
 
             DROP TABLE entities;
@@ -202,6 +207,8 @@ def ensure_entity_type_constraint(connection: sqlite3.Connection) -> None:
 
             CREATE INDEX IF NOT EXISTS idx_entities_type_name
                 ON entities (type, display_name);
+            CREATE INDEX IF NOT EXISTS idx_entities_deleted_at
+                ON entities (deleted_at);
             """
         )
         connection.commit()
@@ -368,6 +375,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_06_platform_infrastructure", create_platform_tables),
     ("20260628_07_backfill_platform_audit", backfill_platform_audit_events),
     ("20260704_08_journal_entries", create_journal_table),
+    ("20260704_09_entity_soft_delete", ensure_entity_columns),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

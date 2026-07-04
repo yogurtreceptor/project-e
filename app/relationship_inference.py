@@ -55,6 +55,7 @@ class FamilyFacts:
             SELECT r.* FROM relationships r JOIN entities s ON s.id=r.source_entity_id
             JOIN entities t ON t.id=r.target_entity_id
             WHERE r.status='active' AND s.type='person' AND t.type='person'
+              AND s.deleted_at='' AND t.deleted_at=''
               AND (r.record_origin='manual' OR r.record_origin='inferred')
         """).fetchall()
         self.rows = {int(r["id"]): r for r in rows}
@@ -62,7 +63,7 @@ class FamilyFacts:
         for r in rows:
             if r["type"] == "parent_child":
                 self.parents.setdefault(int(r["target_entity_id"]), {})[int(r["source_entity_id"])] = int(r["id"])
-        self.people = {int(r["id"]): r for r in connection.execute("SELECT e.id, p.birthday FROM entities e JOIN people p ON p.entity_id=e.id WHERE e.type='person'")}
+        self.people = {int(r["id"]): r for r in connection.execute("SELECT e.id, p.birthday FROM entities e JOIN people p ON p.entity_id=e.id WHERE e.type='person' AND e.deleted_at=''")}
 
     def birth(self, person_id: int) -> str:
         row = self.people.get(person_id)

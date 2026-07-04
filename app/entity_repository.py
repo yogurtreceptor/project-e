@@ -23,7 +23,7 @@ def list_entities(
         SELECT entities.*, typed.*
         FROM entities
         JOIN {table} AS typed ON typed.entity_id = entities.id
-        WHERE entities.type = ?
+        WHERE entities.type = ? AND entities.deleted_at = ''
         ORDER BY lower(entities.display_name), entities.id
         """.format(table=sql_identifier(definition.table)),
         (definition.type,),
@@ -45,21 +45,23 @@ def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
 
 def count_entities(connection: sqlite3.Connection) -> dict[str, int]:
     rows = connection.execute(
-        "SELECT type, COUNT(*) AS count FROM entities GROUP BY type"
+        "SELECT type, COUNT(*) AS count FROM entities WHERE deleted_at = '' GROUP BY type"
     ).fetchall()
     return {row["type"]: row["count"] for row in rows}
 
 
 def get_entity(
-    connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int
+    connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int,
+    include_deleted: bool = False,
 ) -> EntityRecord | None:
+    deleted_clause = "" if include_deleted else "AND entities.deleted_at = ''"
     row = connection.execute(
         """
         SELECT entities.*, typed.*
         FROM entities
         JOIN {table} AS typed ON typed.entity_id = entities.id
-        WHERE entities.id = ? AND entities.type = ?
-        """.format(table=sql_identifier(definition.table)),
+        WHERE entities.id = ? AND entities.type = ? {deleted_clause}
+        """.format(table=sql_identifier(definition.table), deleted_clause=deleted_clause),
         (entity_id, definition.type),
     ).fetchone()
     if row is None:
@@ -67,14 +69,25 @@ def get_entity(
     return to_entity_record(definition, row)
 
 
-def get_entity_by_id(connection: sqlite3.Connection, entity_id: int) -> EntityRecord | None:
-    row = connection.execute("SELECT id, type FROM entities WHERE id = ?", (entity_id,)).fetchone()
+def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_deleted: bool = False) -> EntityRecord | None:
+    clause = "" if include_deleted else "AND deleted_at = ''"
+    row = connection.execute(f"SELECT id, type FROM entities WHERE id = ? {clause}", (entity_id,)).fetchone()
     if row is None:
         return None
     definition = DEFINITIONS_BY_TYPE.get(row["type"])
     if definition is None:
         return None
-    return get_entity(connection, definition, entity_id)
+    return get_entity(connection, definition, entity_id, include_deleted=include_deleted)
+
+
+def list_deleted_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+    records = []
+    rows = connection.execute("SELECT id FROM entities WHERE deleted_at <> '' ORDER BY deleted_at DESC, id DESC")
+    for row in rows:
+        record = get_entity_by_id(connection, int(row["id"]), include_deleted=True)
+        if record is not None:
+            records.append(record)
+    return records
 
 
 def create_entity(
@@ -150,14 +163,45 @@ def delete_entity(
     before = get_entity(connection, definition, entity_id)
     from app.audit import record_audit_event
     if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
-    connection.execute(
-        "DELETE FROM entities WHERE id = ? AND type = ?", (entity_id, definition.type)
-    )
+    connection.execute("UPDATE entities SET deleted_at = ?, updated_at = ? WHERE id = ? AND type = ? AND deleted_at = ''", (utc_now(), utc_now(), entity_id, definition.type))
     if definition.type == "person":
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_deleted", entity_id)
     else:
         connection.commit()
+
+
+def restore_entity(connection: sqlite3.Connection, entity_id: int) -> bool:
+    before = get_entity_by_id(connection, entity_id, include_deleted=True)
+    if before is None or not before.is_deleted:
+        return False
+    connection.execute("UPDATE entities SET deleted_at = '', updated_at = ? WHERE id = ?", (utc_now(), entity_id))
+    from app.audit import record_audit_event
+    record_audit_event(connection, "restore", [("entity", entity_id)], before={"deleted_at": before.deleted_at}, after={"deleted_at": ""}, notes="Entity restored from Recycle Bin")
+    if before.type == "person":
+        from app.relationship_inference import recompute_inferences
+        recompute_inferences(connection, "person_restored", entity_id)
+    else:
+        connection.commit()
+    return True
+
+
+def permanent_delete_entity(connection: sqlite3.Connection, entity_id: int) -> tuple[str, str]:
+    record = get_entity_by_id(connection, entity_id, include_deleted=True)
+    if record is None or not record.is_deleted:
+        raise ValueError("Only deleted records can be permanently deleted.")
+    file_path = record.metadata.get("file_path", "") if record.type == "document" else ""
+    from app.audit import record_audit_event
+    record_audit_event(connection, "permanent_delete", [("entity", entity_id)], before=record.to_form_values(), notes="Entity permanently deleted from Recycle Bin")
+    connection.execute("DELETE FROM entities WHERE id = ?", (entity_id,))
+    connection.commit()
+    return record.type, file_path
+
+
+def entity_dependency_counts(connection: sqlite3.Connection, entity_id: int) -> dict[str, int]:
+    relationship_count = connection.execute("SELECT COUNT(*) FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchone()[0]
+    journal_count = connection.execute("SELECT COUNT(*) FROM journal_entries WHERE entity_id=?", (entity_id,)).fetchone()[0]
+    return {"relationships": int(relationship_count), "journal_entries": int(journal_count)}
 
 
 def with_canonical_person_name(

@@ -78,6 +78,8 @@ Reusable entity pages include:
 
 Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
 
+Entity deletion is a shared repository concern. Normal entity hydration excludes rows with `deleted_at`; because relationship records resolve both endpoints through that same boundary, deleted entities and their relationships disappear consistently from profiles, global relationship views, search, maps and derived navigation. The Recycle Bin is the sole opt-in deleted-record view. Restore clears one entity's deleted state while leaving other deleted endpoints untouched. Permanent deletion is a separate confirmed action that previews relationship and journal dependencies; audit history remains append-only.
+
 `JournalEntry` and `app/journal_repository.py` use a reusable entity type/ID association, but the current HTTP surface deliberately exposes journals only below Person routes. Archived entries remain stored but are omitted from the active stream. Journal entries are separate operational notes and are not folded into the derived real-world timeline.
 
 ## Relationship Architecture

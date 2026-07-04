@@ -13,7 +13,7 @@ def list_recent_entities(connection: sqlite3.Connection, limit: int = 8) -> list
         """
         SELECT id
         FROM entities
-        WHERE last_viewed_at <> ''
+        WHERE last_viewed_at <> '' AND deleted_at = ''
         ORDER BY last_viewed_at DESC, id DESC
         LIMIT ?
         """,
@@ -35,7 +35,7 @@ def list_favourite_entities(connection: sqlite3.Connection, limit: int = 8) -> l
         """
         SELECT id
         FROM entities
-        WHERE is_favourite = 1
+        WHERE is_favourite = 1 AND deleted_at = ''
         ORDER BY lower(display_name), id
         LIMIT ?
         """,

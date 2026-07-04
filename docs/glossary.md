@@ -134,6 +134,24 @@ A timestamped plain-text observation stored as an individual record against a Pe
 
 See also: Person, Notes.
 
+## Archived
+
+An inactive record or workflow item that remains part of its normal platform domain and may be shown through an archive-specific control. Archiving is not deletion and archived items do not enter the Recycle Bin.
+
+See also: Deleted, Recycle Bin.
+
+## Deleted
+
+The recoverable state of an entity hidden from normal platform views, search and relationship navigation. A deleted entity remains stored until restored or permanently deleted from the Recycle Bin.
+
+See also: Archived, Recycle Bin.
+
+## Recycle Bin
+
+The platform-wide view of soft-deleted entities. It supports restoring one selected entity or permanently deleting it after explicit confirmation and dependency warnings.
+
+See also: Deleted, Archived.
+
 ## Organisation
 
 An entity representing a company, institution, group, agency, club, team or other organised body.

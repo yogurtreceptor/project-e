@@ -18,6 +18,7 @@ Delivered:
 - deterministic family inference with review, provenance, history and undo
 - responsibility-focused database, view and workflow modules behind stable facades
 - People journals with independent chronological entries and lifecycle actions
+- platform-wide entity soft deletion, Recycle Bin restore and confirmed permanent deletion
 
 Active:
 

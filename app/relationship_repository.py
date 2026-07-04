@@ -61,7 +61,10 @@ def get_relationship(
     ).fetchone()
     if row is None:
         return None
-    return to_relationship_record(connection, row)
+    try:
+        return to_relationship_record(connection, row)
+    except ValueError:
+        return None
 
 
 def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) -> int:

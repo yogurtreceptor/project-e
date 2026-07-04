@@ -25,6 +25,7 @@ Every real-world object starts in `entities` with:
 - `notes`
 - timestamps
 - discovery metadata such as favourite and last viewed state
+- `deleted_at`, empty for active records and timestamped for records in the Recycle Bin
 
 For Person records, `entities.display_name` is maintained automatically from `people.given_name` plus `people.family_name`. `people.alias` and `people.nickname` are additive optional columns and use the standard definition-driven typed-column migration. Existing records retain their stored display names until edited or merged, preserving legacy local data; new writes never require users to enter both forms of the name. Legacy `preferred_name` columns may remain physically present after an additive upgrade but are no longer active model fields.
 
@@ -32,7 +33,9 @@ Typed tables hold fields that only apply to one entity type. Schema creation is 
 
 The `entities.summary` column remains in existing and new databases as a legacy compatibility/search field, but it is no longer part of active creation or edit forms. Notes are the flexible free-text area.
 
-Person observations use `journal_entries` rather than accumulating in the shared Notes field. Each entry stores `entity_type`, `entity_id`, body, created/updated timestamps and an optional archive timestamp. The generic entity linkage leaves room for later entity types, while application routes currently permit People only. Active lists omit archived entries; deleting an entity cascades to its entries. Journal entry deletion is permanent and remains a secondary UI action.
+Migration `20260704_09_entity_soft_delete` adds `entities.deleted_at`. Repository reads exclude timestamped rows by default, including relationship hydration, so any relationship with a deleted endpoint is preserved but hidden. Recycle Bin reads opt in explicitly. Restore clears only the selected entity's timestamp. Permanent deletion is restricted to Recycle Bin records and then uses the existing foreign-key cascades for typed data, relationships, journal entries and inference dependencies; unrelated entities are never deleted. Generic audit rows have no entity foreign key and therefore survive permanent deletion.
+
+Person observations use `journal_entries` rather than accumulating in the shared Notes field. Each entry stores `entity_type`, `entity_id`, body, created/updated timestamps and an optional archive timestamp. The generic entity linkage leaves room for later entity types, while application routes currently permit People only. Active lists omit archived entries; permanently deleting an entity cascades to its entries, while soft deletion preserves them for restore. Journal entry deletion is permanent and remains a secondary UI action.
 
 Field renames are handled additively. New columns are created and existing values are copied from configured legacy columns when the new column is empty. Legacy columns are left in place so local databases are not destructively rewritten.
 
@@ -58,7 +61,7 @@ Documents store document metadata plus local file metadata:
 
 Uploaded files are stored in `instance/documents/` through `app/document_storage.py`, which owns safe naming, metadata and path confinement. Documents should be related to other entities through the relationship table rather than embedded inside those entities.
 
-A Document owns its uploaded file. A successful replacement deletes the superseded file only after the database points to the replacement; deleting a Document deletes its file only when no other Document still references it. Missing files are tolerated, unsafe paths are never deleted, and newly written files are removed if the corresponding database write fails. File metadata submitted through hidden form fields is not trusted.
+A Document owns its uploaded file. A successful replacement deletes the superseded file only after the database points to the replacement. Soft deletion retains the current file for restoration; permanent deletion removes it only when no other Document still references it. Missing files are tolerated, unsafe paths are never deleted, and newly written files are removed if the corresponding database write fails. File metadata submitted through hidden form fields is not trusted.
 
 Assets store useful item metadata such as asset type, status, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
 

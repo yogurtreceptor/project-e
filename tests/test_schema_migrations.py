@@ -44,6 +44,9 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("relationships", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
+        with connect(self.database_path) as connection:
+            entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
+        self.assertIn("deleted_at", entity_columns)
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"
