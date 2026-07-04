@@ -23,7 +23,10 @@ Stage 1 entity types are:
 - Document
 - Asset
 
-Each real-world object should have one canonical entity record. Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields, but users may explicitly save anyway when two real objects genuinely share those values.
+Each real-world object should have one canonical entity record.
+
+- Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields.
+- Users may explicitly save anyway when two real objects genuinely share those values.
 
 ## People
 
@@ -50,7 +53,16 @@ Field semantics and presentation rules are:
 
 An Organisation represents a company, institution, group, team or other organisation.
 
-Current fields include organisation name, taxonomy-backed organisation classification, website, phone, email and notes. Classification is one reusable path of up to three levels rather than unrelated broad and specific text values.
+Current fields include:
+
+- organisation name
+- taxonomy-backed organisation classification
+- website
+- phone
+- email
+- notes
+
+Classification is one reusable path of up to three levels rather than unrelated broad and specific text values.
 
 Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
 
@@ -58,25 +70,67 @@ Website, phone and email remain direct Organisation fields for Stage 1 simplicit
 
 A Location represents a place, address or meaningful area.
 
-Current fields include location name, address lookup, address, address line 1, address line 2, suburb, city, state, post code, country, latitude, longitude, source and notes.
+Current fields include:
+
+- location name
+- address lookup
+- address
+- address line 1
+- address line 2
+- suburb
+- city
+- state
+- post code
+- country
+- latitude and longitude
+- source
+- notes
 
 Maps are a derived view over Location data, not the foundation of the Location model.
 
 ## Projects
 
-A Project represents ongoing work or an area of responsibility. Projects organise information and relationships; they are not task-management records.
+A Project represents ongoing work or an area of responsibility.
+
+- Projects organise information and relationships.
+- Projects are not task-management records.
 
 Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
 
-Current fields include project name, project type, status, started date and notes. Project type is controlled with custom values allowed. Status is controlled and uses Active, Paused, Completed or Abandoned.
+Current fields include:
+
+- project name
+- project type
+- status
+- started date
+- notes
+
+Controlled-value rules are:
+
+- Project type is controlled with custom values allowed.
+- Status is controlled and uses Active, Paused, Completed or Abandoned.
 
 ## Documents
 
-A Document represents a first-class document record, optionally backed by a locally uploaded file. The Document owns that file: replacement removes the superseded unreferenced file, and deleting the final referencing Document removes it from local storage.
+A Document represents a first-class document record, optionally backed by a locally uploaded file.
+
+The Document owns that file:
+
+- Replacement removes the superseded unreferenced file.
+- Deleting the final referencing Document removes it from local storage.
 
 Documents should be linked to other entities through relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
 
-Current fields include document name, document type, document date, issuer / created by, notes and optional local file metadata. Document type is controlled with custom values allowed.
+Current fields include:
+
+- document name
+- document type
+- document date
+- issuer / created by
+- notes
+- optional local file metadata
+
+Document type is controlled with custom values allowed.
 
 ## Assets
 
@@ -84,11 +138,29 @@ An Asset represents a physical or digital item such as a vehicle, laptop, phone,
 
 Assets can relate to People, Organisations, Locations, Projects and Documents. Assets may also carry direct coordinates when that is the most accurate available geographic information.
 
-Current fields include asset name, asset type, status, serial number / asset number, acquisition date, value, latitude, longitude and notes. Asset type and status are controlled with custom values allowed. Value is stored as whole-number text and displayed with a dollar sign on read pages.
+Current fields include:
+
+- asset name
+- asset type
+- status
+- serial number / asset number
+- acquisition date
+- value
+- latitude and longitude
+- notes
+
+Field rules are:
+
+- Asset type and status are controlled with custom values allowed.
+- Value is stored as whole-number text and displayed with a dollar sign on read pages.
 
 ## Controlled Values
 
-Most controlled category fields remain direct typed text. Organisation classification is the first entity field migrated to the reusable taxonomy framework; Document, Asset and Project type systems remain unchanged in this milestone.
+Controlled category fields currently follow these rules:
+
+- Most remain direct typed text.
+- Organisation classification is the first entity field migrated to the reusable taxonomy framework.
+- Document, Asset and Project type systems remain unchanged in this milestone.
 
 Current controlled fields are:
 
@@ -117,17 +189,46 @@ Relationships support:
 - notes
 - creation and update timestamps
 
-Relationships are treated as ongoing unless they are explicitly marked as former or have an end date. Displays show an end date only when one is recorded; an ongoing relationship with a start date is shown as `Since [start date]`.
+Relationship duration is presented as follows:
 
-Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
+- Relationships are treated as ongoing unless they are explicitly marked as former or have an end date.
+- Displays show an end date only when one is recorded.
+- An ongoing relationship with a start date is shown as `Since [start date]`.
 
-The database stores one relationship row. Its taxonomy-backed definition supplies canonical endpoint direction and natural inverse labels, so bidirectional navigation is derived rather than duplicated. Entity pages group relationships by connected entity type across the current domains.
+Navigation and editing work as follows:
 
-Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities. Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
+- Relationships are editable and directly navigable from entity pages and the relationship browser.
+- Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward.
+- A single relationship can connect any two canonical entities, regardless of entity type.
+
+Relationship storage and display follow these rules:
+
+- The database stores one relationship row.
+- Its taxonomy-backed definition supplies canonical endpoint direction and natural inverse labels, so bidirectional navigation is derived rather than duplicated.
+- Entity pages group relationships by connected entity type across the current domains.
+
+Relationship creation is entity-first and perspective-based:
+
+1. Users start from the known entity page.
+2. They choose either the existing-entity workflow or the new-entity workflow.
+3. They answer one question using explicit names: `What is [connected entity] in relation to [current entity]?`
+   - For existing entities, the connected entity name is shown directly.
+   - For new entities, the question updates live as the name is typed.
+4. Saving returns to the original entity page, and the relationship appears from both connected entities.
+
+Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
 
 ## Relationship Types
 
-Relationship types are selectable taxonomy entries, not free-floating labels. Their authoritative runtime definitions are stored in `relationship_type_definitions`; `app/relationship_catalog.py` supplies deterministic seeds and legacy compatibility, while `app/relationships.py` remains the behavior facade. Each definition includes:
+Relationship types are selectable taxonomy entries, not free-floating labels.
+
+Runtime responsibilities are divided as follows:
+
+- `relationship_type_definitions` stores the authoritative runtime definitions.
+- `app/relationship_catalog.py` supplies deterministic seeds and legacy compatibility.
+- `app/relationships.py` remains the behavior facade.
+
+Each definition includes:
 
 - allowed source entity type
 - allowed target entity type
@@ -138,7 +239,11 @@ Relationship types are selectable taxonomy entries, not free-floating labels. Th
 - optional usage notes
 - whether the type is selectable for new relationships
 
-The UI filters relationship options from these definitions after it knows the two endpoint entity types. Creation happens from the current entity page and asks what the named connected entity is in relation to the named current entity. The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
+The UI uses these definitions as follows:
+
+- It filters relationship options after it knows the two endpoint entity types.
+- Creation happens from the current entity page and asks what the named connected entity is in relation to the named current entity.
+- The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
 
 Current pair-aware groups include:
 
@@ -152,19 +257,59 @@ Current pair-aware groups include:
 - Document to Person or Organisation: belongs to, created by, issued to/by, references and Other.
 - Document to Asset or Project: belongs to, receipt/manual/references where relevant and Other.
 
-Person-to-Person family definitions use neutral canonical types such as Parent / child and Sibling rather than storing Brother, Mother or Father as new relationship types. Profile role labels may become sex-specific when the connected Person has Sex recorded as Female or Male. If Sex is Other or Unknown, neutral labels are used. For example, a parent's profile displays the connected person as Daughter, Son or Child, while the child's profile displays the connected person as Mother, Father or Parent.
+Person-to-Person family definitions follow these rules:
 
-Legacy generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing relationships still load. They are not offered for new pair-specific relationship creation. Safe legacy location relationships continue to feed Geography and Map views.
+- They use neutral canonical types such as Parent / child and Sibling rather than storing Brother, Mother or Father as new relationship types.
+- Profile role labels may become sex-specific when the connected Person has Sex recorded as Female or Male.
+- If Sex is Other or Unknown, neutral labels are used.
+- For example, a parent's profile displays the connected person as Daughter, Son or Child, while the child's profile displays the connected person as Mother, Father or Parent.
 
-Phone numbers, emails and websites remain simple direct fields in Stage 1. The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes. That should be introduced only when multiple contact points or richer communication history justify it; it should not become a Communications domain during Stage 1.
+Legacy relationship keys are handled as follows:
+
+- Generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing relationships still load.
+- They are not offered for new pair-specific relationship creation.
+- Safe legacy location relationships continue to feed Geography and Map views.
+
+Contact information follows these boundaries:
+
+- Phone numbers, emails and websites remain simple direct fields in Stage 1.
+- The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes.
+- That model should be introduced only when multiple contact points or richer communication history justify it.
+- It should not become a Communications domain during Stage 1.
 
 ## Deterministic Family Inference
 
-Manual parent/child relationships are source facts. The Inference Review Queue receives only safe bloodline candidates derived by the deterministic inference engine: grandparent/grandchild, full sibling, aunt/uncle with niece/nephew, and cousin. It does not infer step, adoptive, half, foster, guardian, in-law or partner relationships.
+Manual parent/child relationships are source facts.
 
-Suggestions are not relationships until confirmed. Confirmation creates a normal editable relationship while preserving its rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps. Rejection suppresses the same evidence fingerprint. Later source changes invalidate pending suggestions but only flag changed evidence on confirmed relationships.
+The Inference Review Queue receives only safe bloodline candidates derived by the deterministic inference engine:
 
-Full-sibling evidence requires the same complete known parent set with at least two parents. Direct-generation dates may use the younger person’s DOB alone; peer and collateral dates require both DOBs.
+- grandparent/grandchild
+- full sibling
+- aunt/uncle with niece/nephew
+- cousin
+
+It does not infer:
+
+- step relationships
+- adoptive relationships
+- half relationships
+- foster relationships
+- guardian relationships
+- in-law relationships
+- partner relationships
+
+Inference review follows these rules:
+
+- Suggestions are not relationships until confirmed.
+- Confirmation creates a normal editable relationship while preserving its rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps.
+- Rejection suppresses the same evidence fingerprint.
+- Later source changes invalidate pending suggestions but only flag changed evidence on confirmed relationships.
+
+Evidence requirements are:
+
+- Full-sibling evidence requires the same complete known parent set with at least two parents.
+- Direct-generation dates may use the younger person’s DOB alone.
+- Peer and collateral dates require both DOBs.
 
 ## Relationship Dates
 
@@ -180,9 +325,19 @@ This preserves uncertainty without blocking structured date entry.
 
 ## Geographic Ontology
 
-A Location is the canonical geographic entity for a place, address or meaningful area. It may have a human-readable address, structured address fields, optional latitude/longitude and a geocoding source.
+A Location is the canonical geographic entity for a place, address or meaningful area.
 
-People and Organisations should be connected to Locations with `located_at` relationships when place information is known. They should not duplicate address fields.
+It may have:
+
+- a human-readable address
+- structured address fields
+- optional latitude/longitude
+- a geocoding source
+
+When place information is known:
+
+- People and Organisations should be connected to Locations with `located_at` relationships.
+- They should not duplicate address fields.
 
 The Map is a view over these canonical entities:
 
@@ -191,6 +346,9 @@ The Map is a view over these canonical entities:
 - Person markers represent People connected to a coordinate-bearing Location.
 - Asset markers represent Assets with valid direct coordinates or Assets connected to a coordinate-bearing Location.
 
-Missing coordinates do not invalidate a Location. They only prevent that record, and entities relying on it, from appearing as markers.
+Missing coordinates:
+
+- do not invalidate a Location
+- only prevent that record, and entities relying on it, from appearing as markers
 
 Projects and Documents never appear as map markers.
