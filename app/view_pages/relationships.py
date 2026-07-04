@@ -413,6 +413,7 @@ def relationship_metadata_fields(
     <fieldset class="relationship-step relationship-metadata">
         <legend>Relationship details</legend>
         <p class="relationship-question" id="relationship_question" data-current-name="{escape(current_name)}">{escape(prompt)}</p>
+        <label for="relationship_type_search"><span>Search relationship types</span><input id="relationship_type_search" type="search" autocomplete="off" placeholder="Type to filter..."></label>
         {select_field("type", "Relationship", options, values)}
         {select_field("status", "Status", [(status, status.title()) for status in RELATIONSHIP_STATUSES], values)}
         {input_field("started_at", "Started", values, input_type="date")}
@@ -421,6 +422,7 @@ def relationship_metadata_fields(
         {select_field("ended_at_precision", "End date certainty", date_precision_options(), values)}
         {input_field("notes", "Notes", values, multiline=True)}
     </fieldset>
+    <script>(()=>{{const q=document.getElementById('relationship_type_search');const s=document.getElementById('type');if(q&&s)q.addEventListener('input',()=>{{const v=q.value.trim().toLocaleLowerCase();[...s.options].forEach((o,i)=>{{if(i)o.hidden=!!v&&!o.text.toLocaleLowerCase().includes(v);}});}});}})();</script>
     """
 
 
@@ -448,7 +450,7 @@ def relationship_type_options(
 ) -> list[tuple[str, str]]:
     if source_entity is not None and target_type:
         return relationship_choices_for_context(source_entity.type, target_type, target_sex)
-    return [(relationship_type.key, relationship_option_text(relationship_type)) for relationship_type in RELATIONSHIP_TYPES if relationship_type.selectable]
+    return [(relationship_type.key, relationship_option_text(relationship_type)) for relationship_type in RELATIONSHIP_TYPES_BY_KEY.values() if relationship_type.selectable]
 
 
 def relationship_option_text(relationship_type) -> str:

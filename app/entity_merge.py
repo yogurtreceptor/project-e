@@ -100,7 +100,15 @@ def _merge_external_values(
     connection: sqlite3.Connection, survivor: EntityRecord, duplicate: EntityRecord
 ) -> None:
     for field in survivor.definition.fields:
-        if field.storage_kind == "reference":
+        if field.storage_kind == "taxonomy":
+            survivor_id = survivor.metadata.get(f"{field.name}__taxonomy_entry_id", "")
+            duplicate_id = duplicate.metadata.get(f"{field.name}__taxonomy_entry_id", "")
+            if not survivor_id and duplicate_id:
+                connection.execute(
+                    "UPDATE organisations SET taxonomy_entry_id=? WHERE entity_id=?",
+                    (int(duplicate_id), survivor.id),
+                )
+        elif field.storage_kind == "reference":
             survivor_items = list_entity_reference_values(connection, survivor.id, field.name)
             duplicate_items = list_entity_reference_values(connection, duplicate.id, field.name)
             item_ids = list(dict.fromkeys(

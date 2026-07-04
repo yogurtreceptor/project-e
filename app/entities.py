@@ -94,21 +94,6 @@ class EntityRecord:
         return values
 
 
-ORGANISATION_TYPES = (
-    "Business",
-    "Government agency",
-    "School",
-    "University",
-    "Medical practice",
-    "Employer",
-    "Bank",
-    "Utility",
-    "Club",
-    "Charity",
-    "Political party",
-    "Other",
-)
-
 PROJECT_TYPES = (
     "Personal",
     "Work",
@@ -230,7 +215,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         plural="Organisations",
         table="organisations",
         fields=(
-            FieldDefinition("organisation_type", "Organisation type", options=ORGANISATION_TYPES, allow_custom=True),
+            FieldDefinition("organisation_type", "Organisation classification", storage_kind="taxonomy"),
             FieldDefinition("website", "Website"),
             FieldDefinition("phone", "Phone"),
             FieldDefinition("email", "Email"),

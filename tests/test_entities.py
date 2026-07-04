@@ -973,8 +973,9 @@ class EntityDatabaseTests(unittest.TestCase):
         project_html = views.entity_form_page(project_definition, {}, [], "Create")
         asset_html = views.entity_form_page(asset_definition, {}, [], "Create")
 
-        self.assertIn('list="organisation_type_options"', organisation_html)
-        self.assertIn('<option value="Government agency"></option>', organisation_html)
+        self.assertIn('data-taxonomy-picker', organisation_html)
+        self.assertIn('data-taxonomy-level="0"', organisation_html)
+        self.assertIn('Specific subtype', organisation_html)
         self.assertIn('<option value="Active" selected>Active</option>', project_html)
         self.assertIn('value="Owned"', asset_html)
         self.assertIn('pattern="[0-9]*"', asset_html)

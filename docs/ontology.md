@@ -35,7 +35,7 @@ Current user-entered fields include required given name, middle and family names
 
 An Organisation represents a company, institution, group, team or other organisation.
 
-Current fields include organisation name, organisation type, website, phone, email and notes. Organisation type is a controlled value with sensible presets and custom values when the preset list is too narrow.
+Current fields include organisation name, taxonomy-backed organisation classification, website, phone, email and notes. Classification is one reusable path of up to three levels rather than unrelated broad and specific text values.
 
 Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
 
@@ -73,11 +73,11 @@ Current fields include asset name, asset type, status, serial number / asset num
 
 ## Controlled Values
 
-Controlled category fields are stored directly in their typed table columns as text. Preset-backed custom fields use the same column as preset values, so a custom organisation type or asset type is not a separate lookup-table record in Stage 1.
+Most controlled category fields remain direct typed text. Organisation classification is the first entity field migrated to the reusable taxonomy framework; Document, Asset and Project type systems remain unchanged in this milestone.
 
 Current controlled fields are:
 
-- Organisation `organisation_type`: Business, Government agency, School, University, Medical practice, Employer, Bank, Utility, Club, Charity, Political party, Other, or custom.
+- Organisation classification: a selected taxonomy path, for example `Business › Finance › Bank`. Clear legacy values are mapped; ambiguous and custom legacy values are retained as archived entries until reclassified.
 - Project `project_type`: Personal, Work, Education, Health, Finance, Home, Vehicle, Travel, Civic, Other, or custom.
 - Project `status`: Active, Paused, Completed, Abandoned.
 - Document `document_type`: Identification, Certificate, Contract, Receipt, Invoice, Manual, Medical, Government, Letter, Image, PDF, Other, or custom.
@@ -106,18 +106,17 @@ Relationships are treated as ongoing unless they are explicitly marked as former
 
 Relationships are editable and directly navigable from entity pages and the relationship browser. Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward. A single relationship can connect any two canonical entities, regardless of entity type.
 
-The database stores one relationship row. Bidirectional navigation is derived from source, target and relationship type metadata rather than duplicated inverse records. Entity pages group relationships by connected entity type across the current domains.
+The database stores one relationship row. Its taxonomy-backed definition supplies canonical endpoint direction and natural inverse labels, so bidirectional navigation is derived rather than duplicated. Entity pages group relationships by connected entity type across the current domains.
 
 Relationship creation is entity-first and perspective-based. Users start from the known entity page, choose either the existing-entity workflow or the new-entity workflow, then answer one question using explicit names: `What is [connected entity] in relation to [current entity]?` For existing entities the connected entity name is shown directly; for new entities the question updates live as the name is typed. Saving returns to the original entity page and the relationship appears from both connected entities. Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
 
 ## Relationship Types
 
-Relationship types are ordered definitions, not free-floating labels. The authoritative grouped catalogue is `app/relationship_catalog.py`; behavior that consumes it remains in `app/relationships.py`. Each definition includes:
+Relationship types are selectable taxonomy entries, not free-floating labels. Their authoritative runtime definitions are stored in `relationship_type_definitions`; `app/relationship_catalog.py` supplies deterministic seeds and legacy compatibility, while `app/relationships.py` remains the behavior facade. Each definition includes:
 
 - allowed source entity type
 - allowed target entity type
-- category
-- subtype
+- a taxonomy path of up to three levels
 - forward display label
 - reverse display label
 - whether direction matters

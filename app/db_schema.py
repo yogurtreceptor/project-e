@@ -65,6 +65,9 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_journal_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
+    from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
+    create_taxonomy_tables(connection)
+    load_relationship_catalog(connection)
 
 
 def create_journal_table(connection: sqlite3.Connection) -> None:
@@ -384,6 +387,7 @@ SCHEMA_MIGRATIONS = (
     ("20260704_09_entity_soft_delete", ensure_entity_columns),
     ("20260704_10_reference_data", create_reference_data_tables),
     ("20260704_11_measurement_units", create_unit_tables),
+    ("20260704_12_taxonomies", lambda connection: __import__("app.taxonomy", fromlist=["create_taxonomy_tables"]).create_taxonomy_tables(connection)),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

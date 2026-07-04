@@ -138,7 +138,7 @@ def entity_type_label(entity_type: str) -> str:
 def relationship_types_for_pair(source_type: str, target_type: str) -> tuple[RelationshipType, ...]:
     return tuple(
         relationship_type
-        for relationship_type in RELATIONSHIP_TYPES
+        for relationship_type in RELATIONSHIP_TYPES_BY_KEY.values()
         if relationship_type.selectable and relationship_type.supports_pair(source_type, target_type)
     )
 

@@ -19,7 +19,7 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `app/views.py` is the stable public facade for page rendering. Focused implementations live in `app/view_pages/` modules for layout, dashboard, entities, relationships, forms, search and maps.
 - `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, the append-only migration ledger and additive schema repair; entity, relationship, journal and discovery persistence live in focused repository modules.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
-- `app/relationship_catalog.py` owns grouped relationship type metadata; `app/relationships.py` owns relationship records, selection rules and bidirectional behavior.
+- `app/taxonomy.py` owns reusable three-level taxonomy persistence, migration and lookup. Relationship-specific pair, direction and inverse-label metadata is attached to relationship taxonomy entries; `app/relationships.py` remains the stable selection and bidirectional-behaviour facade.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 
@@ -91,7 +91,7 @@ Entity deletion is a shared repository concern. Normal entity hydration excludes
 Relationships are a central application model:
 
 - `RelationshipRecord` links two `EntityRecord` instances, so endpoints can be any current or future entity type.
-- `RelationshipType` centralises ordered source/target entity types, category, subtype, option labels, inverse labels, direction semantics, usage notes and selectability.
+- `RelationshipType` is hydrated from database-backed relationship taxonomy definitions. The code catalogue seeds fresh databases and provides legacy compatibility rather than being the canonical runtime store.
 - Entity-page relationship panels are the primary relationship creation and editing surface.
 - The relationship browser remains a global browse/audit view.
 - Bidirectional navigation is derived from source and target endpoints instead of duplicating inverse rows.

@@ -37,7 +37,7 @@ Person detail pages use short, separate journal entries instead of presenting th
 
 Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible and calls out relationships or dependent records that will also be removed.
 
-Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
+Controlled fields use dropdowns for known statuses, preset-backed custom inputs where local vocabulary remains appropriate, and taxonomy pickers for reusable hierarchical classifications. Taxonomy controls provide full-path search, reveal child levels only when present, and store one terminal selection. Organisation classification and relationship types use taxonomies; Project, Document and Asset type controls remain unchanged.
 
 Possible duplicate entities should appear as a warning with links to existing records and an explicit Save anyway action. Warnings must not silently block legitimate records or become database uniqueness constraints.
 

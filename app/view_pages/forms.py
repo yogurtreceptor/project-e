@@ -1,4 +1,5 @@
 from html import escape
+import json
 
 from app.entities import EntityDefinition
 
@@ -56,6 +57,8 @@ def entity_field_control(
     name = name or field.name
     field_options = field_options or {}
     field_values = values
+    if field.storage_kind == "taxonomy":
+        return taxonomy_field(name, field.label, field_options.get(field.name, []), field_values)
     if field.storage_kind == "reference":
         if not field_options.get(field.name):
             return hidden_field(name, values)
@@ -214,6 +217,29 @@ def custom_value_field(
     option_html = "".join(f'<option value="{escape(option)}"></option>' for option in options)
     control = f'<input id="{name}" name="{name}" list="{list_id}" value="{value}"><datalist id="{list_id}">{option_html}</datalist>'
     return f'<label for="{name}"><span>{escape(label)}</span>{control}</label>'
+
+
+def taxonomy_field(name: str, label: str, options: list[tuple[str, str]], values: dict[str, str]) -> str:
+    current = str(values.get(f"{name}__taxonomy_entry_id", values.get(name, "")))
+    data = [{"id": value, "parts": path.split(" › "), "path": path} for value, path in options]
+    roots = []
+    for item in data:
+        if len(item["parts"]) == 1:
+            roots.append(item)
+    root_options = ['<option value="">Select...</option>'] + [f'<option value="{escape(item["id"])}">{escape(item["path"])}</option>' for item in roots]
+    result_options = ['<option value="">Select a matching path...</option>'] + [f'<option value="{escape(item["id"])}">{escape(item["path"])}</option>' for item in data]
+    search_id = f"{name}__search"
+    safe_data = json.dumps(data).replace("</", "<\\/")
+    return (
+        f'<div class="taxonomy-picker" data-taxonomy-picker><label for="{search_id}"><span>Search {escape(label.lower())}</span>'
+        f'<input id="{search_id}" type="search" autocomplete="off" placeholder="Type to filter paths..." data-taxonomy-search></label>'
+        f'<select aria-label="Matching taxonomy paths" data-taxonomy-results>{"".join(result_options)}</select>'
+        f'<input type="hidden" id="{name}" name="{name}" value="{escape(current)}" data-taxonomy-value>'
+        f'<label><span>Type</span><select required data-taxonomy-level="0">{"".join(root_options)}</select></label>'
+        '<label hidden data-taxonomy-level-wrap="1"><span>Subtype</span><select data-taxonomy-level="1"></select></label>'
+        '<label hidden data-taxonomy-level-wrap="2"><span>Specific subtype</span><select data-taxonomy-level="2"></select></label></div>'
+        f'''<script>(()=>{{const p=document.currentScript.previousElementSibling;const items={safe_data};const value=p.querySelector("[data-taxonomy-value]");const levels=[...p.querySelectorAll("[data-taxonomy-level]")];const results=p.querySelector("[data-taxonomy-results]");const search=p.querySelector("[data-taxonomy-search]");const byId=new Map(items.map(x=>[x.id,x]));const choose=(id)=>{{const item=byId.get(id);if(!item)return;value.value=id;results.value=id;item.parts.forEach((part,depth)=>{{const match=items.find(x=>x.parts.length===depth+1&&x.parts.every((v,i)=>v===item.parts[i]));if(match){{fill(depth,item.parts.slice(0,depth));levels[depth].value=match.id;}}}});fill(item.parts.length,item.parts);}};const fill=(depth,prefix)=>{{if(depth>2)return;const select=levels[depth],wrap=depth?select.closest("label"):null;const children=items.filter(x=>x.parts.length===depth+1&&prefix.every((v,i)=>x.parts[i]===v));if(wrap)wrap.hidden=!children.length;if(!children.length)return;const old=select.value;select.innerHTML='<option value="">Select...</option>'+children.map(x=>`<option value="${{x.id}}">${{x.parts[depth]}}</option>`).join('');if(children.some(x=>x.id===old))select.value=old;}};levels.forEach((select,depth)=>select.addEventListener('change',()=>{{const item=byId.get(select.value);if(!item)return;value.value=item.id;results.value=item.id;for(let d=depth+1;d<3;d++){{const wrap=levels[d].closest('label');if(wrap)wrap.hidden=true;levels[d].innerHTML='';}}fill(depth+1,item.parts);}}));search.addEventListener('input',()=>{{const q=search.value.trim().toLocaleLowerCase();[...results.options].forEach((o,i)=>{{if(i)o.hidden=!!q&&!o.text.toLocaleLowerCase().includes(q);}});}});results.addEventListener('change',()=>choose(results.value));fill(0,[]);choose(value.value);}})();</script>'''
+    )
 
 
 def hidden_field(name: str, values: dict[str, str]) -> str:

@@ -4,6 +4,8 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-04
 
+Added a reusable local three-level taxonomy framework and management page. Migrated Organisation classification and Relationship types to taxonomy assignments with legacy-safe archived mappings, searchable hierarchical selection, database-backed direction/inverse metadata, audit events and regression coverage.
+
 Added a Universal Timeline derived from canonical dated entity fields and relationship dates across every supported entity type, with direct origin links, chronological de-duplication, entity/date/related-record filters and an extensible date-field registry.
 
 Added platform-wide soft deletion for every entity type, default exclusion from discovery and relationship-derived views, a Recycle Bin with selective restore, dependency-aware confirmed permanent deletion, preserved audit history and restore-safe Document file ownership.

@@ -81,7 +81,7 @@ Structured dates, coordinates and whole-number asset values also remain text-bac
 
 Current controlled fields are:
 
-- `organisations.organisation_type`, custom allowed.
+- `organisations.taxonomy_entry_id`, referencing the reusable Organisation Classification taxonomy. The legacy `organisation_type` text remains migration history.
 - `projects.project_type`, custom allowed.
 - `projects.status`, presets only.
 - `documents.document_type`, custom allowed.
@@ -125,7 +125,9 @@ Older local databases may still contain previously-created Organisation address 
 
 Relationships store source and target entity IDs, type, status, optional dates, date certainty and notes. The database stores one row per relationship; inverse navigation is derived from relationship metadata.
 
-Relationship category, subtype, option labels, ordered source/target entity types, direction semantics, usage notes and bidirectional display labels live in the grouped `app/relationship_catalog.py` definitions rather than separate lookup tables. This is the Stage 1 balance: the row stays lightweight and local databases avoid taxonomy migrations, while validation and forms can still offer context-aware relationship choices.
+Reusable classifications live in `taxonomies` and self-referencing `taxonomy_entries`. Entries have stable keys, labels, parents, ordering and archive timestamps; validation caps paths at Type, Subtype and Specific subtype. Organisation and relationship rows reference one terminal entry. Archived branches remain resolvable for existing records but are excluded from new choices.
+
+Relationship-only semantics live in `relationship_type_definitions`, keyed to a Relationship Type taxonomy entry. Endpoint types, canonical direction, symmetry, perspective roles, inverse phrases and optional sex-aware labels deliberately remain outside the generic hierarchy.
 
 Relationship validation checks that the selected type is selectable and valid for the two endpoint entity types. The UI uses the same relationship definitions to show only relevant options after the connected entity type is known. Forced-pair workflows, such as Organisation to Person, only send that pair's valid options to the page.
 
@@ -133,7 +135,7 @@ Relationship saves normalise source/target direction into the definition's canon
 
 Person Sex is stored as a controlled optional Person field with Male, Female, Other and Unknown values. It is not required for relationship creation. Relationship display may use Male or Female for family labels; Other and Unknown fall back to neutral labels.
 
-Legacy generic or gendered relationship keys remain loadable but non-selectable. Existing rows are not rewritten in Stage 1. Safe legacy `located_at` rows still contribute to Geography and Map views. New records should use the pair-specific taxonomy.
+`relationships.taxonomy_entry_id` is canonical while `type` remains an incremental compatibility snapshot for inference, graphs and upgrades. Legacy generic or gendered keys map to archived entries and remain loadable but non-selectable. Safe legacy `located_at` rows still contribute to Geography and Map views.
 
 The relationship UI has independent existing-entity and new-entity workflows. Inline relationship creation reuses the standard definition-driven fields for supported entity types inside the new-entity workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
 

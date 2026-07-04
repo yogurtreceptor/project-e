@@ -128,6 +128,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.route_relationship_request(parts, query)
             return
 
+        if parts[0] == "taxonomies":
+            self.route_taxonomy_request(parts)
+            return
+
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
         if definition is None:
             self.respond_not_found()
@@ -177,6 +181,36 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_delete(parts[1], query)
         else:
             self.respond_not_found()
+
+    def route_taxonomy_request(self, parts: list[str]) -> None:
+        from app.taxonomy import archive_entry, create_entry, list_entries, load_relationship_catalog
+        error = ""
+        try:
+            with connect(self.database_path) as connection:
+                if self.command == "POST" and len(parts) == 2 and parts[1] == "new":
+                    form = self.read_form()
+                    relationship = form if form.get("taxonomy_key") == "relationship_type" else None
+                    create_entry(connection, form.get("taxonomy_key", ""), form.get("label", ""), self.parse_entity_id(form.get("parent_id", "")), relationship)
+                    load_relationship_catalog(connection)
+                    connection.commit()
+                    self.redirect("/taxonomies")
+                    return
+                if self.command == "POST" and len(parts) == 3 and parts[2] == "archive":
+                    entry_id = self.parse_entity_id(parts[1])
+                    if entry_id is None: raise ValueError("Taxonomy entry not found.")
+                    archive_entry(connection, entry_id)
+                    load_relationship_catalog(connection)
+                    connection.commit()
+                    self.redirect("/taxonomies")
+                    return
+                if self.command != "GET" or len(parts) != 1:
+                    self.respond_not_found(); return
+                entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
+        except (ValueError, KeyError, sqlite3.IntegrityError) as exc:
+            error = str(exc)
+            with connect(self.database_path) as connection:
+                entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
+        self.respond_page("Taxonomies", views.taxonomies_page(entries, error), active_slug="taxonomies")
 
     def route_recycle_bin_request(self, parts: list[str]) -> None:
         if len(parts) == 1 and self.command == "GET":
@@ -742,6 +776,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         (str(unit.id), f"{unit.name} ({unit.symbol})")
                         for unit in list_units(connection, field.measurement_category)
                     ]
+                elif field.storage_kind == "taxonomy":
+                    from app.taxonomy import organisation_options
+                    current = values.get(f"{field.name}__taxonomy_entry_id", values.get(field.name, ""))
+                    field_options[field.name] = organisation_options(
+                        connection, int(current) if current.isdecimal() else None
+                    )
         self.respond_page(
             f"{action} {definition.singular}",
             views.entity_form_page(

@@ -18,7 +18,8 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     timeline_class = "active" if active_slug == "timeline" else ""
     quality_class = "active" if active_slug == "data-quality" else ""
     recycle_class = "active" if active_slug == "recycle-bin" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{search_class}" href="/search">Search</a><a class="{map_class}" href="/map">Map</a><a class="{quality_class}" href="/data-quality">Data Quality</a><a class="{recycle_class}" href="/recycle-bin">Recycle Bin</a>'
+    taxonomy_class = "active" if active_slug == "taxonomies" else ""
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{taxonomy_class}" href="/taxonomies">Taxonomies</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{search_class}" href="/search">Search</a><a class="{map_class}" href="/map">Map</a><a class="{quality_class}" href="/data-quality">Data Quality</a><a class="{recycle_class}" href="/recycle-bin">Recycle Bin</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>

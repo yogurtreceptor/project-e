@@ -74,9 +74,11 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
         """
         INSERT INTO relationships (
             source_entity_id, target_entity_id, type, status,
-            started_at, started_at_precision, ended_at, ended_at_precision, notes, created_at, updated_at
+            started_at, started_at_precision, ended_at, ended_at_precision, notes, created_at, updated_at, taxonomy_entry_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            (SELECT e.id FROM taxonomy_entries e JOIN taxonomies t ON t.id=e.taxonomy_id
+             WHERE t.key='relationship_type' AND e.key=?))
         """,
         (
             int(values["source_entity_id"]),
@@ -90,6 +92,7 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
             values.get("notes", ""),
             now,
             now,
+            values["type"],
         ),
     )
     relationship_id = int(cursor.lastrowid)
@@ -110,7 +113,9 @@ def update_relationship(
         """
         UPDATE relationships
         SET source_entity_id = ?, target_entity_id = ?, type = ?, status = ?,
-            started_at = ?, started_at_precision = ?, ended_at = ?, ended_at_precision = ?, notes = ?, updated_at = ?
+            started_at = ?, started_at_precision = ?, ended_at = ?, ended_at_precision = ?, notes = ?, updated_at = ?,
+            taxonomy_entry_id=(SELECT e.id FROM taxonomy_entries e JOIN taxonomies t ON t.id=e.taxonomy_id
+              WHERE t.key='relationship_type' AND e.key=?)
         WHERE id = ?
         """,
         (
@@ -124,6 +129,7 @@ def update_relationship(
             values.get("ended_at_precision", "exact"),
             values.get("notes", ""),
             utc_now(),
+            values["type"],
             relationship_id,
         ),
     )
@@ -183,10 +189,12 @@ def validate_relationship_values(
     elif source_id is not None and target_id is not None and source_id != target_id:
         source = get_entity_by_id(connection, source_id)
         target = get_entity_by_id(connection, target_id)
-        if source is not None and target is not None and not relationship_type_is_valid_for_pair(
-            type_key, source.type, target.type
-        ):
-            errors.append("Relationship type is not valid for these entity types.")
+        if source is not None and target is not None and not relationship_type_is_valid_for_pair(type_key, source.type, target.type):
+            existing = connection.execute("SELECT type FROM relationships WHERE id=?", (relationship_id,)).fetchone() if relationship_id is not None else None
+            relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(type_key)
+            retaining_archived = bool(existing and existing["type"] == type_key and relationship_type and relationship_type.supports_pair(source.type, target.type))
+            if not retaining_archived:
+                errors.append("Relationship type is not valid for these entity types.")
 
     if values.get("status") not in RELATIONSHIP_STATUSES:
         errors.append("Relationship status is invalid.")

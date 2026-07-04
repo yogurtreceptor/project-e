@@ -198,6 +198,14 @@ See also: Entity, Relationship Category, Relationship Type.
 
 A broad grouping for relationship types, such as Family, Location, Document, Role or Other. Categories help organise relationship choices and display.
 
+## Taxonomy
+
+A reusable local hierarchy containing Type, optional Subtype and optional Specific subtype. A record stores one selected terminal entry representing the whole path. Archived entries remain readable on existing records but are unavailable for new selection.
+
+## Relationship type definition
+
+Relationship-specific behavior attached to a selectable Relationship Type taxonomy entry: valid endpoint types, canonical direction or symmetry, perspective roles and natural inverse display labels.
+
 See also: Relationship, Relationship Type.
 
 ## Relationship Type

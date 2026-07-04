@@ -22,6 +22,7 @@ Delivered:
 - Universal Timeline with canonical origin links and simple entity, date and related-record filters
 - reusable local reference-data catalogue and canonical measurement-unit infrastructure
 - optional Person Height, Weight, Languages, Nationalities and Ethnicities using shared field storage strategies
+- reusable three-level taxonomies for Organisation classification and Relationship types, with legacy-safe migration and archival
 
 Active:
 

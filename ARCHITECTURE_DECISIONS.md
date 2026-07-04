@@ -133,3 +133,17 @@ Useful information-management behaviour often performs work automatically withou
 Consequences:
 Deterministic relationship inference, duplicate warnings, derived views, automatic display-name maintenance and review-batch archival remain valid Stage 1 behaviour. Inference may recompute candidates automatically, but a candidate cannot become a canonical relationship until the user confirms it. AI, decision support, scheduling, autonomous goal-directed workflows, unreviewed consequential actions and autonomous external side effects remain outside Stage 1. Optional network aids remain acceptable only when core records and workflows work without them.
 
+## ADR-007: Separate taxonomy hierarchy from domain behavior
+
+Status: Accepted
+
+Date: 2026-07-04
+
+Decision:
+Store reusable classifications in a shared database-backed hierarchy capped at Type, Subtype and Specific subtype. Domain records reference one terminal entry representing the complete path. Keep relationship endpoint constraints, direction and inverse labels in a relationship-specific definition table rather than expanding the generic hierarchy into an ontology engine.
+
+Reason:
+Organisation and relationship classifications need the same path, search, reuse and archive behavior, while only relationships require directional semantics. Separating these concerns keeps the taxonomy reusable and the relationship model explicit.
+
+Consequences:
+Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Stage 1 type systems are unchanged until separately authorised.

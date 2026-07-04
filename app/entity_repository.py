@@ -265,6 +265,15 @@ def validate_entity_values(
                 if count != len(set(item_ids)):
                     errors.append(f"{field.label} selection is invalid.")
             continue
+        if field.storage_kind == "taxonomy":
+            if not value or not value.isdecimal():
+                errors.append(f"{field.label} is required.")
+            elif connection is not None:
+                from app.taxonomy import get_entry
+                entry = get_entry(connection, int(value))
+                if entry is None or entry.taxonomy_key != "organisation_classification":
+                    errors.append(f"{field.label} selection is invalid.")
+            continue
         if field.options and not field.allow_custom and value and value not in field.options:
             errors.append(f"{field.label} is invalid.")
         structured_error = validate_structured_value(value, field.value_kind, field.label)
@@ -336,6 +345,9 @@ def update_typed_row(
 
 
 def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord) -> None:
+    if record.type == "organisation":
+        from app.taxonomy import hydrate_organisation_taxonomy
+        hydrate_organisation_taxonomy(connection, record)
     for field in record.definition.fields:
         if field.storage_kind == "reference":
             items = list_entity_reference_values(connection, record.id, field.name)
@@ -356,6 +368,10 @@ def sync_external_fields(
     values: dict[str, str],
 ) -> None:
     for field in definition.fields:
+        if field.storage_kind == "taxonomy":
+            from app.taxonomy import assign_organisation_value
+            assign_organisation_value(connection, entity_id, values.get(field.name, ""))
+            continue
         if field.storage_kind == "reference":
             raw = values.get(field.name, "")
             item_ids = parse_reference_ids(raw)
