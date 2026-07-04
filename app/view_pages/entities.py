@@ -2,6 +2,7 @@ from html import escape
 
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition, EntityRecord
 from app.relationships import RelationshipRecord
+from app.journal import JournalEntry
 from app.view_pages.common import format_relationship_dates
 from app.view_pages.dashboard import favourite_form
 from app.view_pages.forms import (
@@ -18,8 +19,12 @@ from app.view_pages.forms import (
 
 def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], query: str = "", favourites_only: bool = False) -> str:
     rows = []
+    secondary_heading = "DOB" if definition.type == "person" else "Notes"
     for record in records:
-        description = escape(record.notes) if record.notes else "No notes yet."
+        if definition.type == "person":
+            description = escape(record.metadata.get("birthday", "")) or "Not recorded"
+        else:
+            description = escape(record.notes) if record.notes else "No notes yet."
         rows.append(
             f"""
             <tr>
@@ -37,9 +42,9 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], 
 
     empty = f'<p class="empty">No {escape(definition.plural.lower())} yet.</p>' if not rows else ""
     table = (
-        """
+        f"""
         <table>
-            <thead><tr><th>Name</th><th>Notes</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>{secondary_heading}</th><th></th></tr></thead>
             <tbody>"""
         + "".join(rows)
         + "</tbody></table>"
@@ -74,10 +79,12 @@ def entity_detail_page(
     integrity_warnings: list = None,
     history: list = None,
     audit_events: list = None,
+    journal_entries: list[JournalEntry] | None = None,
 ) -> str:
     integrity_warnings = integrity_warnings or []
     history = history or []
     audit_events = audit_events or []
+    journal_entries = journal_entries or []
     warning_html = ""
     if integrity_warnings:
         items = "".join(f"<li>{escape(item.message)}</li>" for item in integrity_warnings)
@@ -92,7 +99,7 @@ def entity_detail_page(
                 {entity_geography_section(record, relationships)}
                 {entity_relationships_panel(record, relationships)}
                 {related_entities_section(record, relationships)}
-                {entity_notes_section(record)}
+                {person_journal_section(record, journal_entries) if record.type == 'person' else entity_notes_section(record)}
             </div>
             <aside class="profile-side">
                 {document_file_section(record)}
@@ -329,6 +336,61 @@ def entity_notes_section(record: EntityRecord) -> str:
     <section class="panel profile-section">
         <h2>Notes</h2>
         <p class="notes">{escape(record.notes) if record.notes else 'No notes yet.'}</p>
+    </section>
+    """
+
+
+def person_journal_section(record: EntityRecord, entries: list[JournalEntry]) -> str:
+    bubbles = []
+    for entry in entries:
+        edited = (
+            f'<span class="journal-edited">Edited {escape(entry.updated_at)}</span>'
+            if entry.is_edited
+            else ""
+        )
+        bubbles.append(
+            f"""
+            <article class="journal-entry">
+                <p>{escape(entry.body)}</p>
+                <footer>
+                    <time datetime="{escape(entry.created_at)}">{escape(entry.created_at)}</time>
+                    {edited}
+                    <span class="journal-actions">
+                        <a href="/people/{record.id}/journal/{entry.id}/edit">Edit</a>
+                        <form method="post" action="/people/{record.id}/journal/{entry.id}/archive">
+                            <button class="link-button journal-archive" type="submit">Archive</button>
+                        </form>
+                        <form method="post" action="/people/{record.id}/journal/{entry.id}/delete">
+                            <button class="link-button journal-delete" type="submit">Delete</button>
+                        </form>
+                    </span>
+                </footer>
+            </article>
+            """
+        )
+    content = "".join(bubbles) if bubbles else '<p class="empty">No journal entries yet.</p>'
+    return f"""
+    <section class="panel profile-section journal-section">
+        <h2>Journal</h2>
+        <form class="journal-create" method="post" action="/people/{record.id}/journal">
+            <label><span>New entry</span><textarea name="body" rows="3" required></textarea></label>
+            <button class="button" type="submit">Add entry</button>
+        </form>
+        <div class="journal-stream">{content}</div>
+    </section>
+    """
+
+
+def journal_edit_page(record: EntityRecord, entry: JournalEntry, error: str = "") -> str:
+    error_html = f'<div class="errors"><p>{escape(error)}</p></div>' if error else ""
+    return f"""
+    <section class="page-heading"><h1>Edit journal entry</h1><p>{escape(record.title)}</p></section>
+    {error_html}
+    <section class="panel">
+        <form class="record-form" method="post" action="/people/{record.id}/journal/{entry.id}/edit">
+            <label><span>Entry</span><textarea name="body" rows="6" required>{escape(entry.body)}</textarea></label>
+            <div class="actions"><button class="button" type="submit">Save</button><a class="button secondary" href="/people/{record.id}">Cancel</a></div>
+        </form>
     </section>
     """
 

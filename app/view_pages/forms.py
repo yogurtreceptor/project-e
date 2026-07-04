@@ -85,7 +85,8 @@ def entity_form_fields(
             fields.append(entity_field_control(field, values, name))
         else:
             fields.append(hidden_field(name, values))
-    fields.append(input_field(f"{name_prefix}notes", "Notes", values, multiline=True))
+    if definition.type != "person":
+        fields.append(input_field(f"{name_prefix}notes", "Notes", values, multiline=True))
     return "".join(fields)
 
 

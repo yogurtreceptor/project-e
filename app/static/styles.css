@@ -196,6 +196,62 @@ th {
     padding: 0;
 }
 
+.journal-create {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.journal-create .button {
+    justify-self: start;
+}
+
+.journal-stream {
+    display: grid;
+    gap: 14px;
+}
+
+.journal-entry {
+    background: #f0f7f5;
+    border: 1px solid #c9ded9;
+    border-radius: 16px 16px 16px 4px;
+    max-width: 88%;
+    padding: 14px 16px 10px;
+}
+
+.journal-entry p {
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+
+.journal-entry footer {
+    align-items: center;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 8px 12px;
+}
+
+.journal-actions {
+    display: inline-flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.journal-actions form {
+    margin: 0;
+}
+
+.journal-archive {
+    color: var(--accent);
+}
+
+.journal-delete {
+    font-size: 11px;
+    opacity: .75;
+}
+
 .record-form {
     display: grid;
     gap: 16px;

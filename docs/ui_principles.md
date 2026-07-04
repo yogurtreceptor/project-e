@@ -16,7 +16,7 @@ Entity pages should expose reusable sections rather than one-off layouts:
 - Geography where relevant
 - Relationships
 - Related Entities
-- Notes
+- Notes, except that People use a chronological Journal
 - Documents
 - Timeline
 - Metadata
@@ -30,6 +30,8 @@ Document pages show file metadata and a download link when a file has been uploa
 Forms should keep manual entry available. Helpful lookup tools may prefill fields, but users must be able to override structured fields, addresses and coordinates.
 
 Entity forms should avoid generic `summary` fields. Notes are the flexible free-text area; important categories and statuses should be captured through controlled inputs.
+
+Person detail pages use short, separate journal entries instead of presenting the Person Notes field. Entries appear oldest first as message-style bubbles, show their creation time, and show an edited marker with the last edit time when changed. Archive is the prominent removal action; permanent delete remains available with quieter visual treatment.
 
 Controlled fields use dropdowns when the value must be one of the known statuses, and preset-backed custom inputs when Stage 1 needs a sensible list without blocking local user vocabulary. Current controlled fields are organisation type, project type, project status, document type, asset type and asset status.
 

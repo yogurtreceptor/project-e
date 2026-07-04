@@ -128,6 +128,12 @@ Free-text supporting information attached to an entity or relationship. Notes ar
 
 See also: Structured Data, Controlled Field.
 
+## Journal Entry
+
+A timestamped plain-text observation stored as an individual record against a Person. Journal entries appear chronologically and may be edited, archived or permanently deleted. Archiving hides an entry from the active journal without deleting it.
+
+See also: Person, Notes.
+
 ## Organisation
 
 An entity representing a company, institution, group, agency, club, team or other organised body.

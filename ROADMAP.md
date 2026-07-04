@@ -17,6 +17,7 @@ Delivered:
 - relationship integrity checks and exact-duplicate prevention
 - deterministic family inference with review, provenance, history and undo
 - responsibility-focused database, view and workflow modules behind stable facades
+- People journals with independent chronological entries and lifecycle actions
 
 Active:
 
@@ -28,7 +29,7 @@ Next:
 
 - import/export tools that protect local data quality
 - richer derived timeline views
-- domain-specific list columns
+- additional domain-specific list columns beyond People DOB
 
 Reassess when representative data justifies it:
 

@@ -43,6 +43,7 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("entities", tables)
         self.assertIn("relationships", tables)
         self.assertIn("schema_migrations", tables)
+        self.assertIn("journal_entries", tables)
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"

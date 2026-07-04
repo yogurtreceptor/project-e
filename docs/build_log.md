@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is documented in the Stage 1 specification and reference docs; current priorities are in the roadmap and technical-debt register.
 
+## 2026-07-04
+
+Added People journals as separate chronological plain-text records with create, edit, archive and secondary delete actions, message-style Person detail rendering, created/edited timestamps and migration-safe storage. Updated the People browse table to show DOB instead of Notes.
+
 ## 2026-06-28
 
 Refactored the family tree into reusable full-component and person-centred graph selection feeding one deterministic family-specific layout engine. Added birth-date-stable ordering, geometry-neutral selection highlighting, and complex blended-family stress coverage.

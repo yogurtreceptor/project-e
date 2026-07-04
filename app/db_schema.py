@@ -60,6 +60,25 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_inference_tables(connection)
     create_entity_history_table(connection)
     create_platform_tables(connection)
+    create_journal_table(connection)
+
+
+def create_journal_table(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS journal_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_type TEXT NOT NULL,
+            entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT NOT NULL DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_journal_entries_entity_chronology
+            ON journal_entries (entity_type, entity_id, archived_at, created_at, id);
+        """
+    )
 
 
 def create_platform_tables(connection: sqlite3.Connection) -> None:
@@ -348,6 +367,7 @@ SCHEMA_MIGRATIONS = (
     ("20260628_05_relationship_inference", create_inference_tables),
     ("20260628_06_platform_infrastructure", create_platform_tables),
     ("20260628_07_backfill_platform_audit", backfill_platform_audit_events),
+    ("20260704_08_journal_entries", create_journal_table),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

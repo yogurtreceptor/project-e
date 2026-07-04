@@ -35,6 +35,12 @@ from app.db import (
     update_relationship,
     validate_entity_values,
     validate_relationship_values,
+    list_journal_entries,
+    get_journal_entry,
+    create_journal_entry,
+    update_journal_entry,
+    archive_journal_entry,
+    delete_journal_entry,
 )
 from app.document_storage import (
     UploadedFile,
@@ -128,6 +134,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_delete(definition, parts[1])
         elif len(parts) == 3 and parts[2] == "favourite":
             self.handle_favourite(definition, parts[1])
+        elif definition.type == "person" and len(parts) == 3 and parts[2] == "journal":
+            self.handle_journal_create(parts[1])
+        elif definition.type == "person" and len(parts) == 5 and parts[2] == "journal":
+            self.handle_journal_action(parts[1], parts[3], parts[4])
         else:
             self.respond_not_found()
 
@@ -235,13 +245,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             integrity_warnings = warnings_for_entity(audit_relationships(connection), entity_id) if record else []
             history = list_entity_history(connection, entity_id) if record else []
             audit_events = list_audit_events(connection, "entity", entity_id) if record else []
+            journal_entries = list_journal_entries(connection, "person", entity_id) if record and definition.type == "person" else []
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events),
+            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries),
             active_slug=definition.slug,
         )
 
@@ -295,6 +306,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if self.command == "POST":
             values, upload = self.read_entity_form(definition)
+            if definition.type == "person":
+                values["notes"] = record.notes
             if definition.type == "document" and upload is None:
                 self.restore_document_file_values(values, record.metadata)
             errors = validate_entity_values(definition, values)
@@ -427,6 +440,69 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     connection, file_path, self.document_storage_dir
                 )
         self.redirect(f"/{definition.slug}")
+
+    def handle_journal_create(self, raw_person_id: str) -> None:
+        person_id = self.parse_entity_id(raw_person_id)
+        if self.command != "POST" or person_id is None:
+            self.respond_not_found()
+            return
+        body = self.read_form().get("body", "")
+        with connect(self.database_path) as connection:
+            person = get_entity(connection, DEFINITIONS_BY_SLUG["people"], person_id)
+            if person is None:
+                self.respond_not_found()
+                return
+            try:
+                create_journal_entry(connection, "person", person_id, body)
+            except ValueError:
+                self.redirect(f"/people/{person_id}")
+                return
+        self.redirect(f"/people/{person_id}")
+
+    def handle_journal_action(
+        self, raw_person_id: str, raw_entry_id: str, action: str
+    ) -> None:
+        person_id = self.parse_entity_id(raw_person_id)
+        entry_id = self.parse_entity_id(raw_entry_id)
+        if person_id is None or entry_id is None or action not in {"edit", "archive", "delete"}:
+            self.respond_not_found()
+            return
+        with connect(self.database_path) as connection:
+            person = get_entity(connection, DEFINITIONS_BY_SLUG["people"], person_id)
+            entry = get_journal_entry(connection, entry_id)
+            if person is None or entry is None or entry.entity_type != "person" or entry.entity_id != person_id:
+                self.respond_not_found()
+                return
+            if action == "edit":
+                if self.command == "GET":
+                    self.respond_page(
+                        "Edit journal entry",
+                        views.journal_edit_page(person, entry),
+                        active_slug="people",
+                    )
+                    return
+                if self.command == "POST":
+                    body = self.read_form().get("body", "")
+                    try:
+                        update_journal_entry(connection, entry_id, body)
+                    except ValueError as error:
+                        self.respond_page(
+                            "Edit journal entry",
+                            views.journal_edit_page(person, entry, str(error)),
+                            active_slug="people",
+                        )
+                        return
+                    self.redirect(f"/people/{person_id}")
+                    return
+            elif self.command == "POST" and action == "archive":
+                archive_journal_entry(connection, entry_id)
+                self.redirect(f"/people/{person_id}")
+                return
+            elif self.command == "POST" and action == "delete":
+                delete_journal_entry(connection, entry_id)
+                self.redirect(f"/people/{person_id}")
+                return
+        self.respond_not_found()
 
     def handle_inference_queue(self) -> None:
         with connect(self.database_path) as connection:

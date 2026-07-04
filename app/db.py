@@ -23,6 +23,15 @@ from app.db_schema import (
     create_relationship_table,
     ensure_relationship_columns,
     create_entity_history_table,
+    create_journal_table,
+)
+from app.journal_repository import (
+    list_journal_entries,
+    get_journal_entry,
+    create_journal_entry,
+    update_journal_entry,
+    archive_journal_entry,
+    delete_journal_entry,
 )
 from app.entity_repository import (
     list_entities,
@@ -74,6 +83,13 @@ __all__ = [
     "create_relationship_table",
     "ensure_relationship_columns",
     "create_entity_history_table",
+    "create_journal_table",
+    "list_journal_entries",
+    "get_journal_entry",
+    "create_journal_entry",
+    "update_journal_entry",
+    "archive_journal_entry",
+    "delete_journal_entry",
     "list_entities",
     "list_all_entities",
     "count_entities",

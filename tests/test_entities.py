@@ -147,7 +147,7 @@ class EntityDatabaseTests(unittest.TestCase):
             "Overview",
             "Relationships",
             "Related Entities",
-            "Notes",
+            "Journal",
             "Documents",
             "Timeline",
             "Metadata",

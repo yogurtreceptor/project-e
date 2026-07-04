@@ -13,6 +13,7 @@ The current-schema repair pass still runs on every startup. This preserves addit
 - `entities` stores shared identity and metadata for every canonical record.
 - `people`, `organisations`, `locations`, `projects`, `documents` and `assets` store type-specific fields keyed by `entity_id`.
 - `relationships` stores first-class links between any two entities.
+- `journal_entries` stores individual chronological plain-text observations linked to an entity identity.
 
 ## Entity Storage
 
@@ -30,6 +31,8 @@ For Person records, `entities.display_name` is maintained automatically from `pe
 Typed tables hold fields that only apply to one entity type. Schema creation is definition-driven, missing typed columns are added during startup and the central entity type constraint is rebuilt when new entity domains are introduced so local databases can evolve additively.
 
 The `entities.summary` column remains in existing and new databases as a legacy compatibility/search field, but it is no longer part of active creation or edit forms. Notes are the flexible free-text area.
+
+Person observations use `journal_entries` rather than accumulating in the shared Notes field. Each entry stores `entity_type`, `entity_id`, body, created/updated timestamps and an optional archive timestamp. The generic entity linkage leaves room for later entity types, while application routes currently permit People only. Active lists omit archived entries; deleting an entity cascades to its entries. Journal entry deletion is permanent and remains a secondary UI action.
 
 Field renames are handled additively. New columns are created and existing values are copied from configured legacy columns when the new column is empty. Legacy columns are left in place so local databases are not destructively rewritten.
 

@@ -17,7 +17,7 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `run.py` starts a local HTTP server.
 - `app/web.py` handles HTTP routing, request parsing and responses. `app/document_storage.py` owns uploaded-file persistence and path safety, `app/document_lifecycle.py` protects reference-aware cleanup, and `app/relationship_workflow.py` owns inline relationship-target creation.
 - `app/views.py` is the stable public facade for page rendering. Focused implementations live in `app/view_pages/` modules for layout, dashboard, entities, relationships, forms, search and maps.
-- `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, the append-only migration ledger and additive schema repair; entity, relationship and discovery persistence live in focused repository modules.
+- `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, the append-only migration ledger and additive schema repair; entity, relationship, journal and discovery persistence live in focused repository modules.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/relationship_catalog.py` owns grouped relationship type metadata; `app/relationships.py` owns relationship records, selection rules and bidirectional behavior.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
@@ -71,11 +71,14 @@ Reusable entity pages include:
 - Relationships grouped by connected entity type.
 - Related Entities for graph exploration.
 - Notes for free-text information.
+- A chronological journal replaces the Notes section on Person pages; its independent entries are rendered as message-style bubbles with explicit edit, archive and secondary delete actions.
 - Documents section backed by first-class Document entity relationships.
 - Derived timeline for creation, modification, edit history and relationship events.
 - Metadata with system information.
 
 Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
+
+`JournalEntry` and `app/journal_repository.py` use a reusable entity type/ID association, but the current HTTP surface deliberately exposes journals only below Person routes. Archived entries remain stored but are omitted from the active stream. Journal entries are separate operational notes and are not folded into the derived real-world timeline.
 
 ## Relationship Architecture
 
