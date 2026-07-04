@@ -1,6 +1,6 @@
 # Glossary
 
-This glossary is the shared vocabulary for Operation Eddy. Use it when project terminology is unclear or when future implementation work needs consistent wording.
+This glossary is the shared vocabulary for Project E. Use it when project terminology is unclear or when future implementation work needs consistent wording.
 
 ## Architecture Decision Record (ADR)
 
@@ -10,9 +10,9 @@ See also: Repository Source of Truth.
 
 ## Artificial Intelligence
 
-Future-stage capability where AI may consume or help interpret the platform's data. AI is not part of Stage 1 and should not become the platform itself.
+Future-stage capability where models may consume, interpret or propose changes to platform data through shared, governed capabilities. AI is not part of Stage 1 and is not the platform's foundation.
 
-See also: Stage 1, Stage 2, Decision Support, Automation.
+See also: Stage 1, Decision Support, Automation, Odysseus.
 
 ## Asset
 
@@ -60,7 +60,7 @@ See also: Entity Page, Map Layer.
 
 Future-stage capability that helps interpret information or support decisions. It is separate from Stage 1 storage, navigation and relationship modelling.
 
-See also: Stage 2, Artificial Intelligence, Automation.
+See also: Stage 1, Artificial Intelligence, Automation.
 
 ## Deterministic Assistance
 
@@ -70,7 +70,7 @@ See also: Automation, Inference Review Queue, Stage 1.
 
 ## Detail Page
 
-A page that shows one record in detail. In Operation Eddy, the primary detail page for an entity is the entity page.
+A page that shows one record in detail. In Project E, the primary detail page for an entity is the entity page.
 
 See also: Entity Page.
 
@@ -112,13 +112,13 @@ See also: Controlled Field, Structured Data.
 
 ## Export
 
-A way to copy local platform data out of Operation Eddy for backup, migration or review. Export should protect data clarity and not introduce external dependencies.
+A way to copy local platform data out of Project E for backup, migration or review. Export should protect data clarity and not introduce external dependencies.
 
 See also: Import, Local-first.
 
 ## Import
 
-A way to bring data into Operation Eddy. Import should preserve canonical records, avoid duplicates and protect local data quality.
+A way to bring data into Project E. Import should preserve canonical records, avoid duplicates and protect local data quality.
 
 See also: Export, Canonical Record.
 
@@ -216,21 +216,21 @@ See also: Relationship, Relationship Category.
 
 ## Repository Source of Truth
 
-The current repository docs and code that future contributors should rely on when deciding how Operation Eddy works. Previous chat sessions are not source of truth unless reflected in the repository.
+The current repository docs and code that future contributors should rely on when deciding how Project E works. Previous chat sessions are not source of truth unless reflected in the repository.
 
 See also: Architecture Decision Record (ADR), Local-first.
 
 ## Stage 1
 
-The current stage of Operation Eddy: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. Stage 1 permits deterministic assistance that preserves user control, but excludes AI, chat, dispatcher architecture, decision support, autonomous automation, scheduling, unreviewed consequential actions, autonomous external side effects, WAN-dependent core operation, mobile access, cloud dependencies, login and multi-user accounts.
+The current phase of Project E: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. Stage 1 permits deterministic assistance that preserves user control, but excludes AI, chat, dispatcher architecture, decision support, autonomous automation, scheduling, unreviewed consequential actions, autonomous external side effects, WAN-dependent core operation, mobile access, cloud dependencies, login and trusted multi-user workflows.
 
-See also: Deterministic Assistance, Stage 2, Local-first.
+See also: Deterministic Assistance, Local-first, Artificial Intelligence.
 
-## Stage 2
+## Odysseus
 
-A future stage focused on decision support after the Stage 1 information platform is solid.
+The leading candidate for Project E's future AI/agent layer and a possible integration or fork target. It is not part of the current architecture; future work should adapt Odysseus to a mature Project E platform rather than restructure Project E around it.
 
-See also: Decision Support, Stage 1.
+See also: Artificial Intelligence, Stage 1.
 
 ## Structured Data
 

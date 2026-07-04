@@ -1,6 +1,6 @@
 # Database Design
 
-Operation Eddy uses SQLite as the embedded local database for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
+Project E uses SQLite as the embedded local database and canonical source of truth for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
 
 ## Schema Versioning
 

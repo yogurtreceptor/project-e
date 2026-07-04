@@ -1,6 +1,6 @@
 Project Scope
 -------------
-Operation Eddy is a local-first Personal Information Platform. Personal operational intelligence is the longer-term direction; Stage 1 stores, organises and navigates structured information about People, Organisations, Locations, Projects, Documents, Assets and Relationships.
+Project E is a local-first Personal Information Platform. Personal operational intelligence is the longer-term direction; Stage 1 stores, organises and navigates structured information about People, Organisations, Locations, Projects, Documents, Assets and Relationships.
 
 Design Principles
 -----------------
@@ -33,7 +33,8 @@ Documentation is part of implementation. Proactively update every existing docum
 Repository documents have distinct responsibilities:
 - `PROJECT_GOAL.md`: durable product purpose, scope and principles.
 - `docs/stage_1_spec.md`: current Stage 1 behaviour and acceptance criteria.
-- `ROADMAP.md`: delivered, active, next and deferred work; not implementation authority.
+- `ROADMAP.md`: phased capability direction and current priorities; not implementation authority.
+- `docs/future_direction.md`: long-term platform, AI and Odysseus direction; not current architecture.
 - `docs/architecture.md`: current application structure and boundaries.
 - `docs/database_design.md`: persistence, schema and migration rules.
 - `docs/ontology.md`: entity and relationship semantics.

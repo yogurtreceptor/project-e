@@ -1,6 +1,6 @@
 # Architecture
 
-Operation Eddy uses a simple local-first architecture for Stage 1.
+Project E uses a simple local-first architecture for Stage 1. This document describes the current implementation; the [future direction](future_direction.md) describes possible later capability layers without presenting them as current architecture.
 
 ## Shape
 
@@ -43,6 +43,10 @@ the ignored runtime directories.
 Stage 1 may use deterministic in-process assistance and internal maintenance when behaviour is local, explainable and preserves user control. Duplicate warnings, derived views, display-name maintenance, review-batch archival and relationship candidate recomputation fit this boundary. Consequential mutations require explicit user confirmation.
 
 Stage 1 should not introduce AI, autonomous goal-directed workflow, dispatcher, scheduling, authentication or cloud service layers, nor perform unreviewed consequential actions or autonomous external side effects.
+
+These are current-phase boundaries. The architecture should not prematurely implement future AI or agent layers, but should continue strengthening the shared platform capabilities they would eventually consume: deterministic rules, validation, relationships, provenance, audit history, data quality and safe domain operations. SQLite remains the canonical source of truth.
+
+The current deployment is for one private user without authentication. Future trusted multi-user support is not in Stage 1, but domain and audit design should avoid unnecessary assumptions that would prevent later identity, attribution or permission boundaries.
 
 The application should not depend on WAN access for normal operation. Optional network aids must leave core records and workflows usable without them.
 

@@ -1,6 +1,6 @@
 # UI Principles
 
-Operation Eddy's Stage 1 UI should stay quiet, structured and useful for repeated information work.
+Project E's Stage 1 UI should stay quiet, structured and useful for repeated information work.
 
 ## Navigation
 

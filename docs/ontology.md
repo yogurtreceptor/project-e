@@ -1,6 +1,6 @@
 # Ontology
 
-Operation Eddy models real-world information as entities and relationships.
+Project E models real-world information as entities and relationships.
 
 ## Entities
 

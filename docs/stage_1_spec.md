@@ -1,6 +1,6 @@
 # Stage 1 Specification
 
-Stage 1 establishes Operation Eddy as a local-first structured information platform.
+Stage 1 establishes Project E as a local-first structured information platform.
 
 ## Goals
 
@@ -22,7 +22,7 @@ Stage 1 does not include:
 - autonomous goal-directed workflows
 - scheduling
 - unreviewed consequential actions or autonomous external side effects
-- login or multi-user accounts
+- login, accounts or trusted multi-user workflows
 - mobile access, cloud dependencies or WAN-dependent core operation
 
 Deterministic, local and explainable assistance and internal maintenance are permitted when they preserve user control. A consequential mutation requires explicit user confirmation. Optional network aids are permitted only when core records and workflows remain usable without them. Simple import and export tools are permitted when they support data entry, backup or migration.
@@ -44,6 +44,8 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
 Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP.md) for current ordering; this specification defines scope rather than task priority.
+
+The current product serves one private user without authentication. This is a present scope choice, not a permanent prohibition on future trusted multi-user support.
 
 ## Acceptance Criteria
 
