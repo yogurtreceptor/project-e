@@ -25,6 +25,7 @@ from app.db_schema import (
     create_entity_history_table,
     create_journal_table,
     create_reference_data_tables,
+    create_unit_tables,
 )
 from app.reference_data import (
     ReferenceItem,
@@ -33,6 +34,17 @@ from app.reference_data import (
     list_reference_items,
     list_entity_reference_values,
     replace_entity_reference_values,
+)
+from app.units import (
+    Measurement,
+    MeasurementUnit,
+    clear_measurement,
+    from_canonical,
+    get_measurement,
+    get_unit,
+    list_units,
+    set_measurement,
+    to_canonical,
 )
 from app.journal_repository import (
     list_journal_entries,
@@ -104,6 +116,16 @@ __all__ = [
     "list_reference_items",
     "list_entity_reference_values",
     "replace_entity_reference_values",
+    "create_unit_tables",
+    "Measurement",
+    "MeasurementUnit",
+    "clear_measurement",
+    "from_canonical",
+    "get_measurement",
+    "get_unit",
+    "list_units",
+    "set_measurement",
+    "to_canonical",
     "list_journal_entries",
     "get_journal_entry",
     "create_journal_entry",

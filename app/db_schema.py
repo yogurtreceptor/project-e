@@ -4,6 +4,7 @@ from pathlib import Path
 from app.db_support import allowed_entity_type_sql, sql_identifier, sql_literal, utc_now
 from app.entities import ENTITY_DEFINITIONS, EntityDefinition
 from app.reference_data import create_reference_data_tables
+from app.units import create_unit_tables
 
 
 def connect(database_path: Path | str) -> sqlite3.Connection:
@@ -63,6 +64,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_platform_tables(connection)
     create_journal_table(connection)
     create_reference_data_tables(connection)
+    create_unit_tables(connection)
 
 
 def create_journal_table(connection: sqlite3.Connection) -> None:
@@ -379,6 +381,7 @@ SCHEMA_MIGRATIONS = (
     ("20260704_08_journal_entries", create_journal_table),
     ("20260704_09_entity_soft_delete", ensure_entity_columns),
     ("20260704_10_reference_data", create_reference_data_tables),
+    ("20260704_11_measurement_units", create_unit_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
