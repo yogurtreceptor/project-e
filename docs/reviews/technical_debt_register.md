@@ -40,6 +40,16 @@ Trigger: users need richer event types, ordering or provenance.
 
 Direction: extend derived events first. Introduce persisted event records only when concrete workflows require them.
 
+## Journals are People-only
+
+Severity: low
+
+Journal storage already links entries generically, but the UI remains intentionally unchanged and People-only. Journals and Documents are distinct: journals are internal observations and progress; Documents are real-world artefacts.
+
+Trigger: a concrete Organisation, Project, Asset, Document or Location workflow needs dated internal observations.
+
+Direction: make journal entries platform-wide first-class records linked to entities; do not embed journal streams in typed entity data.
+
 ## Contact details are single-value fields
 
 Severity: low

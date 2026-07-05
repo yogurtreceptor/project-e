@@ -48,6 +48,8 @@ Record important behaviour, constraints, migrations and follow-up work in the do
 
 Repository Evolution
 --------------------
+Project E is in active development. Prefer clean architecture, then a practical migration, then a development database reset, and only then backwards compatibility. Remove obsolete fields and implementations instead of adding compatibility layers or duplicate sources of truth. Compatibility becomes a priority once the platform reaches a stable release.
+
 If implementation uncovers a new long-term architectural decision, repository convention, project goal, documentation convention or workflow that is not documented, update the appropriate existing documentation when it is an obvious consequence of the requested work. If it materially changes project direction or establishes a new long-term convention, ask the user before making it permanent.
 
 Privacy and Generated Files

@@ -112,17 +112,14 @@ PROJECT_TYPES = (
 PROJECT_STATUSES = ("Active", "Paused", "Completed", "Abandoned")
 
 DOCUMENT_TYPES = (
-    "Identification",
-    "Certificate",
-    "Contract",
+    "Letter",
+    "Licence",
     "Receipt",
+    "Certificate",
+    "Statement",
+    "Contract",
     "Invoice",
     "Manual",
-    "Medical",
-    "Government",
-    "Letter",
-    "Image",
-    "PDF",
     "Other",
 )
 
@@ -133,7 +130,6 @@ ASSET_TYPES = (
     "Electronic device",
     "Computer",
     "Phone",
-    "Document-like asset",
     "Smart device",
     "Furniture",
     "Other",
@@ -218,6 +214,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         table="organisations",
         fields=(
             FieldDefinition("organisation_type", "Organisation classification", storage_kind="taxonomy"),
+            FieldDefinition("aliases", "Other names", optional=True, storage_kind="alias", multiple=True),
             FieldDefinition("website", "Website", optional=True),
             FieldDefinition("phone", "Phone", optional=True),
             FieldDefinition("email", "Email", optional=True),
@@ -266,6 +263,7 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
                 ),
             ),
             FieldDefinition("started_at", "Started", input_type="date", value_kind="date", optional=True),
+            FieldDefinition("target_date", "Target date", input_type="date", value_kind="date", optional=True),
             FieldDefinition("ended_at", "Ended / completed", input_type="date", value_kind="date", optional=True),
         ),
         duplicate_fields=(),
@@ -277,11 +275,10 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
         plural="Documents",
         table="documents",
         fields=(
-            FieldDefinition("document_type", "Document type", options=DOCUMENT_TYPES, allow_custom=True),
+            FieldDefinition("document_type", "Document purpose", options=DOCUMENT_TYPES, allow_custom=True),
             FieldDefinition("document_date", "Document date", input_type="date", value_kind="date", optional=True),
             FieldDefinition("identifier", "Identifier / reference number", optional=True),
             FieldDefinition("expiry_date", "Expiry date", input_type="date", value_kind="date", optional=True),
-            FieldDefinition("issuer", "Legacy issuer / created by", optional=True),
             FieldDefinition("file_name", "File name", editable=False),
             FieldDefinition("file_path", "Stored file path", overview=False, editable=False),
             FieldDefinition("mime_type", "MIME type", editable=False),

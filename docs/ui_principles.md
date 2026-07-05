@@ -68,7 +68,9 @@ Location address lookup should fill suburb, city, state, post code, country, coo
 
 Document forms include a file upload control, while stored file path, MIME type and size remain system-managed metadata. Document descriptive fields and relationships remain editable.
 
-Legacy issuer/creator text remains readable as an optional detail. New issuer and creator facts should use the existing Document-to-Person or Document-to-Organisation relationship types; integrating that relationship selection into Document create/edit is deferred until it can preserve transactional clarity without auto-creating entities from legacy text.
+Document purpose contains record purposes rather than file formats; MIME metadata supplies format. Issuer and creator facts use Document-to-Person or Document-to-Organisation relationships through the normal relationship workflow.
+
+Organisation Other names are optional repeatable values with one alias per line, not comma-separated prose.
 
 Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 

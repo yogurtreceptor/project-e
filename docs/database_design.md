@@ -6,7 +6,7 @@ Project E uses SQLite as the embedded local database and canonical source of tru
 
 `schema_migrations` records each applied migration identifier and timestamp. Ordered migrations are append-only in `app/db_schema.py`: do not rename or remove an identifier after use. Existing databases are adopted by running missing idempotent migrations and recording them only after success.
 
-The current-schema repair pass still runs on every startup. This preserves additive field, controlled-value and entity-type compatibility even when definitions evolve between explicit migrations.
+The current-schema repair pass still runs on every startup. During active development, clean current architecture takes priority over backwards compatibility: use a practical migration when possible, accept a development reset when necessary, and do not retain obsolete duplicate models.
 
 ## Core Tables
 
@@ -14,6 +14,7 @@ The current-schema repair pass still runs on every startup. This preserves addit
 - `people`, `organisations`, `locations`, `projects`, `documents` and `assets` store type-specific fields keyed by `entity_id`.
 - `relationships` stores first-class links between any two entities.
 - `journal_entries` stores individual chronological plain-text observations linked to an entity identity.
+- `entity_aliases` stores repeatable alternate names for entities; Organisation Other names are the first consumer.
 
 ## Entity Storage
 
@@ -39,7 +40,7 @@ Migration `20260704_09_entity_soft_delete` adds `entities.deleted_at`. Repositor
 
 Person observations use `journal_entries` rather than accumulating in the shared Notes field. Each entry stores `entity_type`, `entity_id`, body, created/updated timestamps and an optional archive timestamp. The generic entity linkage leaves room for later entity types, while application routes currently permit People only. Active lists omit archived entries; permanently deleting an entity cascades to its entries, while soft deletion preserves them for restore. Journal entry deletion is permanent and remains a secondary UI action.
 
-Field renames are handled additively. New columns are created and existing values are copied from configured legacy columns when the new column is empty. Legacy columns are left in place so local databases are not destructively rewritten.
+Field renames may be handled additively when that remains clean. Obsolete fields are removed by explicit migration rather than retained as duplicate truth.
 
 Controlled field value aliases are applied during startup where needed. For example, legacy Project status `active` is normalised to `Active`, and legacy Asset status `active` is normalised to `Owned`.
 
@@ -50,6 +51,7 @@ Projects store lightweight organising metadata:
 - `project_type`
 - `status`
 - `started_at`
+- `target_date`
 - `ended_at`
 
 Documents store document metadata plus local file metadata:
@@ -58,7 +60,6 @@ Documents store document metadata plus local file metadata:
 - `document_date`
 - `identifier`
 - `expiry_date`
-- `issuer`
 - `file_name`
 - `file_path`
 - `mime_type`
@@ -70,9 +71,9 @@ A Document owns its uploaded file. A successful replacement deletes the supersed
 
 Assets store useful item metadata such as asset type, status, manufacturer, model, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
 
-These new scalar fields use the existing definition-driven additive typed-column repair: `projects.ended_at`, `documents.identifier`, `documents.expiry_date`, `assets.manufacturer` and `assets.model` are added with empty defaults to both fresh and existing databases. Project end and Document expiry are validated ISO dates and timeline sources. An end date cannot precede its Project start, and an expiry date cannot precede its Document date. `documents.identifier` participates in duplicate review. All definition fields remain part of shared text search.
+Project target/end and Document expiry are validated ISO dates and timeline sources. An end date cannot precede its Project start, and an expiry date cannot precede its Document date. `documents.identifier` participates in duplicate review. Migration `20260705_14_document_domain_cleanup` removes the obsolete issuer column and maps format-like purpose values to `Other`; issuer and creator facts use relationships.
 
-`documents.issuer` is retained as legacy free text. Canonical issuer/creator facts use Document relationships; no migration infers or auto-creates an Organisation from the text.
+Migration `20260705_13_entity_aliases` adds normalized aliases with case-insensitive per-entity uniqueness and an indexed value. Alias hydration uses the same external-field boundary as references and measurements. Search, duplicate review and merge consume the rows without copying them into Organisation text columns.
 
 ## Controlled Field Storage
 
@@ -91,7 +92,7 @@ Current controlled fields are:
 - `organisations.taxonomy_entry_id`, referencing the reusable Organisation Classification taxonomy. The legacy `organisation_type` text remains migration history.
 - `projects.project_type`, custom allowed.
 - `projects.status`, presets only.
-- `documents.document_type`, custom allowed.
+- `documents.document_type`, custom allowed, stores document purpose rather than file format.
 - `assets.asset_type`, custom allowed.
 - `assets.status`, custom allowed.
 

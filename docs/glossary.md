@@ -20,6 +20,10 @@ An entity representing a physical or digital item, such as a vehicle, appliance,
 
 See also: Entity, Document, Location.
 
+## Alias
+
+A repeatable alternate name for a canonical entity. Organisation aliases include former, trading and abbreviated names; they are normalized values used by search and duplicate review, not comma-separated text.
+
 ## Automation
 
 Autonomous, goal-directed execution that can schedule work, perform consequential actions without review or create external side effects. This form of automation is not part of Stage 1. Ordinary deterministic application behaviour and reviewed assistance are not automation in this sense.

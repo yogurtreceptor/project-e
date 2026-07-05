@@ -58,6 +58,14 @@ def entity_field_control(
     name = name or field.name
     field_options = field_options or {}
     field_values = values
+    if field.storage_kind == "alias":
+        value = escape(str(values.get(name, "")))
+        return (
+            f'<label for="{escape(name)}"><span>{escape(field.label)}</span>'
+            f'<textarea id="{escape(name)}" name="{escape(name)}" rows="4" '
+            f'placeholder="One name per line">{value}</textarea>'
+            f'<small class="field-help">Enter one alternate, former, trading or abbreviated name per line.</small></label>'
+        )
     if field.storage_kind == "taxonomy":
         return taxonomy_field(
             name, field.label, field_options.get(field.name, []), field_values,

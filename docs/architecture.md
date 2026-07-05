@@ -55,7 +55,7 @@ The application should not depend on WAN access for normal operation. Optional n
 Current domains inherit from a common entity architecture:
 
 - `EntityDefinition` describes each domain type, route slug, table, domain-specific fields and strong fields used for duplicate warnings.
-- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, optional compound grouping, input type, structured value kind, storage strategy, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup. Scalar fields use typed-table columns; reference-backed and measurement-backed fields use shared normalized stores. Optional details render inline in definition order, remain visible when populated, and may be hidden without clearing their form values. Compound groups such as coordinate pairs share one add/remove action. These flags are presentation metadata, not user-defined schema.
+- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, optional compound grouping, input type, structured value kind and storage strategy. Scalar fields use typed-table columns; reference-backed, measurement-backed and alias fields use normalized external stores. Optional details render inline in definition order, remain visible when populated, and may be hidden without clearing their values. These flags are presentation metadata, not user-defined schema.
 - `EntityRecord` is the shared runtime model for all entity instances.
 - Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`. For People, `display_name` is internal derived data generated from `given_name` plus `family_name`; it is not a separate user-entered field.
 - `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.
@@ -91,6 +91,8 @@ Future domains should inherit this structure by adding an `EntityDefinition` and
 Entity deletion is a shared repository concern. Normal entity hydration excludes rows with `deleted_at`; because relationship records resolve both endpoints through that same boundary, deleted entities and their relationships disappear consistently from profiles, global relationship views, search, maps and derived navigation. The Recycle Bin is the sole opt-in deleted-record view. Restore clears one entity's deleted state while leaving other deleted endpoints untouched. Permanent deletion is a separate confirmed action that previews relationship and journal dependencies; audit history remains append-only.
 
 `JournalEntry` and `app/journal_repository.py` use a reusable entity type/ID association, but the current HTTP surface deliberately exposes journals only below Person routes. Archived entries remain stored but are omitted from the active stream. Journal entries are separate operational notes and are not folded into the derived real-world timeline.
+
+Journals are expected to become platform-wide later, with first-class entries linked to entities rather than embedded entity data. This milestone does not generalise the UI. Journals remain internal observations, history, maintenance, progress and notes; Documents remain real-world physical or digital artefacts.
 
 ## Relationship Architecture
 
@@ -134,16 +136,22 @@ Architectural correction: discovery is not implemented as dashboard-only shortcu
 Documents are first-class entities rather than attachments stored inside another entity.
 
 - Document records use the same entity, form, search, dashboard, relationship and detail-page architecture as other domains.
-- Document issuer/creator semantics remain relationship-first. Existing relationship types already distinguish creator and issuer endpoints; the legacy scalar `issuer` remains migration-safe readable text until a clean transactional relationship selector is integrated into Document create/edit. It never causes automatic Organisation creation.
+- Document issuer/creator semantics are relationship-only. Existing relationship types distinguish creator and issuer endpoints; no scalar issuer/creator field remains and no entity is inferred from old text.
+- Document purpose describes the record; MIME type and stored file metadata describe format.
 - Uploaded files are stored locally under `instance/documents/`.
 - File metadata such as original file name, MIME type, stored path and file size lives on the Document entity.
 - Documents link to People, Organisations, Locations, Projects, Assets or other Documents through relationships.
+- Assets are things and Documents are records. Neither domain contains a compatibility type that overlaps the other.
 
 Older local databases may still contain an unused `attachments` table. It is no longer created or rendered by the active application because file-bearing records should be Documents.
 
+## Current Domain Deferrals
+
+This milestone does not redesign Locations, migrate Location countries or provenance, integrate G-NAF, expand contact methods, redesign Asset value/currency, add currency conversion, or broaden taxonomies beyond the relationship work required here. Revisit these only when a concrete workflow needs the additional structure. Journal generalisation is separately described above and remains unimplemented.
+
 ## Documentation Rule
 
-Documentation is part of each feature, behaviour, workflow, schema and architecture change. Agents must audit and update every affected planning/reference document, including feature status, roadmap, architecture, database design, ontology/glossary, UI workflow and build log where relevant. Commit subjects must describe the delivered change; agent attribution is a final trailer only.
+Documentation is part of each feature, behaviour, workflow, schema and architecture change. Contributors must audit and update every affected planning/reference document, including feature status, roadmap, architecture, database design, ontology/glossary, UI workflow and build log where relevant. Commit messages describe the delivered change without agent, model or tool attribution.
 
 ## Geographic Architecture
 

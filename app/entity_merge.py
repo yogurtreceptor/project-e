@@ -126,6 +126,19 @@ def _merge_external_values(
                         connection, survivor.id, field.name, field.measurement_category,
                         measurement.display_value, measurement.display_unit.id,
                     )
+        elif field.storage_kind == "alias":
+            aliases = {
+                row["value"].casefold(): row["value"]
+                for entity_id in (survivor.id, duplicate.id)
+                for row in connection.execute(
+                    "SELECT value FROM entity_aliases WHERE entity_id=?", (entity_id,)
+                )
+            }
+            connection.execute("DELETE FROM entity_aliases WHERE entity_id=?", (survivor.id,))
+            connection.executemany(
+                "INSERT INTO entity_aliases(entity_id,value,created_at) VALUES(?,?,?)",
+                ((survivor.id, value, utc_now()) for value in aliases.values()),
+            )
 
 
 def list_entity_history(connection: sqlite3.Connection, entity_id: int) -> list[sqlite3.Row]:

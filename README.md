@@ -38,6 +38,7 @@ Human users, deterministic automation and future AI should consume the same vali
 - **Human usefulness before intelligence:** earn value through strong everyday workflows before adding advanced AI.
 - **Safe evolution:** validation, audit history, provenance and explicit confirmation precede machine-written changes.
 - **Simple, maintainable foundations:** prefer standard-library Python, SQLite and conservative dependencies.
+- **Clean evolution while unstable:** during active development, prefer a coherent current architecture over compatibility layers for obsolete models; migrations are useful, and a local database reset remains acceptable.
 
 See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [future platform direction](docs/future_direction.md) for the durable direction.
 

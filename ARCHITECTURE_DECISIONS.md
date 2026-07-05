@@ -100,7 +100,7 @@ Reason:
 Local databases need an auditable history for future schema changes, but Project E also relies on definition-driven additive repair to adopt older databases and safely add fields or entity types. A ledger alone would not cover those evolving definitions.
 
 Consequences:
-Future explicit schema changes must append a uniquely named migration and must not rename or remove identifiers already in use. Existing databases can adopt the ledger without losing data. Startup retains a small amount of repeated schema inspection in exchange for compatibility and recovery safety.
+Future explicit schema changes append a uniquely named migration. During active development, obsolete fields and identifiers may be deliberately removed when that produces the cleaner current model; migrate when practical and accept a development database reset when necessary. Compatibility layers become a priority after a stable release. Startup retains repeated schema inspection for safe additive evolution and recovery.
 
 
 ## ADR-005: Review deterministic relationship inference before creation
@@ -147,3 +147,15 @@ Organisation and relationship classifications need the same path, search, reuse 
 
 Consequences:
 Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Stage 1 type systems are unchanged until separately authorised.
+
+## ADR-008: Keep document semantics relational and separate records from things
+
+Status: Accepted
+
+Date: 2026-07-05
+
+Decision:
+Document purpose describes the real-world record; stored MIME metadata describes file format. Issuer and creator are relationships to canonical People or Organisations, not Document text. Assets represent things and Documents represent records. Organisation alternate names use normalized repeatable alias rows.
+
+Consequences:
+The obsolete Document issuer column, format-like purpose choices and Document-like Asset choice are removed. Existing issuer text is not used to infer entities. Organisation aliases are searchable, merge-safe and participate in duplicate review.

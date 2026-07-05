@@ -32,6 +32,8 @@ def list_entities(
         (definition.type,),
     ).fetchall()
     records = [to_entity_record(definition, row) for row in rows]
+    for record in records:
+        hydrate_external_fields(connection, record)
     if favourites_only:
         records = [record for record in records if record.is_favourite]
     if query:
@@ -236,6 +238,11 @@ def validate_entity_values(
         errors.append(f"{definition.singular} name is required.")
     for field in definition.fields:
         value = values.get(field.name, "").strip()
+        if field.storage_kind == "alias":
+            aliases = parse_aliases(value)
+            if len(aliases) != len({alias.casefold() for alias in aliases}):
+                errors.append(f"{field.label} must not contain duplicates.")
+            continue
         if field.storage_kind == "measurement":
             if value:
                 try:
@@ -306,7 +313,7 @@ def normalise_form_values(
     }
     for field in definition.fields:
         raw_value = str(raw_values.get(field.name, field.default)).strip() or field.default
-        if field.storage_kind == "reference":
+        if field.storage_kind in {"reference", "alias"}:
             raw_value = str(raw_values.get(field.name, "")).strip()
         values[field.name] = normalise_structured_value(raw_value, field.value_kind)
         if field.storage_kind == "measurement":
@@ -359,6 +366,10 @@ def update_typed_row(
     )
 
 
+def parse_aliases(value: str) -> list[str]:
+    return [line.strip() for line in value.splitlines() if line.strip()]
+
+
 def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord) -> None:
     if record.type == "organisation":
         from app.taxonomy import hydrate_organisation_taxonomy
@@ -374,6 +385,12 @@ def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord
                 record.metadata[field.name] = measurement.display_text
                 record.metadata[f"{field.name}__value"] = format(measurement.display_value.normalize(), "f")
                 record.metadata[f"{field.name}__unit"] = str(measurement.display_unit.id)
+        elif field.storage_kind == "alias":
+            rows = connection.execute(
+                "SELECT value FROM entity_aliases WHERE entity_id=? ORDER BY lower(value), id",
+                (record.id,),
+            )
+            record.metadata[field.name] = "\n".join(row["value"] for row in rows)
 
 
 def sync_external_fields(
@@ -394,6 +411,12 @@ def sync_external_fields(
                 replace_entity_reference_values(
                     connection, entity_id, field.name, item_ids, field.reference_type
                 )
+        elif field.storage_kind == "alias":
+            connection.execute("DELETE FROM entity_aliases WHERE entity_id=?", (entity_id,))
+            connection.executemany(
+                "INSERT INTO entity_aliases(entity_id,value,created_at) VALUES(?,?,?)",
+                ((entity_id, alias, utc_now()) for alias in parse_aliases(values.get(field.name, ""))),
+            )
         elif field.storage_kind == "measurement":
             value = values.get(field.name, "").strip()
             unit_id = values.get(f"{field.name}__unit", "").strip()
