@@ -55,7 +55,7 @@ class FamilyFacts:
             SELECT r.* FROM relationships r JOIN entities s ON s.id=r.source_entity_id
             JOIN entities t ON t.id=r.target_entity_id
             WHERE r.status='active' AND s.type='person' AND t.type='person'
-              AND s.deleted_at='' AND t.deleted_at=''
+              AND r.deleted_at='' AND s.deleted_at='' AND t.deleted_at=''
               AND (r.record_origin='manual' OR r.record_origin='inferred')
         """).fetchall()
         self.rows = {int(r["id"]): r for r in rows}
@@ -162,7 +162,7 @@ SYMMETRIC = {"sibling_of", "cousin_of"}
 def _fingerprint(connection: sqlite3.Connection, candidate: Candidate) -> str:
     evidence = []
     for rid in candidate.support_ids:
-        row = connection.execute("SELECT id, source_entity_id, target_entity_id, type, status, updated_at FROM relationships WHERE id=?", (rid,)).fetchone()
+        row = connection.execute("SELECT id, source_entity_id, target_entity_id, type, status, updated_at FROM relationships WHERE id=? AND deleted_at=''", (rid,)).fetchone()
         if row:
             evidence.append(tuple(row))
     return hashlib.sha256(json.dumps([candidate.key, candidate.rule_key, candidate.started_at, evidence], separators=(",", ":")).encode()).hexdigest()
@@ -213,7 +213,7 @@ def recompute_inferences(connection: sqlite3.Connection, trigger_type: str = "ma
     for key, candidate in candidates.items():
         fingerprint = fingerprints[key]
         prior = connection.execute("SELECT 1 FROM inference_suggestions WHERE type=? AND source_entity_id=? AND target_entity_id=? AND evidence_fingerprint=? AND status IN ('pending','confirmed','rejected')", (*key, fingerprint)).fetchone()
-        relationship = connection.execute("SELECT 1 FROM relationships WHERE type=? AND source_entity_id=? AND target_entity_id=? AND status='active'", key).fetchone()
+        relationship = connection.execute("SELECT 1 FROM relationships WHERE deleted_at='' AND type=? AND source_entity_id=? AND target_entity_id=? AND status='active'", key).fetchone()
         if not prior and not relationship:
             new_items.append((candidate, fingerprint))
     batch_id = None

@@ -50,8 +50,8 @@ The current product serves one private user without authentication. This is a pr
 ## Acceptance Criteria
 
 - Users can maintain one canonical record per real-world person, organisation, location, project, document or asset.
-- Users can create, edit, soft-delete, restore, permanently delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets.
-- Soft-deleted entities are absent from normal lists, search, maps, discovery and relationship navigation. The Recycle Bin lists every deleted entity type and provides restore and confirmed permanent deletion.
+- Users can create, edit, soft-delete, restore, permanently delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets. Relationships support create, edit, soft-delete and restore; there is no independent permanent-delete action in the Recycle Bin, while explicit destructive workflows such as entity permanent deletion, merge deduplication or inference-review undo may remove dependent relationships.
+- Soft-deleted entities and relationships are absent from normal lists, search, maps, discovery, graph analysis, inference and relationship navigation. The Recycle Bin lists both record kinds and provides restore; entities additionally provide confirmed permanent deletion.
 - Restoring an entity exposes its preserved relationships only when their other endpoint is active; it never restores another deleted entity. Soft deletion never cascades to related entities.
 - Archived means inactive content retained in its normal domain workflow; deleted means an entity is hidden platform-wide and recoverable from the Recycle Bin.
 - Person detail pages provide chronological plain-text journal entries with create, edit, archive and delete actions. Active entries show their creation time and edited entries also show their last edit time; archive is the primary removal path.
@@ -71,7 +71,7 @@ Relationship creation and navigation are implemented as reusable Stage 1 platfor
 
 Organisation classification and Relationship types are database-backed taxonomy paths containing Type, optional Subtype and optional Specific subtype. The local Taxonomies page creates and archives reusable entries. Archived branches remain visible on existing records but unavailable for new selection; archiving never rewrites canonical records. Relationship definitions retain one canonical stored direction and derive inverse display from metadata attached to their taxonomy entry.
 
-Taxonomy-backed forms use one combined combobox for hierarchy browsing and full-path search, including direct selection of deep nodes. The Taxonomies manager separates Organisation and Relationship taxonomies, displays hierarchy and archive status, and retains confirmed create/archive workflows. Search, Data Quality, Taxonomies and Recycle Bin are available from the System Tools hub at their existing routes.
+Taxonomy-backed forms use one combined combobox for hierarchy browsing and full-path search, including direct selection of deep nodes. The Taxonomies manager separates Organisation and Relationship taxonomies, displays hierarchy and archive status, and retains confirmed create/archive workflows. Search, Data Quality, Taxonomies, Recycle Bin and Audit are available from the System Tools hub. Audit provides platform-wide action and record-type filtering over existing append-only operational events and complements per-entity change history.
 
 People browse pages show name and date of birth. Person journals are intentionally People-only in this milestone and do not include tags, sources, confidence, revision history or universal-timeline integration.
 
@@ -95,6 +95,8 @@ Out of scope remains routing, journey planning, traffic analysis, public transpo
 Projects and Documents are never map markers.
 
 ## Platform-derived views
+
+Project E is in a Platform Maturity / Pre-Operational Intelligence stage: the information platform is largely established, while remaining Phase 1 work focuses on portability and proven lifecycle gaps rather than expanding CRUD domains.
 
 Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 

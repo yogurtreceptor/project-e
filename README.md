@@ -8,7 +8,7 @@ The immediate aim is deliberately human: make the platform genuinely useful, tru
 
 ## Current status
 
-Project E is in the **Information Platform** phase. The local application already provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
+Project E is in the **Platform Maturity / Pre-Operational Intelligence** stage. The foundational Information Platform is largely established, and current work is closing its remaining lifecycle, portability and real-workflow gaps before the primary focus moves to Operational Intelligence. The local application already provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
 
 The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Import/export and continued usability and data-quality work are the next practical priorities.
 

@@ -3,7 +3,8 @@ from html import escape
 from app.entities import EntityRecord
 
 
-def recycle_bin_page(records: list[EntityRecord]) -> str:
+def recycle_bin_page(records: list[EntityRecord], relationships: list = None) -> str:
+    relationships = relationships or []
     rows = "".join(
         f"""<tr><td>{escape(record.title)}</td><td>{escape(record.definition.singular)}</td>
         <td>{escape(record.deleted_at)}</td><td class="row-actions">
@@ -12,12 +13,17 @@ def recycle_bin_page(records: list[EntityRecord]) -> str:
         </td></tr>"""
         for record in records
     )
+    relationship_rows = "".join(
+        f'''<tr><td>{escape(record.source.title)} — {escape(record.target.title)}</td><td>{escape(record.type.label)}</td><td>{escape(record.deleted_at)}</td><td class="row-actions"><form method="post" action="/recycle-bin/relationships/{record.id}/restore"><button class="link-button" type="submit">Restore</button></form></td></tr>'''
+        for record in relationships
+    )
+    all_rows = rows + relationship_rows
     content = (
-        f"<table><thead><tr><th>Name</th><th>Type</th><th>Deleted</th><th></th></tr></thead><tbody>{rows}</tbody></table>"
-        if rows else '<p class="empty">The Recycle Bin is empty.</p>'
+        f"<table><thead><tr><th>Name</th><th>Type</th><th>Deleted</th><th></th></tr></thead><tbody>{all_rows}</tbody></table>"
+        if all_rows else '<p class="empty">The Recycle Bin is empty.</p>'
     )
     return f"""<section class="page-heading split"><div><p class="eyebrow">System Tools</p><h1>Recycle Bin</h1>
-    <p>Deleted records are hidden throughout the platform but can be restored here. Archived records remain active platform records and do not appear here.</p></div><a class="button secondary" href="/system-tools">Back to System Tools</a></section>
+    <p>Deleted entities and relationships are hidden throughout the platform but can be restored here. Archived records remain active platform records and do not appear here.</p></div><a class="button secondary" href="/system-tools">Back to System Tools</a></section>
     <section class="panel">{content}</section>"""
 
 

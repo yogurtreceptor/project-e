@@ -85,6 +85,7 @@ from app.view_pages.recycle_bin import recycle_bin_page, permanent_delete_confir
 from app.view_pages.timeline import universal_timeline_page
 from app.view_pages.taxonomies import taxonomies_page
 from app.view_pages.system_tools import system_tools_page
+from app.view_pages.audit import system_audit_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -142,6 +143,7 @@ __all__ = [
     "select_field",
     "taxonomies_page",
     "system_tools_page",
+    "system_audit_page",
     "existing_location_action",
     "address_lookup_field",
     "address_lookup_script",

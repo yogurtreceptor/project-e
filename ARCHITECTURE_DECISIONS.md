@@ -159,3 +159,18 @@ Document purpose describes the real-world record; stored MIME metadata describes
 
 Consequences:
 The obsolete Document issuer column, format-like purpose choices and Document-like Asset choice are removed. Existing issuer text is not used to infer entities. Organisation aliases are searchable, merge-safe and participate in duplicate review.
+
+## ADR-009: Separate operational audit from real-world timeline events
+
+Status: Accepted
+
+Date: 2026-07-05
+
+Decision:
+Use the append-only generic audit tables as the platform-wide operational event source. New entity, relationship and taxonomy mutations use normalized action types and typed record references. System Tools → Audit filters that source without creating a reporting store. Real-world dates continue to derive into timelines from canonical entity and relationship data.
+
+Reason:
+Operational changes and facts about the outside world have different meaning, retention and filtering needs. A second audit store or timeline-shaped mutation model would duplicate the database source of truth.
+
+Consequences:
+Legacy `relationship_change` rows remain readable through a small presentation normalization layer. Deleted relationships retain their canonical row and audit references, disappear from active timeline derivation, and reappear with their original real-world dates after restoration. Future operational capabilities extend the audit vocabulary and record references rather than redesigning the page.

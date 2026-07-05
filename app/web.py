@@ -15,8 +15,10 @@ from app.db import (
     create_relationship,
     delete_entity,
     restore_entity,
+    restore_relationship,
     permanent_delete_entity,
     list_deleted_entities,
+    list_deleted_relationships,
     entity_dependency_counts,
     delete_relationship,
     get_entity,
@@ -59,7 +61,7 @@ from app.document_storage import (
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
-from app.audit import list_audit_events
+from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
@@ -106,6 +108,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "system-tools" and len(parts) == 1:
             self.respond_page("System Tools", views.system_tools_page(), active_slug="system-tools")
+            return
+
+        if parts[:2] == ["system-tools", "audit"] and len(parts) == 2:
+            self.handle_system_audit(query)
             return
 
         if parts[0] == "timeline":
@@ -220,7 +226,20 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if len(parts) == 1 and self.command == "GET":
             with connect(self.database_path) as connection:
                 records = list_deleted_entities(connection)
-            self.respond_page("Recycle Bin", views.recycle_bin_page(records), active_slug="system-tools")
+                relationships = list_deleted_relationships(connection)
+            self.respond_page("Recycle Bin", views.recycle_bin_page(records, relationships), active_slug="system-tools")
+            return
+        if len(parts) == 4 and parts[1] == "relationships" and parts[3] == "restore" and self.command == "POST":
+            relationship_id = self.parse_entity_id(parts[2])
+            if relationship_id is None:
+                self.respond_not_found()
+                return
+            with connect(self.database_path) as connection:
+                restored = restore_relationship(connection, relationship_id)
+            if not restored:
+                self.respond_not_found()
+                return
+            self.redirect("/recycle-bin")
             return
         entity_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
         if entity_id is None:
@@ -305,6 +324,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug="timeline",
         )
 
+
+    def handle_system_audit(self, query: dict[str, str]) -> None:
+        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""))
+        with connect(self.database_path) as connection:
+            events = list_audit_events(connection, filters=filters)
+        self.respond_page("System Audit", views.system_audit_page(events, filters), active_slug="system-tools")
 
     def handle_data_quality(self) -> None:
         from app.data_quality import registry

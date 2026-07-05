@@ -183,7 +183,7 @@ Current controlled fields are:
 
 ## Relationships
 
-A relationship is a first-class record connecting two canonical entities.
+A relationship is a first-class record connecting two canonical entities. Its identity and canonical facts survive soft deletion and restoration; recycled relationships are excluded from active graph views.
 
 Relationships support:
 

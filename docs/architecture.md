@@ -192,3 +192,9 @@ Candidates enter an Inference Review Queue rather than the active relationship s
 ## Derived platform services
 
 `audit`, `query_engine`, `data_quality`, and `timeline` are independent reusable services. Registries allow domain rules and derivations to be added without changing their cores. Audit history records system mutations; timelines derive real-world events only. The timeline date-field registry feeds both record-local timelines and a de-duplicated Universal Timeline; derived events retain canonical origin links and associated entity IDs for direct-relation filtering without storing duplicate event rows. Data-quality findings and search results are derived views over canonical entities and relationships.
+
+## Platform maturity boundary
+
+Project E is currently in the Platform Maturity / Pre-Operational Intelligence stage. The information model and main human-facing platform are largely established. Near-term architectural work should close proven lifecycle, recovery, portability and usability gaps without adding new domains, AI infrastructure or speculative service boundaries.
+
+Relationships use the same recoverable lifecycle pattern as entities: `deleted_at` is canonical soft-delete state, active repositories exclude recycled rows by default, and the Recycle Bin restores them. Audit records remain append-only and reference records by kind and identifier even while those records are deleted. The platform-wide System Audit reads the existing audit tables through a small action/record-kind normalization layer; it is a view, not a second event store. Timelines remain derived real-world chronology and intentionally exclude operational mutation events.

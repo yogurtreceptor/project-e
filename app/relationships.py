@@ -28,6 +28,11 @@ class RelationshipRecord:
     provenance_json: str = ""
     created_from_inference: bool = False
     inference_evidence_status: str = ""
+    deleted_at: str = ""
+
+    @property
+    def is_deleted(self) -> bool:
+        return bool(self.deleted_at)
 
     @property
     def type(self) -> RelationshipType:

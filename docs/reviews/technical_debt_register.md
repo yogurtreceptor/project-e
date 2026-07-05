@@ -59,3 +59,23 @@ Person and Organisation phone, email and website values are direct fields. This 
 Trigger: a real workflow requires multiple contact points or lifecycle metadata.
 
 Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain in Stage 1.
+
+## Recycled relationships during destructive entity consolidation
+
+Severity: medium
+
+Relationship soft deletion preserves active and independently deleted rows, but entity permanent deletion and entity merge can still remove a recycled relationship through endpoint foreign-key cascading. The current UI warns that permanent deletion removes dependent relationships; merge behaviour does not yet offer a dedicated policy for recycled dependants.
+
+Trigger: Phase 1 exit review or any workflow that merges/permanently deletes an entity with recycled relationships.
+
+Direction: define whether these rows should be repointed, permanently removed with explicit preview, or blocked pending user choice. Keep audit history append-only and add focused merge/permanent-delete tests. Do not add orphaned relationship snapshots or disable referential integrity.
+
+## Soft-deletable record consistency review
+
+Severity: low
+
+Entities and relationships use the Recycle Bin. Journal entries instead use domain-specific archive plus hard delete, while taxonomy entries are archived and data-quality dispositions are state transitions. These are deliberate semantic differences, not currently interchangeable deletion mechanisms.
+
+Trigger: a requirement to recover deleted journals, taxonomy nodes or finding state.
+
+Direction: evaluate that record type's lifecycle and user expectations before applying the generic Recycle Bin pattern; do not equate archive, dismissal and deletion automatically.

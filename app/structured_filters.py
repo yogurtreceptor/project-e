@@ -34,7 +34,7 @@ def _organisation_no_location(connection: sqlite3.Connection, record: EntityReco
     row = connection.execute(
         """SELECT 1 FROM relationships r JOIN entities e
            ON e.id = CASE WHEN r.source_entity_id = ? THEN r.target_entity_id ELSE r.source_entity_id END
-           WHERE (r.source_entity_id = ? OR r.target_entity_id = ?) AND e.type = 'location' AND e.deleted_at = '' LIMIT 1""",
+           WHERE r.deleted_at = '' AND (r.source_entity_id = ? OR r.target_entity_id = ?) AND e.type = 'location' AND e.deleted_at = '' LIMIT 1""",
         (record.id, record.id, record.id),
     ).fetchone()
     return row is None

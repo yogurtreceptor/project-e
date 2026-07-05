@@ -37,7 +37,7 @@ def date_sanity(c):
 def graph_health(c):return [finding("graph_consistency",w.severity,w.message,w.entity_ids,w.relationship_ids) for w in audit_relationships(c)]
 @registry.register
 def orphans(c):
- return [finding("orphan_detection","info",f"{r.title} has no relationships.",(r.id,)) for r in list_all_entities(c) if not c.execute("SELECT 1 FROM relationships WHERE source_entity_id=? OR target_entity_id=?",(r.id,r.id)).fetchone()]
+ return [finding("orphan_detection","info",f"{r.title} has no relationships.",(r.id,)) for r in list_all_entities(c) if not c.execute("SELECT 1 FROM relationships WHERE deleted_at='' AND (source_entity_id=? OR target_entity_id=?)",(r.id,r.id)).fetchone()]
 def resolve_finding(c,key,status,notes=""):
  if status not in {"reviewed","ignored","intentional","resolved","accepted","rejected"}:raise ValueError("Invalid finding status.")
  c.execute("INSERT INTO data_quality_finding_state VALUES(?,?,?,?) ON CONFLICT(finding_key) DO UPDATE SET status=excluded.status,notes=excluded.notes,updated_at=excluded.updated_at",(key,status,notes,utc_now()))

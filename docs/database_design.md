@@ -177,3 +177,9 @@ Suggested dates are stored only when rule-specific DOB evidence is sufficient. D
 Migration `20260628_06_platform_infrastructure` adds append-only generic audit events with affected-record links, lightweight per-field/relationship provenance, and user disposition state for deterministic data-quality findings. These tables do not provide snapshots, rollback, versioning, or evidence storage.
 
 Migration `20260628_07_backfill_platform_audit` restores operational-history visibility for pre-audit databases by seeding create/edit events from canonical timestamps and relationship-create events from relationship timestamps. It is one-time and does not alter canonical records.
+
+## Relationship soft deletion and audit projection
+
+`relationships.deleted_at` is the canonical relationship deletion marker and is indexed. Empty means active; a timestamp means hidden and recoverable. Active repositories, graph validation, query filters, integrity checks, data-quality checks and inference inputs exclude deleted relationships. Restoration clears the marker without recreating the row, preserving identifiers, dates, provenance and audit references.
+
+Migration `20260705_15_relationship_soft_delete` adds the column additively to existing databases; fresh schema creation includes it directly. The append-only `audit_events` and `audit_event_records` tables remain the sole operational audit source. Event action is stored in `event_type`, while typed record references supply subject scope; the System Audit applies filters as a read projection and preserves legacy `relationship_change` rows.

@@ -49,10 +49,12 @@ class SchemaMigrationTests(unittest.TestCase):
             project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
             document_columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
             asset_columns = {row["name"] for row in connection.execute("PRAGMA table_info(assets)")}
+            relationship_columns = {row["name"] for row in connection.execute("PRAGMA table_info(relationships)")}
         self.assertIn("deleted_at", entity_columns)
         self.assertIn("ended_at", project_columns)
         self.assertTrue({"identifier", "expiry_date"} <= document_columns)
         self.assertTrue({"manufacturer", "model"} <= asset_columns)
+        self.assertIn("deleted_at", relationship_columns)
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"
