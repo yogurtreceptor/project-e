@@ -4,6 +4,8 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-05
 
+Added the repository's initial community health documentation: contributor guidance, a code of conduct, structured bug and feature issue forms, and a pull request checklist. License and security-policy decisions remain intentionally separate because they require maintainer choices about legal permissions and a private reporting channel.
+
 Cleaned the Phase 1 domain model: removed free-text Document issuer in favour of existing creator/issuer relationships; separated Document purpose from MIME-backed format; removed the overlapping Document-like Asset type; added Project target dates and timeline events; and introduced normalized repeatable Organisation aliases used by forms, search, merges and duplicate review. Recorded the active-development preference for clean architecture over compatibility layers and documented the deferred platform-wide Journal direction.
 
 Extended definition-driven progressive disclosure across Organisations, Locations, Projects, Documents and Assets. Optional details now appear inline in canonical order, use **Add details**, can be hidden without clearing values, and support compound coordinate pairs. Added Project ended/completed date, Document identifier and expiry date, and Asset manufacturer/model through additive typed columns, including chronology validation, identifier duplicate matching, search participation and timeline events.

@@ -61,6 +61,8 @@ See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [futur
 
 Contributor and agent workflow guidance lives in [AGENTS.md](AGENTS.md).
 
+Community participation is covered by the [contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md). Bug reports and focused feature proposals can be opened with the repository's issue templates.
+
 ## Run locally
 
 Project E currently needs Python 3 and no third-party Python packages.
