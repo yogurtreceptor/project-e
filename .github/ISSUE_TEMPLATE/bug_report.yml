@@ -1,0 +1,39 @@
+name: Bug report
+description: Report reproducible behaviour that appears incorrect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting a problem. Remove personal information and never attach a real Project E database, uploaded document, log, export or backup.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use fictional or redacted example data.
+      placeholder: |
+        1. Start with ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include operating system, Python version, browser and relevant commit or branch.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add redacted screenshots or other details if useful. For suspected security vulnerabilities, do not use this form.
