@@ -43,5 +43,3 @@ For interface changes, also run the application and smoke-test the affected work
 ## Pull requests
 
 Keep pull requests narrow enough to review. Explain the motivation, describe user-visible and technical changes, list verification performed, call out schema or privacy implications, and link related issues. Screenshots are useful when a visual change is easier to assess than describe.
-
-By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
