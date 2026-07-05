@@ -4,7 +4,10 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-05
 
-Added the repository's initial community health documentation: contributor guidance, a code of conduct, structured bug and feature issue forms, and a pull request checklist. License and security-policy decisions remain intentionally separate because they require maintainer choices about legal permissions and a private reporting channel.
+Added versioned, checksummed portable bundles containing consistent SQLite snapshots and referenced uploaded documents; staged import preview and confirmation; clean-target enforcement; automatic recovery backups for import, merge and permanent deletion; a deliberate recovery command; and focused round-trip, checksum, rollback, recovery and offline-operation coverage. Entity merge now preserves and repoints recycled relationships, while merge and permanent-delete previews distinguish their exact active/recycled effects.
+
+
+Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. Added a security policy using GitHub private vulnerability reporting and clarified the project's current source-available, all-rights-reserved copyright status pending any future explicit software licence.
 
 Cleaned the Phase 1 domain model: removed free-text Document issuer in favour of existing creator/issuer relationships; separated Document purpose from MIME-backed format; removed the overlapping Document-like Asset type; added Project target dates and timeline events; and introduced normalized repeatable Organisation aliases used by forms, search, merges and duplicate review. Recorded the active-development preference for clean architecture over compatibility layers and documented the deferred platform-wide Journal direction.
 

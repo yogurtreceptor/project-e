@@ -17,9 +17,19 @@ class SystemToolsViewTests(unittest.TestCase):
             ("/taxonomies", "Taxonomies"),
             ("/recycle-bin", "Recycle Bin"),
             ("/system-tools/audit", "Audit"),
+            ("/system-tools/portability", "Import and Export"),
         ):
             self.assertIn(f'href="{href}"', html)
             self.assertIn(f"<h2>{label}</h2>", html)
+
+    def test_portability_pages_require_preview_and_explicit_confirmation(self):
+        page = views.portability_page()
+        self.assertIn("Download export", page)
+        self.assertIn("Validate and preview", page)
+        preview = type("Preview", (), {"exported_at": "2026-07-05", "entities": 2, "deleted_entities": 1, "relationships": 1, "deleted_relationships": 1, "documents": 1})()
+        confirmation = views.import_preview_page(preview, "abc")
+        self.assertIn("passed manifest, checksum, SQLite integrity", confirmation)
+        self.assertIn("Confirm import", confirmation)
 
     def test_navigation_replaces_individual_tool_links_with_active_hub(self):
         html = views.layout("Tools", views.system_tools_page(), "system-tools")

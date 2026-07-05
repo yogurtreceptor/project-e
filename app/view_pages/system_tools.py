@@ -5,6 +5,7 @@ def system_tools_page() -> str:
         ("/taxonomies", "Taxonomies", "Manage reusable Organisation classifications and Relationship types."),
         ("/recycle-bin", "Recycle Bin", "Restore deleted records or permanently remove entities after confirmation."),
         ("/system-tools/audit", "Audit", "Review and filter platform-wide operational events."),
+        ("/system-tools/portability", "Import and Export", "Create portable exports and preview validated imports with recovery backups."),
     )
     cards = "".join(
         f'<a class="panel system-tool-card" href="{href}"><h2>{title}</h2><p>{description}</p><span>Open tool →</span></a>'

@@ -43,14 +43,14 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 
 Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
-Import/export and further UI polish remain planned. See the [roadmap](../ROADMAP.md) for current ordering; this specification defines scope rather than task priority.
+Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Representative workflow review and maintainer confirmation remain part of Phase 1 exit evaluation; this specification defines current behavior rather than task priority.
 
 The current product serves one private user without authentication. This is a present scope choice, not a permanent prohibition on future trusted multi-user support.
 
 ## Acceptance Criteria
 
 - Users can maintain one canonical record per real-world person, organisation, location, project, document or asset.
-- Users can create, edit, soft-delete, restore, permanently delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets. Relationships support create, edit, soft-delete and restore; there is no independent permanent-delete action in the Recycle Bin, while explicit destructive workflows such as entity permanent deletion, merge deduplication or inference-review undo may remove dependent relationships.
+- Users can create, edit, soft-delete, restore, permanently delete, browse and view detail pages for People, Organisations, Locations, Projects, Documents and Assets. Relationships support create, edit, soft-delete and restore; there is no independent permanent-delete action in the Recycle Bin. Entity merges repoint active and recycled relationships and preview any duplicate/self-link removals. Confirmed permanent entity deletion previews active and recycled dependants before cascading removal.
 - Soft-deleted entities and relationships are absent from normal lists, search, maps, discovery, graph analysis, inference and relationship navigation. The Recycle Bin lists both record kinds and provides restore; entities additionally provide confirmed permanent deletion.
 - Restoring an entity exposes its preserved relationships only when their other endpoint is active; it never restores another deleted entity. Soft deletion never cascades to related entities.
 - Archived means inactive content retained in its normal domain workflow; deleted means an entity is hidden platform-wide and recoverable from the Recycle Bin.
@@ -64,7 +64,9 @@ The current product serves one private user without authentication. This is a pr
 - Users can browse one chronological Universal Timeline derived from dated fields and relationship dates across all supported entity types. Entries link to their canonical origin and can be filtered by entity type, date range, or a related Person, Organisation or Project.
 - Safe deterministic family suggestions are reviewed before becoming normal editable relationships; automatic candidate recomputation does not bypass that confirmation boundary.
 - Confirmed inference-created relationships retain provenance; rejected evidence is suppressed until it materially changes; completed review batches remain available in searchable history with undo.
-- The platform remains usable without WAN access.
+- System Tools can export a versioned, checksummed bundle containing the canonical SQLite store and referenced uploaded files. Import validates schema, integrity, relationships, checksums and document membership, previews counts, requires an empty target and explicit confirmation, creates a recovery backup, and records the import in audit history.
+- Confirmed entity merges, permanent entity deletion and import create recovery bundles under local Git-ignored storage. The bundled recovery command validates first and replaces current storage only with an explicit flag.
+- The platform remains usable without WAN access; geocoding and remote map resources may fail without preventing local entity, relationship or coordinate-backed map use.
 - Stage 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
 
 Relationship creation and navigation are implemented as reusable Stage 1 platform features.

@@ -27,7 +27,7 @@ def merge_preview_page(preview) -> str:
     <section class="page-heading"><p class="eyebrow">Merge preview</p><h1>{escape(preview.duplicate.title)} → {escape(preview.survivor.title)}</h1>
     <p>Review the exact field and relationship effects before committing.</p></section>
     <section class="panel"><table><thead><tr><th>Field</th><th>Survivor</th><th>Duplicate</th><th>Result</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section>
-    <section class="panel"><h2>Relationship changes</h2><p>{preview.relationships_to_repoint} relationship(s) will be reviewed and repointed; {preview.duplicate_relationships_to_remove} duplicate or self-referencing relationship(s) will be removed.</p>
+    <section class="panel"><h2>Relationship changes</h2><p>{preview.active_relationships_to_repoint} active and {preview.recycled_relationships_to_repoint} recycled relationship(s) will be repointed; {preview.duplicate_relationships_to_remove} duplicate or self-referencing relationship(s) will be permanently removed.</p>
     <p>The duplicate snapshot, conflicts, and prior history will remain in the survivor’s edit history.</p>
     <form method="post" action="/{preview.survivor.slug}/{preview.survivor.id}/merge"><input type="hidden" name="duplicate_id" value="{preview.duplicate.id}">
     <div class="actions"><a class="button secondary" href="/{preview.survivor.slug}/{preview.survivor.id}">Cancel</a><button class="button danger" type="submit">Confirm merge</button></div></form></section>"""

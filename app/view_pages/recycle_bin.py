@@ -29,12 +29,15 @@ def recycle_bin_page(records: list[EntityRecord], relationships: list = None) ->
 
 def permanent_delete_confirmation_page(record: EntityRecord, dependencies: dict[str, int]) -> str:
     relationship_count = dependencies["relationships"]
+    active_relationships = dependencies.get("active_relationships", relationship_count)
+    recycled_relationships = dependencies.get("recycled_relationships", 0)
     journal_count = dependencies["journal_entries"]
     warning = ""
     if relationship_count or journal_count:
         parts = []
         if relationship_count:
-            parts.append(f"{relationship_count} relationship{'s' if relationship_count != 1 else ''}")
+            relationship_detail = f"{active_relationships} active, {recycled_relationships} recycled"
+            parts.append(f"{relationship_count} relationship{'s' if relationship_count != 1 else ''} ({relationship_detail})")
         if journal_count:
             parts.append(f"{journal_count} journal entr{'ies' if journal_count != 1 else 'y'}")
         warning = f'<div class="warnings"><strong>Dependencies will also be permanently removed:</strong> {escape(" and ".join(parts))}.</div>'

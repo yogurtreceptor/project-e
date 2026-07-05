@@ -8,9 +8,9 @@ Project E's foundational information platform is largely established. The curren
 
 Current priorities are:
 
-- complete remaining Phase 1 exit gaps, especially trustworthy import/export
-- validate the platform against representative everyday workflows and data
-- resolve documented lifecycle edge cases around recycled dependent records
+- validate the newly implemented portable import/export and recovery workflow against representative everyday workflows and data
+- complete maintainer review of the explicit recycled-dependent relationship policy
+- record the Phase 1 exit decision after final verification
 - keep architecture, migrations and documentation coherent while the foundation settles
 
 Scale-driven work such as SQLite-backed filtering, FTS5, physical analytics columns and fully offline map assets remains trigger-based rather than mandatory for Phase 1 exit.
@@ -32,7 +32,7 @@ These criteria describe readiness to shift the project's primary focus; they are
 - Representative human workflows have been exercised sufficiently to show that the platform is dependable, understandable and independently useful before intelligence is layered on top.
 - Remaining limitations are documented with a trigger and direction rather than allowed to expand Phase 1 indefinitely.
 
-The platform meets most of these criteria. Trustworthy import/export remains foundational Phase 1 work. The interaction between entity merge or permanent deletion and already-recycled dependent relationships also needs an explicit policy and focused implementation before Phase 1 is considered fully closed. Broader journal domains, scale optimisations and UI refinements are not automatic blockers; they remain evidence-driven.
+The implementation now includes versioned checksummed import/export, recovery backups and an explicit recycled-relationship policy for merge and permanent deletion. Phase 1 remains in exit review until representative workflows, migration/round-trip evidence, offline behavior and maintainer confirmation are recorded. Broader journal domains, scale optimisations and UI refinements are not automatic blockers; they remain evidence-driven.
 
 ## Phase 2 — Operational Intelligence
 

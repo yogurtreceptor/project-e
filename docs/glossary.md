@@ -116,13 +116,13 @@ See also: Controlled Field, Structured Data.
 
 ## Export
 
-A way to copy local platform data out of Project E for backup, migration or review. Export should protect data clarity and not introduce external dependencies.
+A versioned, checksummed local ZIP containing a consistent canonical database snapshot and its referenced uploaded documents. It supports migration, review and recovery without an external service.
 
 See also: Import, Local-first.
 
 ## Import
 
-A way to bring data into Project E. Import should preserve canonical records, avoid duplicates and protect local data quality.
+A confirmed way to restore a validated portable bundle into an empty Project E target. Import checks integrity and document membership, previews its effects, creates a recovery backup, preserves canonical identity/provenance and records an audit event.
 
 See also: Export, Canonical Record.
 
@@ -170,7 +170,7 @@ See also: Archived, Recycle Bin.
 
 ## Recycle Bin
 
-The platform-wide view of soft-deleted entities. It supports restoring one selected entity or permanently deleting it after explicit confirmation and dependency warnings.
+The platform-wide view of soft-deleted entities and relationships. It supports selective restore; entities may also be permanently deleted after explicit confirmation, active/recycled dependency warnings and recovery backup creation.
 
 See also: Deleted, Archived.
 

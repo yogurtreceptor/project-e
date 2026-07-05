@@ -174,3 +174,19 @@ Operational changes and facts about the outside world have different meaning, re
 
 Consequences:
 Legacy `relationship_change` rows remain readable through a small presentation normalization layer. Deleted relationships retain their canonical row and audit references, disappear from active timeline derivation, and reappear with their original real-world dates after restoration. Future operational capabilities extend the audit vocabulary and record references rather than redesigning the page.
+
+
+## ADR-010: Use validated snapshot bundles for Stage 1 portability and recovery
+
+Status: Accepted
+
+Date: 2026-07-05
+
+Decision:
+Use a versioned, checksummed ZIP containing a consistent SQLite backup plus referenced uploaded documents as the Stage 1 export and recovery format. Validate the manifest, every member checksum, current schema/migrations, SQLite integrity, foreign keys, canonical entity/relationship structure and document membership before preview or apply. Normal import applies only to an empty target after explicit confirmation; recovery replacement remains a separately confirmed maintenance command.
+
+Reason:
+The SQLite database already contains the canonical graph, custom taxonomies, normalized measurements/references, provenance and append-only audit history. Re-serializing a subset into a parallel interchange model would risk semantic loss and duplicate sources of truth. SQLite's standard-library backup API provides a consistent local snapshot without a new dependency.
+
+Consequences:
+Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Stage 1 scope.

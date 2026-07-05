@@ -21,7 +21,7 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/taxonomy.py` owns reusable three-level taxonomy persistence, migration and lookup. Relationship-specific pair, direction and inverse-label metadata is attached to relationship taxonomy entries; `app/relationships.py` remains the stable selection and bidirectional-behaviour facade.
 - `TaxonomyChoice` is the shared presentation boundary for Organisation and Relationship comboboxes. It carries the submitted value, contextual label, complete path, depth and availability without changing either domain's persistence contract.
-- `/system-tools` is a navigation hub over the existing Search, Data Quality, Taxonomies and Recycle Bin routes; child pages share its active navigation state.
+- `/system-tools` is a navigation hub over Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export; child pages share its active navigation state.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 
@@ -88,7 +88,7 @@ Reusable entity pages include:
 
 Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
 
-Entity deletion is a shared repository concern. Normal entity hydration excludes rows with `deleted_at`; because relationship records resolve both endpoints through that same boundary, deleted entities and their relationships disappear consistently from profiles, global relationship views, search, maps and derived navigation. The Recycle Bin is the sole opt-in deleted-record view. Restore clears one entity's deleted state while leaving other deleted endpoints untouched. Permanent deletion is a separate confirmed action that previews relationship and journal dependencies; audit history remains append-only.
+Entity deletion is a shared repository concern. Normal entity hydration excludes rows with `deleted_at`; because relationship records resolve both endpoints through that same boundary, deleted entities and their relationships disappear consistently from profiles, global relationship views, search, maps and derived navigation. The Recycle Bin is the sole opt-in deleted-record view. Restore clears one entity's deleted state while leaving other deleted endpoints untouched. Permanent deletion is a separate confirmed action that previews active relationships, recycled relationships and journal dependencies, creates a local recovery bundle, then cascades removal; audit history remains append-only.
 
 `JournalEntry` and `app/journal_repository.py` use a reusable entity type/ID association, but the current HTTP surface deliberately exposes journals only below Person routes. Archived entries remain stored but are omitted from the active stream. Journal entries are separate operational notes and are not folded into the derived real-world timeline.
 
@@ -176,7 +176,7 @@ Architectural correction: Organisation address fields were removed from the acti
 
 Relationship integrity is evaluated by `app/integrity.py` from raw relationship rows so orphan endpoints, unknown types, invalid/self references, duplicates and suspicious family combinations can be reported without preventing the audit itself. Warnings use the existing relationship browser and entity-profile surfaces.
 
-`app/entity_merge.py` provides a reusable same-type preview-and-commit workflow. A merge is transactional: compatible blank fields are filled, notes are combined, relationships are repointed, duplicate/self relationships are removed, and the retired record plus conflicts and relationship snapshots are retained in append-only edit history. Normal entity edits also add history events.
+`app/entity_merge.py` provides a reusable same-type preview-and-commit workflow. A merge is transactional: compatible blank fields are filled, notes are combined, active and recycled relationships are repointed, duplicate/self relationships are removed only after their counts are previewed, and the retired record plus conflicts and relationship snapshots are retained in append-only edit and platform audit history. A recovery bundle is created before the transaction. Normal entity edits also add history events.
 
 Structured search filters are registry-driven in `app/structured_filters.py`. Each filter declares its key, label, applicable entity types, optional input and predicate; search applies the registry after shared text/type/favourite filtering. New filters should extend this registry rather than add route-specific query logic.
 
@@ -198,3 +198,10 @@ Candidates enter an Inference Review Queue rather than the active relationship s
 Project E is currently in the Platform Maturity / Pre-Operational Intelligence stage. The information model and main human-facing platform are largely established. Near-term architectural work should close proven lifecycle, recovery, portability and usability gaps without adding new domains, AI infrastructure or speculative service boundaries.
 
 Relationships use the same recoverable lifecycle pattern as entities: `deleted_at` is canonical soft-delete state, active repositories exclude recycled rows by default, and the Recycle Bin restores them. Audit records remain append-only and reference records by kind and identifier even while those records are deleted. The platform-wide System Audit reads the existing audit tables through a small action/record-kind normalization layer; it is a view, not a second event store. Timelines remain derived real-world chronology and intentionally exclude operational mutation events.
+
+
+## Portability and recovery
+
+`app/portability.py` owns the stable bundle boundary. An export uses SQLite's online backup API to produce a consistent database snapshot, includes every referenced uploaded document, and writes a versioned manifest with SHA-256 checksums and record counts. Import extracts only safe paths into staging, verifies the manifest, checksums, SQLite integrity, foreign keys, migration set, entity typed rows, relationship endpoints/types and document membership, then presents a count preview. Apply is restricted to an empty target and explicit confirmation. Database and document replacements are staged on the local filesystem, an import audit event is appended, and a recovery bundle is created first.
+
+The same recovery bundle primitive runs before confirmed merge and permanent deletion. `tools/restore_backup.py` validates in preview mode by default and requires `--confirm-replace` before restoring a non-empty installation. Bundles, backups and staging files remain under Git-ignored local storage and never become application dependencies.

@@ -183,3 +183,12 @@ Migration `20260628_07_backfill_platform_audit` restores operational-history vis
 `relationships.deleted_at` is the canonical relationship deletion marker and is indexed. Empty means active; a timestamp means hidden and recoverable. Active repositories, graph validation, query filters, integrity checks, data-quality checks and inference inputs exclude deleted relationships. Restoration clears the marker without recreating the row, preserving identifiers, dates, provenance and audit references.
 
 Migration `20260705_15_relationship_soft_delete` adds the column additively to existing databases; fresh schema creation includes it directly. The append-only `audit_events` and `audit_event_records` tables remain the sole operational audit source. Event action is stored in `event_type`, while typed record references supply subject scope; the System Audit applies filters as a read projection and preserves legacy `relationship_change` rows.
+
+
+## Portable bundles and recovery
+
+Portable format version 1 is a ZIP containing `manifest.json`, `data/project-e.sqlite3`, and the uploaded files referenced by canonical Document rows. The manifest identifies the format/version, export timestamp, record counts and a SHA-256 digest for every member. SQLite's backup API creates the database member so export does not depend on copying a live database file.
+
+Import accepts only the current migration set, a clean SQLite integrity and foreign-key check, recognized entity types with typed rows, valid relationship endpoint/type combinations, safe archive paths, matching counts and an exact match between Document file references and bundled files. Apply requires an empty target, explicit preview confirmation and a pre-import recovery bundle. Replacement is staged; failures restore the previous document directory and do not intentionally expose partially imported canonical data. Import appends an `import` audit event while preserving the bundle's prior audit and provenance rows.
+
+Recovery bundles use the same format. Confirmed merge and permanent deletion create them before mutation. Merge repoints both active and recycled relationship rows while preserving `deleted_at`; only duplicate or self-referencing results are removed. Permanent deletion reports active and recycled counts separately before the existing foreign-key cascade.

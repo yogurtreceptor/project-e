@@ -113,10 +113,11 @@ class SoftDeleteTests(unittest.TestCase):
             delete_entity(connection, person, entity_id)
             record = get_entity_by_id(connection, entity_id, include_deleted=True)
         page = views.recycle_bin_page([record])
-        confirmation = views.permanent_delete_confirmation_page(record, {"relationships": 2, "journal_entries": 1})
+        confirmation = views.permanent_delete_confirmation_page(record, {"relationships": 2, "active_relationships": 1, "recycled_relationships": 1, "journal_entries": 1})
         self.assertIn("Archived records remain active", page)
         self.assertIn("Deleted Person", page)
         self.assertIn("2 relationships", confirmation)
+        self.assertIn("1 active, 1 recycled", confirmation)
         self.assertIn("1 journal entry", confirmation)
         self.assertIn("cannot be undone", confirmation)
 

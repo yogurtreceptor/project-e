@@ -25,8 +25,13 @@ class MergePreview:
     survivor: EntityRecord
     duplicate: EntityRecord
     fields: tuple[MergeField, ...]
-    relationships_to_repoint: int
+    active_relationships_to_repoint: int
+    recycled_relationships_to_repoint: int
     duplicate_relationships_to_remove: int
+
+    @property
+    def relationships_to_repoint(self) -> int:
+        return self.active_relationships_to_repoint + self.recycled_relationships_to_repoint
 
 
 def preview_entity_merge(connection: sqlite3.Connection, survivor_id: int, duplicate_id: int) -> MergePreview:
@@ -52,8 +57,12 @@ def preview_entity_merge(connection: sqlite3.Connection, survivor_id: int, dupli
 
     rows = connection.execute("SELECT * FROM relationships WHERE source_entity_id = ? OR target_entity_id = ?", (duplicate_id, duplicate_id)).fetchall()
     existing = {_relationship_key(row, survivor_id, duplicate_id) for row in connection.execute("SELECT * FROM relationships WHERE source_entity_id = ? OR target_entity_id = ?", (survivor_id, survivor_id))}
-    duplicate_count = sum(1 for row in rows if _relationship_key(row, survivor_id, duplicate_id) in existing or _would_self_reference(row, survivor_id, duplicate_id))
-    return MergePreview(survivor, duplicate, tuple(fields), len(rows), duplicate_count)
+    removals = [row for row in rows if _relationship_key(row, survivor_id, duplicate_id) in existing or _would_self_reference(row, survivor_id, duplicate_id)]
+    removal_ids = {int(row["id"]) for row in removals}
+    repointed = [row for row in rows if int(row["id"]) not in removal_ids]
+    active_count = sum(1 for row in repointed if not row["deleted_at"])
+    recycled_count = sum(1 for row in repointed if row["deleted_at"])
+    return MergePreview(survivor, duplicate, tuple(fields), active_count, recycled_count, len(removals))
 
 
 def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_id: int) -> MergePreview:
@@ -88,6 +97,9 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
         for row in old_history:
             connection.execute("INSERT INTO entity_edit_history (entity_id, event_type, details, created_at) VALUES (?, ?, ?, ?)", (survivor_id, "merged_history:" + row["event_type"], row["details"], row["created_at"]))
         connection.execute("INSERT INTO entity_edit_history (entity_id, event_type, details, created_at) VALUES (?, 'merge', ?, ?)", (survivor_id, json.dumps(details, sort_keys=True), now))
+        from app.audit import record_audit_event
+        relationship_records = [("relationship", int(row["id"])) for row in details["duplicate_relationships_before"]]
+        record_audit_event(connection, "merge", [("entity", survivor_id), ("entity", duplicate_id), *relationship_records], before=details, after={"survivor_id": survivor_id, "active_relationships_repointed": preview.active_relationships_to_repoint, "recycled_relationships_repointed": preview.recycled_relationships_to_repoint, "relationships_removed": preview.duplicate_relationships_to_remove}, notes="Duplicate entity merged after confirmed preview")
         connection.execute("DELETE FROM entities WHERE id = ?", (duplicate_id,))
         connection.commit()
     except Exception:

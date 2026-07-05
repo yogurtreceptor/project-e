@@ -208,9 +208,11 @@ def permanent_delete_entity(connection: sqlite3.Connection, entity_id: int) -> t
 
 
 def entity_dependency_counts(connection: sqlite3.Connection, entity_id: int) -> dict[str, int]:
-    relationship_count = connection.execute("SELECT COUNT(*) FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchone()[0]
+    rows = connection.execute("SELECT deleted_at FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchall()
+    active = sum(1 for row in rows if not row["deleted_at"])
+    recycled = len(rows) - active
     journal_count = connection.execute("SELECT COUNT(*) FROM journal_entries WHERE entity_id=?", (entity_id,)).fetchone()[0]
-    return {"relationships": int(relationship_count), "journal_entries": int(journal_count)}
+    return {"relationships": len(rows), "active_relationships": active, "recycled_relationships": recycled, "journal_entries": int(journal_count)}
 
 
 def with_canonical_person_name(
