@@ -8,16 +8,16 @@ The system is organised around three practical layers:
 
 - Local UI for browsing, editing, searching and navigating information.
 - Local application layer for validation, persistence rules and view logic.
-- Embedded SQLite database for durable local storage.
+- Locally hosted, loopback-only PostgreSQL database for durable local storage.
 
-The core application uses only the Python standard library. Map tiles, browser map assets and address lookup are optional external services; core record workflows do not require them.
+The application uses the Python standard library plus psycopg 3. Map tiles, browser map assets and address lookup are optional external services; core record workflows do not require them.
 
 ## Current Implementation
 
 - `run.py` starts a local HTTP server.
 - `app/web.py` handles HTTP routing, request parsing and responses. `app/document_storage.py` owns uploaded-file persistence and path safety, `app/document_lifecycle.py` protects reference-aware cleanup, and `app/relationship_workflow.py` owns inline relationship-target creation.
 - `app/views.py` is the stable public facade for page rendering. Focused implementations live in `app/view_pages/` modules for layout, dashboard, entities, relationships, forms, search and maps.
-- `app/db.py` is the stable database facade. `app/db_schema.py` owns connection, the append-only migration ledger and additive schema repair; entity, relationship, journal and discovery persistence live in focused repository modules.
+- `app/db.py` is the stable database facade. `app/db_connection.py` centralises psycopg connections, transactions and row behaviour; `app/db_schema.py` owns ordered checksummed migrations guarded by an advisory lock.
 - `app/entities.py` defines the common entity model, metadata and supported entity types.
 - `app/taxonomy.py` owns reusable three-level taxonomy persistence, migration and lookup. Relationship-specific pair, direction and inverse-label metadata is attached to relationship taxonomy entries; `app/relationships.py` remains the stable selection and bidirectional-behaviour facade.
 - `TaxonomyChoice` is the shared presentation boundary for Organisation and Relationship comboboxes. It carries the submitted value, contextual label, complete path, depth and availability without changing either domain's persistence contract.
@@ -28,8 +28,8 @@ The core application uses only the Python standard library. Map tiles, browser m
 ## Local Data Boundary
 
 `instance/` is the private runtime boundary and is intentionally ignored by Git.
-On startup the application creates the directory, an empty SQLite database and the
-`instance/documents/` upload directory when they are absent. Source code, schema
+The developer runner manages private PostgreSQL data and socket directories plus the
+`instance/documents/` upload directory. Source code, schema
 logic, documentation and intentionally reviewed fictional fixtures remain tracked;
 real entity records and uploaded files do not.
 
@@ -44,7 +44,7 @@ Stage 1 may use deterministic in-process assistance and internal maintenance whe
 
 Stage 1 should not introduce AI, autonomous goal-directed workflow, dispatcher, scheduling, authentication or cloud service layers, nor perform unreviewed consequential actions or autonomous external side effects.
 
-These are current-phase boundaries. The architecture should not prematurely implement future AI or agent layers, but should continue strengthening the shared platform capabilities they would eventually consume: deterministic rules, validation, relationships, provenance, audit history, data quality and safe domain operations. SQLite remains the canonical source of truth.
+These are current-phase boundaries. PostgreSQL is a local server database foundation, not authorization for WAN access, authentication, multi-user behaviour, AI, agents, scheduling or sync.
 
 The current deployment is for one private user without authentication. Future trusted multi-user support is not in Stage 1, but domain and audit design should avoid unnecessary assumptions that would prevent later identity, attribution or permission boundaries.
 
@@ -68,7 +68,7 @@ People, Organisations, Locations, Projects, Documents and Assets all use this st
 
 The ethnicity catalogue is independently generated into `app/ethnicity_catalogue.py` from the 276 detailed groups in the Australian Bureau of Statistics ASCCEG 2025 Table 1.3. It uses the same generic entity-reference links and searchable multi-value control as languages and nationalities. The classification is an Australian-context selection aid, not an inference mechanism or an assertion that identity can be derived from nationality, language or relationships.
 
-Architectural correction: typed tables now receive missing definition-driven columns during schema initialisation. The central `entities.type` SQLite `CHECK` constraint is also rebuilt when entity definitions add new types. Field renames use `FieldDefinition.previous_names` so data from old columns can be copied into renamed active columns without deleting the legacy column. Controlled fields can use value aliases to clean up legacy values such as lowercase statuses. This prevents future entity field or domain additions from breaking existing local databases.
+Typed tables and the complete entity-type constraint are created by the PostgreSQL baseline. Future entity fields and types require explicit versioned migrations; startup does not rebuild tables or repair obsolete local schemas.
 
 ## Entity Page Architecture
 
@@ -123,7 +123,7 @@ The proof of concept favours deterministic, understandable placement over pedigr
 Discovery uses shared entity and relationship query primitives:
 
 - Global search matches canonical entity fields, typed profile fields, notes and relationship context.
-- Search currently scans the local dataset in memory. This is intentionally retained until representative data shows a performance problem; SQLite filtering or FTS5 are the preferred future paths if scale requires them.
+- Search currently scans the local dataset in memory. This is retained until representative data shows a performance problem; indexed PostgreSQL queries and native full-text search are the preferred future paths if scale requires them.
 - Entity list pages support text filtering and favourites-only filtering.
 - Favourites are persisted as shared entity metadata.
 - Recent entities are tracked with `last_viewed_at` when an entity profile is opened.
@@ -202,6 +202,6 @@ Relationships use the same recoverable lifecycle pattern as entities: `deleted_a
 
 ## Portability and recovery
 
-`app/portability.py` owns the stable bundle boundary. An export uses SQLite's online backup API to produce a consistent database snapshot, includes every referenced uploaded document, and writes a versioned manifest with SHA-256 checksums and record counts. Import extracts only safe paths into staging, verifies the manifest, checksums, SQLite integrity, foreign keys, migration set, entity typed rows, relationship endpoints/types and document membership, then presents a count preview. Apply is restricted to an empty target and explicit confirmation. Database and document replacements are staged on the local filesystem, an import audit event is appended, and a recovery bundle is created first.
+`app/portability.py` owns the stable Project E Bundle boundary. Export uses `pg_dump` custom format, includes referenced documents and records SHA-256 checksums and counts. Import validates safe paths and restores into an isolated temporary database before checking migrations, typed rows, relationships and document membership. Apply remains clean-target, previewed and explicitly confirmed, with a recovery bundle created first.
 
 The same recovery bundle primitive runs before confirmed merge and permanent deletion. `tools/restore_backup.py` validates in preview mode by default and requires `--confirm-replace` before restoring a non-empty installation. Bundles, backups and staging files remain under Git-ignored local storage and never become application dependencies.

@@ -22,7 +22,7 @@ from app import views
 class TaxonomyTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.path = Path(self.temp.name) / "taxonomy.sqlite3"
+        self.path = Path(self.temp.name) / "taxonomy.postgres"
         initialise_database(self.path)
 
     def tearDown(self):

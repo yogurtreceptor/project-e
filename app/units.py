@@ -1,8 +1,9 @@
 """Canonical measurement storage with unit-aware presentation conversion."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-import sqlite3
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ UNIT_SEED = (
 )
 
 
-def create_unit_tables(connection: sqlite3.Connection) -> None:
+def create_unit_tables(connection: object) -> None:
     connection.executescript(
         """
         CREATE TABLE IF NOT EXISTS measurement_units (
@@ -70,12 +71,12 @@ def create_unit_tables(connection: sqlite3.Connection) -> None:
         """
     )
     connection.execute(
-        "INSERT OR IGNORE INTO reference_data_types(key, name) VALUES ('measurement_unit', 'Measurement units')"
+        "INSERT INTO reference_data_types(key, name) VALUES ('measurement_unit', 'Measurement units') ON CONFLICT DO NOTHING"
     )
     for key, name, symbol, category, canonical, factor, offset in UNIT_SEED:
         connection.execute(
-            """INSERT OR IGNORE INTO reference_data_items(type_key, key, name, code)
-               VALUES ('measurement_unit', ?, ?, ?)""",
+            """INSERT INTO reference_data_items(type_key, key, name, code)
+               VALUES ('measurement_unit', ?, ?, ?) ON CONFLICT DO NOTHING""",
             (key, name, symbol),
         )
         item_id = connection.execute(
@@ -83,14 +84,14 @@ def create_unit_tables(connection: sqlite3.Connection) -> None:
             (key,),
         ).fetchone()["id"]
         connection.execute(
-            """INSERT OR IGNORE INTO measurement_units
+            """INSERT INTO measurement_units
                (reference_item_id, symbol, category, canonical, conversion_factor, conversion_offset)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING""",
             (item_id, symbol, category, int(canonical), factor, offset),
         )
 
 
-def list_units(connection: sqlite3.Connection, category: str = "") -> list[MeasurementUnit]:
+def list_units(connection: object, category: str = "") -> list[MeasurementUnit]:
     clause = "WHERE unit.category = ?" if category else ""
     parameters = (category,) if category else ()
     rows = connection.execute(
@@ -105,7 +106,7 @@ def list_units(connection: sqlite3.Connection, category: str = "") -> list[Measu
     return [_to_unit(row) for row in rows]
 
 
-def get_unit(connection: sqlite3.Connection, unit_id: int) -> MeasurementUnit | None:
+def get_unit(connection: object, unit_id: int) -> MeasurementUnit | None:
     row = connection.execute(
         """SELECT item.id, item.key, item.name, unit.symbol, unit.category,
                   unit.canonical, unit.conversion_factor, unit.conversion_offset
@@ -128,7 +129,7 @@ def from_canonical(value: Decimal | str, unit: MeasurementUnit) -> Decimal:
 
 
 def set_measurement(
-    connection: sqlite3.Connection,
+    connection: object,
     entity_id: int,
     field_name: str,
     category: str,
@@ -151,7 +152,7 @@ def set_measurement(
     )
 
 
-def clear_measurement(connection: sqlite3.Connection, entity_id: int, field_name: str) -> None:
+def clear_measurement(connection: object, entity_id: int, field_name: str) -> None:
     connection.execute(
         "DELETE FROM entity_measurements WHERE entity_id=? AND field_name=?",
         (entity_id, field_name),
@@ -159,7 +160,7 @@ def clear_measurement(connection: sqlite3.Connection, entity_id: int, field_name
 
 
 def get_measurement(
-    connection: sqlite3.Connection, entity_id: int, field_name: str
+    connection: object, entity_id: int, field_name: str
 ) -> Measurement | None:
     row = connection.execute(
         """SELECT measurement.entity_id, measurement.field_name,
@@ -200,7 +201,7 @@ def _decimal(value: Decimal | str) -> Decimal:
     return number
 
 
-def _to_unit(row: sqlite3.Row) -> MeasurementUnit:
+def _to_unit(row: dict) -> MeasurementUnit:
     return MeasurementUnit(
         id=int(row["id"]),
         key=row["key"],

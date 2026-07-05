@@ -1,5 +1,15 @@
 # Technical Debt Register
 
+## Cross-resource recovery atomicity
+
+Severity: medium
+
+PostgreSQL restore and filesystem document replacement cannot share one transaction. Bundle validation occurs in an isolated database and the prior state is backed up, but an operating-system or database failure during final recovery apply can require the CLI recovery workflow.
+
+Trigger: recovery testing demonstrates an interrupted final apply or Project E introduces a durable maintenance coordinator.
+
+Direction: add an explicit recovery journal and resumable apply states without exposing PostgreSQL concepts in the user experience.
+
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
 ## Search is in-memory and linear
@@ -10,7 +20,7 @@ Entity and relationship search loads local records and filters in Python. This i
 
 Trigger: representative data shows noticeable latency or memory use, or a large import is planned.
 
-Direction: move basic filtering into SQLite first; consider FTS5 only if indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
+Direction: move basic filtering into PostgreSQL first; consider native full-text indexes only if ordinary indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
 
 ## Map UI uses optional external resources
 

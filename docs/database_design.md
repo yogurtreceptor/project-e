@@ -1,6 +1,8 @@
 # Database Design
 
-Project E uses SQLite as the embedded local database and canonical source of truth for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
+Project E uses locally hosted PostgreSQL 16 or later as the canonical source of truth. It binds only to loopback and a private local socket; this is local-first server infrastructure, not cloud, WAN or multi-user functionality. `app/db.py` remains the public facade, `app/db_connection.py` centralises psycopg connection and transaction behaviour, and repositories retain raw parameterised SQL.
+
+Fresh databases receive one clean PostgreSQL baseline migration. Applied migrations record an identifier, source checksum and timestamp and are serialized with an advisory transaction lock. Existing SQLite data and SQLite-to-PostgreSQL upgrades are intentionally unsupported. Future schema changes append migrations rather than performing startup-time schema repair.
 
 ## Schema Versioning
 
@@ -145,7 +147,7 @@ Person Sex is stored as a controlled optional Person field with Male, Female, Ot
 
 `relationships.taxonomy_entry_id` is canonical while `type` remains an incremental compatibility snapshot for inference, graphs and upgrades. Legacy generic or gendered keys map to archived entries and remain loadable but non-selectable. Safe legacy `located_at` rows still contribute to Geography and Map views.
 
-`tools/convert_legacy_family_relationships.py` provides an explicit, one-time cleanup path for gendered family keys. It is read-only by default, maps direction into the canonical neutral family definitions, creates an SQLite backup before `--apply`, and leaves duplicate or unknown relationships unresolved rather than guessing.
+The obsolete SQLite-only family conversion utility was removed with the clean PostgreSQL baseline.
 
 The relationship UI has independent existing-entity and new-entity workflows. Inline relationship creation reuses the standard definition-driven fields for supported entity types inside the new-entity workflow. The new entity is inserted in the same save path as the relationship; if the relationship is not valid, the pending inline entity insert is rolled back.
 
@@ -187,8 +189,8 @@ Migration `20260705_15_relationship_soft_delete` adds the column additively to e
 
 ## Portable bundles and recovery
 
-Portable format version 1 is a ZIP containing `manifest.json`, `data/project-e.sqlite3`, and the uploaded files referenced by canonical Document rows. The manifest identifies the format/version, export timestamp, record counts and a SHA-256 digest for every member. SQLite's backup API creates the database member so export does not depend on copying a live database file.
+Portable format version 2 is a ZIP containing `manifest.json`, `data/project-e.dump`, and the uploaded files referenced by canonical Document rows. The manifest identifies the format/version, export timestamp, record counts and a SHA-256 digest for every member. `pg_dump` creates a consistent custom-format database member.
 
-Import accepts only the current migration set, a clean SQLite integrity and foreign-key check, recognized entity types with typed rows, valid relationship endpoint/type combinations, safe archive paths, matching counts and an exact match between Document file references and bundled files. Apply requires an empty target, explicit preview confirmation and a pre-import recovery bundle. Replacement is staged; failures restore the previous document directory and do not intentionally expose partially imported canonical data. Import appends an `import` audit event while preserving the bundle's prior audit and provenance rows.
+Import first restores into an isolated temporary PostgreSQL database, then accepts only the current migration set, recognized entity types with typed rows, valid relationship endpoint/type combinations, safe archive paths, matching counts and an exact match between Document file references and bundled files. Apply requires an empty target, explicit preview confirmation and a pre-import recovery bundle. PostgreSQL remains hidden behind the Project E Bundle user experience.
 
 Recovery bundles use the same format. Confirmed merge and permanent deletion create them before mutation. Merge repoints both active and recycled relationship rows while preserving `deleted_at`; only duplicate or self-referencing results are removed. Permanent deletion reports active and recycled counts separately before the existing foreign-key cascade.

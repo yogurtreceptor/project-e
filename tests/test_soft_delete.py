@@ -39,7 +39,7 @@ def values_for(definition, name):
 class SoftDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "soft-delete.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "soft-delete.postgres"
         initialise_database(self.database_path)
 
     def tearDown(self):

@@ -12,7 +12,7 @@ from app.geo import NominatimGeocoder, build_map_payload
 class OfflineOperationTests(unittest.TestCase):
     def test_wan_failure_does_not_affect_canonical_records_or_local_map_payload(self):
         with tempfile.TemporaryDirectory() as directory:
-            database_path = Path(directory) / "offline.sqlite3"
+            database_path = Path(directory) / "offline.postgres"
             initialise_database(database_path)
             with connect(database_path) as connection:
                 entity_id = create_entity(

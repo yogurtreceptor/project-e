@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from pathlib import Path
 
 from app.config import DOCUMENT_STORAGE_DIR
@@ -6,7 +6,7 @@ from app.document_storage import delete_stored_document
 
 
 def delete_unreferenced_document_file(
-    connection: sqlite3.Connection,
+    connection: object,
     file_path: str,
     storage_dir: Path = DOCUMENT_STORAGE_DIR,
 ) -> bool:

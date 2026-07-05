@@ -1,5 +1,7 @@
 # Phase 1 Exit Review
 
+The PostgreSQL migration supersedes earlier SQLite-specific migration and portability evidence. Phase 1 remains in exit review until the local PostgreSQL startup, reset, bundle round trip and representative workflows are reconfirmed on the migration branch.
+
 Status: Candidate implementation prepared; maintainer confirmation pending.
 
 Date: 2026-07-05
@@ -10,7 +12,7 @@ This review records the evidence prepared for PR #1. It does not declare Phase 1
 
 - Fresh database creation is exercised throughout the test suite. Representative additive and rebuilding upgrades from earlier Phase 1 schemas are covered by tests/test_schema_migrations.py.
 - Portable export to initialized clean target import is covered by tests/test_portability.py. The round trip preserves canonical IDs, entities, recycled relationships, field provenance and uploaded document bytes, then records the import.
-- Bundle validation rejects checksum changes, unsafe or incomplete structure, unsupported/current-schema mismatches, broken SQLite or foreign-key state, invalid entity or relationship structure, and document membership mismatches before apply.
+- Bundle validation rejects checksum changes, unsafe or incomplete structure, unsupported/current-schema mismatches, failed isolated PostgreSQL restores, invalid entity or relationship structure, and document membership mismatches before apply.
 - Import into a non-empty target is rejected without changing its canonical record. Recovery replacement is separately tested and creates a safety backup of the replaced state.
 - Confirmed merge and permanent entity deletion create complete recovery bundles first. Merge tests show recycled relationships retain identity and deletion state while endpoints move to the survivor. Permanent-delete previews distinguish active and recycled relationship counts before cascading deletion.
 - A simulated WAN failure in tests/test_offline_operation.py leaves canonical records and locally derived coordinate-backed map payloads usable. Geocoding remains optional and its HTTP endpoint reports an empty result/error rather than mutating local records.

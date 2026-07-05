@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 
 from app.db import create_entity, normalise_form_values, validate_entity_values
 from app.entities import DEFINITIONS_BY_TYPE, EntityDefinition
@@ -8,7 +8,7 @@ INLINE_RELATIONSHIP_ENTITY_TYPES = ("person", "organisation", "location")
 
 
 def create_inline_relationship_target(
-    connection: sqlite3.Connection,
+    connection: object,
     values: dict[str, str],
     raw_form: dict[str, str],
     query: dict[str, str],

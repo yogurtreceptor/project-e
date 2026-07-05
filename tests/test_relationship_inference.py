@@ -1,8 +1,9 @@
 import json
-import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 
-from app.db_schema import create_schema
+from app.db_schema import connect, initialise_database
 from app.db_support import utc_now
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.relationship_repository import create_relationship, delete_relationship, get_relationship, list_relationships, update_relationship
@@ -11,13 +12,14 @@ from app.view_pages.relationships import inference_review_page
 
 class RelationshipInferenceTests(unittest.TestCase):
     def setUp(self):
-        self.connection = sqlite3.connect(":memory:")
-        self.connection.row_factory = sqlite3.Row
-        self.connection.execute("PRAGMA foreign_keys=ON")
-        create_schema(self.connection)
+        self.temporary = tempfile.TemporaryDirectory()
+        self.database = Path(self.temporary.name) / "inference-postgres"
+        initialise_database(self.database)
+        self.connection = connect(self.database)
 
     def tearDown(self):
         self.connection.close()
+        self.temporary.cleanup()
 
     def person(self, name, birthday="", sex="Unknown"):
         now = utc_now()

@@ -16,7 +16,7 @@ class DocumentLifecycleTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.root = Path(self.temp_dir.name)
-        self.database_path = self.root / "documents.sqlite3"
+        self.database_path = self.root / "documents.postgres"
         self.storage_dir = self.root / "documents"
         self.definition = DEFINITIONS_BY_SLUG["documents"]
         initialise_database(self.database_path)

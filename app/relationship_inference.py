@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sqlite3
 from dataclasses import dataclass
 
 from app.db_support import utc_now
@@ -49,7 +48,7 @@ class InferenceRule:
 
 
 class FamilyFacts:
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection: object):
         self.connection = connection
         rows = connection.execute("""
             SELECT r.* FROM relationships r JOIN entities s ON s.id=r.source_entity_id
@@ -159,7 +158,7 @@ RULES: tuple[InferenceRule, ...] = (GrandparentRule(), SiblingRule(), AuntUncleR
 SYMMETRIC = {"sibling_of", "cousin_of"}
 
 
-def _fingerprint(connection: sqlite3.Connection, candidate: Candidate) -> str:
+def _fingerprint(connection: object, candidate: Candidate) -> str:
     evidence = []
     for rid in candidate.support_ids:
         row = connection.execute("SELECT id, source_entity_id, target_entity_id, type, status, updated_at FROM relationships WHERE id=? AND deleted_at=''", (rid,)).fetchone()
@@ -185,7 +184,7 @@ def _valid_candidate(facts: FamilyFacts, candidate: Candidate) -> bool:
     return True
 
 
-def recompute_inferences(connection: sqlite3.Connection, trigger_type: str = "manual_change", trigger_id: int | None = None) -> int | None:
+def recompute_inferences(connection: object, trigger_type: str = "manual_change", trigger_id: int | None = None) -> int | None:
     facts = FamilyFacts(connection)
     candidates: dict[tuple[str, int, int], Candidate] = {}
     for rule in RULES:
@@ -230,7 +229,7 @@ def recompute_inferences(connection: sqlite3.Connection, trigger_type: str = "ma
     return batch_id
 
 
-def list_review_batches(connection: sqlite3.Connection, include_closed: bool = False):
+def list_review_batches(connection: object, include_closed: bool = False):
     where = "" if include_closed else "WHERE b.status='open'"
     batches = []
     for batch in connection.execute(f"SELECT b.* FROM inference_batches b {where} ORDER BY b.id DESC"):
@@ -239,7 +238,7 @@ def list_review_batches(connection: sqlite3.Connection, include_closed: bool = F
     return batches
 
 
-def get_suggestion(connection: sqlite3.Connection, suggestion_id: int):
+def get_suggestion(connection: object, suggestion_id: int):
     row = connection.execute("SELECT * FROM inference_suggestions WHERE id=?", (suggestion_id,)).fetchone()
     return to_suggestion(connection, row) if row else None
 
@@ -248,7 +247,7 @@ def to_suggestion(connection, row):
     return InferenceSuggestion(int(row["id"]), int(row["batch_id"]), row["type"], get_entity_by_id(connection, int(row["source_entity_id"])), get_entity_by_id(connection, int(row["target_entity_id"])), row["started_at"], row["started_at_precision"], row["status"], row["source_type"], row["rule_key"], tuple(json.loads(row["supporting_relationship_ids"])), row["evidence_fingerprint"], row["created_at"], row["reviewed_at"])
 
 
-def review_suggestion(connection: sqlite3.Connection, suggestion_id: int, decision: str) -> int | None:
+def review_suggestion(connection: object, suggestion_id: int, decision: str) -> int | None:
     if decision not in {"confirm", "reject"}:
         raise ValueError("Invalid inference review decision.")
     row = connection.execute("SELECT * FROM inference_suggestions WHERE id=? AND status='pending'", (suggestion_id,)).fetchone()
@@ -267,7 +266,7 @@ def review_suggestion(connection: sqlite3.Connection, suggestion_id: int, decisi
     return recompute_inferences(connection, "inference_confirmation", suggestion_id) if decision == "confirm" else None
 
 
-def dismiss_batch(connection: sqlite3.Connection, batch_id: int) -> None:
+def dismiss_batch(connection: object, batch_id: int) -> None:
     pending = connection.execute("SELECT 1 FROM inference_suggestions WHERE batch_id=? AND status='pending'", (batch_id,)).fetchone()
     if pending:
         raise ValueError("Review every suggestion before dismissing the batch.")
@@ -275,7 +274,7 @@ def dismiss_batch(connection: sqlite3.Connection, batch_id: int) -> None:
     connection.commit()
 
 
-def undo_suggestion_review(connection: sqlite3.Connection, suggestion_id: int) -> None:
+def undo_suggestion_review(connection: object, suggestion_id: int) -> None:
     row = connection.execute("SELECT * FROM inference_suggestions WHERE id=? AND status IN ('confirmed','rejected')", (suggestion_id,)).fetchone()
     if not row:
         raise ValueError("Only confirmed or rejected suggestions can be undone.")

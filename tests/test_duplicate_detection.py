@@ -14,7 +14,7 @@ from app.web import EddyRequestHandler, ThreadingHTTPServer
 class DuplicateDetectionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "duplicates.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "duplicates.postgres"
         initialise_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
 

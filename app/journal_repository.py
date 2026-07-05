@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from datetime import datetime, timedelta
 
 from app.db_support import utc_now
@@ -6,7 +6,7 @@ from app.journal import JournalEntry
 
 
 def list_journal_entries(
-    connection: sqlite3.Connection,
+    connection: object,
     entity_type: str,
     entity_id: int,
     include_archived: bool = False,
@@ -24,7 +24,7 @@ def list_journal_entries(
 
 
 def get_journal_entry(
-    connection: sqlite3.Connection, entry_id: int
+    connection: object, entry_id: int
 ) -> JournalEntry | None:
     row = connection.execute(
         "SELECT * FROM journal_entries WHERE id = ?", (entry_id,)
@@ -33,7 +33,7 @@ def get_journal_entry(
 
 
 def create_journal_entry(
-    connection: sqlite3.Connection, entity_type: str, entity_id: int, body: str
+    connection: object, entity_type: str, entity_id: int, body: str
 ) -> int:
     body = body.strip()
     if not body:
@@ -52,7 +52,7 @@ def create_journal_entry(
 
 
 def update_journal_entry(
-    connection: sqlite3.Connection, entry_id: int, body: str
+    connection: object, entry_id: int, body: str
 ) -> None:
     body = body.strip()
     if not body:
@@ -70,17 +70,17 @@ def update_journal_entry(
     connection.commit()
 
 
-def archive_journal_entry(connection: sqlite3.Connection, entry_id: int) -> None:
+def archive_journal_entry(connection: object, entry_id: int) -> None:
     connection.execute(
         "UPDATE journal_entries SET archived_at = ? WHERE id = ?", (utc_now(), entry_id)
     )
     connection.commit()
 
 
-def delete_journal_entry(connection: sqlite3.Connection, entry_id: int) -> None:
+def delete_journal_entry(connection: object, entry_id: int) -> None:
     connection.execute("DELETE FROM journal_entries WHERE id = ?", (entry_id,))
     connection.commit()
 
 
-def _to_journal_entry(row: sqlite3.Row) -> JournalEntry:
+def _to_journal_entry(row: dict) -> JournalEntry:
     return JournalEntry(**dict(row))

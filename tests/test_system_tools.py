@@ -28,7 +28,7 @@ class SystemToolsViewTests(unittest.TestCase):
         self.assertIn("Validate and preview", page)
         preview = type("Preview", (), {"exported_at": "2026-07-05", "entities": 2, "deleted_entities": 1, "relationships": 1, "deleted_relationships": 1, "documents": 1})()
         confirmation = views.import_preview_page(preview, "abc")
-        self.assertIn("passed manifest, checksum, SQLite integrity", confirmation)
+        self.assertIn("passed manifest, checksum, database restore", confirmation)
         self.assertIn("Confirm import", confirmation)
 
     def test_navigation_replaces_individual_tool_links_with_active_hub(self):
@@ -45,7 +45,7 @@ class SystemToolsViewTests(unittest.TestCase):
 class SystemAuditTests(unittest.TestCase):
     def test_filters_events_by_action_and_record_kind(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "audit.sqlite3"
+            path = Path(directory) / "audit.postgres"
             initialise_database(path)
             with connect(path) as connection:
                 person = DEFINITIONS_BY_TYPE["person"]

@@ -1,4 +1,3 @@
-import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +11,7 @@ from app.timeline import registry as timeline_registry
 class DomainModelCleanupTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temporary_directory.name) / "domain.sqlite3"
+        self.database_path = Path(self.temporary_directory.name) / "domain.postgres"
         initialise_database(self.database_path)
 
     def tearDown(self) -> None:
@@ -64,16 +63,11 @@ class DomainModelCleanupTests(unittest.TestCase):
         document_fields = {field.name for field in DEFINITIONS_BY_TYPE["document"].fields}
         self.assertNotIn("issuer", document_fields)
 
-    def test_upgrade_removes_legacy_document_issuer_and_format_values(self) -> None:
-        legacy_path = Path(self.temporary_directory.name) / "legacy.sqlite3"
-        initialise_database(legacy_path)
-        with sqlite3.connect(legacy_path) as connection:
-            connection.execute("ALTER TABLE documents ADD COLUMN issuer TEXT NOT NULL DEFAULT ''")
-            connection.execute("UPDATE documents SET issuer='Legacy issuer'")
-            connection.execute("DELETE FROM schema_migrations WHERE migration_id='20260705_14_document_domain_cleanup'")
-        initialise_database(legacy_path)
-        with connect(legacy_path) as connection:
-            columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
+    def test_postgresql_baseline_has_no_legacy_document_issuer(self) -> None:
+        with connect(self.database_path) as connection:
+            columns = {row["name"] for row in connection.execute(
+                "SELECT column_name AS name FROM information_schema.columns WHERE table_name='documents'"
+            )}
         self.assertNotIn("issuer", columns)
 
 

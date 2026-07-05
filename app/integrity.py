@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -14,7 +14,7 @@ class IntegrityWarning:
     entity_ids: tuple[int, ...] = ()
 
 
-def audit_relationships(connection: sqlite3.Connection) -> list[IntegrityWarning]:
+def audit_relationships(connection: object) -> list[IntegrityWarning]:
     entities = {row["id"]: row["type"] for row in connection.execute("SELECT id, type FROM entities")}
     rows = connection.execute("SELECT * FROM relationships WHERE deleted_at='' ORDER BY id").fetchall()
     warnings: list[IntegrityWarning] = []

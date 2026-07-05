@@ -84,7 +84,7 @@ class StructuredValueTests(unittest.TestCase):
 
     def test_relationship_dates_use_the_same_calendar_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            database_path = Path(temp_dir) / "relationships.sqlite3"
+            database_path = Path(temp_dir) / "relationships.postgres"
             initialise_database(database_path)
             person = DEFINITIONS_BY_SLUG["people"]
             with connect(database_path) as connection:

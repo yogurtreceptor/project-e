@@ -11,7 +11,7 @@ from app.integrity import audit_relationships
 class DataIntegrityMergeAndFilterTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "milestone.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "milestone.postgres"
         initialise_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
         self.organisations = DEFINITIONS_BY_SLUG["organisations"]

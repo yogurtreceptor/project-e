@@ -21,7 +21,7 @@ from app.entities import DEFINITIONS_BY_SLUG
 class PeopleJournalTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "journal.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "journal.postgres"
         initialise_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
         with connect(self.database_path) as connection:

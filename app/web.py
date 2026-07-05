@@ -1,5 +1,5 @@
 import json
-import sqlite3
+import psycopg
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import (BACKUP_DIR, DATABASE_PATH, DOCUMENT_STORAGE_DIR, IMPORT_STAGING_DIR, initialise_local_storage)
+from app.config import (BACKUP_DIR, DATABASE_URL, DOCUMENT_STORAGE_DIR, IMPORT_STAGING_DIR, initialise_local_storage)
 from app.db import (
     connect,
     count_entities,
@@ -79,7 +79,10 @@ from app.portability import (apply_import_bundle, consume_staged_bundle, create_
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 class EddyRequestHandler(BaseHTTPRequestHandler):
-    database_path = DATABASE_PATH
+    database_url = DATABASE_URL
+    # Kept as an internal handler attribute name until portability is rewritten;
+    # its value is a PostgreSQL URL, never a filesystem path.
+    database_path = database_url
     document_storage_dir = DOCUMENT_STORAGE_DIR
     backup_dir = BACKUP_DIR
     import_staging_dir = IMPORT_STAGING_DIR
@@ -224,7 +227,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 if self.command != "GET" or len(parts) != 1:
                     self.respond_not_found(); return
                 entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
-        except (ValueError, KeyError, sqlite3.IntegrityError) as exc:
+        except (ValueError, KeyError, psycopg.IntegrityError) as exc:
             error = str(exc)
             with connect(self.database_path) as connection:
                 entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
@@ -315,7 +318,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 apply_import_bundle(bundle, self.database_path, self.document_storage_dir, self.backup_dir)
                 self.redirect("/system-tools/portability")
                 return
-        except (ValueError, OSError, sqlite3.Error) as error:
+        except (ValueError, OSError, psycopg.Error) as error:
             self.respond_page("Import and export", views.portability_page(str(error)), HTTPStatus.BAD_REQUEST, active_slug="system-tools")
             return
         self.respond_not_found()
@@ -1062,7 +1065,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     initialise_local_storage()
-    initialise_database(EddyRequestHandler.database_path)
+    initialise_database(EddyRequestHandler.database_url)
     server = ThreadingHTTPServer((host, port), EddyRequestHandler)
     print(f"Operation Eddy running at http://{host}:{port}")
     try:

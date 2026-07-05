@@ -13,11 +13,11 @@ Current priorities are:
 - record the Phase 1 exit decision after final verification
 - keep architecture, migrations and documentation coherent while the foundation settles
 
-Scale-driven work such as SQLite-backed filtering, FTS5, physical analytics columns and fully offline map assets remains trigger-based rather than mandatory for Phase 1 exit.
+Scale-driven work such as PostgreSQL-native full-text search, physical analytics columns and fully offline map assets remains trigger-based rather than mandatory for Phase 1 exit.
 
 ## Phase 1 — Information Platform
 
-Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local SQLite persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
+Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local PostgreSQL persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
 
 ### Phase 1 Exit Criteria
 
@@ -54,7 +54,7 @@ Do not treat richer relationship evidence as an incidental field addition. Confi
 
 ## Across every phase
 
-- SQLite and the local database remain the canonical source of truth.
+- Locally hosted PostgreSQL remains the canonical source of truth; this is not cloud or WAN infrastructure.
 - Core operation remains local-first; optional services must be replaceable.
 - Human users, deterministic operations and future AI converge on shared platform capabilities.
 - Validation, relationships, audit history, provenance, recovery and user control remain strategic infrastructure.

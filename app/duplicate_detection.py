@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from dataclasses import dataclass
 
 from app.entities import EntityDefinition, EntityRecord
@@ -12,7 +12,7 @@ class DuplicateMatch:
 
 
 def find_duplicate_entities(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     values: dict[str, str],
     exclude_entity_id: int | None = None,

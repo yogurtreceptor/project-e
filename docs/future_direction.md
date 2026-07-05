@@ -31,7 +31,7 @@ The present application is an in-process local web system, not yet a service-ori
 
 ## Data and control
 
-SQLite remains the canonical source of truth. Search indexes, derived timelines, summaries, embeddings or model context—if introduced—are disposable projections and must retain traceability to their canonical origins.
+Locally hosted PostgreSQL remains the canonical source of truth. Search indexes, derived timelines, summaries, embeddings or model context—if introduced—are disposable projections and must retain traceability to their canonical origins.
 
 Machine-originated changes should carry provenance and pass through the same validation and integrity rules as human changes. The degree of confirmation, reversibility and authorization should reflect consequence. Local-first operation and private data ownership remain architectural constraints even when optional models or external integrations are considered.
 

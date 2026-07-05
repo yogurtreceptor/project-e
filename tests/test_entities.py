@@ -1,7 +1,6 @@
 import tempfile
 import unittest
 from pathlib import Path
-import sqlite3
 
 from app import views
 from app.db import (
@@ -38,7 +37,7 @@ from app.relationship_workflow import create_inline_relationship_target
 class EntityDatabaseTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "test.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "test.postgres"
         initialise_database(self.database_path)
         self.definition = DEFINITIONS_BY_SLUG["people"]
 
@@ -1081,70 +1080,6 @@ class EntityDatabaseTests(unittest.TestCase):
         html = views.entity_detail_page(record, [])
         self.assertIn("$1200", html)
 
-    def test_renamed_location_and_asset_fields_migrate_from_legacy_columns(self) -> None:
-        legacy_path = Path(self.temp_dir.name) / "legacy-renames.sqlite3"
-        with sqlite3.connect(legacy_path) as connection:
-            connection.executescript(
-                """
-                CREATE TABLE entities (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL CHECK (type IN ('location', 'asset')),
-                    display_name TEXT NOT NULL,
-                    summary TEXT NOT NULL DEFAULT '',
-                    notes TEXT NOT NULL DEFAULT '',
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    last_viewed_at TEXT NOT NULL DEFAULT '',
-                    is_favourite INTEGER NOT NULL DEFAULT 0
-                );
-                INSERT INTO entities (id, type, display_name, summary, notes, created_at, updated_at)
-                VALUES
-                    (1, 'location', 'Legacy Place', '', '', 'now', 'now'),
-                    (2, 'asset', 'Legacy Laptop', '', '', 'now', 'now');
-                CREATE TABLE locations (
-                    entity_id INTEGER PRIMARY KEY,
-                    formatted_address TEXT NOT NULL DEFAULT '',
-                    address_line_1 TEXT NOT NULL DEFAULT '',
-                    address_line_2 TEXT NOT NULL DEFAULT '',
-                    locality TEXT NOT NULL DEFAULT '',
-                    region TEXT NOT NULL DEFAULT '',
-                    postal_code TEXT NOT NULL DEFAULT '',
-                    country TEXT NOT NULL DEFAULT '',
-                    latitude TEXT NOT NULL DEFAULT '',
-                    longitude TEXT NOT NULL DEFAULT '',
-                    geocoding_source TEXT NOT NULL DEFAULT ''
-                );
-                INSERT INTO locations (
-                    entity_id, locality, region, postal_code, geocoding_source
-                )
-                VALUES (1, 'Brisbane', 'Queensland', '4000', 'manual');
-                CREATE TABLE assets (
-                    entity_id INTEGER PRIMARY KEY,
-                    asset_type TEXT NOT NULL DEFAULT '',
-                    status TEXT NOT NULL DEFAULT '',
-                    serial_number TEXT NOT NULL DEFAULT '',
-                    purchase_date TEXT NOT NULL DEFAULT '',
-                    value TEXT NOT NULL DEFAULT '',
-                    latitude TEXT NOT NULL DEFAULT '',
-                    longitude TEXT NOT NULL DEFAULT ''
-                );
-                INSERT INTO assets (entity_id, status, purchase_date, value)
-                VALUES (2, 'active', '2026-06-21', '1200');
-                """
-            )
-
-        initialise_database(legacy_path)
-        with connect(legacy_path) as connection:
-            location = get_entity(connection, DEFINITIONS_BY_SLUG["locations"], 1)
-            asset = get_entity(connection, DEFINITIONS_BY_SLUG["assets"], 2)
-
-        self.assertEqual(location.metadata["city"], "Brisbane")
-        self.assertEqual(location.metadata["state"], "Queensland")
-        self.assertEqual(location.metadata["post_code"], "4000")
-        self.assertEqual(location.metadata["source"], "manual")
-        self.assertEqual(asset.metadata["status"], "Owned")
-        self.assertEqual(asset.metadata["acquisition_date"], "2026-06-21")
-
     def test_map_payload_uses_location_entities_and_relationships(self) -> None:
         location_definition = DEFINITIONS_BY_SLUG["locations"]
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -1373,27 +1308,8 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertNotIn("Operation Eddy", marker_layers)
         self.assertNotIn("Architecture Note", marker_layers)
 
-    def test_entity_type_constraint_migrates_for_new_domains(self) -> None:
-        legacy_path = Path(self.temp_dir.name) / "legacy.sqlite3"
-        with sqlite3.connect(legacy_path) as connection:
-            connection.executescript(
-                """
-                CREATE TABLE entities (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL CHECK (type IN ('person', 'organisation', 'location')),
-                    display_name TEXT NOT NULL,
-                    summary TEXT NOT NULL DEFAULT '',
-                    notes TEXT NOT NULL DEFAULT '',
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    last_viewed_at TEXT NOT NULL DEFAULT '',
-                    is_favourite INTEGER NOT NULL DEFAULT 0
-                );
-                """
-            )
-
-        initialise_database(legacy_path)
-        with connect(legacy_path) as connection:
+    def test_postgresql_baseline_allows_every_current_entity_domain(self) -> None:
+        with connect(self.database_path) as connection:
             project_id = create_entity(
                 connection,
                 DEFINITIONS_BY_SLUG["projects"],

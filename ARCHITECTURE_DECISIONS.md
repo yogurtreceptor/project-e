@@ -89,7 +89,7 @@ Existing local databases need the central `entities.type` constraint to evolve w
 
 ## ADR-004: Track schema migrations while retaining additive repair
 
-Status: Accepted
+Status: Superseded by ADR-011
 
 Date: 2026-06-28
 
@@ -178,7 +178,7 @@ Legacy `relationship_change` rows remain readable through a small presentation n
 
 ## ADR-010: Use validated snapshot bundles for Stage 1 portability and recovery
 
-Status: Accepted
+Status: Superseded by ADR-011
 
 Date: 2026-07-05
 
@@ -190,3 +190,18 @@ The SQLite database already contains the canonical graph, custom taxonomies, nor
 
 Consequences:
 Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Stage 1 scope.
+
+## ADR-011: Use locally hosted PostgreSQL as the canonical database
+
+Status: Accepted
+
+Date: 2026-07-05
+
+Decision:
+Use PostgreSQL 16 or later as Project E's sole database, accessed with psycopg 3 and raw parameterised SQL behind a small boundary. Run it on loopback and a private local socket. Keep Project E Bundles user-facing while using `pg_dump` and isolated validation restores internally.
+
+Reason:
+The pre-Phase-2 foundation benefits from explicit process and transaction boundaries. Early development permits a clean baseline without preserving SQLite data or maintaining two backends.
+
+Consequences:
+PostgreSQL and psycopg are local prerequisites. SQLite compatibility is removed. This adds no WAN access, authentication, accounts, multi-user behaviour, agents, scheduling, sync or cloud dependency.

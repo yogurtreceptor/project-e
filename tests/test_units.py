@@ -17,7 +17,7 @@ from app.entities import DEFINITIONS_BY_TYPE
 class UnitInfrastructureTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "units.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "units.postgres"
         initialise_database(self.database_path)
         self.connection = connect(self.database_path)
         self.person_id = create_entity(

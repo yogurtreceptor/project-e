@@ -8,7 +8,7 @@ Design Principles
 - One canonical record per real-world object, with multiple views over the same data.
 - Local-first: core records and workflows must remain usable without WAN access; optional map resources may use replaceable network services.
 - Prefer maintainable, simple architecture and free/open-source software.
-- Use SQLite and conservative dependencies. Add a dependency only when the standard library and existing code cannot reasonably meet the need, and document the reason.
+- Use locally hosted PostgreSQL as the canonical database and keep access behind the Project E database boundary. Add dependencies conservatively and document the reason.
 
 Stage 1 Boundaries
 ------------------
@@ -54,7 +54,7 @@ If implementation uncovers a new long-term architectural decision, repository co
 
 Privacy and Generated Files
 ---------------------------
-- Never commit databases, SQLite runtime files, uploaded documents, runtime data, personal data, logs, caches, exports, backups or other generated artifacts.
+- Never commit PostgreSQL data or dumps, uploaded documents, runtime data, personal data, logs, caches, exports, backups or other generated artifacts.
 - Keep local data under Git-ignored locations such as `instance/`. Tracked fixtures must be clearly fictional, intentional and reviewed.
 
 Codex Workspace Troubleshooting

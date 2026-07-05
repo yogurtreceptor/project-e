@@ -6,24 +6,26 @@ import io
 import json
 import os
 import shutil
-import sqlite3
+import subprocess
 import tempfile
 import uuid
 import zipfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
 from app.audit import record_audit_event
 from app.db_schema import SCHEMA_MIGRATION_IDS, connect
+from app.db_connection import resolve_database_url
 from app.entities import DEFINITIONS_BY_TYPE
 from app.entity_repository import validate_entity_values
 from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES
 from app.structured_values import validate_structured_value
 
 FORMAT_NAME = "project-e-portable-bundle"
-FORMAT_VERSION = 1
-DATABASE_MEMBER = "data/project-e.sqlite3"
+FORMAT_VERSION = 2
+DATABASE_MEMBER = "data/project-e.dump"
 
 
 @dataclass(frozen=True)
@@ -36,18 +38,12 @@ class BundlePreview:
     exported_at: str
 
 
-def create_bundle(database_path: Path, document_storage_dir: Path) -> bytes:
+def create_bundle(database_path, document_storage_dir: Path) -> bytes:
     with tempfile.TemporaryDirectory() as directory:
-        snapshot = Path(directory) / "project-e.sqlite3"
-        source = connect(database_path)
-        target = sqlite3.connect(snapshot)
-        try:
-            source.backup(target)
-        finally:
-            target.close()
-            source.close()
+        snapshot = Path(directory) / "project-e.dump"
+        _run_pg("pg_dump", "--format=custom", "--no-owner", "--no-privileges", "--file", str(snapshot), "--dbname", resolve_database_url(database_path))
         members = {DATABASE_MEMBER: snapshot.read_bytes()}
-        with connect(snapshot) as connection:
+        with connect(database_path) as connection:
             for row in connection.execute(
                 "SELECT file_path FROM documents WHERE file_path<>'' ORDER BY entity_id"
             ):
@@ -74,24 +70,23 @@ def create_bundle(database_path: Path, document_storage_dir: Path) -> bytes:
 
 def inspect_bundle(bundle: bytes) -> BundlePreview:
     with tempfile.TemporaryDirectory() as directory:
-        manifest, database_path, document_members = _extract_and_validate(
+        manifest, dump_path, document_members = _extract_and_validate(
             bundle, Path(directory)
         )
-        with connect(database_path) as connection:
-            _validate_database(connection)
-            counts = _counts(connection)
-            if counts != manifest.get("counts"):
-                raise ValueError("Bundle record counts do not match its manifest.")
-            expected_files = {
-                f"files/{_safe_document_relative(row['file_path']).name}"
-                for row in connection.execute(
-                    "SELECT file_path FROM documents WHERE file_path<>''"
-                )
-            }
-            if expected_files != set(document_members):
-                raise ValueError(
-                    "Bundle document files do not match canonical Document records."
-                )
+        with _restored_database(dump_path) as database_url:
+            with connect(database_url) as connection:
+                _validate_database(connection)
+                counts = _counts(connection)
+                if counts != manifest.get("counts"):
+                    raise ValueError("Bundle record counts do not match its manifest.")
+                expected_files = {
+                    f"files/{_safe_document_relative(row['file_path']).name}"
+                    for row in connection.execute(
+                        "SELECT file_path FROM documents WHERE file_path<>''"
+                    )
+                }
+                if expected_files != set(document_members):
+                    raise ValueError("Bundle document files do not match canonical Document records.")
         return BundlePreview(exported_at=manifest["exported_at"], **counts)
 
 
@@ -107,18 +102,14 @@ def apply_import_bundle(
     if require_empty and not _target_is_empty(database_path, document_storage_dir):
         raise ValueError("Import requires an empty database and document store.")
     backup_dir.mkdir(parents=True, exist_ok=True)
-    if database_path.exists():
-        create_recovery_backup(
-            database_path, document_storage_dir, backup_dir, "before-import"
-        )
-    database_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=database_path.parent) as directory:
+    create_recovery_backup(
+        database_path, document_storage_dir, backup_dir, "before-import"
+    )
+    with tempfile.TemporaryDirectory() as directory:
         staging = Path(directory)
         _manifest, staged_database, document_members = _extract_and_validate(
             bundle, staging
         )
-        with connect(staged_database) as connection:
-            _validate_database(connection)
         staged_documents = staging / "documents"
         staged_documents.mkdir()
         with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
@@ -129,14 +120,10 @@ def apply_import_bundle(
         document_storage_dir.parent.mkdir(parents=True, exist_ok=True)
         if document_storage_dir.exists():
             os.replace(document_storage_dir, old_documents)
-        replacement_database = database_path.with_suffix(database_path.suffix + ".importing")
         try:
             os.replace(staged_documents, document_storage_dir)
-            shutil.copy2(staged_database, replacement_database)
-            os.replace(replacement_database, database_path)
+            _run_pg("pg_restore", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--dbname", resolve_database_url(database_path), str(staged_database))
         except Exception:
-            if replacement_database.exists():
-                replacement_database.unlink()
             if document_storage_dir.exists():
                 shutil.rmtree(document_storage_dir)
             if old_documents.exists():
@@ -230,17 +217,13 @@ def _extract_and_validate(bundle: bytes, directory: Path):
         for name, expected in members.items():
             if _sha256(archive.read(name)) != expected:
                 raise ValueError(f"Bundle checksum failed for {name}.")
-        database_path = directory / "import.sqlite3"
+        database_path = directory / "project-e.dump"
         database_path.write_bytes(archive.read(DATABASE_MEMBER))
         document_members = [name for name in names if name.startswith("files/")]
     return manifest, database_path, document_members
 
 
-def _validate_database(connection: sqlite3.Connection) -> None:
-    if connection.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
-        raise ValueError("Imported database failed SQLite integrity checks.")
-    if connection.execute("PRAGMA foreign_key_check").fetchone():
-        raise ValueError("Imported database contains broken references.")
+def _validate_database(connection) -> None:
     migrations = {
         row[0] for row in connection.execute("SELECT migration_id FROM schema_migrations")
     }
@@ -320,14 +303,12 @@ def _entity_values_for_validation(connection, entity_id, definition):
 def _target_is_empty(database_path: Path, document_storage_dir: Path) -> bool:
     if document_storage_dir.exists() and any(document_storage_dir.iterdir()):
         return False
-    if not database_path.exists():
-        return True
     with connect(database_path) as connection:
         user_tables = ("entities", "relationships", "journal_entries", "audit_events", "data_quality_finding_state", "entity_edit_history")
         return all(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0 for table in user_tables)
 
 
-def _counts(connection: sqlite3.Connection) -> dict[str, int]:
+def _counts(connection) -> dict[str, int]:
     return {
         "entities": connection.execute("SELECT COUNT(*) FROM entities").fetchone()[0],
         "relationships": connection.execute(
@@ -368,3 +349,31 @@ def _sha256(content: bytes) -> str:
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _run_pg(tool: str, *arguments: str) -> None:
+    try:
+        subprocess.run([tool, *arguments], check=True, capture_output=True, text=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        detail = getattr(error, "stderr", "") or str(error)
+        raise ValueError(f"Project E Bundle database operation failed: {detail.strip()}") from error
+
+
+@contextmanager
+def _restored_database(dump_path: Path):
+    import psycopg
+
+    source = psycopg.conninfo.conninfo_to_dict(resolve_database_url())
+    source["dbname"] = "postgres"
+    name = "project_e_bundle_" + uuid.uuid4().hex[:16]
+    with psycopg.connect(**source, autocommit=True) as admin:
+        admin.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(name)))
+    restored = dict(source)
+    restored["dbname"] = name
+    url = psycopg.conninfo.make_conninfo(**restored)
+    try:
+        _run_pg("pg_restore", "--no-owner", "--no-privileges", "--dbname", url, str(dump_path))
+        yield url
+    finally:
+        with psycopg.connect(**source, autocommit=True) as admin:
+            admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

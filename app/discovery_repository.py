@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 
 from app.db_support import utc_now
 from app.entities import EntityRecord
@@ -8,7 +8,7 @@ from app.relationships import RelationshipRecord
 from app.structured_filters import apply_structured_filter
 
 
-def list_recent_entities(connection: sqlite3.Connection, limit: int = 8) -> list[EntityRecord]:
+def list_recent_entities(connection: object, limit: int = 8) -> list[EntityRecord]:
     rows = connection.execute(
         """
         SELECT id
@@ -22,7 +22,7 @@ def list_recent_entities(connection: sqlite3.Connection, limit: int = 8) -> list
     return [entity for row in rows if (entity := get_entity_by_id(connection, int(row["id"]))) is not None]
 
 
-def mark_entity_viewed(connection: sqlite3.Connection, entity_id: int) -> None:
+def mark_entity_viewed(connection: object, entity_id: int) -> None:
     connection.execute(
         "UPDATE entities SET last_viewed_at = ? WHERE id = ?",
         (utc_now(), entity_id),
@@ -30,7 +30,7 @@ def mark_entity_viewed(connection: sqlite3.Connection, entity_id: int) -> None:
     connection.commit()
 
 
-def list_favourite_entities(connection: sqlite3.Connection, limit: int = 8) -> list[EntityRecord]:
+def list_favourite_entities(connection: object, limit: int = 8) -> list[EntityRecord]:
     rows = connection.execute(
         """
         SELECT id
@@ -44,7 +44,7 @@ def list_favourite_entities(connection: sqlite3.Connection, limit: int = 8) -> l
     return [entity for row in rows if (entity := get_entity_by_id(connection, int(row["id"]))) is not None]
 
 
-def set_entity_favourite(connection: sqlite3.Connection, entity_id: int, is_favourite: bool) -> None:
+def set_entity_favourite(connection: object, entity_id: int, is_favourite: bool) -> None:
     connection.execute(
         "UPDATE entities SET is_favourite = ?, updated_at = ? WHERE id = ?",
         (1 if is_favourite else 0, utc_now(), entity_id),
@@ -53,7 +53,7 @@ def set_entity_favourite(connection: sqlite3.Connection, entity_id: int, is_favo
 
 
 def search_entities(
-    connection: sqlite3.Connection,
+    connection: object,
     query: str = "",
     entity_type: str = "",
     favourites_only: bool = False,
@@ -86,7 +86,7 @@ def search_entities(
 
 
 def matching_relationships_for_entity(
-    connection: sqlite3.Connection, entity_id: int, query: str
+    connection: object, entity_id: int, query: str
 ) -> list[RelationshipRecord]:
     matches = []
     lowered = query.lower()

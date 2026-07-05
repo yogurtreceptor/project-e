@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -16,7 +16,7 @@ from app.units import clear_measurement, get_measurement, get_unit, set_measurem
 
 
 def list_entities(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     query: str = "",
     favourites_only: bool = False,
@@ -41,14 +41,14 @@ def list_entities(
     return records
 
 
-def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+def list_all_entities(connection: object) -> list[EntityRecord]:
     records: list[EntityRecord] = []
     for definition in ENTITY_DEFINITIONS:
         records.extend(list_entities(connection, definition))
     return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
 
 
-def count_entities(connection: sqlite3.Connection) -> dict[str, int]:
+def count_entities(connection: object) -> dict[str, int]:
     rows = connection.execute(
         "SELECT type, COUNT(*) AS count FROM entities WHERE deleted_at = '' GROUP BY type"
     ).fetchall()
@@ -56,7 +56,7 @@ def count_entities(connection: sqlite3.Connection) -> dict[str, int]:
 
 
 def get_entity(
-    connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int,
+    connection: object, definition: EntityDefinition, entity_id: int,
     include_deleted: bool = False,
 ) -> EntityRecord | None:
     deleted_clause = "" if include_deleted else "AND entities.deleted_at = ''"
@@ -76,7 +76,7 @@ def get_entity(
     return record
 
 
-def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_deleted: bool = False) -> EntityRecord | None:
+def get_entity_by_id(connection: object, entity_id: int, include_deleted: bool = False) -> EntityRecord | None:
     clause = "" if include_deleted else "AND deleted_at = ''"
     row = connection.execute(f"SELECT id, type FROM entities WHERE id = ? {clause}", (entity_id,)).fetchone()
     if row is None:
@@ -87,7 +87,7 @@ def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_del
     return get_entity(connection, definition, entity_id, include_deleted=include_deleted)
 
 
-def list_deleted_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+def list_deleted_entities(connection: object) -> list[EntityRecord]:
     records = []
     rows = connection.execute("SELECT id FROM entities WHERE deleted_at <> '' ORDER BY deleted_at DESC, id DESC")
     for row in rows:
@@ -98,7 +98,7 @@ def list_deleted_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
 
 
 def create_entity(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     values: dict[str, str],
     commit: bool = True,
@@ -132,7 +132,7 @@ def create_entity(
 
 
 def update_entity(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],
@@ -167,7 +167,7 @@ def update_entity(
 
 
 def delete_entity(
-    connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int
+    connection: object, definition: EntityDefinition, entity_id: int
 ) -> None:
     before = get_entity(connection, definition, entity_id)
     from app.audit import record_audit_event
@@ -180,7 +180,7 @@ def delete_entity(
         connection.commit()
 
 
-def restore_entity(connection: sqlite3.Connection, entity_id: int) -> bool:
+def restore_entity(connection: object, entity_id: int) -> bool:
     before = get_entity_by_id(connection, entity_id, include_deleted=True)
     if before is None or not before.is_deleted:
         return False
@@ -195,7 +195,7 @@ def restore_entity(connection: sqlite3.Connection, entity_id: int) -> bool:
     return True
 
 
-def permanent_delete_entity(connection: sqlite3.Connection, entity_id: int) -> tuple[str, str]:
+def permanent_delete_entity(connection: object, entity_id: int) -> tuple[str, str]:
     record = get_entity_by_id(connection, entity_id, include_deleted=True)
     if record is None or not record.is_deleted:
         raise ValueError("Only deleted records can be permanently deleted.")
@@ -207,7 +207,7 @@ def permanent_delete_entity(connection: sqlite3.Connection, entity_id: int) -> t
     return record.type, file_path
 
 
-def entity_dependency_counts(connection: sqlite3.Connection, entity_id: int) -> dict[str, int]:
+def entity_dependency_counts(connection: object, entity_id: int) -> dict[str, int]:
     rows = connection.execute("SELECT deleted_at FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchall()
     active = sum(1 for row in rows if not row["deleted_at"])
     recycled = len(rows) - active
@@ -231,7 +231,7 @@ def with_canonical_person_name(
 
 def validate_entity_values(
     definition: EntityDefinition, values: dict[str, str],
-    connection: sqlite3.Connection | None = None,
+    connection: object | None = None,
 ) -> list[str]:
     errors = []
     if definition.type == "person" and not values.get("given_name", "").strip():
@@ -330,7 +330,7 @@ def normalise_form_values(
 
 
 def insert_typed_row(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],
@@ -349,7 +349,7 @@ def insert_typed_row(
 
 
 def update_typed_row(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],
@@ -372,7 +372,7 @@ def parse_aliases(value: str) -> list[str]:
     return [line.strip() for line in value.splitlines() if line.strip()]
 
 
-def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord) -> None:
+def hydrate_external_fields(connection: object, record: EntityRecord) -> None:
     if record.type == "organisation":
         from app.taxonomy import hydrate_organisation_taxonomy
         hydrate_organisation_taxonomy(connection, record)
@@ -396,7 +396,7 @@ def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord
 
 
 def sync_external_fields(
-    connection: sqlite3.Connection,
+    connection: object,
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],

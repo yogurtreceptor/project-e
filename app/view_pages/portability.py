@@ -9,7 +9,7 @@ def portability_page(error: str = "", message: str = "") -> str:
     <p>Move a complete, checksummed copy of canonical records, relationships, provenance, audit history, and stored documents.</p></section>
     {error_html}{message_html}
     <section class="panel"><h2>Export</h2>
-    <p>Download a versioned ZIP bundle. Export is read-only and creates a consistent SQLite snapshot.</p>
+    <p>Download a versioned Project E Bundle containing a consistent local database snapshot and document files.</p>
     <a class="button" href="/system-tools/portability/export">Download export</a></section>
     <section class="panel"><h2>Import</h2>
     <p>Import requires an empty database and document store. The bundle is validated and previewed before confirmation; applying it creates a recovery backup first.</p>
@@ -21,7 +21,7 @@ def portability_page(error: str = "", message: str = "") -> str:
 
 def import_preview_page(preview, token: str) -> str:
     return f"""<section class="page-heading"><p class="eyebrow">Import preview</p>
-    <h1>Confirm portable import</h1><p>The bundle passed manifest, checksum, SQLite integrity, schema, endpoint, and document checks.</p></section>
+    <h1>Confirm portable import</h1><p>The bundle passed manifest, checksum, database restore, schema, endpoint, and document checks.</p></section>
     <section class="panel"><dl class="metadata">
       <div><dt>Exported</dt><dd>{escape(preview.exported_at)}</dd></div>
       <div><dt>Entities</dt><dd>{preview.entities} ({preview.deleted_entities} recycled)</dd></div>

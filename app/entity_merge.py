@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import json
-import sqlite3
 from dataclasses import dataclass
 
 from app.db_support import utc_now
@@ -34,7 +35,7 @@ class MergePreview:
         return self.active_relationships_to_repoint + self.recycled_relationships_to_repoint
 
 
-def preview_entity_merge(connection: sqlite3.Connection, survivor_id: int, duplicate_id: int) -> MergePreview:
+def preview_entity_merge(connection: object, survivor_id: int, duplicate_id: int) -> MergePreview:
     survivor = get_entity_by_id(connection, survivor_id)
     duplicate = get_entity_by_id(connection, duplicate_id)
     if survivor is None or duplicate is None:
@@ -65,7 +66,7 @@ def preview_entity_merge(connection: sqlite3.Connection, survivor_id: int, dupli
     return MergePreview(survivor, duplicate, tuple(fields), active_count, recycled_count, len(removals))
 
 
-def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_id: int) -> MergePreview:
+def merge_entities(connection: object, survivor_id: int, duplicate_id: int) -> MergePreview:
     preview = preview_entity_merge(connection, survivor_id, duplicate_id)
     survivor, duplicate = preview.survivor, preview.duplicate
     details = {
@@ -109,7 +110,7 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
 
 
 def _merge_external_values(
-    connection: sqlite3.Connection, survivor: EntityRecord, duplicate: EntityRecord
+    connection: object, survivor: EntityRecord, duplicate: EntityRecord
 ) -> None:
     for field in survivor.definition.fields:
         if field.storage_kind == "taxonomy":
@@ -153,23 +154,23 @@ def _merge_external_values(
             )
 
 
-def list_entity_history(connection: sqlite3.Connection, entity_id: int) -> list[sqlite3.Row]:
+def list_entity_history(connection: object, entity_id: int) -> list[dict]:
     return connection.execute("SELECT * FROM entity_edit_history WHERE entity_id = ? ORDER BY created_at DESC, id DESC", (entity_id,)).fetchall()
 
 
-def record_entity_edit(connection: sqlite3.Connection, entity_id: int, before: dict[str, str], after: dict[str, str]) -> None:
+def record_entity_edit(connection: object, entity_id: int, before: dict[str, str], after: dict[str, str]) -> None:
     if before == after:
         return
     connection.execute("INSERT INTO entity_edit_history (entity_id, event_type, details, created_at) VALUES (?, 'edit', ?, ?)", (entity_id, json.dumps({"before": before, "after": after}, sort_keys=True), utc_now()))
 
 
-def _would_self_reference(row: sqlite3.Row, survivor_id: int, duplicate_id: int) -> bool:
+def _would_self_reference(row: dict, survivor_id: int, duplicate_id: int) -> bool:
     source = survivor_id if row["source_entity_id"] == duplicate_id else row["source_entity_id"]
     target = survivor_id if row["target_entity_id"] == duplicate_id else row["target_entity_id"]
     return source == target
 
 
-def _relationship_key(row: sqlite3.Row, survivor_id: int, duplicate_id: int) -> tuple[object, ...]:
+def _relationship_key(row: dict, survivor_id: int, duplicate_id: int) -> tuple[object, ...]:
     source = survivor_id if row["source_entity_id"] == duplicate_id else int(row["source_entity_id"])
     target = survivor_id if row["target_entity_id"] == duplicate_id else int(row["target_entity_id"])
     relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(row["type"])

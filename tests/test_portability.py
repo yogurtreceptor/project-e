@@ -29,7 +29,7 @@ class PortabilityTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.source_db = self.root / "source" / "project.sqlite3"
+        self.source_db = self.root / "source" / "project.postgres"
         self.source_documents = self.source_db.parent / "documents"
         self.source_documents.mkdir(parents=True)
         initialise_database(self.source_db)
@@ -87,7 +87,7 @@ class PortabilityTests(unittest.TestCase):
             preview.deleted_relationships,
         ))
 
-        target_db = self.root / "target" / "project.sqlite3"
+        target_db = self.root / "target" / "project.postgres"
         target_documents = target_db.parent / "documents"
         backups = target_db.parent / "backups"
         target_documents.mkdir(parents=True)
@@ -124,7 +124,7 @@ class PortabilityTests(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(bundle)) as source:
             manifest = json.loads(source.read("manifest.json"))
             members = {name: source.read(name) for name in source.namelist()}
-        members["data/project-e.sqlite3"] += b"tampered"
+        members["data/project-e.dump"] += b"tampered"
         output = io.BytesIO()
         with zipfile.ZipFile(output, "w") as target:
             for name, value in members.items():
@@ -135,7 +135,7 @@ class PortabilityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "checksum"):
             inspect_bundle(output.getvalue())
 
-        target_db = self.root / "occupied" / "project.sqlite3"
+        target_db = self.root / "occupied" / "project.postgres"
         target_documents = target_db.parent / "documents"
         target_documents.mkdir(parents=True)
         initialise_database(target_db)
@@ -155,7 +155,7 @@ class PortabilityTests(unittest.TestCase):
     def test_recovery_copy_failure_restores_previous_database_and_documents(self):
         self.make_source_data()
         bundle = create_bundle(self.source_db, self.source_documents)
-        target_db = self.root / "failure" / "project.sqlite3"
+        target_db = self.root / "failure" / "project.postgres"
         target_documents = target_db.parent / "documents"
         target_documents.mkdir(parents=True)
         (target_documents / "keep.txt").write_text("keep")
@@ -164,8 +164,8 @@ class PortabilityTests(unittest.TestCase):
             existing_id = create_entity(connection, DEFINITIONS_BY_TYPE["person"], {"display_name": "Existing", "given_name": "Existing"})
         backup_path = target_db.parent / "incoming.zip"
         backup_path.write_bytes(bundle)
-        with patch("app.portability.shutil.copy2", side_effect=OSError("copy failed")):
-            with self.assertRaisesRegex(OSError, "copy failed"):
+        with patch("app.portability._run_pg", side_effect=ValueError("restore failed")):
+            with self.assertRaisesRegex(ValueError, "restore failed"):
                 restore_recovery_bundle(backup_path, target_db, target_documents, target_db.parent / "backups")
         with connect(target_db) as connection:
             self.assertEqual("Existing", get_entity_by_id(connection, existing_id).title)

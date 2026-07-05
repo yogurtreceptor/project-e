@@ -1,4 +1,4 @@
-import sqlite3
+from __future__ import annotations
 from typing import Any
 
 from app.db_support import parse_int, utc_now
@@ -15,7 +15,7 @@ from app.relationships import (
 from app.structured_values import normalise_structured_value, validate_structured_value
 
 
-def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecord]:
+def list_relationships(connection: object) -> list[RelationshipRecord]:
     rows = connection.execute(
         """
         SELECT *
@@ -34,7 +34,7 @@ def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecor
 
 
 def list_relationships_for_entity(
-    connection: sqlite3.Connection, entity_id: int
+    connection: object, entity_id: int
 ) -> list[RelationshipRecord]:
     rows = connection.execute(
         """
@@ -55,7 +55,7 @@ def list_relationships_for_entity(
 
 
 def get_relationship(
-    connection: sqlite3.Connection, relationship_id: int, include_deleted: bool = False
+    connection: object, relationship_id: int, include_deleted: bool = False
 ) -> RelationshipRecord | None:
     row = connection.execute(
         "SELECT * FROM relationships WHERE id = ? AND (? OR deleted_at = '')",
@@ -69,7 +69,7 @@ def get_relationship(
         return None
 
 
-def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) -> int:
+def create_relationship(connection: object, values: dict[str, str]) -> int:
     normalise_relationship_direction(connection, values)
     now = utc_now()
     cursor = connection.execute(
@@ -107,7 +107,7 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
 
 
 def update_relationship(
-    connection: sqlite3.Connection, relationship_id: int, values: dict[str, str]
+    connection: object, relationship_id: int, values: dict[str, str]
 ) -> None:
     normalise_relationship_direction(connection, values)
     before = get_relationship(connection, relationship_id)
@@ -141,7 +141,7 @@ def update_relationship(
     recompute_inferences(connection, "relationship_updated", relationship_id)
 
 
-def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> bool:
+def delete_relationship(connection: object, relationship_id: int) -> bool:
     before = get_relationship(connection, relationship_id)
     if before is None:
         return False
@@ -154,7 +154,7 @@ def delete_relationship(connection: sqlite3.Connection, relationship_id: int) ->
     return True
 
 
-def restore_relationship(connection: sqlite3.Connection, relationship_id: int) -> bool:
+def restore_relationship(connection: object, relationship_id: int) -> bool:
     before = get_relationship(connection, relationship_id, include_deleted=True)
     if before is None or not before.is_deleted:
         return False
@@ -167,7 +167,7 @@ def restore_relationship(connection: sqlite3.Connection, relationship_id: int) -
     return True
 
 
-def list_deleted_relationships(connection: sqlite3.Connection) -> list[RelationshipRecord]:
+def list_deleted_relationships(connection: object) -> list[RelationshipRecord]:
     rows = connection.execute("SELECT * FROM relationships WHERE deleted_at<>'' ORDER BY deleted_at DESC, id DESC").fetchall()
     records = []
     for row in rows:
@@ -194,7 +194,7 @@ def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
 
 
 def validate_relationship_values(
-    connection: sqlite3.Connection, values: dict[str, str], relationship_id: int | None = None
+    connection: object, values: dict[str, str], relationship_id: int | None = None
 ) -> list[str]:
     errors = []
     source_id = parse_int(values.get("source_entity_id", ""))
@@ -268,7 +268,7 @@ def validate_relationship_values(
     return errors
 
 
-def normalise_relationship_direction(connection: sqlite3.Connection, values: dict[str, str]) -> None:
+def normalise_relationship_direction(connection: object, values: dict[str, str]) -> None:
     type_key, connected_role = split_relationship_choice(values.get("type", ""))
     values["type"] = type_key
     relationship_type = RELATIONSHIP_TYPES_BY_KEY.get(type_key)
@@ -299,7 +299,7 @@ def normalise_relationship_direction(connection: sqlite3.Connection, values: dic
 
 
 def to_relationship_record(
-    connection: sqlite3.Connection, row: sqlite3.Row, include_deleted_entities: bool = False
+    connection: object, row: dict, include_deleted_entities: bool = False
 ) -> RelationshipRecord:
     source = get_entity_by_id(connection, int(row["source_entity_id"]), include_deleted=include_deleted_entities)
     target = get_entity_by_id(connection, int(row["target_entity_id"]), include_deleted=include_deleted_entities)
@@ -327,7 +327,7 @@ def to_relationship_record(
     )
 
 
-def _parent_path_exists(connection: sqlite3.Connection, start_id: int, goal_id: int, exclude_id: int | None = None) -> bool:
+def _parent_path_exists(connection: object, start_id: int, goal_id: int, exclude_id: int | None = None) -> bool:
     rows = connection.execute("SELECT id, source_entity_id, target_entity_id FROM relationships WHERE deleted_at='' AND type='parent_child' AND status='active'").fetchall()
     children = {}
     for row in rows:

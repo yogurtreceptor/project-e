@@ -18,7 +18,7 @@ from app.timeline import TimelineFilters, registry
 class UniversalTimelineTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.database_path = Path(self.temp_dir.name) / "timeline.sqlite3"
+        self.database_path = Path(self.temp_dir.name) / "timeline.postgres"
         initialise_database(self.database_path)
 
     def tearDown(self) -> None:

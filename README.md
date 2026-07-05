@@ -2,7 +2,7 @@
 
 > A local-first Personal Information Platform for turning private, connected information into a useful operational foundation.
 
-Project E keeps meaningful information about people, organisations, locations, projects, documents and assets in one relationship-rich system. Its embedded SQLite database is the canonical source of truth; the interface, deterministic tools and future intelligent capabilities are all views and operations over that same platform.
+Project E keeps meaningful information about people, organisations, locations, projects, documents and assets in one relationship-rich system. Its locally hosted PostgreSQL database is the canonical source of truth; it remains private, loopback-only and independent of cloud infrastructure.
 
 The immediate aim is deliberately human: make the platform genuinely useful, trustworthy and pleasant for a private user. Automation and AI are important later capabilities, but they build on the information model, validation, provenance and user control—they are not the foundation.
 
@@ -19,7 +19,7 @@ flowchart TB
     H["Human user"]
     F["Future automation and AI"]
     P["Shared platform capabilities<br/>UI · validation · search · relationships · audit"]
-    D[("Canonical local SQLite database")]
+    D[("Canonical local PostgreSQL database")]
     X["Private local documents"]
 
     H --> P
@@ -37,7 +37,7 @@ Human users, deterministic automation and future AI should consume the same vali
 - **Database-backed truth:** derived views and intelligent assistance remain traceable to canonical records.
 - **Human usefulness before intelligence:** earn value through strong everyday workflows before adding advanced AI.
 - **Safe evolution:** validation, audit history, provenance and explicit confirmation precede machine-written changes.
-- **Simple, maintainable foundations:** prefer standard-library Python, SQLite and conservative dependencies.
+- **Simple, maintainable foundations:** prefer raw SQL, a small PostgreSQL boundary and conservative dependencies.
 - **Clean evolution while unstable:** during active development, prefer a coherent current architecture over compatibility layers for obsolete models; migrations are useful, and a local database reset remains acceptable.
 
 See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [future platform direction](docs/future_direction.md) for the durable direction.
@@ -72,13 +72,15 @@ Project E is currently source-available but not open source. Copyright is retain
 
 ## Run locally
 
-Project E currently needs Python 3 and no third-party Python packages.
+Project E needs Python 3, PostgreSQL 16 or later, and the dependency in `requirements.txt`.
 
 ```bash
-python3 run.py
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python tools/dev.py
 ```
 
-Open `http://127.0.0.1:8000`. A fresh clone starts empty; the app creates its Git-ignored database and document storage under `instance/`.
+Open `http://127.0.0.1:8000`. This manages a private loopback-only PostgreSQL cluster under `instance/postgres/`, applies migrations, starts the app, and stops both on Ctrl+C.
 
 ```bash
 python3 -m unittest discover -s tests
@@ -91,7 +93,7 @@ Screenshots will be added as the current interface settles. Until then, the arch
 
 ## Portable export and recovery
 
-System Tools → Import and Export downloads a versioned, checksummed ZIP containing a consistent SQLite snapshot and referenced document files. Import validates and previews a bundle, requires an empty target, requires explicit confirmation and creates a recovery backup first. Confirmed merges and permanent entity deletion also create recovery bundles under the Git-ignored `instance/backups/` directory.
+System Tools → Import and Export downloads a versioned, checksummed Project E Bundle containing a PostgreSQL-native snapshot and referenced document files. PostgreSQL remains an internal detail: import still validates and previews the bundle, requires an empty target and explicit confirmation, and creates a recovery bundle first.
 
 Recovery is preview-only unless explicitly confirmed:
 
