@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is documented in the Stage 1 specification and reference docs; current priorities are in the roadmap and technical-debt register.
 
+## 2026-07-05
+
+Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. License and security-policy decisions remain intentionally separate because they require maintainer choices about legal permissions and a private reporting channel.
+
 ## 2026-07-04
 
 Added a dry-run-first, backup-protected converter for pre-taxonomy gendered family relationship records, including direction-safe canonical mappings and duplicate detection.
