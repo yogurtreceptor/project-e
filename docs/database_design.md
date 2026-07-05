@@ -50,11 +50,14 @@ Projects store lightweight organising metadata:
 - `project_type`
 - `status`
 - `started_at`
+- `ended_at`
 
 Documents store document metadata plus local file metadata:
 
 - `document_type`
 - `document_date`
+- `identifier`
+- `expiry_date`
 - `issuer`
 - `file_name`
 - `file_path`
@@ -65,7 +68,11 @@ Uploaded files are stored in `instance/documents/` through `app/document_storage
 
 A Document owns its uploaded file. A successful replacement deletes the superseded file only after the database points to the replacement. Soft deletion retains the current file for restoration; permanent deletion removes it only when no other Document still references it. Missing files are tolerated, unsafe paths are never deleted, and newly written files are removed if the corresponding database write fails. File metadata submitted through hidden form fields is not trusted.
 
-Assets store useful item metadata such as asset type, status, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
+Assets store useful item metadata such as asset type, status, manufacturer, model, serial number / asset number, acquisition date, whole-number value and optional direct coordinates.
+
+These new scalar fields use the existing definition-driven additive typed-column repair: `projects.ended_at`, `documents.identifier`, `documents.expiry_date`, `assets.manufacturer` and `assets.model` are added with empty defaults to both fresh and existing databases. Project end and Document expiry are validated ISO dates and timeline sources. An end date cannot precede its Project start, and an expiry date cannot precede its Document date. `documents.identifier` participates in duplicate review. All definition fields remain part of shared text search.
+
+`documents.issuer` is retained as legacy free text. Canonical issuer/creator facts use Document relationships; no migration infers or auto-creates an Organisation from the text.
 
 ## Controlled Field Storage
 
@@ -104,7 +111,7 @@ Locations are the canonical place/address records. The active `locations` table 
 - `longitude`
 - `source`
 
-Coordinates are optional text fields at this stage so users can save incomplete locations and manually enter coordinates without a migration-heavy geospatial dependency. Validation for map display happens in the application layer.
+Coordinates are optional text fields at this stage so users can save locations without coordinates and manually enter coordinates without a migration-heavy geospatial dependency. When supplied, latitude and longitude are validated and required as a pair. Validation for map display happens in the application layer.
 
 Legacy Location columns are copied forward on startup:
 

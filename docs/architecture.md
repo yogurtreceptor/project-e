@@ -55,7 +55,7 @@ The application should not depend on WAN access for normal operation. Optional n
 Current domains inherit from a common entity architecture:
 
 - `EntityDefinition` describes each domain type, route slug, table, domain-specific fields and strong fields used for duplicate warnings.
-- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, input type, structured value kind, storage strategy, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup. Scalar fields use typed-table columns; reference-backed and measurement-backed fields use shared normalized stores. The optional presentation flag keeps any strategy out of the default form until selected or populated.
+- `FieldDefinition` describes reusable field metadata, including overview visibility, optional on-demand form presentation, optional compound grouping, input type, structured value kind, storage strategy, controlled options, custom-value support, defaults, display formatting, previous field names for safe renames and value aliases for controlled-value cleanup. Scalar fields use typed-table columns; reference-backed and measurement-backed fields use shared normalized stores. Optional details render inline in definition order, remain visible when populated, and may be hidden without clearing their form values. Compound groups such as coordinate pairs share one add/remove action. These flags are presentation metadata, not user-defined schema.
 - `EntityRecord` is the shared runtime model for all entity instances.
 - Shared active fields are `display_name`, `notes`, `created_at` and `updated_at`. For People, `display_name` is internal derived data generated from `given_name` plus `family_name`; it is not a separate user-entered field.
 - `summary` remains in the shared table only as legacy storage/search fallback. It is not exposed on entity creation or edit forms.
@@ -134,6 +134,7 @@ Architectural correction: discovery is not implemented as dashboard-only shortcu
 Documents are first-class entities rather than attachments stored inside another entity.
 
 - Document records use the same entity, form, search, dashboard, relationship and detail-page architecture as other domains.
+- Document issuer/creator semantics remain relationship-first. Existing relationship types already distinguish creator and issuer endpoints; the legacy scalar `issuer` remains migration-safe readable text until a clean transactional relationship selector is integrated into Document create/edit. It never causes automatic Organisation creation.
 - Uploaded files are stored locally under `instance/documents/`.
 - File metadata such as original file name, MIME type, stored path and file size lives on the Document entity.
 - Documents link to People, Organisations, Locations, Projects, Assets or other Documents through relationships.

@@ -31,7 +31,7 @@ def date_sanity(c):
  out=[]
  for r in list_all_entities(c):
   for name,value in r.metadata.items():
-   if (name.endswith("date") or name in {"birthday","started_at"}) and value>utc_now()[:10]:out.append(finding("date_sanity","warning",f"{r.title} has a future {name}.",(r.id,)))
+   if (name.endswith("date") or name in {"birthday","started_at","ended_at"}) and name!="expiry_date" and value>utc_now()[:10]:out.append(finding("date_sanity","warning",f"{r.title} has a future {name}.",(r.id,)))
  return out
 @registry.register
 def graph_health(c):return [finding("graph_consistency",w.severity,w.message,w.entity_ids,w.relationship_ids) for w in audit_relationships(c)]

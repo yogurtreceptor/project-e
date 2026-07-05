@@ -33,6 +33,8 @@ Forms should keep manual entry available. Helpful lookup tools may prefill field
 
 Entity forms should avoid generic `summary` fields. Notes are the flexible free-text area; important categories and statuses should be captured through controlled inputs.
 
+Forms use definition-driven progressive disclosure to stay intentionally minimal without weakening the information model. **Add details** reveals optional controls inline at their canonical position; populated details are visible on edit and record pages and remain normal searchable, mergeable domain data. The small × control hides a detail without clearing its submitted value. Compound facts that are not meaningful independently, currently coordinate pairs, are added and hidden together. This is presentation metadata, not a user-defined custom-field system.
+
 Person detail pages use short, separate journal entries instead of presenting the Person Notes field. Entries appear oldest first as message-style bubbles, show their creation time, and show an edited marker with the last edit time when changed. Archive is the prominent removal action; permanent delete remains available with quieter visual treatment.
 
 Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible and calls out relationships or dependent records that will also be removed.
@@ -60,9 +62,13 @@ The relationship selector should use short plain role labels from the user's per
 
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 
+Detailed address fields and coordinates use progressive disclosure. Latitude and longitude are one compound detail and must be supplied together. Existing lookup and manual-address behaviour is otherwise unchanged.
+
 Location address lookup should fill suburb, city, state, post code, country, coordinates and source when the provider returns those parts, while leaving all fields manually editable.
 
 Document forms include a file upload control, while stored file path, MIME type and size remain system-managed metadata. Document descriptive fields and relationships remain editable.
+
+Legacy issuer/creator text remains readable as an optional detail. New issuer and creator facts should use the existing Document-to-Person or Document-to-Organisation relationship types; integrating that relationship selection into Document create/edit is deferred until it can preserve transactional clarity without auto-creating entities from legacy text.
 
 Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 

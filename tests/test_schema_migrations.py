@@ -46,7 +46,13 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("journal_entries", tables)
         with connect(self.database_path) as connection:
             entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
+            project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
+            document_columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
+            asset_columns = {row["name"] for row in connection.execute("PRAGMA table_info(assets)")}
         self.assertIn("deleted_at", entity_columns)
+        self.assertIn("ended_at", project_columns)
+        self.assertTrue({"identifier", "expiry_date"} <= document_columns)
+        self.assertTrue({"manufacturer", "model"} <= asset_columns)
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"
@@ -97,6 +103,47 @@ class SchemaMigrationTests(unittest.TestCase):
             ).fetchone()
         self.assertEqual(existing["display_name"], "Existing Person")
         self.assertEqual(existing["created_at"], "before")
+
+    def test_existing_typed_tables_gain_new_domain_columns_additively(self) -> None:
+        with sqlite3.connect(self.database_path) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE entities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL CHECK (type IN ('person','organisation','location','project','document','asset')),
+                    display_name TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL, updated_at TEXT NOT NULL, last_viewed_at TEXT NOT NULL DEFAULT '',
+                    is_favourite INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE TABLE projects (
+                    entity_id INTEGER PRIMARY KEY, project_type TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT '', started_at TEXT NOT NULL DEFAULT ''
+                );
+                CREATE TABLE documents (
+                    entity_id INTEGER PRIMARY KEY, document_type TEXT NOT NULL DEFAULT '',
+                    document_date TEXT NOT NULL DEFAULT '', issuer TEXT NOT NULL DEFAULT '',
+                    file_name TEXT NOT NULL DEFAULT '', file_path TEXT NOT NULL DEFAULT '',
+                    mime_type TEXT NOT NULL DEFAULT '', file_size TEXT NOT NULL DEFAULT ''
+                );
+                CREATE TABLE assets (
+                    entity_id INTEGER PRIMARY KEY, asset_type TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT '', serial_number TEXT NOT NULL DEFAULT '',
+                    acquisition_date TEXT NOT NULL DEFAULT '', value TEXT NOT NULL DEFAULT '',
+                    latitude TEXT NOT NULL DEFAULT '', longitude TEXT NOT NULL DEFAULT ''
+                );
+                """
+            )
+
+        initialise_database(self.database_path)
+
+        with connect(self.database_path) as connection:
+            columns = {
+                table: {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+                for table in ("projects", "documents", "assets")
+            }
+        self.assertIn("ended_at", columns["projects"])
+        self.assertTrue({"identifier", "expiry_date"} <= columns["documents"])
+        self.assertTrue({"manufacturer", "model"} <= columns["assets"])
 
     def test_platform_audit_backfills_existing_canonical_timestamps(self) -> None:
         initialise_database(self.database_path)

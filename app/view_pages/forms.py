@@ -128,68 +128,126 @@ def entity_form_fields(
     fields = []
     if definition.type != "person":
         fields.append(input_field(f"{name_prefix}display_name", f"{definition.singular} name", values))
-    optional_fields = []
+    optional_units = []
+    rendered_groups = set()
     for field in definition.fields:
         name = f"{name_prefix}{field.name}"
         if field.editable:
-            control = entity_field_control(field, values, name, field_options)
             if field.optional:
-                optional_fields.append((field, name, control))
+                if field.optional_group:
+                    if field.optional_group in rendered_groups:
+                        continue
+                    grouped_fields = tuple(
+                        item for item in definition.fields
+                        if item.editable and item.optional_group == field.optional_group
+                    )
+                    rendered_groups.add(field.optional_group)
+                else:
+                    grouped_fields = (field,)
+                unit_names = tuple(f"{name_prefix}{item.name}" for item in grouped_fields)
+                controls = tuple(
+                    entity_field_control(item, values, unit_name, field_options)
+                    for item, unit_name in zip(grouped_fields, unit_names)
+                )
+                label = field.optional_group_label or field.label
+                key = f"{name_prefix}{field.optional_group or field.name}"
+                populated = any(str(values.get(unit_name, "")).strip() for unit_name in unit_names)
+                optional_units.append((key, label, controls, populated, len(grouped_fields) > 1))
+                fields.append(optional_detail(key, label, controls, populated, len(grouped_fields) > 1))
             else:
-                fields.append(control)
+                fields.append(entity_field_control(field, values, name, field_options))
         else:
             fields.append(hidden_field(name, values))
-    if optional_fields:
-        fields.append(optional_fields_section(optional_fields, values))
+    if optional_units:
+        fields.append(optional_details_controls(optional_units, name_prefix))
     if definition.type != "person":
         fields.append(input_field(f"{name_prefix}notes", "Notes", values, multiline=True))
     return "".join(fields)
 
 
-def optional_fields_section(optional_fields: list[tuple], values: dict[str, str]) -> str:
+def optional_detail(
+    key: str, label: str, controls: tuple[str, ...], populated: bool, compound: bool,
+) -> str:
+    content = "".join(controls)
+    remove = (
+        f'<button class="optional-detail-remove" type="button" data-detail-remove="{escape(key)}" '
+        f'aria-label="Hide {escape(label)}" title="Hide this detail; saved data is retained">&times;</button>'
+    )
+    tag = "fieldset" if compound else "div"
+    legend = f'<legend>{escape(label)}</legend>' if compound else ""
+    return (
+        f'<{tag} class="optional-detail{(" optional-detail-compound" if compound else "")}" '
+        f'data-optional-detail="{escape(key)}"{("" if populated else " hidden")}>'
+        f'{legend}{remove}{content}</{tag}>'
+    )
+
+
+def optional_details_controls(optional_units: list[tuple], name_prefix: str = "") -> str:
     choices = "".join(
-        f'<button class="button secondary optional-field-add" type="button" data-field="{escape(name)}">{escape(field.label)}</button>'
-        for field, name, _ in optional_fields
-        if not str(values.get(name, "")).strip()
+        f'<button class="button secondary optional-detail-add" type="button" data-detail-add="{escape(key)}"'
+        f'{(" hidden" if populated else "")}>{escape(label)}</button>'
+        for key, label, _, populated, _ in optional_units
     )
-    controls = "".join(
-        f'<div class="optional-field" data-optional-field="{escape(name)}"{("" if str(values.get(name, "")).strip() else " hidden")}>{control}</div>'
-        for _, name, control in optional_fields
-    )
-    has_choices = bool(choices)
+    has_choices = any(not populated for _, _, _, populated, _ in optional_units)
+    root_id = f"{name_prefix}optional-details".replace("_", "-")
+    choices_id = f"{root_id}-choices"
     return f"""
-    <section class="optional-fields">
-        <button class="button secondary optional-fields-toggle" type="button" aria-expanded="false" aria-controls="optional-field-choices"{' hidden' if not has_choices else ''}>Add field</button>
-        <div class="optional-field-choices" id="optional-field-choices" hidden>{choices}</div>
-        {controls}
-    </section>
+    <div class="optional-details-controls" id="{escape(root_id)}">
+        <button class="button secondary optional-details-toggle" type="button" aria-expanded="false" aria-controls="{escape(choices_id)}"{' hidden' if not has_choices else ''}>Add details</button>
+        <div class="optional-detail-choices" id="{escape(choices_id)}" hidden>{choices}</div>
+    </div>
     <script>
     (() => {{
-        const toggle = document.querySelector('.optional-fields-toggle');
-        const choices = document.querySelector('.optional-field-choices');
+        const root = document.getElementById('{escape(root_id)}');
+        if (!root) return;
+        const form = root.closest('form') || document;
+        const toggle = root.querySelector('.optional-details-toggle');
+        const choices = root.querySelector('.optional-detail-choices');
+        const availableChoices = () => [...choices.querySelectorAll('[data-detail-add]')].some((button) => !button.hidden);
+        const closeChoices = () => {{
+            choices.hidden = true;
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.hidden = !availableChoices();
+        }};
         if (toggle && choices) {{
             toggle.addEventListener('click', () => {{
                 choices.hidden = !choices.hidden;
                 toggle.setAttribute('aria-expanded', String(!choices.hidden));
             }});
         }}
-        document.querySelectorAll('.optional-field-add').forEach((button) => {{
+        root.querySelectorAll('[data-detail-add]').forEach((button) => {{
             button.addEventListener('click', () => {{
-                const field = document.querySelector(`[data-optional-field="${{button.dataset.field}}"]`);
+                const field = form.querySelector(`[data-optional-detail="${{button.dataset.detailAdd}}"]`);
                 if (field) {{
                     field.hidden = false;
                     const input = field.querySelector('input, textarea, select');
                     if (input) input.focus();
                 }}
-                button.remove();
-                if (choices) choices.hidden = true;
-                if (toggle) {{
-                    toggle.setAttribute('aria-expanded', 'false');
-                    if (choices && !choices.children.length) toggle.hidden = true;
-                }}
+                button.hidden = true;
+                closeChoices();
             }});
         }});
-        document.querySelectorAll('[data-reference-picker]').forEach((picker) => {{
+        form.querySelectorAll('[data-detail-remove]').forEach((button) => {{
+            button.addEventListener('click', () => {{
+                const field = form.querySelector(`[data-optional-detail="${{button.dataset.detailRemove}}"]`);
+                const choice = root.querySelector(`[data-detail-add="${{button.dataset.detailRemove}}"]`);
+                if (field) field.hidden = true;
+                if (choice) choice.hidden = false;
+                toggle.hidden = false;
+                choices.hidden = true;
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.focus();
+            }});
+        }});
+        form.addEventListener('input', (event) => {{
+            const field = event.target.closest('[data-optional-detail]');
+            if (!field || !event.target.value) return;
+            field.hidden = false;
+            const choice = root.querySelector(`[data-detail-add="${{field.dataset.optionalDetail}}"]`);
+            if (choice) choice.hidden = true;
+            toggle.hidden = !availableChoices();
+        }});
+        form.querySelectorAll('[data-reference-picker]').forEach((picker) => {{
             const search = picker.querySelector('[data-reference-search]');
             const options = [...picker.querySelectorAll('.reference-picker-option')];
             const empty = picker.querySelector('[data-reference-empty]');
@@ -318,7 +376,10 @@ def address_lookup_script() -> str:
         const fill = (result) => {
             fields.forEach((name) => {
                 const input = document.getElementById(name);
-                if (input && result[name] !== undefined) input.value = result[name];
+                if (input && result[name] !== undefined) {
+                    input.value = result[name];
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
             });
             if (result.label) search.value = result.label;
             setStatus('Address fields filled. You can still edit them manually.');

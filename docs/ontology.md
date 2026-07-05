@@ -103,6 +103,7 @@ Current fields include:
 - project type
 - status
 - started date
+- ended / completed date
 - notes
 
 Controlled-value rules are:
@@ -126,11 +127,15 @@ Current fields include:
 - document name
 - document type
 - document date
-- issuer / created by
+- identifier / reference number
+- expiry date
+- legacy issuer / created-by text
 - notes
 - optional local file metadata
 
 Document type is controlled with custom values allowed.
+
+Issuer and creator are relationship concepts when the Person or Organisation is represented canonically. Existing legacy issuer text remains readable and editable for migration safety; it does not create an Organisation automatically. A relationship selector within Document create/edit remains deferred until it can be integrated cleanly.
 
 ## Assets
 
@@ -143,6 +148,8 @@ Current fields include:
 - asset name
 - asset type
 - status
+- manufacturer
+- model
 - serial number / asset number
 - acquisition date
 - value

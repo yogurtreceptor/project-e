@@ -279,6 +279,21 @@ def validate_entity_values(
         structured_error = validate_structured_value(value, field.value_kind, field.label)
         if structured_error:
             errors.append(structured_error)
+    optional_groups: dict[str, list] = {}
+    for field in definition.fields:
+        if field.optional_group:
+            optional_groups.setdefault(field.optional_group, []).append(field)
+    for fields in optional_groups.values():
+        populated = [bool(values.get(field.name, "").strip()) for field in fields]
+        if any(populated) and not all(populated):
+            label = fields[0].optional_group_label or fields[0].optional_group.replace("_", " ").title()
+            errors.append(f"{label} requires both {fields[0].label} and {fields[1].label}.")
+    if definition.type == "project" and values.get("started_at") and values.get("ended_at"):
+        if values["ended_at"] < values["started_at"]:
+            errors.append("Ended / completed must not be before Started.")
+    if definition.type == "document" and values.get("document_date") and values.get("expiry_date"):
+        if values["expiry_date"] < values["document_date"]:
+            errors.append("Expiry date must not be before Document date.")
     return errors
 
 

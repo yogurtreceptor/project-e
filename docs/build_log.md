@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is documented in the Stage 1 specification and reference docs; current priorities are in the roadmap and technical-debt register.
 
+## 2026-07-05
+
+Extended definition-driven progressive disclosure across Organisations, Locations, Projects, Documents and Assets. Optional details now appear inline in canonical order, use **Add details**, can be hidden without clearing values, and support compound coordinate pairs. Added Project ended/completed date, Document identifier and expiry date, and Asset manufacturer/model through additive typed columns, including chronology validation, identifier duplicate matching, search participation and timeline events. Preserved legacy Document issuer text while documenting relationship-first issuer/creator entry as a deferred integrated workflow.
+
 ## 2026-07-04
 
 Added a dry-run-first, backup-protected converter for pre-taxonomy gendered family relationship records, including direction-safe canonical mappings and duplicate detection.

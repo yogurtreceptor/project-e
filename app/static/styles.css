@@ -257,22 +257,73 @@ th {
     gap: 16px;
 }
 
-.optional-fields {
-    border-top: 1px solid var(--line);
+.optional-details-controls {
     display: grid;
     gap: 12px;
-    margin-top: 4px;
-    padding-top: 16px;
 }
 
-.optional-fields-toggle {
+.optional-details-toggle {
     justify-self: start;
 }
 
-.optional-field-choices {
+.optional-detail-choices {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.optional-detail {
+    position: relative;
+}
+
+.optional-detail-remove {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 20px;
+    height: 28px;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 28px;
+    z-index: 1;
+}
+
+.optional-detail-remove:hover,
+.optional-detail-remove:focus-visible {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.optional-detail:not(.optional-detail-compound) > label > input,
+.optional-detail:not(.optional-detail-compound) > label > textarea,
+.optional-detail:not(.optional-detail-compound) > label > select {
+    padding-right: 40px;
+}
+
+.optional-detail-compound {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 12px;
+    position: relative;
+}
+
+.optional-detail-compound legend {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 0 6px;
 }
 
 .measurement-field {
