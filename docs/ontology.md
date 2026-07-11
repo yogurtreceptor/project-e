@@ -14,7 +14,7 @@ Every entity has:
 - notes or descriptive fields where useful
 - creation and update timestamps
 
-Stage 1 entity types are:
+Delivered Phase 1 entity types are:
 
 - Person
 - Organisation
@@ -95,8 +95,8 @@ Maps are a derived view over Location data, not the foundation of the Location m
 
 A Project represents ongoing work or an area of responsibility.
 
-- Projects organise information and relationships.
-- Projects are not task-management records.
+- Projects coordinate information and relationships; they do not own related records.
+- Projects are not task-management records in Phase 1. Planned Phase 2 Tasks remain independent peer entities, linked through relationships rather than nested ownership.
 
 Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
 
@@ -324,6 +324,12 @@ Evidence requirements are:
 ## Relationship Dates
 
 Relationship dates support exact calendar dates plus certainty metadata.
+
+## Planned Phase 2 temporal entities and projections
+
+Phase 2 is planned, not implemented. It adds Event and Task as first-class peer entity types. An Event represents something that occurs, occurred or is expected to occur at a point or interval; a Task represents work that should be performed. Neither requires a Project, and neither is a reminder. Both use standard relationships to connect to any appropriate entity type, including each other.
+
+The Calendar is a derived projection over canonical records and traceable derived occurrences, not an independent event store. A canonical record remains its source type; a derived occurrence is a deterministically generated temporal instance such as a birthday; a calendar projection displays either one. See [the Phase 2 plan](phase_2_plan.md) for the detailed temporal, reminder, scheduler and automation semantics.
 
 Current certainty values are:
 

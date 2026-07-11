@@ -190,3 +190,108 @@ The SQLite database already contains the canonical graph, custom taxonomies, nor
 
 Consequences:
 Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Stage 1 scope.
+
+## ADR-011: Treat Events and Tasks as first-class peer entities
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 will add Events and Tasks as canonical peer entities using the shared entity lifecycle and relationship system. Projects coordinate them but do not own them.
+
+Reason:
+Time occurrences and work require stable identity, history, search and cross-domain relationships without creating special nested models.
+
+Consequences:
+Event and Task links to Projects, each other and other domains use normal relationships; neither an event-task type nor per-domain link columns are the default model.
+
+## ADR-012: Keep the Calendar a projection over canonical time information
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Calendar views derive from canonical records and traceable derived occurrences; they do not maintain a duplicate event store.
+
+Reason:
+One source of truth preserves lifecycle, audit and relationship semantics across Events, Tasks and other dated records.
+
+Consequences:
+Displaying a deadline, birthday or scheduled run does not change its source type. Shared temporal semantics precede calendar implementation.
+
+## ADR-013: Model reminders as policies and deliveries, not standalone domain entities
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Reminders are attached policies, with global defaults and entity-level overrides. Deterministically derived occurrences remain traceable to source facts; delivery, acknowledgement and snooze history are separate notification records.
+
+Reason:
+This avoids annual duplicate reminder definitions while allowing meaningful user control and delivery audit.
+
+Consequences:
+An Event or Task is not a Reminder. Birthdays and expiries can use policy-driven occurrences without becoming independent canonical reminder records.
+
+## ADR-014: Separate actionable notifications from persistent issues
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+The inbox holds actionable notifications; system-health conditions use durable current issue records. Persistent issues are deduplicated and escalated only on meaningful state or severity changes.
+
+Reason:
+An unchanged condition is not a new event every day, and repeated noise obscures useful attention.
+
+Consequences:
+Notifications, persistent issues, audit events and job runs remain distinct record types and audit trails.
+
+## ADR-015: Separate scheduled jobs from calendar events and restrict handlers
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Scheduled jobs use database-backed schedules, registered handlers and persistent run history. Calendar display of a run is optional projection only; database-stored executable code is prohibited.
+
+Reason:
+Background execution has recovery, retry, concurrency and failure semantics that Events do not have, while registered capabilities preserve safety and maintainability.
+
+Consequences:
+The initial local scheduler avoids distributed queues, Redis, Celery and Temporal unless later evidence requires them.
+
+## ADR-016: Establish deterministic automation before AI automation
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 automation uses explicit trigger-condition-action rules and calls ordinary application services with normal validation, provenance and audit. AI automation is deferred.
+
+Reason:
+Deterministic rules establish useful, explainable operational behaviour before introducing model uncertainty or agency.
+
+Consequences:
+Consequential actions may require approval states; no AI agents or autonomous AI-generated actions are introduced in initial Phase 2.
+
+## ADR-017: Define Phase 2 completion as integrated operational behaviour
+
+Status: Accepted
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 completes only after the agreed Event, Task, calendar, reminder, inbox, health, scheduler, automation, audit and provenance workflow works coherently and passes an end-to-end completion review.
+
+Reason:
+Isolated tables and pages do not prove an operational platform.
+
+Consequences:
+The implementation sequence and completion scenario in `docs/phase_2_plan.md` govern closure review; starting Phase 2 does not imply completion.

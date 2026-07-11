@@ -226,9 +226,51 @@ See also: Architecture Decision Record (ADR), Local-first.
 
 ## Stage 1
 
-The current phase of Project E: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. Stage 1 permits deterministic assistance that preserves user control, but excludes AI, chat, dispatcher architecture, decision support, autonomous automation, scheduling, unreviewed consequential actions, autonomous external side effects, WAN-dependent core operation, mobile access, cloud dependencies, login and trusted multi-user workflows.
+The completed foundational phase of Project E: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. It permitted deterministic assistance that preserves user control, but excluded AI, chat, dispatcher architecture, decision support, autonomous automation and scheduling.
 
 See also: Deterministic Assistance, Local-first, Artificial Intelligence.
+
+## Phase 2
+
+The planned operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
+
+See also: Event, Task, Calendar Projection, Reminder, Scheduled Job.
+
+## Event
+
+A first-class entity representing something that occurs, occurred or is expected to occur at an instant or over an interval. An Event may be physical, remote, virtual, inferred or derived and may relate to any suitable entity through Relationships.
+
+## Task
+
+A first-class entity representing work to be performed. A Task is neither an Event nor a Reminder and can relate independently to Projects, Events and other entities.
+
+## Calendar Projection
+
+A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.
+
+## Derived Occurrence
+
+A deterministic, traceable temporal instance produced from a canonical record and definition, such as a yearly birthday from a Person birth date.
+
+## Reminder
+
+A notification or attention policy attached to a record or derived occurrence, potentially governed by a global policy and an entity-level override. Delivery history is a notification record, not the reminder's canonical definition.
+
+## Notification
+
+An actionable attention item, such as a due reminder or required approval. It is distinct from a Persistent Issue, Audit Event and Job Run.
+
+## Persistent Issue
+
+A durable system-health or configuration condition whose one current record changes state over time. It is deduplicated and does not create recurring inbox items merely because it remains unresolved.
+
+## Scheduled Job
+
+Database-backed executable background work using a registered application handler, schedule and run history. A Scheduled Job is not a Calendar Event or Reminder.
+
+## Job Run
+
+One execution attempt of a Scheduled Job and its result.
 
 ## Odysseus
 

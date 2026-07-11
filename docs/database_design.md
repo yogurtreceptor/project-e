@@ -87,6 +87,14 @@ The tracked ethnicity catalogue is generated from ABS ASCCEG 2025 Table 1.3 by `
 
 Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
 
+## Planned Phase 2 persistence boundaries
+
+Phase 2 is planned and introduces no current schema. Its future persistence design must preserve SQLite as the canonical store and use migration-safe evolution. Events and Tasks will be canonical first-class entity records connected through the existing relationship model. Calendar rows are projections over canonical records or traceable derived occurrences, never an independent event source of truth.
+
+The shared temporal model must use compatible semantics and utilities for instants, intervals, all-day values, time zones, planned/actual time, deadlines, recurrence, uncertainty, cancellation and rescheduling; it does not require a premature universal base table. Reminder definitions are attached policies and overrides, while acknowledgement, snooze, delivery failure and delivery history are separate notification-delivery records. Persistent health conditions, inbox notifications, audit events and job-run history are separate durable concepts.
+
+Scheduled jobs use database-backed definitions and run history, but handler names refer only to registered application capabilities. Database rows must not contain arbitrary executable code. Deterministic automations use the same application services and write audit/provenance through normal paths.
+
 Current controlled fields are:
 
 - `organisations.taxonomy_entry_id`, referencing the reusable Organisation Classification taxonomy. The legacy `organisation_type` text remains migration history.

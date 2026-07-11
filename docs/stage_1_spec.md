@@ -43,7 +43,7 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 
 Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
-Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Representative workflow review and maintainer confirmation remain part of Phase 1 exit evaluation; this specification defines current behavior rather than task priority.
+Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Phase 1 is complete as a development milestone and PR #1 is closed. Its verification was representative rather than exhaustive; residual defects are normal maintenance work and do not reopen Phase 1 as a whole. This specification documents delivered Phase 1 behaviour, not current task priority. Phase 2 is planned in [the Phase 2 plan](phase_2_plan.md).
 
 The current product serves one private user without authentication. This is a present scope choice, not a permanent prohibition on future trusted multi-user support.
 
@@ -98,7 +98,7 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-Project E is in a Platform Maturity / Pre-Operational Intelligence stage: the information platform is largely established, while remaining Phase 1 work focuses on portability and proven lifecycle gaps rather than expanding CRUD domains.
+The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 is planned and will extend it through the operational temporal foundation described in [the Phase 2 plan](phase_2_plan.md); it has not yet delivered those capabilities.
 
 Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 

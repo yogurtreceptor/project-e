@@ -1,6 +1,6 @@
 # Architecture
 
-Project E uses a simple local-first architecture for Stage 1. This document describes the current implementation; the [future direction](future_direction.md) describes possible later capability layers without presenting them as current architecture.
+Project E uses a simple local-first architecture. Phase 1 is complete as a development milestone; this document describes its current implementation. [Phase 2](phase_2_plan.md) is planned architecture, not current implementation, and [future direction](future_direction.md) describes later capability layers.
 
 ## Shape
 
@@ -40,9 +40,9 @@ the ignored runtime directories.
 
 ## Boundaries
 
-Stage 1 may use deterministic in-process assistance and internal maintenance when behaviour is local, explainable and preserves user control. Duplicate warnings, derived views, display-name maintenance, review-batch archival and relationship candidate recomputation fit this boundary. Consequential mutations require explicit user confirmation.
+The delivered Phase 1 foundation uses deterministic in-process assistance and internal maintenance only when behaviour is local, explainable and preserves user control. Duplicate warnings, derived views, display-name maintenance, review-batch archival and relationship candidate recomputation fit this boundary. Consequential mutations require explicit user confirmation.
 
-Stage 1 should not introduce AI, autonomous goal-directed workflow, dispatcher, scheduling, authentication or cloud service layers, nor perform unreviewed consequential actions or autonomous external side effects.
+Phase 2 is planned to add a deliberately lightweight local operational runtime—Events, Tasks, reminder and attention rules, registered scheduled jobs and deterministic automation—through the existing application and audit boundaries. It does not add AI, agents, cloud service layers or autonomous external side effects. The detailed target architecture is in [the Phase 2 plan](phase_2_plan.md).
 
 These are current-phase boundaries. The architecture should not prematurely implement future AI or agent layers, but should continue strengthening the shared platform capabilities they would eventually consume: deterministic rules, validation, relationships, provenance, audit history, data quality and safe domain operations. SQLite remains the canonical source of truth.
 
@@ -195,7 +195,7 @@ Candidates enter an Inference Review Queue rather than the active relationship s
 
 ## Platform maturity boundary
 
-Project E is currently in the Platform Maturity / Pre-Operational Intelligence stage. The information model and main human-facing platform are largely established. Near-term architectural work should close proven lifecycle, recovery, portability and usability gaps without adding new domains, AI infrastructure or speculative service boundaries.
+Phase 1's information model and main human-facing platform are complete as a development milestone. Phase 2 is planned, not yet complete; its authorised work must follow the shared temporal, projection, reminder, scheduler and automation boundaries in [the Phase 2 plan](phase_2_plan.md) without speculative service boundaries.
 
 Relationships use the same recoverable lifecycle pattern as entities: `deleted_at` is canonical soft-delete state, active repositories exclude recycled rows by default, and the Recycle Bin restores them. Audit records remain append-only and reference records by kind and identifier even while those records are deleted. The platform-wide System Audit reads the existing audit tables through a small action/record-kind normalization layer; it is a view, not a second event store. Timelines remain derived real-world chronology and intentionally exclude operational mutation events.
 

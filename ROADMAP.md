@@ -2,43 +2,25 @@
 
 This roadmap is directional guidance, not implementation authority or a rigid release checklist. Current behaviour belongs in the [Stage 1 specification](docs/stage_1_spec.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
-## Platform Maturity / Pre-Operational Intelligence (current)
-
-Project E's foundational information platform is largely established. The current transition stage is about completing and proving platform-wide lifecycle, audit, recovery, portability and usability behaviour—not adding more CRUD domains or beginning Operational Intelligence early.
-
-Current priorities are:
-
-- validate the newly implemented portable import/export and recovery workflow against representative everyday workflows and data
-- complete maintainer review of the explicit recycled-dependent relationship policy
-- record the Phase 1 exit decision after final verification
-- keep architecture, migrations and documentation coherent while the foundation settles
-
-Scale-driven work such as SQLite-backed filtering, FTS5, physical analytics columns and fully offline map assets remains trigger-based rather than mandatory for Phase 1 exit.
-
 ## Phase 1 — Information Platform
 
 Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local SQLite persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
 
-### Phase 1 Exit Criteria
+### Status: Complete
 
-These criteria describe readiness to shift the project's primary focus; they are a judgement framework, not a promise that every possible CRUD refinement is finished.
+Pull request #1 is closed and Phase 1 is complete enough to close as a development milestone. Its closure is based on representative verification, not exhaustive manual testing of every capability. Residual defects may still be found and are handled through normal maintenance without reopening Phase 1 as a whole. The closure record is the [Phase 1 review](docs/reviews/phase_1_exit_review.md).
 
-- Canonical entities and relationships support coherent create, view, edit, soft-delete, restore and auditable lifecycle behaviour.
-- Core navigation, search, filtering, documents, timelines, maps and maintenance tools are useful without WAN access, apart from clearly optional replaceable map resources.
-- Schema evolution is migration-safe for supported local databases, with privacy-safe handling of runtime data and files.
-- Important mutations are validated and visible through record-level or system-wide audit history; derived timeline and audit concerns remain separate.
-- Deterministic maintenance features are explainable and preserve explicit user confirmation for consequential writes.
-- Backup-conscious import and export can move canonical records and relationships without bypassing validation, provenance or user ownership.
-- Representative human workflows have been exercised sufficiently to show that the platform is dependable, understandable and independently useful before intelligence is layered on top.
-- Remaining limitations are documented with a trigger and direction rather than allowed to expand Phase 1 indefinitely.
+## Phase 2 — Operational Time and Deterministic Automation
 
-The implementation now includes versioned checksummed import/export, recovery backups and an explicit recycled-relationship policy for merge and permanent deletion. Phase 1 remains in exit review until representative workflows, migration/round-trip evidence, offline behavior and maintainer confirmation are recorded. Broader journal domains, scale optimisations and UI refinements are not automatic blockers; they remain evidence-driven.
+### Status: Planned
 
-## Phase 2 — Operational Intelligence
+Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 
-Turn trustworthy information into explainable, reviewable operational insight while retaining human control. Candidate capabilities include duplicate and merge suggestions, missing important fields or relationships, stale-information detection, deterministic data-integrity analysis, rule-based recommendations, scheduled platform health checks, operational notifications and platform recommendations.
+```text
+structured information → relationships → temporal information → events → calendar projections → tasks → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
+```
 
-Phase 2 may establish carefully designed scheduling and reusable operational actions. Consequential mutations still require explicit confirmation, and every operation must use the same validation, provenance and audit paths as human edits. Advanced relationship work—graph traversal, indirect discovery, advanced querying and relationship analytics—belongs here only when driven by concrete operational workflows.
+The work is human-first, database-first, local-first and AI-independent. AI is explicitly excluded from initial Phase 2 implementation. Phase 2 is not in progress merely because it is planned; it becomes in progress only when authorised build work starts. It is complete only after its agreed capabilities work together coherently and pass the end-to-end completion review. The canonical scope, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
 
 ## Phase 3 — AI-assisted Platform
 

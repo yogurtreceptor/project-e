@@ -8,9 +8,9 @@ The immediate aim is deliberately human: make the platform genuinely useful, tru
 
 ## Current status
 
-Project E is in the **Platform Maturity / Pre-Operational Intelligence** stage. The foundational Information Platform is largely established, and current work is closing its remaining lifecycle, portability and real-workflow gaps before the primary focus moves to Operational Intelligence. The local application already provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
+Project E has completed **Phase 1 — Information Platform** as a development milestone. Pull request #1 is closed. The local application provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
 
-The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Versioned import/export, recovery backups and explicit recycled-relationship lifecycle policy are implemented; representative workflow review and maintainer confirmation remain the immediate Phase 1 exit work.
+The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Phase 2 is **planned**, not complete: it will establish temporal information, Events, calendar projections, Tasks, reminders and attention management, a lightweight scheduler, and deterministic automation. See the [Phase 2 plan](docs/phase_2_plan.md).
 
 ## Architecture at a glance
 
@@ -56,7 +56,8 @@ See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [futur
 | [UI principles](docs/ui_principles.md) | Interaction and presentation conventions |
 | [Architecture decisions](ARCHITECTURE_DECISIONS.md) | Durable decisions and consequences |
 | [Glossary](docs/glossary.md) | Canonical terminology |
-| [Phase 1 exit review](docs/reviews/phase_1_exit_review.md) | Verification evidence awaiting maintainer confirmation |
+| [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) | Closure decision, evidence and residual-risk record |
+| [Phase 2 plan](docs/phase_2_plan.md) | Planned operational time and automation foundation |
 | [Technical debt](docs/reviews/technical_debt_register.md) | Unresolved actionable engineering debt |
 | [Build history](docs/build_log.md) | Concise record of completed work |
 

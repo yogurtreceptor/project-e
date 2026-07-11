@@ -6,6 +6,10 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 Added versioned, checksummed portable bundles containing consistent SQLite snapshots and referenced uploaded documents; staged import preview and confirmation; clean-target enforcement; automatic recovery backups for import, merge and permanent deletion; a deliberate recovery command; and focused round-trip, checksum, rollback, recovery and offline-operation coverage. Entity merge now preserves and repoints recycled relationships, while merge and permanent-delete previews distinguish their exact active/recycled effects.
 
+## 2026-07-11
+
+Closed PR #1 and recorded Phase 1 as complete enough to close as a development milestone after representative rather than exhaustive verification. Documented the planned Phase 2 operational time and deterministic-automation foundation, its architectural boundaries, implementation sequence, exclusions and end-to-end completion review. No application features were implemented by this documentation alignment.
+
 
 Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. Added a security policy using GitHub private vulnerability reporting and clarified the project's current source-available, all-rights-reserved copyright status pending any future explicit software licence.
 
