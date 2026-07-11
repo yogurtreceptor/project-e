@@ -1,6 +1,6 @@
 # Design System
 
-Status: Working foundation. This document defines reusable visual and component rules. `app/static/foundation.css` is the incremental implementation entry point; the accumulated `styles.css` remains transitional rather than authoritative.
+Status: Working foundation. This document defines reusable visual and component rules. `app/static/foundation.css` is the incremental implementation entry point; the accumulated `styles.css` remains transitional rather than authoritative. The first coherent local SVG set and original Project E mark are implemented under `app/static/icons/`.
 
 ## Purpose and evidence
 
@@ -158,6 +158,7 @@ Text is the default interface language. Icons are appropriate for the collapsed 
 - Meaningful icons have accessible names or adjacent text.
 - Emoji and miscellaneous Unicode glyphs are not a substitute for a coherent icon set.
 - Maintain a coherent local SVG icon set. Icons use a 24px view box, render at 20px in ordinary toolbars and 24px in the collapsed sidebar, and use rounded stroke endings. New icons follow accessible-name and consistency rules; do not add a broad icon-library dependency.
+- The initial set covers Project E identity; shell groups; Search and Super Key; add, edit, delete, overflow, close and warning/status actions; and each current domain or specialist-view destination. Neutral external SVG images receive theme-appropriate treatment from the shared stylesheet rather than private component colours.
 
 ## Accessibility baseline
 

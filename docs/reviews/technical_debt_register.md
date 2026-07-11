@@ -6,7 +6,7 @@ This is the live list of unresolved engineering debt. Completed work is recorded
 
 Severity: medium
 
-The current horizontal Operation Eddy header, generic all-domain profile composition, default-visible administrative metadata and incomplete CSS token/state model predate the Project E Experience Philosophy. The stylesheet also contains accumulated defects and drift, including an unmatched closing brace, an undefined `--ink` token, duplicate declarations, one-off status colours and no shared focus/loading/success contract.
+The current horizontal header, generic all-domain profile composition and default-visible administrative metadata predate the Project E Experience Philosophy. The shared foundation now supplies Project E identity/assets, semantic tokens and component states, but the transitional stylesheet still contains duplicate declarations and route-specific one-off styling pending incremental conversion.
 
 Direction: use the [design documentation](../design/README.md) and [current interface audit](../design/page_and_view_catalogue.md) to implement one scoped shell and design-foundation branch. Preserve stable routes, shared render facades, separate view/edit pages and proven workflows. Do not introduce a frontend framework, component library or broad page redesign incidentally.
 

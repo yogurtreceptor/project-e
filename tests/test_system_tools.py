@@ -34,7 +34,9 @@ class SystemToolsViewTests(unittest.TestCase):
     def test_navigation_replaces_individual_tool_links_with_active_hub(self):
         html = views.layout("Tools", views.system_tools_page(), "system-tools")
         nav = html.split("<nav>", 1)[1].split("</nav>", 1)[0]
-        self.assertIn('<a class="active" href="/system-tools">System Tools</a>', nav)
+        self.assertIn('<a class="active" href="/system-tools">', nav)
+        self.assertIn('src="/static/icons/system.svg"', nav)
+        self.assertIn("System Tools</a>", nav)
         self.assertNotIn('href="/taxonomies"', nav)
         self.assertNotIn('href="/data-quality"', nav)
         self.assertNotIn('href="/recycle-bin"', nav)

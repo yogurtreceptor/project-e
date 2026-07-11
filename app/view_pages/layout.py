@@ -1,6 +1,7 @@
 from html import escape
 
 from app.entities import ENTITY_DEFINITIONS
+from app.view_pages.icons import DOMAIN_ICONS, icon
 
 
 def layout(
@@ -10,10 +11,11 @@ def layout(
     show_save_toast: bool = False,
 ) -> str:
     entity_nav = "".join(
-        '<a class="{class_name}" href="/{slug}">{label}</a>'.format(
+        '<a class="{class_name}" href="/{slug}">{icon}{label}</a>'.format(
             class_name="active" if definition.slug == active_slug else "",
             slug=definition.slug,
             label=escape(definition.plural),
+            icon=icon(DOMAIN_ICONS[definition.slug]),
         )
         for definition in ENTITY_DEFINITIONS
     )
@@ -21,7 +23,7 @@ def layout(
     map_class = "active" if active_slug == "map" else ""
     timeline_class = "active" if active_slug == "timeline" else ""
     system_tools_class = "active" if active_slug == "system-tools" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{map_class}" href="/map">Map</a><a class="{system_tools_class}" href="/system-tools">System Tools</a>'
+    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">{icon("relationships")}Relationships</a><a class="{timeline_class}" href="/timeline">{icon("timeline")}Timeline</a><a class="{map_class}" href="/map">{icon("map")}Map</a><a class="{system_tools_class}" href="/system-tools">{icon("system")}System Tools</a>'
     save_toast = (
         '<div class="save-toast" role="status" aria-live="polite">Changes saved</div>'
         if show_save_toast else ""
@@ -40,17 +42,17 @@ def layout(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{escape(title)} - Operation Eddy</title>
+    <title>{escape(title)} - Project E</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     {save_toast}
     <header class="site-header">
-        <a class="brand" href="/">Operation Eddy</a>
+        <a class="brand" href="/">{icon("e-mark", "Project E", "brand-mark")}<span>Project E</span></a>
         <nav>{nav_items}</nav>
         <form class="global-search" method="get" action="/search">
             <input name="q" placeholder="Search entities and relationships">
-            <button type="submit">Search</button>
+            <button type="submit">{icon("search")}Search</button>
         </form>
     </header>
     <main>{content}</main>

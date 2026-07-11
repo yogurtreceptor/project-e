@@ -8,6 +8,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
+Completed the brand and local-asset foundation with an original industrial Project E mark and a coherent 24px SVG set for shell groups, current domains/views, Search, Super Key and shared actions/status. The transitional shell now uses Project E identity and consistent labelled navigation icons while preserving its existing composition for the dedicated sidebar step; focused checks cover accessible icon semantics, asset geometry and safe local serving.
+
 Completed the shared-component and interaction-state foundation. Entity and relationship validation now links top summaries to visibly invalid, programmatically described controls with adjacent messages while retaining submitted values. Added the quiet warning status row with a **Details** link and verified the complete Step 3 action, form, feedback, toast and modal contract through focused tests, the full suite, compilation and running-app smoke checks.
 
 Replaced native entity soft-delete confirmation prompts with a shared accessible modal that names the record and recoverable consequence. The native dialog contains focus while open, supports Escape/cancel, returns focus to its invoker, and deliberately leaves permanent delete, merge and import on their dedicated review pages.

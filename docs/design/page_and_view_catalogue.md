@@ -102,13 +102,13 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Do not formalise:** horizontal all-destination header, Operation Eddy identity, one responsive stack for every width and no nested navigation.
 
-**Open:** exact sidebar dimensions, icon set, Super Key shortcut/syntax, narrow-screen mechanics and whether Search remains continuously visible.
+**Open:** exact sidebar dimensions, narrow-screen mechanics and whether Search remains continuously visible. The initial coherent local SVG set and Super Key shortcut/syntax are decided; the icon assets are now used by the transitional shell ahead of its Step 5 sidebar conversion.
 
 ### Persistent header and sidebar
 
 **Established:** header has global scope and should remain route-independent.
 
-**Missing:** the philosophy-required Project E wordmark/E mark, persistent left sidebar, expanded/icon-only states, nesting and accessible collapse state.
+**Missing:** persistent left sidebar, expanded/icon-only states, nesting and accessible collapse state. The transitional shell now uses the Project E wordmark and original E mark.
 
 ### Domain indexes
 

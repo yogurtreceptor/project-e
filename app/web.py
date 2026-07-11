@@ -945,12 +945,25 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
         }
-        if relative_path not in content_types:
+        if relative_path.startswith("icons/") and relative_path.endswith(".svg"):
+            icon_name = relative_path.removeprefix("icons/").removesuffix(".svg")
+            if not icon_name or not icon_name.replace("-", "").isalnum():
+                self.respond_not_found()
+                return
+            path = STATIC_DIR / "icons" / f"{icon_name}.svg"
+            if not path.is_file():
+                self.respond_not_found()
+                return
+            content_type = "image/svg+xml"
+        elif relative_path in content_types:
+            path = STATIC_DIR / relative_path
+            content_type = content_types[relative_path]
+        else:
             self.respond_not_found()
             return
-        content = (STATIC_DIR / relative_path).read_bytes()
+        content = path.read_bytes()
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_types[relative_path])
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -1070,10 +1083,10 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     initialise_local_storage()
     initialise_database(EddyRequestHandler.database_path)
     server = ThreadingHTTPServer((host, port), EddyRequestHandler)
-    print(f"Operation Eddy running at http://{host}:{port}")
+    print(f"Project E running at http://{host}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Operation Eddy stopped.")
+        print("Project E stopped.")
     finally:
         server.server_close()
