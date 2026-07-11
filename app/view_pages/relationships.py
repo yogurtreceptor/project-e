@@ -16,7 +16,7 @@ from app.relationships import (
 )
 from app.taxonomy import TaxonomyChoice
 from app.view_pages.common import format_date_with_precision
-from app.view_pages.forms import entity_form_fields, error_block, input_field, select_field, taxonomy_field
+from app.view_pages.forms import associate_field_errors, entity_form_fields, error_block, input_field, select_field, taxonomy_field
 from app.graph_layout import GraphLayout
 
 
@@ -316,6 +316,7 @@ def relationship_form_page(
     connected_sex = selected_target.metadata.get("sex", "Unknown") if selected_target else "Unknown"
     workflow_mode = values.get("workflow_mode") or values.get("target_mode") or "existing"
 
+    error_fields = relationship_error_fields(errors)
     fields = []
     if context_entity is not None:
         fields.append(f'<div class="readonly-field"><span>Current entity</span><strong>{escape(context_entity.title)}</strong></div>')
@@ -336,9 +337,9 @@ def relationship_form_page(
         <h1>{escape(action)} Relationship</h1>
     </section>
     <section class="panel">
-        {error_block(errors)}
+        {error_block(errors, error_fields)}
         <form class="record-form relationship-form" method="post" action="{form_action}">
-            {''.join(fields)}
+            {associate_field_errors(''.join(fields), errors, error_fields)}
             <div class="actions">
                 <a class="button secondary" href="{'/' + context_entity.slug + '/' + str(context_entity.id) if context_entity else '/relationships'}">Cancel</a>
                 <button class="button" type="submit">Save</button>
@@ -347,6 +348,32 @@ def relationship_form_page(
     </section>
     {relationship_form_script(entities, target_type, source_entity)}
     """
+
+
+def relationship_error_fields(errors: list[str]) -> list[str | None]:
+    prefixes = (
+        ("Source entity", "source_entity_id"),
+        ("Target entity", "target_entity_id"),
+        ("Connected entity type", "new_entity_type"),
+        ("Choose Person", "new_entity_type"),
+        ("Relationship type", "type"),
+        ("Relationship status", "status"),
+        ("Start date certainty", "started_at_precision"),
+        ("End date certainty", "ended_at_precision"),
+        ("Started", "started_at"),
+        ("Ended", "ended_at"),
+    )
+    fields = []
+    for error in errors:
+        field = next((name for prefix, name in prefixes if error.startswith(prefix)), None)
+        if error.startswith("New ") and ": " in error:
+            nested = error.split(": ", 1)[1]
+            if nested.startswith("Given name"):
+                field = "new_given_name"
+            elif " name " in nested:
+                field = "new_display_name"
+        fields.append(field)
+    return fields
 
 
 def relationship_workflow_selector(workflow_mode: str) -> str:

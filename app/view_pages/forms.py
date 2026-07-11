@@ -1,19 +1,73 @@
 from html import escape
 import json
+import re
 
 from app.entities import EntityDefinition
 from app.taxonomy import TaxonomyChoice
 
 
-def error_block(errors: list[str]) -> str:
+def error_block(errors: list[str], error_fields: list[str | None] | None = None) -> str:
     if not errors:
         return ""
+    items = []
+    for error, field in zip(errors, error_fields or [None] * len(errors)):
+        content = f'<a href="#{escape(field)}">{escape(error)}</a>' if field else escape(error)
+        items.append(f"<li>{content}</li>")
     return (
         '<div class="errors" role="alert" aria-labelledby="form-errors-title" tabindex="-1">'
         '<strong id="form-errors-title">Check the form</strong><ul>'
-        + "".join(f"<li>{escape(error)}</li>" for error in errors)
+        + "".join(items)
         + "</ul></div>"
     )
+
+
+def associate_field_errors(html: str, errors: list[str], error_fields: list[str | None]) -> str:
+    grouped: dict[str, list[str]] = {}
+    for message, field in zip(errors, error_fields):
+        if field:
+            grouped.setdefault(field, []).append(message)
+    for field, messages in grouped.items():
+        field_id = escape(field)
+        error_id = f"{field_id}-error"
+        marker = f'id="{field_id}"'
+        replacement = f'{marker} aria-invalid="true" aria-describedby="{error_id}"'
+        html = html.replace(marker, replacement, 1)
+        error_html = f'<small class="field-error" id="{error_id}">{escape(" ".join(messages))}</small>'
+        escaped_id = re.escape(field_id)
+        patterns = (
+            rf'(<textarea\b[^>]*id="{escaped_id}"[^>]*>.*?</textarea>)',
+            rf'(<select\b[^>]*id="{escaped_id}"[^>]*>.*?</select>)',
+            rf'(<input\b[^>]*id="{escaped_id}"[^>]*>)',
+        )
+        for pattern in patterns:
+            html, count = re.subn(pattern, rf'\1{error_html}', html, count=1, flags=re.DOTALL)
+            if count:
+                break
+    return html
+
+
+def entity_error_fields(definition: EntityDefinition, values: dict[str, str], errors: list[str]) -> list[str | None]:
+    labels = [(field.label, field.name) for field in definition.fields]
+    mapped = []
+    for error in errors:
+        field = None
+        if error.startswith("Given name "):
+            field = "given_name"
+        elif error.startswith(f"{definition.singular} name "):
+            field = "display_name"
+        else:
+            field = next((name for label, name in labels if error.startswith(f"{label} ")), None)
+        if error.startswith("Value must be a whole number"):
+            field = next(
+                (item.name for item in definition.fields if item.value_kind == "whole_number" and values.get(item.name)),
+                field,
+            )
+        if error.startswith("Ended / completed"):
+            field = "ended_at"
+        elif error.startswith("Expiry date"):
+            field = "expiry_date"
+        mapped.append(field)
+    return mapped
 
 
 def duplicate_warning(matches: list, document_form: bool = False) -> str:

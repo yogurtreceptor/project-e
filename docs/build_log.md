@@ -8,6 +8,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
+Completed the shared-component and interaction-state foundation. Entity and relationship validation now links top summaries to visibly invalid, programmatically described controls with adjacent messages while retaining submitted values. Added the quiet warning status row with a **Details** link and verified the complete Step 3 action, form, feedback, toast and modal contract through focused tests, the full suite, compilation and running-app smoke checks.
+
 Replaced native entity soft-delete confirmation prompts with a shared accessible modal that names the record and recoverable consequence. The native dialog contains focus while open, supports Escape/cancel, returns focus to its invoker, and deliberately leaves permanent delete, merge and import on their dedicated review pages.
 
 Added the shared passive **Changes saved** toast to successful entity and relationship create/edit redirects. It uses a polite status region without moving focus, fades from the top of the screen, removes its one-request URL marker from browser history, and does not render on ordinary or failed form responses.

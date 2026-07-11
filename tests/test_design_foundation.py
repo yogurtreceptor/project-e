@@ -212,6 +212,51 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("It can be restored later.", html)
         self.assertNotIn("confirm(", html)
 
+    def test_entity_validation_associates_error_and_retains_submitted_value(self) -> None:
+        from app.entities import DEFINITIONS_BY_SLUG
+        from app.view_pages.entities import entity_form_page
+
+        values = {"given_name": "Ada", "family_name": "Lovelace", "birthday": "not-a-date"}
+        html = entity_form_page(
+            DEFINITIONS_BY_SLUG["people"],
+            values,
+            ["Birthday must be a valid date in YYYY-MM-DD format."],
+            "Create",
+        )
+
+        self.assertIn('href="#birthday"', html)
+        self.assertIn('id="birthday" aria-invalid="true" aria-describedby="birthday-error"', html)
+        self.assertIn('value="not-a-date"', html)
+        self.assertIn('class="field-error" id="birthday-error"', html)
+
+    def test_relationship_validation_associates_responsible_control(self) -> None:
+        from app.view_pages.relationships import relationship_form_page
+
+        html = relationship_form_page(
+            {"source_entity_id": "", "target_entity_id": "", "type": "", "status": "active"},
+            ["Source entity is required."],
+            [],
+            "Create",
+        )
+
+        self.assertIn('href="#source_entity_id"', html)
+        self.assertIn(
+            'id="source_entity_id" aria-invalid="true" aria-describedby="source_entity_id-error"',
+            html,
+        )
+        self.assertIn('class="field-error" id="source_entity_id-error"', html)
+
+    def test_quiet_warning_status_has_details_link(self) -> None:
+        from app.view_pages.common import warning_status_row
+
+        html = warning_status_row("Location evidence needs review.", "/locations/1/audit")
+
+        self.assertIn('class="status-row warning" role="status"', html)
+        self.assertIn("Location evidence needs review.", html)
+        self.assertIn('href="/locations/1/audit">Details</a>', html)
+        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        self.assertIn(".status-row.warning", stylesheet)
+
 
 if __name__ == "__main__":
     unittest.main()

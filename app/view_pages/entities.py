@@ -8,7 +8,9 @@ from app.view_pages.dashboard import favourite_form
 from app.view_pages.forms import (
     address_lookup_field,
     address_lookup_script,
+    associate_field_errors,
     entity_form_fields,
+    entity_error_fields,
     duplicate_warning,
     error_block,
     existing_location_action,
@@ -503,13 +505,20 @@ def entity_form_page(
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
     )
-    error_html = error_block(errors)
+    error_fields = entity_error_fields(definition, values, errors)
+    error_html = error_block(errors, error_fields)
     duplicate_html = duplicate_warning(duplicate_matches or [], definition.type == "document")
 
     fields = []
     if definition.type == "location":
         fields.append(address_lookup_field())
-    fields.append(entity_form_fields(definition, values, field_options=field_options))
+    fields.append(
+        associate_field_errors(
+            entity_form_fields(definition, values, field_options=field_options),
+            errors,
+            error_fields,
+        )
+    )
     if definition.type == "document":
         fields.append(file_upload_field(values))
 

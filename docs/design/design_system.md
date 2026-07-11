@@ -4,7 +4,7 @@ Status: Working foundation. This document defines reusable visual and component 
 
 ## Purpose and evidence
 
-The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The implemented foundation now provides the documented primitive and semantic roles, system-selected dark/light themes, typography and layout scales, keyboard focus and reduced-motion base. The transitional stylesheet still contains page-specific literal colours, mixed units, duplicated declarations and incomplete disabled/loading component states; those move to the foundation as their numbered conversion steps are completed.
+The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The implemented foundation now provides the documented primitive and semantic roles, system-selected dark/light themes, typography and layout scales, keyboard focus, reduced-motion base and shared component-state contract. The transitional stylesheet still contains page-specific literal colours, mixed units and duplicated declarations; those move to the foundation as their numbered conversion steps are completed.
 
 ## Token policy
 

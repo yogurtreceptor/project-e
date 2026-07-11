@@ -39,7 +39,7 @@ The following route family exists for People, Organisations, Locations, Projects
 | Route pattern | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
 | `/{domain}` | Browse/filter by text and favourites; Create; Edit/Delete per row | `entity_list_page()` | Established index/filter pattern. Domain columns are too generic; Notes is used for every non-Person domain. Move destructive actions out of default rows and define domain-specific scan fields. |
-| `/{domain}/new` | Complete-page create form; Save/Save anyway; Cancel | `entity_form_page()` + definition-driven fields | Strong shared form foundation. Add required-state, field-level validation, unsaved-change handling and contextual Cancel. |
+| `/{domain}/new` | Complete-page create form; Save/Save anyway; Cancel | `entity_form_page()` + definition-driven fields | Shared form foundation now includes linked summary/field validation and retained values. Required-state refinement, unsaved-change handling and contextual Cancel remain for the entity-form step. |
 | `/{domain}/{id}` | Read-only profile with identity/actions, Overview, Geography, all relationship groups, Related Entities, Notes/Journal, Documents, Timeline, Change History and Metadata | `entity_detail_page()` | Read-only separation is established. Current one-layout-for-all composition, duplicate related information and default admin metadata conflict with philosophy. Evolve into concise domain-specific Overviews plus specialised views. |
 | `/{domain}/{id}/edit` | Complete-page edit form | Same as create | Correct separation; Cancel currently returns to the index rather than originating entity/view. |
 | `/{domain}/{id}/favourite` | Toggle favourite and return to entity | `favourite_form()` | Useful low-risk direct action; status should be accessible and not dominate header. |
@@ -65,7 +65,7 @@ The following route family exists for People, Organisations, Locations, Projects
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
 | `/relationships` | Browse all relationships, integrity warnings, Create, open detail/edit/delete, inference queue and family tree | `relationship_list_page()` | Useful global browse/audit view. Needs filters, deliberate warning severity and less prominent direct Delete. |
-| `/relationships/new` | Existing/new connected entity workflow, perspective-specific relationship selection, dates/notes, Save/Cancel | `relationship_form_page()` | One of the strongest established workflows. Retain context return and pair-aware labels; add unsaved/validation accessibility standards. |
+| `/relationships/new` | Existing/new connected entity workflow, perspective-specific relationship selection, dates/notes, Save/Cancel | `relationship_form_page()` | One of the strongest established workflows. Context return, pair-aware labels and linked summary/field validation are established; unsaved-change handling remains. |
 | `/relationships/{id}` | Relationship identity, endpoints, status, dates, notes and inference history | `relationship_detail_page()` | Valid first-class relationship page. Administrative inference evidence should remain progressive/specialised unless it changes interpretation. |
 | `/relationships/{id}/edit` | Dedicated relationship edit page | Shared relationship form | Correct separate edit experience and contextual return query. |
 | Relationship delete POST | Soft deletes and returns to context or list | Inline forms | Recoverable but lacks confirmation consistency and explicit language. |
@@ -91,7 +91,7 @@ The following route family exists for People, Organisations, Locations, Projects
 | `/recycle-bin` | List deleted entities/relationships, Restore, open entity permanent-delete confirmation | `recycle_bin_page()` | Correct lifecycle separation. Restore and permanent delete need clearer distinct action hierarchy; current table combines record kinds with partially different actions. |
 | `/recycle-bin/{id}/permanent-delete` | Dependency review, irreversible confirmation and recovery explanation | `permanent_delete_confirmation_page()` | Established consequential-flow standard worth reusing. |
 | `/system-tools/audit` | Filterable operational events by action and record kind | `system_audit_page()` | Correct administrative lens. Move entity-local audit detail here/specialised views instead of default Overview. Needs scalable filtering and compact-table design. |
-| `/system-tools/portability` | Export direct download; upload import bundle for validation | `portability_page()` | Clear separation of read-only export and consequential import. Success uses an unstyled `notice` class; adopt shared transient-message pattern. |
+| `/system-tools/portability` | Export direct download; upload import bundle for validation | `portability_page()` | Clear separation of read-only export and consequential import. Its existing notice now consumes the shared semantic success treatment. |
 | `/system-tools/portability/preview` | Verified counts and consequences before confirmed import | `import_preview_page()` | Strong review precedent; add breadcrumb and consistent confirmation layout. |
 
 ## Recurring pattern audit
@@ -128,7 +128,7 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Established:** dedicated pages, shared definition-driven fields, Add details, compound coordinates, manual fallback, taxonomy/reference controls, duplicate review and server validation.
 
-**Do not formalise:** generic Cancel destination, absence of dirty-form warning, top-only validation with no field association and inconsistent confirmation for destructive actions.
+**Do not formalise:** generic Cancel destination and absence of dirty-form warning. Linked summary/field validation and reversible soft-delete confirmation are now shared foundations.
 
 ### Tables, lists and filters
 
@@ -182,7 +182,7 @@ No custom modal/dialog component exists. Native `confirm()` is used for soft del
 
 **Established:** `.empty`, `.errors` and `.warnings` presentations; address lookup has status text; many pages name no-content conditions.
 
-**Gaps:** filtered-empty and dataset-empty are not always distinct; Data Quality lacks a dedicated empty row/state; no shared loading/busy pattern; remote map failure is silent; portability uses an unstyled `.notice`; validation errors are not field-associated; not-found is generic.
+**Gaps:** filtered-empty and dataset-empty are not always distinct; Data Quality does not yet consume the shared empty state; remote map failure is silent; not-found is generic. Shared loading/busy, notice and field-associated validation foundations now exist for incremental adoption.
 
 ## Stylesheet audit
 
@@ -200,7 +200,7 @@ No custom modal/dialog component exists. Native `confirm()` is used for soft del
 - Duplicate declarations exist (`color` in `.readonly-field span`, `z-index` in taxonomy empty state).
 - Units mix `px` and `rem`; the documented token scale is available but not yet consumed by every rule.
 - `font-weight: 750` and other one-off weights lack a type-scale contract.
-- Disabled, busy/loading, selected/current and success/notice component states are incomplete.
+- Selected/current state adoption remains incomplete in legacy page-specific components; shared disabled, busy/loading and success/notice foundations are implemented.
 - System Tool cards translate upward on hover despite the philosophy's minimal-motion direction.
 - Breakpoints at 720px and 920px are accumulated implementation values rather than content-tested tokens.
 - One `main` maximum width serves ordinary pages and wide map/graph/table tasks.

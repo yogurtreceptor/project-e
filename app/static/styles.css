@@ -755,6 +755,19 @@ select {
     color: var(--color-status-success);
 }
 
+.field-error {
+    color: var(--color-status-danger);
+    display: block;
+    font-size: var(--font-size-label);
+    font-weight: 600;
+    margin-top: var(--space-1);
+}
+
+.errors a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .status-badge.archived {
     background: var(--color-surface-inset);
     color: var(--color-text-secondary);
@@ -1045,6 +1058,27 @@ dd {
     background: var(--color-status-danger);
     border-color: var(--color-status-danger);
     color: var(--color-action-on-primary);
+}
+
+.status-row {
+    align-items: baseline;
+    border-left: 3px solid var(--color-border-default);
+    display: flex;
+    font-size: var(--font-size-compact);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+}
+
+.status-row.warning {
+    background: var(--color-status-warning-surface);
+    border-left-color: var(--color-status-warning-border);
+    color: var(--color-status-warning);
+}
+
+.status-row a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
 }
 
 .button.danger:hover:not([disabled]):not([aria-disabled="true"]) {
