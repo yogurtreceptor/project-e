@@ -6,6 +6,7 @@ import re
 from urllib.request import urlopen
 
 from app.view_pages.layout import layout
+from app.view_pages.forms import error_block
 from app.web import EddyRequestHandler
 
 
@@ -134,6 +135,31 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("background: var(--color-status-danger-surface)", stylesheet)
         self.assertIn('input[aria-invalid="true"]:focus-visible', stylesheet)
         self.assertIn("0 0 0 3px var(--color-border-focus)", stylesheet)
+
+    def test_shared_feedback_and_content_states_use_semantic_roles(self) -> None:
+        stylesheet = (STATIC_DIR / "styles.css").read_text()
+
+        for selector in (
+            ".empty-state",
+            ".loading-state",
+            ".failure-state",
+            ".notice",
+            ".warnings",
+            ".status-badge.active",
+            '.panel[aria-busy="true"]',
+        ):
+            self.assertIn(selector, stylesheet)
+        self.assertIn("var(--color-status-success-surface)", stylesheet)
+        self.assertIn("var(--color-status-warning-surface)", stylesheet)
+        self.assertIn("var(--color-status-info-surface)", stylesheet)
+
+    def test_error_summary_is_an_accessible_alert(self) -> None:
+        html = error_block(["Display name is required."])
+
+        self.assertIn('role="alert"', html)
+        self.assertIn('aria-labelledby="form-errors-title"', html)
+        self.assertIn('id="form-errors-title"', html)
+        self.assertIn('tabindex="-1"', html)
 
 
 if __name__ == "__main__":

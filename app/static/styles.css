@@ -119,6 +119,10 @@ p {
     padding: 20px;
 }
 
+.panel[aria-busy="true"] {
+    border-color: var(--color-status-info-border);
+}
+
 .entity-card {
     display: flex;
     flex-direction: column;
@@ -644,7 +648,7 @@ select {
 .taxonomy-counts span,
 .status-badge,
 .taxonomy-level {
-    background: #edf2ef;
+    background: var(--color-surface-inset);
     border-radius: 999px;
     color: var(--muted);
     font-size: 12px;
@@ -701,13 +705,13 @@ select {
 }
 
 .status-badge.active {
-    background: #e5f4ee;
-    color: #276849;
+    background: var(--color-status-success-surface);
+    color: var(--color-status-success);
 }
 
 .status-badge.archived {
-    background: #f1eeee;
-    color: #766a6a;
+    background: var(--color-surface-inset);
+    color: var(--color-text-secondary);
 }
 
 .taxonomy-tree-action form {
@@ -786,6 +790,27 @@ dd {
     white-space: pre-wrap;
 }
 
+.empty-state,
+.loading-state,
+.failure-state {
+    border: 1px dashed var(--color-border-default);
+    border-radius: var(--radius-panel);
+    color: var(--color-text-secondary);
+    padding: var(--space-5);
+}
+
+.loading-state {
+    background: var(--color-status-info-surface);
+    border-color: var(--color-status-info-border);
+    color: var(--color-status-info);
+}
+
+.failure-state {
+    background: var(--color-status-danger-surface);
+    border-color: var(--color-status-danger-border);
+    color: var(--color-status-danger);
+}
+
 .errors {
     background: var(--color-status-danger-surface);
     border: 1px solid var(--color-status-danger-border);
@@ -799,11 +824,24 @@ dd {
     margin-bottom: 0;
 }
 
+.notice {
+    background: var(--color-status-success-surface);
+    border: 1px solid var(--color-status-success-border);
+    border-radius: var(--radius-panel);
+    color: var(--color-status-success);
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+}
+
+.notice p:last-child {
+    margin-bottom: 0;
+}
+
 .warnings {
-    background: #fff8df;
-    border: 1px solid #d9bd63;
+    background: var(--color-status-warning-surface);
+    border: 1px solid var(--color-status-warning-border);
     border-radius: 8px;
-    color: #5f4a08;
+    color: var(--color-status-warning);
     margin-bottom: 18px;
     padding: 12px 14px;
 }

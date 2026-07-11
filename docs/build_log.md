@@ -8,6 +8,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
+Extended the shared-component foundation with accessible error-summary alert markup, semantic success notices and warnings, compact status badges, busy panels, and reusable empty/loading/failure states. Field-level validation association, save toast and confirmation modal remain pending within Step 3.
+
 Started the shared-component catch-up with a bounded action/form-state slice. Primary, secondary, quiet and final-danger actions now share semantic hover, active and disabled treatments; inputs use semantic rest, disabled, read-only and invalid states; and the existing error summary uses the shared danger roles. Toast, modal and the remaining Step 3 interaction-state work are still pending.
 
 Implemented the global design token and accessibility base: one `#66ccff` primitive feeds semantic actions, selection and focus; charcoal dark is the fallback with an operating-system-selected light companion; shared roles now cover surfaces, text, borders, statuses, graph/map series, typography, spacing, dimensions, radii and elevation. Applied a local-first Roboto fallback stack, a keyboard-only 2px focus ring and reduced-motion protection, with focused token-integrity and representative WCAG contrast tests. Page-specific component conversion remains incremental.

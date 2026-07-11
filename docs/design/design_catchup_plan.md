@@ -65,7 +65,7 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 3. Shared components and interaction states
 
-**Status:** In progress. The first bounded slice standardises primary, secondary, quiet and final-danger action styling plus disabled/ARIA-disabled actions; shared inputs now have semantic rest, disabled, read-only and invalid treatments, and the existing error summary consumes semantic danger roles. Toast, modal, broader feedback/status states and validation markup/retention verification remain outstanding, so this step is not complete.
+**Status:** In progress. Completed slices standardise primary, secondary, quiet and final-danger actions; disabled/ARIA-disabled actions; input rest, disabled, read-only and invalid treatments; accessible error-summary semantics; panels and compact badges; and semantic notice, warning, empty, loading and failure states. Toast, modal, field-level error association and retained-value verification remain outstanding, so this step is not complete.
 
 **Goal:** establish a small reusable set of components before converting complete pages.
 

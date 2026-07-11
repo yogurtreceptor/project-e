@@ -9,7 +9,8 @@ def error_block(errors: list[str]) -> str:
     if not errors:
         return ""
     return (
-        '<div class="errors"><strong>Check the form</strong><ul>'
+        '<div class="errors" role="alert" aria-labelledby="form-errors-title" tabindex="-1">'
+        '<strong id="form-errors-title">Check the form</strong><ul>'
         + "".join(f"<li>{escape(error)}</li>" for error in errors)
         + "</ul></div>"
     )
