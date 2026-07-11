@@ -8,6 +8,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
+Added the visual-neutral design-foundation stylesheet seam while preserving the existing shell and route composition. The global stylesheet now imports one incremental foundation entry point, the local static handler serves it, focused checks cover the seam and shared CSS integrity, and the Family Tree no longer references an undefined text token.
+
 Added a design implementation-readiness register that separates remaining product-owner answers from prototype evidence, defines the foundation catch-up sequence and gives explicit completion evidence for the current prototype-to-design implementation gap. No application UI or domain behaviour changed.
 
 Refined the implementation-readiness register after product-owner review: chose system-theme selection with dark fallback, `#66ccff` as the single base accent primitive, charcoal dark surfaces, original corporate/industrial E-mark direction, local SVG sizing, direct unique Super Key aliases, grouped Views, document/project priorities, visible Edit/Delete, and active Inbox counts. Reduced the immediate decision set to plain-language questions that genuinely need an answer before prototyping. No application UI or domain behaviour changed.

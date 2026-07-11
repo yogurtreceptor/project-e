@@ -1,6 +1,6 @@
 # Design System
 
-Status: Working foundation. This document defines reusable visual and component rules. It does not define page-specific workflow or make the current stylesheet authoritative.
+Status: Working foundation. This document defines reusable visual and component rules. `app/static/foundation.css` is the incremental implementation entry point; the accumulated `styles.css` remains transitional rather than authoritative.
 
 ## Purpose and evidence
 

@@ -937,6 +937,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def serve_static(self, relative_path: str) -> None:
         content_types = {
+            "foundation.css": "text/css; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
         }

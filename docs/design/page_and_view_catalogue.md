@@ -10,10 +10,17 @@ This catalogue bridges the Experience Philosophy, design standards and later imp
 - `app/view_pages/entities.py` renders all six entity indexes, detail pages and entity forms through shared definitions.
 - `app/view_pages/forms.py` renders shared fields, progressive disclosure, taxonomy/reference controls and address lookup behaviour.
 - Focused modules render Dashboard, Relationships, Timeline, Search, Map, Taxonomies, Data Quality, Audit, Recycle Bin, portability and merge flows.
-- `app/static/styles.css` is one global stylesheet; `taxonomy.js` supplies the reusable taxonomy-combobox interaction. Several other behaviours are emitted as inline scripts by page renderers.
+- `app/static/styles.css` remains the global application stylesheet and imports `app/static/foundation.css` as the single incremental design-foundation entry point. `taxonomy.js` supplies the reusable taxonomy-combobox interaction. Several other behaviours are emitted as inline scripts by page renderers.
 - The stable public facade remains `app/views.py`.
 
 This module split is maintainable and worth preserving. Design work should improve renderers and route composition behind the facade rather than require a framework migration.
+
+### Foundation smoke checklist
+
+- Load Home and one entity detail page and confirm the existing stylesheet plus `/static/foundation.css` both return CSS successfully.
+- Confirm the horizontal shell, forms, tables, Map and Family Tree retain their existing composition while the foundation entry is still intentionally visual-neutral.
+- Check the browser console/network panel for missing local static assets.
+- Run the focused foundation tests to catch a missing import, malformed shared CSS block or the previously undefined Family Tree text token.
 
 ## Current route catalogue
 
