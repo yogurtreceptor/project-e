@@ -64,7 +64,7 @@ A persistent header and left sidebar frame the application. The Project E wordma
 
 ### The Super Key
 
-The Super Key is a persistent quick-navigation field. It is not a natural-language assistant and not a complex query language. It is designed for short codes, concise terms and one-step destinations. Its value comes from learned speed and predictability.
+The Super Key is a persistent quick-navigation field positioned beneath the Project E identity. It is not a natural-language assistant and not a complex query language. It accepts short codes, concise terms and one-step destinations, including a concise specialised-view term in the current entity context. Its value comes from learned speed and predictability.
 
 ### Context preservation
 
@@ -94,9 +94,9 @@ Audit, data-quality, AI-review and developer concerns may be exposed as speciali
 
 ## 6. Home experience
 
-The home page is the operational command centre of Project E. It is broad rather than entity-focused and should answer two questions: What should I know? What should I do?
+The home page is a restrained jumping-off point for Project E. It is broad rather than entity-focused and should quickly direct the user to the information or tool they need.
 
-The home page may include universal search, actions requiring attention, recent platform activity, favourites, recent or changed entities, quick actions, calendar information, background processing, system health and briefings. These are curated sections, not a fully customisable canvas at the current stage.
+The home page may include universal search, favourites, recent or changed entities and quick actions. Once Inbox exists, it may show a link and small notification count/ticker. These are curated sections, not a fully customisable canvas at the current stage.
 
 ### Not a resume screen
 
@@ -130,7 +130,7 @@ The visual language is modern, timeless, restrained and professional. It should 
 
 ### Colour
 
-The core palette is cool and cohesive, centred on blues, purples and greens. Colours should generally be muted rather than highly saturated. Semantic status colours are defined separately from the brand palette so warnings, approvals and failures remain clear.
+The core palette is cool and cohesive, led by a restrained light blue while most surfaces and text remain black/white neutrals. Colours should generally be muted rather than highly saturated. Semantic status colours are defined separately from the brand palette so warnings, approvals and failures remain clear.
 
 ### Typography
 
@@ -175,11 +175,11 @@ Each stage should extend the previous one. Page layouts, navigation semantics an
 The following decisions are intentionally deferred to the design system or later experience work:
 
 - exact colour tokens, contrast rules and semantic status palette;
-- light mode, dark mode and whether both are first-class at launch;
+- exact light and dark theme tokens and a future optional theme-switching interaction;
 - spacing scale, border radii, component heights and typography sizes;
-- icon library and rules for domain-specific iconography;
+- detailed rules for domain-specific iconography within the local SVG set;
 - precise entity header composition and placement of sources or data-quality indicators;
-- Super Key syntax, discoverability and shortcut conventions;
+- remaining Super Key discoverability and shortcut conventions;
 - the threshold at which workspaces or user configuration become justified;
 - notification, queue and approval interaction patterns for background work.
 

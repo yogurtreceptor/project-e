@@ -213,7 +213,7 @@ These are candidates for the recommended shell/design-foundation implementation 
 | Roboto vs Inter/system font | Philosophy; `styles.css` | Use Roboto in the design foundation with a local-first loading decision and system fallback. |
 | Domain-specific pages vs generic shared profile | Philosophy; `entity_detail_page()`; architecture's inherited shared sections | Keep shared grammar/facade, replace uniform composition with domain-specific render strategies. Update architecture when implemented. |
 | Administrative lens vs default Metadata/Change History | Philosophy; current entity sidebar; `ui_principles.md` lists Metadata | Move full admin content to specialised Audit; keep only interpretively relevant provenance/warnings near facts. |
-| Home command centre vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary and add curated attention/time/activity only with delivered Phase 2 capabilities. |
+| Home jumping-off point vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary discovery. Once Inbox exists, provide a restrained Inbox link and small notification count/ticker rather than embedding attention content on Home. |
 | Browse/Go/Search separation vs Search-only shell | Philosophy; current header/home/search page | Preserve Search and design distinct Super Key Go control. |
 | Minimal motion vs hover translation | Philosophy; `.system-tool-card:hover` | Use border/colour feedback unless motion materially aids comprehension. |
 
@@ -230,7 +230,7 @@ These are candidates for the recommended shell/design-foundation implementation 
 
 ## Open questions
 
-The product-owner questions D-02 through D-09 are maintained in the [design documentation index](README.md#product-owner-decisions-still-required); D-01 is recorded there as closed by the Experience Philosophy. Page-specific follow-ups that do not require product direction should become scoped implementation tasks after those choices, not additional design documents.
+The remaining product-owner questions D-06 and D-07 are maintained in the [design documentation index](README.md#product-owner-decisions-still-required); resolved decisions are recorded there too. D-01 is closed by the Experience Philosophy. Page-specific follow-ups that do not require product direction should become scoped implementation tasks after those choices, not additional design documents.
 
 ## Catalogue maintenance
 

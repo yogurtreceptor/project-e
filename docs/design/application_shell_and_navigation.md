@@ -32,7 +32,8 @@ These conflicts should be addressed through a shell-specific implementation bran
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ Project E identity | Super Key (Go) | global actions/status │
+│ Project E identity              | global actions/status │
+│ Super Key (Go)                  |                       │
 ├──────────────┬───────────────────────────────────────────────┤
 │ Sidebar      │ page context / breadcrumbs                   │
 │ Browse       │ entity or operational page                   │
@@ -43,7 +44,7 @@ These conflicts should be addressed through a shell-specific implementation bran
 
 The shell has two persistent regions at desktop widths:
 
-1. A header containing Project E identity, the Super Key and genuinely global actions or status.
+1. A header containing Project E identity with the Super Key immediately beneath it at the left, plus genuinely global actions or status.
 2. A left sidebar containing browseable destinations and nested view groups.
 
 Global Search is a clearly labelled destination/action, not silently relabelled as the Super Key. Its input may live in the header only if it remains visually and semantically distinct from Go; otherwise the header exposes a Search action that opens the search page.
@@ -97,14 +98,14 @@ Group labels are orientation aids, not destinations unless they have a real hub 
 - Every destination retains a consistent icon, accessible name and tooltip on hover/focus.
 - The current destination remains visible without relying on colour alone.
 - Nested destinations open through a labelled flyout or temporary expanded panel; they must not become unlabelled icon puzzles.
-- The expanded/collapsed choice may persist locally once implementation exists, but broader sidebar customisation is deferred.
+- Each session starts expanded. The expanded/collapsed choice may persist for the current session only; broader sidebar customisation and cross-session persistence are deferred.
 
 ## Header responsibilities
 
 The header contains only persistent global capability:
 
 - Project E identity and Home link.
-- Super Key.
+- Super Key beneath Project E identity.
 - Global Search entry if not continuously visible.
 - A future concise attention indicator that opens the system inbox; it must not render an uncontrolled notification stream.
 - A constrained-width navigation control when the sidebar is not persistent.
@@ -117,11 +118,11 @@ The Super Key is a deterministic destination launcher.
 
 ### Responsibilities
 
-- Accept short codes, route aliases, concise destination names and optionally exact or strongly matching entity names.
+- Within an entity context, accept a few characters or a concise word naming a relevant specialised view, such as `tree` for the current Person's Family Tree. It may also accept short route codes, aliases and concise known destinations.
 - Return destinations quickly and predictably.
 - Prefer one-step navigation over displaying a research-style result page.
 - Teach available codes through visible examples, recent destinations or a compact help affordance.
-- Support keyboard invocation after shortcut decision D-05.
+- Support keyboard invocation once a discoverable, non-conflicting shortcut convention is chosen.
 
 ### Boundaries
 
@@ -173,11 +174,11 @@ Ordinary relationship links from Overview continue to open the related entity's 
 
 ## Home within the shell
 
-Home is the operational command centre, not merely a collection of domain counts or a resume screen. The current domain create/browse cards are useful launch patterns, and favourites/recent are useful secondary discovery. As Phase 2 capability arrives, Home should prioritise actionable attention and near-term awareness ahead of record totals. Layout remains curated and opinionated; no dashboard builder is planned.
+Home is a restrained jumping-off point, not a content-heavy command centre or resume screen. The current domain create/browse cards, favourites and recent records are useful discovery patterns. When Inbox exists, Home may show a link and a small notification count/ticker but does not embed the attention queue. Layout remains curated and opinionated; no dashboard builder is planned.
 
 ## Constrained-width behaviour
 
-Mobile product support is deferred, but the shell must have a coherent constrained-width path:
+Stage 1 is desktop-only. The ordinary shell must be designed and verified at 1440 × 900 and 1920 × 1080. A future constrained-width path may use the following direction without constituting a current support commitment:
 
 - The sidebar becomes an off-canvas or temporary labelled navigation panel; it is never reduced to an unexplained row of icons.
 - Project E identity, current page/entity identity, one primary action and a navigation escape remain visible.
@@ -186,7 +187,7 @@ Mobile product support is deferred, but the shell must have a coherent constrain
 - Page-local navigation becomes horizontally scrollable or a labelled menu without changing route semantics.
 - Wide tables, maps and graphs scroll inside their own regions rather than forcing the whole page off-screen.
 
-Breakpoints are chosen after content fails in representative pages. Candidate dimensions in the [design system](design_system.md) are not final before this test.
+Any later breakpoints are chosen after content fails in representative pages. Candidate dimensions in the [design system](design_system.md) are not final before that test.
 
 ## Accessibility and keyboard contract
 

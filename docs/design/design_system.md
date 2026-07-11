@@ -72,7 +72,7 @@ Do not encode a single global `main` width for all page types. Page layout selec
 
 ## Colour roles
 
-Exact brand values remain open decision D-02. The next implementation must define and contrast-test at least these semantic roles:
+The palette uses restrained light blue for its primary accent, while most surfaces and text remain black/white neutrals. Exact values must be contrast-tested. The next implementation must define at least these semantic roles:
 
 | Group | Required roles |
 | --- | --- |
@@ -81,11 +81,11 @@ Exact brand values remain open decision D-02. The next implementation must defin
 | Borders | subtle, default, strong, focus |
 | Brand/action | primary, primary-hover, primary-active, primary-subtle |
 | Status | info, success, warning, danger, and a subtle surface/text/border combination for each |
-| Graph/map | categorical series distinct from status roles |
+| Graph/map | categorical series from the Project E palette, distinct from status roles |
 
 Brand colour must not carry status meaning by itself. Status must remain understandable through text and, where useful, shape or icon. Never use colour as the only indication of required fields, validation, selection, relationship type or graph state.
 
-The current light palette (`#f7f6f2`, white panels, dark neutral text and teal accent) may remain during shell prototypes, but it is an implementation baseline rather than an approved palette. Current yellow warning and red error treatments are useful semantic precedents; their contrast still requires systematic verification.
+Current yellow warning and red error treatments are useful semantic precedents; their contrast still requires systematic verification. Application-owned map and graph layers use the same muted palette, with labels, legends and non-colour distinctions; external basemap assets are exempt.
 
 ## Component-state contract
 
@@ -157,7 +157,7 @@ Text is the default interface language. Icons are appropriate for the collapsed 
 - Decorative icons are hidden from assistive technology.
 - Meaningful icons have accessible names or adjacent text.
 - Emoji and miscellaneous Unicode glyphs are not a substitute for a coherent icon set.
-- No icon dependency is approved yet; see D-04 in the [design index](README.md#product-owner-decisions-still-required).
+- Maintain a coherent local SVG icon set. New icons follow documented dimensions, accessible-name and consistency rules; do not add a broad icon-library dependency.
 
 ## Accessibility baseline
 
@@ -174,7 +174,7 @@ The current taxonomy combobox includes promising ARIA roles and keyboard scripti
 
 ## Light and dark mode policy
 
-Light mode is the only delivered mode and the baseline for the next implementation branch. Semantic token naming must allow a later dark theme, but no component should ship with a private dark-mode override. Dark mode becomes first-class only after product-owner decision D-03 and a complete contrast/visual QA pass across shell, forms, tables, maps, graphs and status states.
+Both light and dark themes are required in the design foundation. Dark is the preferred presentation when the operating system indicates dark; light is the supported companion theme. An explicit user theme switch is deferred. Components consume shared semantic tokens and must not ship with private theme overrides. Both themes require a complete contrast and visual QA pass across shell, forms, tables, maps, graphs and status states.
 
 ## Acceptance checks for design-system implementation
 

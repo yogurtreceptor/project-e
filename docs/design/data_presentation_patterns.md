@@ -37,7 +37,7 @@ Use a table for repeated records with shared fields where column comparison or l
 ### Density and width
 
 - Default tables use balanced row height and 14px compact body text.
-- A compact variant is allowed for audit, taxonomy and high-volume operational views after usability testing.
+- A compact variant is allowed for audit, taxonomy and high-volume operational views after usability testing. Other data views may use it only where comparison demonstrably benefits from higher density.
 - On constrained widths, keep identity and priority columns visible. Permit internal horizontal scrolling with a visible focusable region and preserve headers.
 - Do not automatically transform every table row into a card; comparison may be the reason the table exists.
 - Sticky headers may be used for long data tables, not for small tables.

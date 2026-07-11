@@ -19,8 +19,8 @@ The embedded SQLite database remains the source of canonical information. Design
 
 | Document | Purpose | Initial maturity |
 | --- | --- | --- |
-| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; exact palette and component metrics remain draft decisions |
-| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key syntax and narrow-screen mechanics remain open |
+| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; palette direction, local SVG icons and dark-first theming are decided; exact metrics remain draft decisions |
+| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key placement and intent are decided; entity-local navigation remains open |
 | [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Working standard; domain page compositions need implementation prototypes |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
 | [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
@@ -64,7 +64,7 @@ Every normative rule should be traceable to the Experience Philosophy, a reposit
 
 ### Intentionally deferred
 
-- Dark mode implementation; the policy decision remains open, and light mode is the only current implementation.
+- The visual implementation of both light and dark themes. Dark is the preferred default based on the operating-system preference; the eventual manual theme switch remains deferred.
 - User-configurable dashboards, arbitrary navigation layout and user-defined density scales.
 - Dockable workspaces or a workspace manager.
 - Mobile-specific product workflows; constrained-width continuity is documented so mobile can be added later without invalidating page architecture.
@@ -101,7 +101,7 @@ These decisions are sufficiently grounded to guide implementation now:
 6. Entity pages share grammar and components but use domain-specific composition.
 7. Entity overview pages are read-only by default; complete-page edit forms are separate.
 8. Domain, operational and administrative information are separate layers. Provenance may appear near a fact when it changes interpretation.
-9. Light mode is the current baseline. Dark mode must not be implemented piecemeal.
+9. Dark mode is the preferred baseline, selected by the operating-system preference; light mode is a supported companion theme. Both themes must be implemented through shared semantic tokens, never piecemeal overrides.
 10. Text labels are the default; icons can replace text only in constrained, familiar, labelled contexts.
 11. Transient messages, actionable notifications, persistent issues, audit events and job runs are not interchangeable.
 12. Reminders are behaviour attached to source records or policies, never a standalone entity navigation domain.
@@ -111,14 +111,21 @@ These decisions are sufficiently grounded to guide implementation now:
 
 | ID | Question | Why it matters | Recommended default until decided |
 | --- | --- | --- | --- |
-| D-02 | Which exact cool palette should define brand roles? | Current teal values are coherent but do not cover the philosophy's blue/purple/green direction or all semantic states. | Retain current light neutrals during prototypes; do not canonise the teal hex values. |
-| D-03 | Is dark mode a launch requirement, a later first-class mode, or unsupported until demonstrated need? | The answer affects token validation and component QA. | Light-only for the next implementation branch, with semantic token names that do not prevent later dark mode. |
-| D-04 | Which icon library, if any, is acceptable? | Icon-only sidebar mode needs a consistent, accessible set without adding an unnecessary dependency. | Prototype with a small local SVG set only after dependency and licence review. |
-| D-05 | What invocation and minimal syntax should the Super Key use? | It determines discoverability, keyboard conflict risk and route naming. | Visible field plus a documented shortcut; destinations only, no natural language or query grammar. |
 | D-06 | Should specialised entity views use tabs, a local sub-navigation rail, or a context menu at desktop widths? | This controls context preservation and information density. | Prototype a compact text sub-navigation directly below the entity header. |
-| D-07 | Which source/provenance indicators belong beside ordinary facts? | Provenance affects interpretation, but broad metadata exposure conflicts with progressive disclosure. | Show only source/evidence that affects trust or meaning; link to a specialised Audit view for the rest. |
-| D-08 | What is the minimum supported constrained width before the experience may become horizontally scrollable? | Tables, graphs and maps cannot all collapse in the same way. | Preserve core page tasks at 720px; permit deliberate internal scrolling for tables, maps and graphs. |
-| D-09 | Should the home command centre initially prioritise attention, upcoming time, or recent change once Phase 2 begins? | The current home is predominantly domain launch cards and resumption lists. | Put actionable attention first once it exists; keep favourites/recent as secondary discovery. |
+| D-07 | When provenance becomes a delivered capability, which source indicators should appear beside ordinary facts? | The product should not add presentation rules ahead of the feature's semantics and workflows. | Keep provenance out of routine presentation for now; define it with the provenance feature. |
+
+## Resolved design decisions
+
+- **D-02 — Palette direction:** use restrained light blue as the primary accent, with predominantly black/white neutral surfaces and text. Exact semantic values still require contrast testing.
+- **D-03 — Theme policy:** implement both themes through semantic tokens. Prefer dark mode when the operating system indicates dark; defer an explicit user switch until later.
+- **D-04 — Icons:** maintain a coherent local SVG set instead of adding an icon-library dependency. New icons must follow documented dimensions and accessibility rules.
+- **D-05 — Super Key:** place it beneath the Project E identity at the left of the shell. It accepts a few characters or a word to navigate within the current entity context, such as `tree` on a Person record opening that Person's Family Tree. It is not global full-text Search.
+- **D-08 — Viewport scope:** Stage 1 is desktop-only. Design and verify the ordinary experience at 1440 × 900 and 1920 × 1080; no narrower-width continuity commitment exists yet.
+- **D-09 — Home:** use Home as a restrained jumping-off point, not a content-heavy command centre. When Inbox exists, show a link and a small count/ticker for notifications rather than embedding the inbox on Home.
+- **Sidebar state:** start each session with the desktop sidebar expanded. Users may collapse it for the current session only; do not persist that preference between sessions.
+- **Density:** limit compact density to administrative/high-volume views, with an explicit exception for data views where comparison benefits from it.
+- **Page composition:** use a single-column default. Add a secondary column only when a specialised view genuinely needs it; revisit this convention as usage matures.
+- **Map and graph palette:** use colours drawn from the Project E palette for application-owned layers and relationship categories, paired with labels, legends and non-colour distinctions. External basemap assets are exempt.
 
 The D-01 identity conflict is closed by the Experience Philosophy: the shell is Project E, with the E mark available for compact presentation. The remaining questions are not permission to implement customisation. A product-owner decision should become a concise update to the responsible document, not a new settings screen.
 
