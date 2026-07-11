@@ -3,7 +3,12 @@ from html import escape
 from app.entities import ENTITY_DEFINITIONS
 
 
-def layout(title: str, content: str, active_slug: str | None = None) -> str:
+def layout(
+    title: str,
+    content: str,
+    active_slug: str | None = None,
+    show_save_toast: bool = False,
+) -> str:
     entity_nav = "".join(
         '<a class="{class_name}" href="/{slug}">{label}</a>'.format(
             class_name="active" if definition.slug == active_slug else "",
@@ -17,6 +22,19 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     timeline_class = "active" if active_slug == "timeline" else ""
     system_tools_class = "active" if active_slug == "system-tools" else ""
     nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">Relationships</a><a class="{timeline_class}" href="/timeline">Timeline</a><a class="{map_class}" href="/map">Map</a><a class="{system_tools_class}" href="/system-tools">System Tools</a>'
+    save_toast = (
+        '<div class="save-toast" role="status" aria-live="polite">Changes saved</div>'
+        if show_save_toast else ""
+    )
+    save_cleanup = (
+        """<script>(() => {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has("saved")) return;
+        url.searchParams.delete("saved");
+        history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+    })();</script>"""
+        if show_save_toast else ""
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -26,6 +44,7 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+    {save_toast}
     <header class="site-header">
         <a class="brand" href="/">Operation Eddy</a>
         <nav>{nav_items}</nav>
@@ -36,5 +55,6 @@ def layout(title: str, content: str, active_slug: str | None = None) -> str:
     </header>
     <main>{content}</main>
     <script src="/static/taxonomy.js"></script>
+    {save_cleanup}
 </body>
 </html>"""

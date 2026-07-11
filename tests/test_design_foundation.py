@@ -161,6 +161,20 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn('id="form-errors-title"', html)
         self.assertIn('tabindex="-1"', html)
 
+    def test_save_toast_is_passive_and_cleans_redirect_marker(self) -> None:
+        normal_html = layout("No save", "<h1>No save</h1>")
+        saved_html = layout("Saved", "<h1>Saved</h1>", show_save_toast=True)
+
+        self.assertNotIn("Changes saved", normal_html)
+        self.assertIn('class="save-toast" role="status" aria-live="polite"', saved_html)
+        self.assertNotIn("autofocus", saved_html)
+        self.assertIn('url.searchParams.delete("saved")', saved_html)
+        self.assertIn("history.replaceState", saved_html)
+
+        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        self.assertIn(".save-toast", stylesheet)
+        self.assertIn("@keyframes save-toast-fade", stylesheet)
+
 
 if __name__ == "__main__":
     unittest.main()

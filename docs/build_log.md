@@ -8,7 +8,9 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
-Extended the shared-component foundation with accessible error-summary alert markup, semantic success notices and warnings, compact status badges, busy panels, and reusable empty/loading/failure states. Field-level validation association, save toast and confirmation modal remain pending within Step 3.
+Added the shared passive **Changes saved** toast to successful entity and relationship create/edit redirects. It uses a polite status region without moving focus, fades from the top of the screen, removes its one-request URL marker from browser history, and does not render on ordinary or failed form responses.
+
+Extended the shared-component foundation with accessible error-summary alert markup, semantic success notices and warnings, compact status badges, busy panels, and reusable empty/loading/failure states. Field-level validation association and confirmation modal remain pending within Step 3.
 
 Started the shared-component catch-up with a bounded action/form-state slice. Primary, secondary, quiet and final-danger actions now share semantic hover, active and disabled treatments; inputs use semantic rest, disabled, read-only and invalid states; and the existing error summary uses the shared danger roles. Toast, modal and the remaining Step 3 interaction-state work are still pending.
 

@@ -160,7 +160,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_new(definition)
         elif len(parts) == 2:
-            self.handle_detail(definition, parts[1])
+            self.handle_detail(definition, parts[1], query)
         elif len(parts) == 3 and parts[2] == "download" and definition.type == "document":
             self.handle_document_download(parts[1])
         elif len(parts) == 3 and parts[2] == "merge":
@@ -192,7 +192,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "undo":
             self.handle_inference_undo(parts[2])
         elif len(parts) == 2:
-            self.handle_relationship_detail(parts[1])
+            self.handle_relationship_detail(parts[1], query)
         elif len(parts) == 3 and parts[2] == "edit":
             self.handle_relationship_edit(parts[1], query)
         elif len(parts) == 3 and parts[2] == "delete":
@@ -411,7 +411,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug=definition.slug,
         )
 
-    def handle_detail(self, definition: EntityDefinition, raw_id: str) -> None:
+    def handle_detail(self, definition: EntityDefinition, raw_id: str, query: dict[str, str]) -> None:
         entity_id = self.parse_entity_id(raw_id)
         if entity_id is None:
             self.respond_not_found()
@@ -435,6 +435,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             record.title,
             views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries),
             active_slug=definition.slug,
+            show_save_toast=query.get("saved") == "1",
         )
 
     def handle_new(self, definition: EntityDefinition) -> None:
@@ -467,7 +468,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     if stored_metadata is not None:
                         self.delete_document_file(stored_metadata.get("file_path", ""))
                     raise
-                self.redirect(f"/{definition.slug}/{entity_id}")
+                self.redirect(f"/{definition.slug}/{entity_id}?saved=1")
                 return
             self.respond_form(definition, values, errors, "Create")
             return
@@ -526,7 +527,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         delete_unreferenced_document_file(
                             connection, previous_file_path, self.document_storage_dir
                         )
-                self.redirect(f"/{definition.slug}/{entity_id}")
+                self.redirect(f"/{definition.slug}/{entity_id}?saved=1")
                 return
             self.respond_form(definition, values, errors, "Edit", entity_id)
             return
@@ -730,7 +731,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug="relationships",
         )
 
-    def handle_relationship_detail(self, raw_id: str) -> None:
+    def handle_relationship_detail(self, raw_id: str, query: dict[str, str]) -> None:
         relationship_id = self.parse_entity_id(raw_id)
         if relationship_id is None:
             self.respond_not_found()
@@ -744,6 +745,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "Relationship",
             views.relationship_detail_page(relationship),
             active_slug="relationships",
+            show_save_toast=query.get("saved") == "1",
         )
 
     def handle_relationship_new(self, query: dict[str, str]) -> None:
@@ -922,8 +924,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         query = query or {}
         context_id = query.get("context_entity_id")
         if context_id:
-            return self.entity_url_from_id(context_id) or f"/relationships/{relationship_id}"
-        return f"/relationships/{relationship_id}"
+            destination = self.entity_url_from_id(context_id) or f"/relationships/{relationship_id}"
+            return f"{destination}?saved=1"
+        return f"/relationships/{relationship_id}?saved=1"
 
     def entity_url_from_id(self, raw_id: str) -> str | None:
         entity_id = self.parse_entity_id(raw_id)
@@ -1027,8 +1030,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         content: str,
         status: HTTPStatus = HTTPStatus.OK,
         active_slug: str | None = None,
+        show_save_toast: bool = False,
     ) -> None:
-        body = views.layout(title, content, active_slug)
+        body = views.layout(title, content, active_slug, show_save_toast)
         encoded = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
