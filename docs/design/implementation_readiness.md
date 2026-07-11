@@ -31,21 +31,20 @@ Answers update the responsible design standard and are then removed from this re
 - Edit and Delete are directly visible entity actions; Merge is contextual/overflow work.
 - Application-owned graph and map rendering follows the Project E palette. Exact category assignments wait for the first real layers/relationship categories.
 - Inbox count shows all active, not-dismissed items. Dismissal, resolution and conversion to a task must update the item state deliberately.
+- Super Key uses `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS.
+- Person Overviews prioritise contact-card information: birthday, phone numbers, email addresses and locations. Addresses derive from Location relationships and their relationship type.
+- Long forms use one readable vertical column.
+- A successful save shows a brief **Changes saved** toast at the top of the screen, then fades away.
+- Reversible but important actions use a small confirmation modal over the current page.
+- Large-list navigation and Family Tree node-click behaviour are deferred until implementation exposes realistic needs.
+- Relationship views always provide an icon-only **Add relationship** control, including when relationships already exist. It has an accessible name and tooltip; visible text is not required.
+- Validation errors appear in a top-of-page summary. The invalid control uses the error treatment until corrected and remains programmatically associated with its error.
 
 ## Immediate owner questions
 
 These are the only questions worth answering before the first shell and entity-page prototypes. They are deliberately phrased in product terms rather than implementation jargon.
 
-1. **Shortcut:** may we use the common `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS to put the typing cursor in Super Key?
-2. **Person page:** when you open a Person, what information should appear first underneath their name? For example: contact details, important relationships, key dates, recent journal notes, or something else. Pick roughly three to five groups.
-3. **Warnings:** imagine a Person has a possible duplicate or a Document is close to expiry. Should the page show a noticeable short message directly under the name, or a quieter one-line status with a **Details** link?
-4. **Long forms:** for a long edit page, should fields run in one easy-to-read vertical column, or should short related fields sit side by side? For example, Start date and Target date beside each other, with Notes still full width.
-5. **After Save:** when someone presses Save changes and sees the updated record, should there also be a brief “Changes saved” message, or is the changed page enough?
-6. **Before a risky action:** for something reversible but important, such as removing a relationship, should Project E show a small confirmation box over the current page, or take the user to a separate review page that explains the effect before they confirm?
-7. **Long lists:** when People or Documents eventually has many rows, should the user move through numbered pages, press **Load more**, or scroll one long list? This can be answered later if realistic volumes are still unknown.
-8. **Empty views:** if a Person has no relationships, should the empty Relationships view show a clear **Add relationship** button, or just a quieter text link?
-9. **Messages:** if a save fails, should the error appear near the field that needs fixing, at the top of the page, or both? For example, a bad date needs a message by that date and a short summary at the top.
-10. **Graph click:** when a user clicks someone in a family tree, should Project E open that person's Family Tree immediately, or first show a small information panel about them?
+1. **Warnings:** a Person might have a banner saying **“Possible duplicate: John Smith — Review”**, or a Document might say **“Expires in 14 days — Review.”** Should that short message be clearly visible directly under the record name, or should it be a quieter one-line status with a **Details** link?
 
 ## Deliberately deferred questions
 

@@ -71,6 +71,8 @@ The header establishes identity and orientation before actions.
 - Destructive action styling appears on the final confirmation action, not on a constantly prominent profile-header button.
 - Back navigation uses breadcrumbs or a clear contextual return label; a generic `Back` button should not depend on presumed history.
 
+Relationship views always expose an icon-only **Add relationship** control, whether the set is empty or populated. It uses the local SVG add symbol with an accessible name and tooltip.
+
 ### Warnings and provenance
 
 - A warning that affects interpretation or safe action appears immediately below identity and names the affected fact or operation.
@@ -95,7 +97,7 @@ The following compositions are initial standards to prototype. They deliberately
 
 | Domain | Overview priorities | Specialised views / projections | Avoid on default Overview |
 | --- | --- | --- | --- |
-| Person | Identity, birth date, contact, chosen identity details, important relationships, recent journal context | Relationships, Family Tree, Timeline, Journal, Documents, Map, Audit | Raw metadata, six empty relationship groups, full audit stream |
+| Person | Identity, birthday, phone numbers, email addresses, locations and relationship-derived addresses | Relationships, Family Tree, Timeline, Journal, Documents, Map, Audit | Raw metadata, six empty relationship groups, full audit stream |
 | Organisation | Identity and aliases, classification, contact, key people/roles, locations, active projects | Relationships, Timeline, Documents, Map, Audit | Generic Notes as primary browse/profile content when structured facts exist |
 | Location | Place identity, human-readable address, coordinate/source confidence, related occupants/assets | Map, Relationships, Timeline, Documents, Audit | Duplicate raw/formatted address fields without clear purpose |
 | Project | Identity, status, immediate milestones, type, start/target/end | Timeline; future Tasks, Events and activity; Relationships, Documents, Audit | Treating related records as owned children or exposing empty generic sections |
@@ -192,7 +194,7 @@ The current definition-driven **Add details** pattern is established and should 
 
 - Validate on the server for every submission; client validation improves immediacy but is not authoritative.
 - Preserve entered values and expanded optional groups after validation failure.
-- Show a concise error summary at the top and field-level errors associated with controls.
+- Show a concise error summary at the top. Invalid controls use the shared error treatment until corrected and remain associated with their field-level error for assistive technology.
 - Explain the correction, not merely “invalid”.
 - Cross-field rules such as coordinate pairs or start/end chronology identify all relevant fields.
 - Warnings such as possible duplicates remain non-blocking only through a deliberate override action.
@@ -203,7 +205,7 @@ The current error summary is a useful baseline, but it is not associated with in
 
 - Use **Create [Entity]** for a create commit when extra clarity is useful; use **Save changes** for edit.
 - Prevent accidental duplicate submission while a save is in progress.
-- After save, show the canonical record in the originating context. The resulting state usually provides enough confirmation; use a transient success message only when completion is otherwise unclear.
+- After save, show the canonical record in the originating context and a brief **Changes saved** toast at the top of the screen. The toast fades away without moving focus.
 - Cancel returns to the originating entity/view without mutation.
 - If the form is dirty, leaving through Cancel, breadcrumbs, sidebar or browser navigation requires one consistent unsaved-change warning.
 - The warning offers **Keep editing** and **Discard changes**. It does not auto-save.
@@ -214,7 +216,7 @@ The current error summary is a useful baseline, but it is not associated with in
 - Soft delete, archive, relationship removal, merge, import and permanent delete use language specific to their different consequences.
 - Consequential changes require explicit confirmation with the affected object, dependent records, reversibility and recovery behaviour.
 - Permanent delete remains a dedicated page. Merge and import preview pages are established strong patterns.
-- Native browser confirmation may remain temporarily for low-complexity recoverable deletion but is not the long-term component standard.
+- Reversible but important actions such as relationship removal use an accessible confirmation modal over the current page. Native browser confirmation may remain temporarily for low-complexity recoverable deletion but is not the long-term component standard.
 - Do not place permanent delete beside ordinary Save.
 
 ### Future draft and approval support

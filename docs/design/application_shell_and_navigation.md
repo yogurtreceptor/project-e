@@ -123,7 +123,7 @@ The Super Key is a deterministic destination launcher.
 - Prefer one-step navigation over displaying a research-style result page.
 - Teach available codes through visible examples or a compact help affordance.
 - Authorised future power/admin destinations may be reached by unique aliases, but consequential actions and essential ordinary routes remain visibly navigable.
-- The recommended keyboard invocation is `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS, pending confirmation.
+- Use `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS to focus Super Key.
 
 ### Boundaries
 
