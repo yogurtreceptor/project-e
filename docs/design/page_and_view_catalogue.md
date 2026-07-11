@@ -29,7 +29,7 @@ This module split is maintainable and worth preserving. Design work should impro
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
 | `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Useful launch/discovery patterns, but “Operation Eddy” branding and domain-count emphasis conflict with the Project E command-centre philosophy. Retain curated launch/discovery; add attention/upcoming summaries only with delivered capability. |
-| Every page | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell now exposes all current routes through Information, Connections and views, and System Tools groups; the reserved Super Key container is implemented in Step 6. |
+| Every page | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell now exposes all current routes through Information, Connections and views, and System Tools groups; Super Key Go provides deterministic exact-alias navigation and an explicit Search fallback. |
 | Unknown route | Generic not-found response | `not_found_page()` | Needs designed missing/recycled distinctions where known and a route back to useful context. |
 
 ### Entity domains
@@ -102,7 +102,7 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Do not formalise:** horizontal all-destination header, Operation Eddy identity, one responsive stack for every width and no nested navigation.
 
-**Established:** 240px expanded and 56px collapsed desktop sidebar candidates, session-only state, labelled global Search, and the local SVG set. Narrow-screen mechanics remain non-committal because Stage 1 is desktop-only; Super Key behaviour follows in Step 6.
+**Established:** 240px expanded and 56px collapsed desktop sidebar candidates, session-only state, labelled global Search, and the local SVG set. Narrow-screen mechanics remain non-committal because Stage 1 is desktop-only; Super Key uses exact `map` and `bin` aliases plus Person-context `tree`.
 
 ### Persistent header and sidebar
 

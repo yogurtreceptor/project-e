@@ -55,7 +55,7 @@ def layout(
         <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
       </header>
       <aside class="sidebar" aria-label="Browse">
-        <div class="sidebar-super-key-placeholder" aria-label="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl K</kbd></span></div>
+        <button class="sidebar-super-key" type="button" aria-haspopup="dialog" aria-controls="super-key-dialog" data-super-key-open title="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl/Cmd K</kbd></span></button>
         <nav class="browse-nav" aria-label="Browse">
           {nav_link("/", "Home", "home", active_slug is None)}
           <section class="nav-group" aria-labelledby="information-nav-label"><h2 id="information-nav-label">{icon("information")}<span class="nav-label">Information</span></h2><div class="nav-children">{entity_nav}</div></section>
@@ -66,6 +66,15 @@ def layout(
       </aside>
       <main id="main-content" tabindex="-1">{content}</main>
     </div>
+    <dialog class="super-key-dialog" id="super-key-dialog" data-super-key-dialog aria-labelledby="super-key-title">
+        <form class="super-key-form" data-super-key-form>
+            <div class="super-key-heading"><div><p class="eyebrow">Go</p><h2 id="super-key-title">Super Key</h2></div><button class="button quiet icon-button" type="button" data-super-key-close aria-label="Close Super Key" title="Close">{icon("close")}</button></div>
+            <label for="super-key-input">Destination alias</label>
+            <input id="super-key-input" name="destination" type="text" autocomplete="off" spellcheck="false" aria-describedby="super-key-help super-key-feedback" data-super-key-input>
+            <p class="help-text" id="super-key-help">Try <code>map</code> or <code>bin</code>. On a Person page, try <code>tree</code>.</p>
+            <p class="super-key-feedback" id="super-key-feedback" aria-live="polite" data-super-key-feedback></p>
+        </form>
+    </dialog>
     <dialog class="confirmation-dialog" data-confirmation-dialog aria-labelledby="confirmation-title" aria-describedby="confirmation-consequence">
         <form method="dialog">
             <h2 id="confirmation-title">Confirm action</h2>
@@ -78,6 +87,7 @@ def layout(
         </form>
     </dialog>
     <script src="/static/shell.js"></script>
+    <script src="/static/super-key.js"></script>
     <script src="/static/taxonomy.js"></script>
     <script src="/static/confirmation.js"></script>
     {save_cleanup}

@@ -120,6 +120,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 6. Super Key Go
 
+**Status:** Completed 2026-07-11. The reserved shell control now opens a keyboard-operable deterministic Go dialog from the sidebar or `Ctrl+K`/`Cmd+K`. A single client-side registry maps exact `map` and `bin` aliases to ordinary routes; `tree` is available only in Person context and opens the ordinary Family Tree route with that Person selected. Unknown terms expose an explicit canonical Search link, aliases are taught inline, and no fuzzy lookup, actions or second route source were introduced. Focused tests cover shell semantics, registry boundaries, contextual routing and safe local script serving; the full suite, compile check and running-app smoke passed. Final browser-based visual and keyboard QA remains consolidated in Step 11.
+
 **Goal:** add deterministic direct navigation without turning it into Search or chat.
 
 **Implement:**

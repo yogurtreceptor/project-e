@@ -1,5 +1,9 @@
 # Build History
 
+## 2026-07-11 - Super Key Go
+
+Replaced the reserved shell placeholder with a deterministic, keyboard-operable Super Key dialog. Exact `map` and `bin` aliases navigate to ordinary routes, Person-context `tree` opens Family Tree with the current Person selected, and unknown terms offer an explicit canonical Search link. Added focused shell, static-serving and alias-boundary coverage without dependencies, schema changes or fuzzy/entity lookup.
+
 Historical summary only. Current behaviour is documented in the Stage 1 specification and reference docs; current priorities are in the roadmap and technical-debt register.
 
 ## 2026-07-05

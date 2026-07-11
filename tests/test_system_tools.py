@@ -48,7 +48,18 @@ class SystemToolsViewTests(unittest.TestCase):
         self.assertIn('data-sidebar-toggle', html)
         self.assertIn('src="/static/shell.js"', html)
         self.assertIn('class="global-search-link" href="/search"', html)
-        self.assertIn('aria-label="Go with Super Key"', html)
+        self.assertIn('data-super-key-open', html)
+        self.assertIn('aria-controls="super-key-dialog"', html)
+        self.assertIn('data-super-key-input', html)
+        self.assertIn('src="/static/super-key.js"', html)
+
+    def test_super_key_has_deterministic_aliases_and_explicit_search_fallback(self):
+        script = (Path(__file__).parents[1] / "app" / "static" / "super-key.js").read_text()
+        self.assertIn('map: "/map"', script)
+        self.assertIn('bin: "/recycle-bin"', script)
+        self.assertIn('tree: `/relationships/family-tree?person=', script)
+        self.assertIn('/search?q=${encodeURIComponent', script)
+        self.assertNotIn("fetch(", script)
 
 
 class SystemAuditTests(unittest.TestCase):

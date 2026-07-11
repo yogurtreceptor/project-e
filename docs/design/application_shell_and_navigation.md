@@ -135,7 +135,7 @@ The Super Key is a deterministic destination launcher.
 
 ### Result behaviour
 
-Every Super Key term has one unique destination. It navigates directly; it does not use a multiple-match chooser. Search remains a final explicit option when no destination term applies.
+Every Super Key term has one unique destination. It navigates directly; it does not use a multiple-match chooser. The initial global registry contains `map` and `bin`; Person record routes additionally expose contextual `tree`, which opens the ordinary Family Tree route with that Person selected. Search remains a final explicit option when no destination term applies.
 
 ## Global Search
 

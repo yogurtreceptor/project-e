@@ -66,7 +66,7 @@ from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
-from app.relationship_graph import full_family_component
+from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
@@ -184,7 +184,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_relationship_new(query)
         elif len(parts) == 2 and parts[1] == "family-tree":
-            self.handle_family_tree()
+            self.handle_family_tree(query)
         elif len(parts) == 2 and parts[1] == "inferences":
             self.handle_inference_queue()
         elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "review":
@@ -280,10 +280,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     return
         self.respond_not_found()
 
-    def handle_family_tree(self) -> None:
+    def handle_family_tree(self, query: dict[str, str]) -> None:
+        selected_person_id = self.parse_entity_id(query.get("person", ""))
         with connect(self.database_path) as connection:
-            graph = full_family_component(list_relationships(connection))
-        self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph)), active_slug="relationships")
+            relationships = list_relationships(connection)
+        if selected_person_id is None:
+            graph = full_family_component(relationships)
+        else:
+            components = connected_family_components(extract_family_graph(relationships))
+            graph = next((component for component in components if any(node.id == selected_person_id for node in component.nodes)), full_family_component(relationships))
+        selected_ids = frozenset((selected_person_id,)) if selected_person_id is not None else frozenset()
+        self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph, selected_ids=selected_ids)), active_slug="relationships")
 
     def handle_portability(self, parts: list[str]) -> None:
         try:
@@ -943,6 +950,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "confirmation.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",
+            "super-key.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
         }
