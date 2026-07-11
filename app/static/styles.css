@@ -146,16 +146,40 @@ button.button {
     justify-content: center;
     min-height: 40px;
     padding: 8px 14px;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.button:hover {
+.button:hover:not([disabled]):not([aria-disabled="true"]) {
     background: var(--accent-dark);
     text-decoration: none;
+}
+
+.button:active:not([disabled]):not([aria-disabled="true"]) {
+    background: var(--color-action-primary-active);
 }
 
 .button.secondary {
     background: var(--color-surface-panel);
     color: var(--accent);
+}
+
+.button.secondary:hover:not([disabled]):not([aria-disabled="true"]),
+.button.quiet:hover:not([disabled]):not([aria-disabled="true"]) {
+    background: var(--color-action-primary-subtle);
+}
+
+.button.quiet {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-text-link);
+}
+
+.button[disabled],
+.button[aria-disabled="true"] {
+    background: var(--color-surface-inset);
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
 }
 
 table {
@@ -417,12 +441,41 @@ dt {
 input,
 textarea,
 select {
+    background: var(--color-surface-panel);
     border: 1px solid var(--line);
     border-radius: 6px;
     color: var(--text);
     font: inherit;
     padding: 10px 12px;
     width: 100%;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+    background: var(--color-surface-inset);
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+}
+
+input[readonly],
+textarea[readonly] {
+    background: var(--color-surface-inset);
+    color: var(--color-text-primary);
+}
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+    border-color: var(--color-status-danger);
+    box-shadow: 0 0 0 1px var(--color-status-danger);
+}
+
+input[aria-invalid="true"]:focus-visible,
+textarea[aria-invalid="true"]:focus-visible,
+select[aria-invalid="true"]:focus-visible {
+    box-shadow: 0 0 0 1px var(--color-status-danger), 0 0 0 3px var(--color-border-focus);
 }
 
 textarea {
@@ -734,8 +787,8 @@ dd {
 }
 
 .errors {
-    background: #fff2f0;
-    border: 1px solid #efb5ae;
+    background: var(--color-status-danger-surface);
+    border: 1px solid var(--color-status-danger-border);
     border-radius: 8px;
     color: var(--danger);
     margin-bottom: 18px;
@@ -830,7 +883,7 @@ dd {
 }
 
 .readonly-field {
-    background: #f7faf8;
+    background: var(--color-surface-inset);
     border: 1px solid var(--line);
     border-radius: 6px;
     display: grid;
@@ -905,8 +958,14 @@ dd {
 }
 
 .button.danger {
-    background: var(--danger);
-    border-color: var(--danger);
+    background: var(--color-status-danger);
+    border-color: var(--color-status-danger);
+    color: var(--color-action-on-primary);
+}
+
+.button.danger:hover:not([disabled]):not([aria-disabled="true"]) {
+    background: color-mix(in srgb, var(--color-status-danger) 84%, var(--color-canvas));
+    border-color: color-mix(in srgb, var(--color-status-danger) 84%, var(--color-canvas));
 }
 
 .related-grid {

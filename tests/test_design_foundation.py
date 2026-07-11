@@ -118,6 +118,23 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("@media (prefers-reduced-motion: reduce)", foundation)
         self.assertIn("transition-duration: 0.01ms !important", foundation)
 
+    def test_first_shared_component_slice_has_semantic_states(self) -> None:
+        stylesheet = (STATIC_DIR / "styles.css").read_text()
+
+        for selector in (
+            ".button.quiet",
+            '.button[disabled]',
+            'input[readonly]',
+            'input[aria-invalid="true"]',
+            ".button.danger",
+        ):
+            self.assertIn(selector, stylesheet)
+        self.assertIn("background: var(--color-surface-inset)", stylesheet)
+        self.assertIn("border-color: var(--color-status-danger)", stylesheet)
+        self.assertIn("background: var(--color-status-danger-surface)", stylesheet)
+        self.assertIn('input[aria-invalid="true"]:focus-visible', stylesheet)
+        self.assertIn("0 0 0 3px var(--color-border-focus)", stylesheet)
+
 
 if __name__ == "__main__":
     unittest.main()
