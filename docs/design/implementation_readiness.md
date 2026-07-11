@@ -39,12 +39,11 @@ Answers update the responsible design standard and are then removed from this re
 - Large-list navigation and Family Tree node-click behaviour are deferred until implementation exposes realistic needs.
 - Relationship views always provide an icon-only **Add relationship** control, including when relationships already exist. It has an accessible name and tooltip; visible text is not required.
 - Validation errors appear in a top-of-page summary. The invalid control uses the error treatment until corrected and remains programmatically associated with its error.
+- Interpretation-affecting warnings use a quiet one-line status beneath the record identity with a **Details** link, rather than a prominent callout.
 
 ## Immediate owner questions
 
-These are the only questions worth answering before the first shell and entity-page prototypes. They are deliberately phrased in product terms rather than implementation jargon.
-
-1. **Warnings:** a Person might have a banner saying **“Possible duplicate: John Smith — Review”**, or a Document might say **“Expires in 14 days — Review.”** Should that short message be clearly visible directly under the record name, or should it be a quieter one-line status with a **Details** link?
+There are no remaining owner decisions required before the first shell and entity-page prototypes. Deferred questions remain deferred until their relevant capability or realistic data volume exists.
 
 ## Deliberately deferred questions
 

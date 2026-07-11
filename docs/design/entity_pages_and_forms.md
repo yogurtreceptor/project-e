@@ -75,7 +75,7 @@ Relationship views always expose an icon-only **Add relationship** control, whet
 
 ### Warnings and provenance
 
-- A warning that affects interpretation or safe action appears immediately below identity and names the affected fact or operation.
+- A warning that affects interpretation or safe action appears as a quiet one-line status beneath identity. It names the affected fact or operation and provides a **Details** link rather than a prominent callout.
 - Data-quality findings do not become a permanent generic warning block when dismissed, irrelevant or purely administrative.
 - Provenance appears next to a fact when source affects trust, freshness or meaning. A compact source label links to detail in Audit.
 - Raw audit fields, storage paths, internal IDs and routine timestamps remain in the Audit/Developer lens.
