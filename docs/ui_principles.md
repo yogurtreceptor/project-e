@@ -1,6 +1,6 @@
 # UI Principles
 
-Project E's Stage 1 UI should stay quiet, structured and useful for repeated information work.
+Project E's Stage 1 UI should stay quiet, structured and useful for repeated information work. This document records delivered workflow rules and current interaction conventions. The [Experience Philosophy](experience_philosophy.md) is the experience-level authority, and the [design documentation](design/README.md) defines how future interface work applies it consistently. The [page and view catalogue](design/page_and_view_catalogue.md) records current conflicts rather than treating every prototype pattern below as a permanent standard.
 
 ## Navigation
 
@@ -8,9 +8,11 @@ Project E's Stage 1 UI should stay quiet, structured and useful for repeated inf
 - Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export are grouped under System Tools, while compact global search remains available in the header.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
+The target application shell preserves these reachable destinations while introducing the philosophy-required Project E header, nested collapsible sidebar and distinct Browse, Super Key Go and Search intentions. See [Application Shell and Navigation](design/application_shell_and_navigation.md).
+
 ## Entity Pages
 
-Entity pages should expose reusable sections rather than one-off layouts:
+Current entity pages expose reusable sections:
 
 - Overview
 - Geography where relevant
@@ -20,6 +22,8 @@ Entity pages should expose reusable sections rather than one-off layouts:
 - Documents
 - Timeline
 - Metadata
+
+The post-prototype direction keeps shared components but uses deliberately domain-specific Overview compositions and specialised views. Routine Metadata and full Change History belong in an Audit or Developer lens; Overview should show only provenance or warnings that affect interpretation. See [Entity Pages and Forms](design/entity_pages_and_forms.md).
 
 The Universal Timeline is a chronological global view derived from those same canonical records. Each entry links to its originating entity or relationship. Filtering stays intentionally simple: entity type, date range, and directly related Person, Organisation or Project.
 

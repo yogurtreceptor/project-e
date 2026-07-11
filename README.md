@@ -47,6 +47,8 @@ See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [futur
 | Document | Purpose |
 | --- | --- |
 | [Project goal](PROJECT_GOAL.md) | Product purpose and durable principles |
+| [Experience philosophy](docs/experience_philosophy.md) | Experience-level authority for how the interface should feel and behave |
+| [Design documentation](docs/design/README.md) | Design-system, navigation, page, form, presentation and operational-attention standards plus the current UI audit |
 | [Roadmap](ROADMAP.md) | Guidance from information platform to AI/agent platform |
 | [Future direction](docs/future_direction.md) | Long-term capability model and Odysseus relationship |
 | [Stage 1 specification](docs/stage_1_spec.md) | Current scope, behavior and acceptance criteria |

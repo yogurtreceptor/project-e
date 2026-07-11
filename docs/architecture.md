@@ -25,6 +25,8 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
 - `app/static/styles.css` provides the shared UI styling.
 
+The [Experience Philosophy](experience_philosophy.md) and [design documentation](design/README.md) govern the intended post-prototype experience. They do not claim that their target shell or domain-specific page compositions are already implemented; the [page catalogue](design/page_and_view_catalogue.md) distinguishes current renderers from planned design direction.
+
 ## Local Data Boundary
 
 `instance/` is the private runtime boundary and is intentionally ignored by Git.
