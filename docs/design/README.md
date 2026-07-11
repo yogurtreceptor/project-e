@@ -20,7 +20,7 @@ The embedded SQLite database remains the source of canonical information. Design
 | Document | Purpose | Initial maturity |
 | --- | --- | --- |
 | [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; palette direction, local SVG icons and dark-first theming are decided; exact metrics remain draft decisions |
-| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key placement and intent are decided; entity-local navigation remains open |
+| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key placement, entity-view access and narrow-screen mechanics are decided |
 | [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Working standard; domain page compositions need implementation prototypes |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
 | [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
@@ -111,7 +111,6 @@ These decisions are sufficiently grounded to guide implementation now:
 
 | ID | Question | Why it matters | Recommended default until decided |
 | --- | --- | --- | --- |
-| D-06 | Should specialised entity views use tabs, a local sub-navigation rail, or a context menu at desktop widths? | This controls context preservation and information density. | Prototype a compact text sub-navigation directly below the entity header. |
 | D-07 | When provenance becomes a delivered capability, which source indicators should appear beside ordinary facts? | The product should not add presentation rules ahead of the feature's semantics and workflows. | Keep provenance out of routine presentation for now; define it with the provenance feature. |
 
 ## Resolved design decisions
@@ -120,12 +119,14 @@ These decisions are sufficiently grounded to guide implementation now:
 - **D-03 — Theme policy:** implement both themes through semantic tokens. Prefer dark mode when the operating system indicates dark; defer an explicit user switch until later.
 - **D-04 — Icons:** maintain a coherent local SVG set instead of adding an icon-library dependency. New icons must follow documented dimensions and accessibility rules.
 - **D-05 — Super Key:** place it beneath the Project E identity at the left of the shell. It accepts a few characters or a word to navigate within the current entity context, such as `tree` on a Person record opening that Person's Family Tree. It is not global full-text Search.
+- **D-06 — Entity views:** make the Overview the direct base-data view. Reach specialised representations, such as Family Tree, Timeline and Map, through a labelled secondary **Views** control rather than persistent tabs or a local rail. The control may be keyboard-operated.
 - **D-08 — Viewport scope:** Stage 1 is desktop-only. Design and verify the ordinary experience at 1440 × 900 and 1920 × 1080; no narrower-width continuity commitment exists yet.
 - **D-09 — Home:** use Home as a restrained jumping-off point, not a content-heavy command centre. When Inbox exists, show a link and a small count/ticker for notifications rather than embedding the inbox on Home.
 - **Sidebar state:** start each session with the desktop sidebar expanded. Users may collapse it for the current session only; do not persist that preference between sessions.
 - **Density:** limit compact density to administrative/high-volume views, with an explicit exception for data views where comparison benefits from it.
 - **Page composition:** use a single-column default. Add a secondary column only when a specialised view genuinely needs it; revisit this convention as usage matures.
 - **Map and graph palette:** use colours drawn from the Project E palette for application-owned layers and relationship categories, paired with labels, legends and non-colour distinctions. External basemap assets are exempt.
+- **Keyboard focus:** use a consistent visible 2px outer focus ring for keyboard navigation. It must remain perceptible on selected, invalid and dark-theme controls and is not a persistent mouse-hover treatment.
 
 The D-01 identity conflict is closed by the Experience Philosophy: the shell is Project E, with the E mark available for compact presentation. The remaining questions are not permission to implement customisation. A product-owner decision should become a concise update to the responsible document, not a new settings screen.
 

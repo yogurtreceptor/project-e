@@ -78,7 +78,7 @@ The current interface is page-focused. Opening an entity presents a dedicated pa
 
 ### Overview plus specialised views
 
-Each entity has a concise Overview containing its identity and the most important everyday information. Complex or expansive representations belong in specialised subpages or tabs, such as Relationships, Family Tree, Timeline, Documents, Map, Audit History or future AI Review views.
+Each entity has a concise Overview containing its identity and the most important everyday information. Complex or expansive representations belong in specialised views reached through a labelled secondary control, such as Relationships, Family Tree, Timeline, Documents, Map, Audit History or future AI Review views.
 
 ### View and edit are separate activities
 

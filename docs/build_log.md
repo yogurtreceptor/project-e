@@ -8,7 +8,7 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
-Recorded product-owner design decisions for a dark-first, system-preference theme model; restrained light-blue/black/white palette direction; local SVG icons; entity-context Super Key placement and behaviour; desktop-only viewport scope; session-only sidebar collapse; restrained Home/Inbox relationship; and density, page-composition and visual-layer guidance. Entity local-navigation and detailed focus-indicator treatment remain open for clarification. No application UI or domain behaviour changed.
+Recorded product-owner design decisions for a dark-first, system-preference theme model; restrained light-blue/black/white palette direction; local SVG icons; entity-context Super Key placement and behaviour; desktop-only viewport scope; session-only sidebar collapse; restrained Home/Inbox relationship; and density, page-composition and visual-layer guidance. Specialised entity views now sit behind a labelled secondary Views control, and keyboard navigation uses a consistent 2px focus ring. Provenance presentation remains deferred. No application UI or domain behaviour changed.
 
 Added the version-controlled Project E Experience Philosophy and a post-prototype design-documentation layer covering design-system foundations, the application shell and navigation, entity pages and forms, data presentation, operational attention and a route-level interface audit. Recorded which current patterns should be formalised, which remain prototype debt, the product-owner decisions still required and the dependency path to later implementation. No application UI or domain behaviour changed.
 

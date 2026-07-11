@@ -60,7 +60,7 @@ The header establishes identity and orientation before actions.
 - Entity type eyebrow or compact domain label.
 - Primary display name as the page `h1`.
 - One or two high-value identity facts when they materially disambiguate the record, such as Person birth date, Project status, Document purpose or Asset status.
-- Current specialised-view navigation.
+- A labelled secondary **Views** control for specialised representations.
 - One primary action, normally **Edit**, plus a restrained overflow for secondary and administrative actions.
 
 ### Action hierarchy

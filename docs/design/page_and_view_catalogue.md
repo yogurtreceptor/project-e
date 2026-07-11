@@ -196,7 +196,7 @@ No custom modal/dialog component exists. Native `confirm()` is used for soft del
 - Duplicate declarations exist (`color` in `.readonly-field span`, `z-index` in taxonomy empty state).
 - Units mix `px` and `rem` without a documented scale.
 - `font-weight: 750` and other one-off weights lack a type-scale contract.
-- Default focus-visible styling is not defined across controls.
+- Default focus-visible styling is not defined across controls; implement the design-system 2px outer focus ring.
 - Disabled, busy/loading, selected/current, success/notice and reduced-motion states are incomplete.
 - System Tool cards translate upward on hover despite the philosophy's minimal-motion direction.
 - Breakpoints at 720px and 920px are accumulated implementation values rather than content-tested tokens.
@@ -230,7 +230,7 @@ These are candidates for the recommended shell/design-foundation implementation 
 
 ## Open questions
 
-The remaining product-owner questions D-06 and D-07 are maintained in the [design documentation index](README.md#product-owner-decisions-still-required); resolved decisions are recorded there too. D-01 is closed by the Experience Philosophy. Page-specific follow-ups that do not require product direction should become scoped implementation tasks after those choices, not additional design documents.
+The remaining product-owner question D-07 is maintained in the [design documentation index](README.md#product-owner-decisions-still-required); resolved decisions are recorded there too. D-01 is closed by the Experience Philosophy. Page-specific follow-ups that do not require product direction should become scoped implementation tasks after those choices, not additional design documents.
 
 ## Catalogue maintenance
 

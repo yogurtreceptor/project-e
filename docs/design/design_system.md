@@ -95,7 +95,7 @@ Every interactive component must define the states it supports rather than inher
 | --- | --- |
 | Rest | Clear control boundary or conventional link affordance |
 | Hover | Non-essential enhancement; never the only way to discover an action |
-| Focus-visible | High-contrast outline not removed by border or background changes |
+| Focus-visible | Consistent visible 2px outer focus ring for keyboard navigation; it remains perceptible on selected, invalid and dark-theme controls and is not replaced by hover styling |
 | Active/pressed | Immediate feedback without delaying the action |
 | Selected/current | Persistent visual and semantic state, including `aria-current` where appropriate |
 | Disabled | Visibly unavailable, programmatically disabled and accompanied by reason when non-obvious |

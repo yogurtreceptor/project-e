@@ -158,7 +158,7 @@ Breadcrumbs are used when they clarify hierarchy or return context:
 
 Do not add a redundant breadcrumb to flat Home or top-level index pages. Breadcrumbs show information hierarchy, not browser history.
 
-Entity pages also have local text navigation for Overview and specialised views. The chosen pattern—tabs or compact local rail—requires prototype decision D-06. The labels and routes must be stable regardless of presentation.
+Entity Overviews remain the direct, concise base-data view. A labelled secondary **Views** control reaches specialised representations such as Relationships, Family Tree, Timeline, Documents, Map and Audit; tabs and a local rail are not the default. The control may be keyboard-operated. Labels and routes remain stable regardless of presentation.
 
 ## Context preservation
 
