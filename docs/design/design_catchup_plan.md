@@ -84,7 +84,7 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 4. Brand and local SVG assets
 
-**Status:** Completed 2026-07-11. An original industrial E mark and a coherent local 24px SVG set now cover shell identity, navigation groups, Search, Super Key, shared actions/status and the initial domains/views. The existing shell uses the Project E identity and matching navigation/action assets without pulling forward the Step 5 sidebar conversion. Meaningful icons support accessible names, adjacent-label icons are hidden as decorative, and focused tests verify asset consistency and safe local serving.
+**Status:** Completed 2026-07-11. A bold tilted E mark and a coherent local 24px SVG set now cover shell identity, navigation groups, Search, Super Key, shared actions/status and the initial domains/views. The existing shell uses the Project E identity and matching navigation/action assets without pulling forward the Step 5 sidebar conversion. Meaningful icons support accessible names, adjacent-label icons are hidden as decorative, and focused tests verify asset consistency and safe local serving.
 
 **Goal:** give the shell and shared controls a coherent, original visual identity.
 

@@ -41,6 +41,13 @@ class IconAssetTests(unittest.TestCase):
         self.assertNotIn("Operation Eddy", html)
         self.assertEqual(set(DOMAIN_ICONS), {"people", "organisations", "locations", "projects", "documents", "assets"})
 
+    def test_brand_mark_is_the_tilted_block_e(self) -> None:
+        root = ET.parse(ICON_DIR / "e-mark.svg").getroot()
+        path = next(child for child in root if child.tag.endswith("path"))
+
+        self.assertEqual(root.attrib.get("fill"), "currentColor")
+        self.assertEqual(path.attrib.get("transform"), "rotate(-38 12 12)")
+
     def test_icon_helper_supports_meaningful_and_decorative_icons(self) -> None:
         self.assertIn('alt="Add relationship"', icon("add", "Add relationship"))
         self.assertIn('alt="" aria-hidden="true"', icon("add"))
