@@ -4,7 +4,7 @@ Status: Working foundation. This document defines reusable visual and component 
 
 ## Purpose and evidence
 
-The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The current stylesheet already demonstrates useful role-based custom properties, flat panels, modest radii and consistent form controls. It also contains one-off colours, mixed units, duplicated declarations, an unmatched closing brace, an undefined `--ink` reference and no complete focus, disabled, loading or dark-mode model. The role structure is worth formalising; the exact prototype values and accumulated CSS are not.
+The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The implemented foundation now provides the documented primitive and semantic roles, system-selected dark/light themes, typography and layout scales, keyboard focus and reduced-motion base. The transitional stylesheet still contains page-specific literal colours, mixed units, duplicated declarations and incomplete disabled/loading component states; those move to the foundation as their numbered conversion steps are completed.
 
 ## Token policy
 
@@ -72,7 +72,7 @@ Do not encode a single global `main` width for all page types. Page layout selec
 
 ## Colour roles
 
-The palette uses restrained light blue for its primary accent, while most surfaces and text remain black/white neutrals. Define `#66ccff` once as the base accent primitive; semantic action, selected and focus roles derive from it rather than repeating literal colours in renderers. Derived values must be contrast-tested. The next implementation must define at least these semantic roles:
+The palette uses restrained light blue for its primary accent, while most surfaces and text remain black/white neutrals. `foundation.css` defines `#66ccff` once as the base accent primitive; semantic action, selected and focus roles derive from it rather than repeating literal colours in renderers. Derived values are covered by representative contrast tests. The foundation defines these semantic roles:
 
 | Group | Required roles |
 | --- | --- |

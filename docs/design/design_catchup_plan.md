@@ -29,6 +29,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 1. Baseline audit and safe foundation seam
 
+**Status:** Completed 2026-07-11 in `bc11cd6`. The shared CSS/layout boundary is recorded in the page catalogue; `styles.css` imports the visual-neutral `foundation.css` seam; the local server and focused tests cover the entry point; the undefined Family Tree text token was corrected; the full suite, compile check and running-app static smoke passed.
+
 **Goal:** identify the current stylesheet/layout entry points and create a safe place for the new foundation without changing visible workflows yet.
 
 **Implement:**
@@ -43,6 +45,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 **Done when:** the foundation can be applied incrementally, the existing application still renders, and no undefined token or malformed shared CSS remains in the path being changed.
 
 ### 2. Tokens, themes and global accessibility base
+
+**Status:** Completed 2026-07-11. `foundation.css` now defines the primitive and semantic colour roles, typography, spacing, dimensions, radii and elevation; dark charcoal is the fallback and `prefers-color-scheme: light` supplies the companion theme. Roboto uses local/system fallbacks, shared keyboard focus uses a 2px outer ring, and reduced-motion preferences suppress non-essential transitions. Focused tests verify the single accent literal, token completeness, representative WCAG contrast pairs and global states; the full suite and compile check passed. Final whole-application visual QA at both target sizes remains part of Step 11 because no headless browser is installed in this workspace.
 
 **Goal:** replace prototype colours and metrics with one semantic design system usable by every route.
 

@@ -193,23 +193,19 @@ No custom modal/dialog component exists. Native `confirm()` is used for soft del
 - Shared control, table, warning, error and responsive rules.
 - Specialist styles for taxonomy, relationship workflows, timeline, map and family tree remain locally named.
 
-### Inconsistencies and defects
+### Remaining inconsistencies and defects
 
-- The stylesheet uses Inter/system UI while the Experience Philosophy specifies Roboto.
-- Literal colours appear throughout components instead of a complete semantic token layer.
-- Status and graph colours are independent one-offs; brand and semantic roles are not fully separated.
-- `--ink` is referenced for family-tree text but never defined.
-- An unmatched closing brace follows `.journal-entry`.
+- The foundation supplies complete shared roles, but literal colours remain in transitional page/component rules pending their numbered conversions.
+- Some status and graph renderers still consume independent one-offs rather than the available semantic roles.
 - Duplicate declarations exist (`color` in `.readonly-field span`, `z-index` in taxonomy empty state).
-- Units mix `px` and `rem` without a documented scale.
+- Units mix `px` and `rem`; the documented token scale is available but not yet consumed by every rule.
 - `font-weight: 750` and other one-off weights lack a type-scale contract.
-- Default focus-visible styling is not defined across controls; implement the design-system 2px outer focus ring.
-- Disabled, busy/loading, selected/current, success/notice and reduced-motion states are incomplete.
+- Disabled, busy/loading, selected/current and success/notice component states are incomplete.
 - System Tool cards translate upward on hover despite the philosophy's minimal-motion direction.
 - Breakpoints at 720px and 920px are accumulated implementation values rather than content-tested tokens.
 - One `main` maximum width serves ordinary pages and wide map/graph/table tasks.
 
-These are candidates for the recommended shell/design-foundation implementation branch; this documentation branch does not modify them.
+The foundation now resolves the Roboto mismatch, missing dark/light theme model, undefined Family Tree token, shared focus treatment and reduced-motion base. Remaining items are addressed by the relevant component, specialist-view and route-family steps rather than expanded opportunistically here.
 
 ## Cross-document conflicts found
 
@@ -217,7 +213,6 @@ These are candidates for the recommended shell/design-foundation implementation 
 | --- | --- | --- |
 | Project E philosophy vs Operation Eddy UI identity | Experience Philosophy and repository naming; `layout.py`/Dashboard titles | Use Project E/E mark throughout the shell; the governing philosophy closes this choice. |
 | Persistent header/sidebar vs horizontal header | Philosophy; current `layout.py` | Implement shell/sidebar foundation while preserving route reachability. |
-| Roboto vs Inter/system font | Philosophy; `styles.css` | Use Roboto in the design foundation with a local-first loading decision and system fallback. |
 | Domain-specific pages vs generic shared profile | Philosophy; `entity_detail_page()`; architecture's inherited shared sections | Keep shared grammar/facade, replace uniform composition with domain-specific render strategies. Update architecture when implemented. |
 | Administrative lens vs default Metadata/Change History | Philosophy; current entity sidebar; `ui_principles.md` lists Metadata | Move full admin content to specialised Audit; keep only interpretively relevant provenance/warnings near facts. |
 | Home jumping-off point vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary discovery. Once Inbox exists, provide a restrained Inbox link and small notification count/ticker rather than embedding attention content on Home. |

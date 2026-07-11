@@ -8,6 +8,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 ## 2026-07-11
 
+Implemented the global design token and accessibility base: one `#66ccff` primitive feeds semantic actions, selection and focus; charcoal dark is the fallback with an operating-system-selected light companion; shared roles now cover surfaces, text, borders, statuses, graph/map series, typography, spacing, dimensions, radii and elevation. Applied a local-first Roboto fallback stack, a keyboard-only 2px focus ring and reduced-motion protection, with focused token-integrity and representative WCAG contrast tests. Page-specific component conversion remains incremental.
+
 Added the visual-neutral design-foundation stylesheet seam while preserving the existing shell and route composition. The global stylesheet now imports one incremental foundation entry point, the local static handler serves it, focused checks cover the seam and shared CSS integrity, and the Family Tree no longer references an undefined text token.
 
 Added a design implementation-readiness register that separates remaining product-owner answers from prototype evidence, defines the foundation catch-up sequence and gives explicit completion evidence for the current prototype-to-design implementation gap. No application UI or domain behaviour changed.

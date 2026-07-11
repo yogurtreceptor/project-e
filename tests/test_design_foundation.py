@@ -2,6 +2,7 @@ import unittest
 import threading
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+import re
 from urllib.request import urlopen
 
 from app.view_pages.layout import layout
@@ -10,6 +11,29 @@ from app.web import EddyRequestHandler
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC_DIR = ROOT / "app" / "static"
+
+
+def contrast_ratio(first: str, second: str) -> float:
+    def luminance(colour: str) -> float:
+        channels = [int(colour[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [
+            value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+            for value in channels
+        ]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+    lighter, darker = sorted((luminance(first), luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def mix(first: str, second: str, first_weight: float) -> str:
+    first_channels = [int(first[index : index + 2], 16) for index in (1, 3, 5)]
+    second_channels = [int(second[index : index + 2], 16) for index in (1, 3, 5)]
+    channels = [
+        round(left * first_weight + right * (1 - first_weight))
+        for left, right in zip(first_channels, second_channels)
+    ]
+    return "#" + "".join(f"{channel:02x}" for channel in channels)
 
 
 class DesignFoundationTests(unittest.TestCase):
@@ -49,6 +73,50 @@ class DesignFoundationTests(unittest.TestCase):
 
         self.assertEqual(combined.count("{"), combined.count("}"))
         self.assertNotIn("var(--ink)", combined)
+
+        defined = set(re.findall(r"(--[a-zA-Z0-9_-]+)\s*:", combined))
+        used = set(re.findall(r"var\((--[a-zA-Z0-9_-]+)", combined))
+        self.assertEqual(used - defined, set())
+
+    def test_foundation_defines_one_accent_primitive_and_complete_theme_base(self) -> None:
+        foundation = (STATIC_DIR / "foundation.css").read_text()
+
+        self.assertEqual(foundation.lower().count("#66ccff"), 1)
+        self.assertIn("color-scheme: dark", foundation)
+        self.assertIn("@media (prefers-color-scheme: light)", foundation)
+        for role in (
+            "--color-canvas",
+            "--color-surface-panel",
+            "--color-text-primary",
+            "--color-border-focus",
+            "--color-action-primary",
+            "--color-status-success",
+            "--color-status-warning",
+            "--color-status-danger",
+            "--color-series-5",
+            "--font-family-interface",
+            "--space-16",
+            "--radius-panel",
+            "--elevation-floating",
+        ):
+            self.assertIn(f"{role}:", foundation)
+
+    def test_representative_theme_pairs_meet_wcag_contrast(self) -> None:
+        self.assertGreaterEqual(contrast_ratio("#f6f8f9", "#111517"), 4.5)
+        self.assertGreaterEqual(contrast_ratio("#66ccff", "#111517"), 4.5)
+        self.assertGreaterEqual(contrast_ratio("#171c1f", "#f6f8f9"), 4.5)
+        light_primary = mix("#66ccff", "#111517", 0.55)
+        light_focus = mix("#66ccff", "#111517", 0.48)
+        self.assertGreaterEqual(contrast_ratio("#ffffff", light_primary), 4.5)
+        self.assertGreaterEqual(contrast_ratio(light_focus, "#ffffff"), 3.0)
+
+    def test_keyboard_focus_and_reduced_motion_are_global(self) -> None:
+        foundation = (STATIC_DIR / "foundation.css").read_text()
+
+        self.assertIn(":focus-visible", foundation)
+        self.assertIn("--focus-ring: 0 0 0 2px", foundation)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", foundation)
+        self.assertIn("transition-duration: 0.01ms !important", foundation)
 
 
 if __name__ == "__main__":
