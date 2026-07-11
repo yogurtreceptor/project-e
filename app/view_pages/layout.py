@@ -54,7 +54,19 @@ def layout(
         </form>
     </header>
     <main>{content}</main>
+    <dialog class="confirmation-dialog" data-confirmation-dialog aria-labelledby="confirmation-title" aria-describedby="confirmation-consequence">
+        <form method="dialog">
+            <h2 id="confirmation-title">Confirm action</h2>
+            <p data-confirmation-object></p>
+            <p id="confirmation-consequence" data-confirmation-consequence></p>
+            <div class="actions">
+                <button class="button secondary" value="cancel">Cancel</button>
+                <button class="button danger" type="button" data-confirmation-confirm>Confirm</button>
+            </div>
+        </form>
+    </dialog>
     <script src="/static/taxonomy.js"></script>
+    <script src="/static/confirmation.js"></script>
     {save_cleanup}
 </body>
 </html>"""

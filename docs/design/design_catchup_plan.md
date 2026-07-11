@@ -65,7 +65,7 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 3. Shared components and interaction states
 
-**Status:** In progress. Completed slices standardise primary, secondary, quiet and final-danger actions; disabled/ARIA-disabled actions; input rest, disabled, read-only and invalid treatments; accessible error-summary semantics; panels and compact badges; semantic notice, warning, empty, loading and failure states; and the passive top-screen **Changes saved** toast for successful entity/relationship create and edit redirects. Modal, field-level error association and retained-value verification remain outstanding, so this step is not complete.
+**Status:** In progress. Completed slices standardise primary, secondary, quiet and final-danger actions; disabled/ARIA-disabled actions; input rest, disabled, read-only and invalid treatments; accessible error-summary semantics; panels and compact badges; semantic notice, warning, empty, loading and failure states; the passive top-screen **Changes saved** toast; and an accessible native-dialog confirmation flow for reversible entity soft deletion with object/consequence text, modal focus containment, Escape/cancel and invoker focus return. Field-level error association and retained-value verification remain outstanding, so this step is not complete. Permanent delete, merge and import retain their dedicated review pages.
 
 **Goal:** establish a small reusable set of components before converting complete pages.
 

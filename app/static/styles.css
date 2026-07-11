@@ -43,6 +43,30 @@ body {
     z-index: 1000;
 }
 
+.confirmation-dialog {
+    background: var(--color-surface-panel);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-group);
+    box-shadow: var(--elevation-floating);
+    color: var(--color-text-primary);
+    max-width: 30rem;
+    padding: var(--space-6);
+    width: calc(100% - var(--space-8));
+}
+
+.confirmation-dialog::backdrop {
+    background: var(--color-surface-overlay);
+}
+
+.confirmation-dialog h2 {
+    margin-bottom: var(--space-3);
+}
+
+.confirmation-dialog .actions {
+    justify-content: flex-end;
+    margin-top: var(--space-6);
+}
+
 @keyframes save-toast-fade {
     to {
         opacity: 0;

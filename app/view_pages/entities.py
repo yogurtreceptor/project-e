@@ -32,7 +32,7 @@ def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], 
                 <td>{description}</td>
                 <td class="row-actions">
                     <a href="/{definition.slug}/{record.id}/edit">Edit</a>
-                    <form method="post" action="/{definition.slug}/{record.id}/delete" onsubmit="return confirm('Move this record to the Recycle Bin?')">
+                    <form method="post" action="/{definition.slug}/{record.id}/delete" data-confirm-object="{escape(record.title)}" data-confirm-consequence="Move this record to the Recycle Bin. It can be restored later.">
                         <button class="link-button" type="submit">Delete</button>
                     </form>
                 </td>
@@ -127,7 +127,7 @@ def entity_profile_header(record: EntityRecord) -> str:
             <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
             <a class="button secondary" href="/{definition.slug}/{record.id}/merge">Merge duplicate</a>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
-            <form method="post" action="/{definition.slug}/{record.id}/delete" onsubmit="return confirm('Move this record to the Recycle Bin?')">
+            <form method="post" action="/{definition.slug}/{record.id}/delete" data-confirm-object="{escape(record.title)}" data-confirm-consequence="Move this record to the Recycle Bin. It can be restored later.">
                 <button class="button danger" type="submit">Delete</button>
             </form>
         </div>

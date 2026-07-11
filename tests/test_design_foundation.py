@@ -175,6 +175,43 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn(".save-toast", stylesheet)
         self.assertIn("@keyframes save-toast-fade", stylesheet)
 
+    def test_confirmation_dialog_has_object_consequence_and_focus_management(self) -> None:
+        html = layout("Confirm", "<h1>Confirm</h1>")
+        script = (STATIC_DIR / "confirmation.js").read_text()
+
+        self.assertIn('data-confirmation-dialog aria-labelledby="confirmation-title"', html)
+        self.assertIn('aria-describedby="confirmation-consequence"', html)
+        self.assertIn('data-confirmation-object', html)
+        self.assertIn('data-confirmation-consequence', html)
+        self.assertIn('data-confirmation-confirm', html)
+        self.assertIn('dialog.showModal()', script)
+        self.assertIn('confirmButton.focus()', script)
+        self.assertIn('invoker.focus()', script)
+        self.assertIn('pendingForm.requestSubmit()', script)
+
+    def test_entity_soft_delete_uses_shared_confirmation_not_native_confirm(self) -> None:
+        from app.entities import EntityRecord, DEFINITIONS_BY_SLUG
+        from app.view_pages.entities import entity_profile_header
+
+        definition = DEFINITIONS_BY_SLUG["people"]
+        record = EntityRecord(
+            id=1,
+            definition=definition,
+            display_name="Ada Lovelace",
+            summary="",
+            notes="",
+            created_at="",
+            updated_at="",
+            last_viewed_at="",
+            is_favourite=False,
+            metadata={},
+        )
+        html = entity_profile_header(record)
+
+        self.assertIn('data-confirm-object="Ada Lovelace"', html)
+        self.assertIn("It can be restored later.", html)
+        self.assertNotIn("confirm(", html)
+
 
 if __name__ == "__main__":
     unittest.main()
