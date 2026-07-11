@@ -16,6 +16,8 @@ Recorded further design decisions for Super Key shortcuts, Person contact-card p
 
 Chose quiet one-line warning statuses with **Details** links beneath entity identity instead of prominent warning callouts. No application UI or domain behaviour changed.
 
+Added an authorised, step-sized design catch-up implementation plan for hand-off to implementation agents. It covers the foundation through verification, specifies scope and acceptance checks for each step, and makes deferred decisions and stop conditions explicit. No application UI or domain behaviour changed.
+
 Recorded product-owner design decisions for a dark-first, system-preference theme model; restrained light-blue/black/white palette direction; local SVG icons; entity-context Super Key placement and behaviour; desktop-only viewport scope; session-only sidebar collapse; restrained Home/Inbox relationship; and density, page-composition and visual-layer guidance. Specialised entity views now sit behind a labelled secondary Views control, and keyboard navigation uses a consistent 2px focus ring. Provenance presentation remains deferred. No application UI or domain behaviour changed.
 
 Added the version-controlled Project E Experience Philosophy and a post-prototype design-documentation layer covering design-system foundations, the application shell and navigation, entity pages and forms, data presentation, operational attention and a route-level interface audit. Recorded which current patterns should be formalised, which remain prototype debt, the product-owner decisions still required and the dependency path to later implementation. No application UI or domain behaviour changed.
