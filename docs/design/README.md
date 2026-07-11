@@ -25,6 +25,7 @@ The embedded SQLite database remains the source of canonical information. Design
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
 | [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
 | [Page and view catalogue](page_and_view_catalogue.md) | Current routes, purposes, shared renderers, recurring patterns, inconsistencies and intended direction | Audited baseline for the current post-prototype UI |
+| [Implementation readiness](implementation_readiness.md) | Remaining product-owner questions, prototype evidence and ordered catch-up implementation sequence | Active register until the foundation is implemented and verified |
 
 Entity-page and form standards intentionally share one document. Both depend on the same domain definition, field order, view/edit boundary, context-return behaviour and validation model; splitting them now would duplicate rules. They may split later only if either section becomes difficult to navigate.
 
@@ -88,6 +89,10 @@ Phase 2 attention semantics
 ```
 
 The page catalogue can be updated independently whenever routes or shared renderers change. Exact component measurements should follow the shell and representative domain prototypes, not precede them.
+
+## Catch-up implementation readiness
+
+The [implementation-readiness register](implementation_readiness.md) is the single place to collect remaining decisions and prototype evidence needed to close the gap between the current UI prototype and the documented design direction. It separates product-owner answers from questions that must be settled by visual, contrast and keyboard testing. Do not treat unanswered register items as permission to invent a competing design during implementation.
 
 ## Formalised decisions
 
