@@ -55,3 +55,13 @@ Questions to evaluate before integration include deployment and licensing fit, l
 ## Decision gates
 
 Movement toward advanced AI or agency should be driven by demonstrated platform readiness, not novelty. Useful gates include representative human use, stable domain operations, reliable import/export, explainable data-quality behavior, comprehensive mutation audit, recoverable writes and a clear authority model. The [roadmap](../ROADMAP.md) expresses the resulting capability phases.
+
+## Deferred operational event coverage
+
+The System Audit begins with mutations already recorded by the local platform. Its event vocabulary and filters are intentionally extensible. Future operational phases should add attributable events for automation execution, scheduled tasks, imports, AI suggestions, AI actions, synchronisation, background jobs, plugin activity and other operational platform work as those capabilities are deliberately introduced. Audit entries must accompany the capability that emits them; placeholder event streams should not be added in advance.
+
+## Relationship knowledge evolution
+
+Relationship confidence, source attribution, evidence, richer provenance and verification state require an explicit knowledge model rather than unrelated optional columns. Advanced graph traversal, indirect relationship discovery, querying and analytics likewise belong to later operational work. Both directions must preserve the canonical relationship record, explain where an assertion came from and keep derived conclusions distinguishable from user-confirmed facts.
+
+Operational Intelligence should first use deterministic, explainable signals: duplicate or merge suggestions, missing fields or relationships, stale information, integrity analysis, rule-based recommendations, scheduled health checks and operational notifications. AI-assisted interpretation remains a later phase and must enter through the same platform capability and audit boundaries.

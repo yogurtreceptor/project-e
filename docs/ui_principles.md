@@ -5,7 +5,7 @@ Project E's Stage 1 UI should stay quiet, structured and useful for repeated inf
 ## Navigation
 
 - Entity types are first-class navigation items.
-- Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies and Recycle Bin are grouped under System Tools, while compact global search remains available in the header.
+- Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export are grouped under System Tools, while compact global search remains available in the header.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
 ## Entity Pages
@@ -33,9 +33,11 @@ Forms should keep manual entry available. Helpful lookup tools may prefill field
 
 Entity forms should avoid generic `summary` fields. Notes are the flexible free-text area; important categories and statuses should be captured through controlled inputs.
 
+Forms use definition-driven progressive disclosure to stay intentionally minimal without weakening the information model. **Add details** reveals optional controls inline at their canonical position; populated details are visible on edit and record pages and remain normal searchable, mergeable domain data. The small × control hides a detail without clearing its submitted value. Compound facts that are not meaningful independently, currently coordinate pairs, are added and hidden together. This is presentation metadata, not a user-defined custom-field system.
+
 Person detail pages use short, separate journal entries instead of presenting the Person Notes field. Entries appear oldest first as message-style bubbles, show their creation time, and show an edited marker with the last edit time when changed. Archive is the prominent removal action; permanent delete remains available with quieter visual treatment.
 
-Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible and calls out relationships or dependent records that will also be removed.
+Entity Delete actions move records to the Recycle Bin after a concise confirmation. Deleted entities must not appear in ordinary views. The Recycle Bin clearly separates recoverable deletion from archival, offers Restore, and places permanent deletion behind a dedicated confirmation page. That page states the action is irreversible, distinguishes active from recycled relationships, calls out dependent records that will also be removed, and creates a recovery bundle before mutation.
 
 Controlled fields use dropdowns for known statuses, preset-backed custom inputs where local vocabulary remains appropriate, and taxonomy comboboxes for reusable hierarchical classifications. A taxonomy combobox is one combined browse/search control: opening it shows the hierarchy, typing searches complete paths, and selecting any deep result stores its terminal entry while displaying the full path. Relationship choices add the perspective-specific role without hiding path context. Organisation classification and relationship types use this control; Project, Document and Asset type controls remain unchanged.
 
@@ -60,9 +62,15 @@ The relationship selector should use short plain role labels from the user's per
 
 Location forms include address lookup as an aid, not as a requirement. Records can be saved without coordinates.
 
+Detailed address fields and coordinates use progressive disclosure. Latitude and longitude are one compound detail and must be supplied together. Existing lookup and manual-address behaviour is otherwise unchanged.
+
 Location address lookup should fill suburb, city, state, post code, country, coordinates and source when the provider returns those parts, while leaving all fields manually editable.
 
 Document forms include a file upload control, while stored file path, MIME type and size remain system-managed metadata. Document descriptive fields and relationships remain editable.
+
+Document purpose contains record purposes rather than file formats; MIME metadata supplies format. Issuer and creator facts use Document-to-Person or Document-to-Organisation relationships through the normal relationship workflow.
+
+Organisation Other names are optional repeatable values with one alias per line, not comma-separated prose.
 
 Asset value entry should accept whole numbers only. Users should not type a dollar sign into the field; read/detail pages display the value with a dollar sign.
 
@@ -84,3 +92,6 @@ The map should behave like a view, not a separate workspace. Markers link back t
 The app should remain useful when map tiles or address lookup are unavailable.
 
 Projects and Documents should not be shown as map layers or markers.
+
+
+Import is a two-step consequential workflow. The first submission validates the complete bundle and displays export time plus active/recycled record and document counts. Apply requires a separate confirmation, an empty target and a recovery backup. Export remains a direct read-only download. Recovery replacement is deliberately command-line-only in Stage 1 so it cannot be mistaken for ordinary import.

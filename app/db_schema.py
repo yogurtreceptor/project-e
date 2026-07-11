@@ -63,6 +63,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_entity_history_table(connection)
     create_platform_tables(connection)
     create_journal_table(connection)
+    create_entity_alias_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -85,6 +86,37 @@ def create_journal_table(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_journal_entries_entity_chronology
             ON journal_entries (entity_type, entity_id, archived_at, created_at, id);
         """
+    )
+
+
+def create_entity_alias_table(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS entity_aliases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+            value TEXT NOT NULL COLLATE NOCASE,
+            created_at TEXT NOT NULL,
+            UNIQUE (entity_id, value)
+        );
+        CREATE INDEX IF NOT EXISTS idx_entity_aliases_value
+            ON entity_aliases (value COLLATE NOCASE);
+        """
+    )
+
+
+def clean_document_domain_fields(connection: sqlite3.Connection) -> None:
+    """Remove the superseded issuer scalar and format-like purpose values."""
+    table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='documents'"
+    ).fetchone()
+    if table is None:
+        return
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
+    if "issuer" in columns:
+        connection.execute("ALTER TABLE documents DROP COLUMN issuer")
+    connection.execute(
+        "UPDATE documents SET document_type='Other' WHERE document_type IN ('Image','PDF')"
     )
 
 
@@ -308,6 +340,7 @@ def create_relationship_table(connection: sqlite3.Connection) -> None:
             notes TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
+            deleted_at TEXT NOT NULL DEFAULT '',
             CHECK (source_entity_id <> target_entity_id)
         );
 
@@ -340,6 +373,9 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE relationships ADD COLUMN created_from_inference INTEGER NOT NULL DEFAULT 0")
     if "inference_evidence_status" not in columns:
         connection.execute("ALTER TABLE relationships ADD COLUMN inference_evidence_status TEXT NOT NULL DEFAULT ''")
+    if "deleted_at" not in columns:
+        connection.execute("ALTER TABLE relationships ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''")
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_relationships_deleted_at ON relationships(deleted_at)")
     # Confirmed suggestions are ordinary user-owned relationships. Migrate rows
     # created under the earlier read-only origin model without losing provenance.
     connection.execute("""UPDATE relationships
@@ -388,6 +424,9 @@ SCHEMA_MIGRATIONS = (
     ("20260704_10_reference_data", create_reference_data_tables),
     ("20260704_11_measurement_units", create_unit_tables),
     ("20260704_12_taxonomies", lambda connection: __import__("app.taxonomy", fromlist=["create_taxonomy_tables"]).create_taxonomy_tables(connection)),
+    ("20260705_13_entity_aliases", create_entity_alias_table),
+    ("20260705_14_document_domain_cleanup", clean_document_domain_fields),
+    ("20260705_15_relationship_soft_delete", ensure_relationship_columns),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

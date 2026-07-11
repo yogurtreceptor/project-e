@@ -29,6 +29,7 @@ from app.db import (
     validate_relationship_values,
 )
 from app.entities import DEFINITIONS_BY_SLUG, ENTITY_DEFINITIONS
+from app.duplicate_detection import find_duplicate_entities
 from app.geo import build_map_payload
 from app.relationships import relationship_types_for_pair
 from app.relationship_workflow import create_inline_relationship_target
@@ -927,21 +928,78 @@ class EntityDatabaseTests(unittest.TestCase):
 
     def test_person_optional_fields_are_available_without_cluttering_form(self) -> None:
         create_html = views.entity_form_page(self.definition, {}, [], "Create")
-        self.assertIn('class="button secondary optional-fields-toggle"', create_html)
+        self.assertIn('class="button secondary optional-details-toggle"', create_html)
         self.assertIn('aria-expanded="false"', create_html)
-        self.assertIn('>Add field</button>', create_html)
-        self.assertIn('id="optional-field-choices" hidden', create_html)
-        self.assertIn('data-field="alias">Alias</button>', create_html)
-        self.assertIn('data-field="nickname">Nickname</button>', create_html)
-        self.assertIn('data-optional-field="alias" hidden', create_html)
-        self.assertIn('data-optional-field="nickname" hidden', create_html)
+        self.assertIn('>Add details</button>', create_html)
+        self.assertIn('id="optional-details-choices" hidden', create_html)
+        self.assertIn('data-detail-add="alias">Alias</button>', create_html)
+        self.assertIn('data-detail-add="nickname">Nickname</button>', create_html)
+        self.assertIn('data-optional-detail="alias" hidden', create_html)
+        self.assertIn('data-optional-detail="nickname" hidden', create_html)
+        self.assertIn('data-detail-remove="alias"', create_html)
 
         edit_html = views.entity_form_page(
             self.definition, {"alias": "The Enchantress", "nickname": "Ada"}, [], "Edit", 1
         )
-        self.assertIn('data-optional-field="alias"><label', edit_html)
+        self.assertIn('data-optional-detail="alias"><button', edit_html)
         self.assertIn('value="The Enchantress"', edit_html)
-        self.assertNotIn('data-field="alias">Alias</button>', edit_html)
+        self.assertIn('data-detail-add="alias" hidden>Alias</button>', edit_html)
+
+    def test_domain_optional_details_render_inline_in_canonical_order(self) -> None:
+        organisation_html = views.entity_form_page(DEFINITIONS_BY_SLUG["organisations"], {}, [], "Create")
+        location_html = views.entity_form_page(DEFINITIONS_BY_SLUG["locations"], {}, [], "Create")
+        project_html = views.entity_form_page(DEFINITIONS_BY_SLUG["projects"], {}, [], "Create")
+        document_html = views.entity_form_page(DEFINITIONS_BY_SLUG["documents"], {}, [], "Create")
+        asset_html = views.entity_form_page(DEFINITIONS_BY_SLUG["assets"], {}, [], "Create")
+
+        self.assertIn('data-optional-detail="website" hidden', organisation_html)
+        self.assertIn('data-optional-detail="formatted_address" hidden', location_html)
+        self.assertIn('data-optional-detail="coordinates" hidden', location_html)
+        self.assertEqual(location_html.count('data-detail-add="coordinates"'), 1)
+        self.assertIn("input.dispatchEvent(new Event('input', { bubbles: true }))", location_html)
+        self.assertLess(location_html.index('data-optional-detail="formatted_address"'), location_html.index('data-optional-detail="city"'))
+        self.assertIn('data-optional-detail="started_at" hidden', project_html)
+        self.assertIn('data-optional-detail="ended_at" hidden', project_html)
+        self.assertIn('data-optional-detail="identifier" hidden', document_html)
+        self.assertIn('data-optional-detail="expiry_date" hidden', document_html)
+        self.assertIn('data-optional-detail="manufacturer" hidden', asset_html)
+        self.assertIn('data-optional-detail="model" hidden', asset_html)
+        self.assertIn('data-detail-remove="coordinates"', asset_html)
+
+    def test_compound_coordinates_and_new_dates_validate(self) -> None:
+        location = DEFINITIONS_BY_SLUG["locations"]
+        project = DEFINITIONS_BY_SLUG["projects"]
+        document = DEFINITIONS_BY_SLUG["documents"]
+
+        values = normalise_form_values(location, {"display_name": "Point", "latitude": "-27.5"})
+        self.assertEqual(validate_entity_values(location, values), ["Coordinates requires both Latitude and Longitude."])
+        values = normalise_form_values(project, {"display_name": "Work", "started_at": "2026-07-05", "ended_at": "2026-07-04"})
+        self.assertEqual(validate_entity_values(project, values), ["Ended / completed must not be before Started."])
+        values = normalise_form_values(document, {"display_name": "Licence", "document_date": "2026-07-05", "expiry_date": "2026-07-04"})
+        self.assertEqual(validate_entity_values(document, values), ["Expiry date must not be before Document date."])
+
+    def test_new_domain_fields_persist_search_and_detect_document_identifier_duplicates(self) -> None:
+        document = DEFINITIONS_BY_SLUG["documents"]
+        asset = DEFINITIONS_BY_SLUG["assets"]
+        with connect(self.database_path) as connection:
+            first_id = create_entity(connection, document, {
+                "display_name": "Licence", "identifier": "LIC-42", "expiry_date": "2030-01-01",
+            })
+            asset_id = create_entity(connection, asset, {
+                "display_name": "Laptop", "manufacturer": "Framework", "model": "Laptop 13",
+            })
+            first = get_entity(connection, document, first_id)
+            saved_asset = get_entity(connection, asset, asset_id)
+            search_results = search_entities(connection, "Framework")
+            duplicate_matches = find_duplicate_entities(
+                connection, document, {"display_name": "Other licence", "identifier": "lic-42"}
+            )
+
+        self.assertEqual(first.metadata["identifier"], "LIC-42")
+        self.assertEqual(first.metadata["expiry_date"], "2030-01-01")
+        self.assertEqual(saved_asset.metadata["model"], "Laptop 13")
+        self.assertEqual([result["entity"].id for result in search_results], [asset_id])
+        self.assertEqual(duplicate_matches[0].matched_fields, ("Identifier / reference number",))
 
     def test_person_optional_fields_persist_and_only_populated_values_display(self) -> None:
         values = normalise_form_values(

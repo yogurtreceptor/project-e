@@ -94,6 +94,25 @@ class UniversalTimelineTests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].href, f"/documents/{document_id}")
 
+    def test_project_end_and_document_expiry_are_timeline_events(self) -> None:
+        with connect(self.database_path) as connection:
+            create_entity(
+                connection,
+                DEFINITIONS_BY_TYPE["project"],
+                {"display_name": "Migration", "started_at": "2026-01-01", "ended_at": "2026-06-30"},
+            )
+            create_entity(
+                connection,
+                DEFINITIONS_BY_TYPE["document"],
+                {"display_name": "Licence", "expiry_date": "2028-07-05"},
+            )
+            records = list_all_entities(connection)
+
+        events = registry.derive_all(records, [])
+
+        self.assertIn(("2026-06-30", "Project ended"), [(event.date, event.title) for event in events])
+        self.assertIn(("2028-07-05", "Document expires"), [(event.date, event.title) for event in events])
+
     def test_page_renders_filters_links_and_clean_empty_state(self) -> None:
         filters = TimelineFilters(entity_type="person", date_from="1900-01-01")
         options = {"person": [], "organisation": [], "project": []}

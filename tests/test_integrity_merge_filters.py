@@ -60,6 +60,22 @@ class DataIntegrityMergeAndFilterTests(unittest.TestCase):
         self.assertEqual(history[0]["event_type"], "merge")
         self.assertIn("Augusta Ada", history[0]["details"])
 
+    def test_merge_preserves_and_repoints_recycled_relationships(self):
+        survivor = self.person("Survivor")
+        duplicate = self.person("Duplicate")
+        other = self.person("Other")
+        with connect(self.database_path) as connection:
+            relationship_id = create_relationship(connection, {"source_entity_id": str(duplicate), "target_entity_id": str(other), "type": "friend_of"})
+            connection.execute("UPDATE relationships SET deleted_at='2026-01-01T00:00:00+00:00' WHERE id=?", (relationship_id,))
+            connection.commit()
+            preview = preview_entity_merge(connection, survivor, duplicate)
+            self.assertEqual(0, preview.active_relationships_to_repoint)
+            self.assertEqual(1, preview.recycled_relationships_to_repoint)
+            merge_entities(connection, survivor, duplicate)
+            row = connection.execute("SELECT * FROM relationships WHERE id=?", (relationship_id,)).fetchone()
+        self.assertEqual(survivor, row["source_entity_id"])
+        self.assertTrue(row["deleted_at"])
+
     def test_structured_filters_cover_birthdays_and_missing_locations(self):
         january = self.person("January", "1980-01-03")
         born_1980 = self.person("December", "1980-12-10")

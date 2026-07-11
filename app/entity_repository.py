@@ -32,6 +32,8 @@ def list_entities(
         (definition.type,),
     ).fetchall()
     records = [to_entity_record(definition, row) for row in rows]
+    for record in records:
+        hydrate_external_fields(connection, record)
     if favourites_only:
         records = [record for record in records if record.is_favourite]
     if query:
@@ -206,9 +208,11 @@ def permanent_delete_entity(connection: sqlite3.Connection, entity_id: int) -> t
 
 
 def entity_dependency_counts(connection: sqlite3.Connection, entity_id: int) -> dict[str, int]:
-    relationship_count = connection.execute("SELECT COUNT(*) FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchone()[0]
+    rows = connection.execute("SELECT deleted_at FROM relationships WHERE source_entity_id=? OR target_entity_id=?", (entity_id, entity_id)).fetchall()
+    active = sum(1 for row in rows if not row["deleted_at"])
+    recycled = len(rows) - active
     journal_count = connection.execute("SELECT COUNT(*) FROM journal_entries WHERE entity_id=?", (entity_id,)).fetchone()[0]
-    return {"relationships": int(relationship_count), "journal_entries": int(journal_count)}
+    return {"relationships": len(rows), "active_relationships": active, "recycled_relationships": recycled, "journal_entries": int(journal_count)}
 
 
 def with_canonical_person_name(
@@ -236,6 +240,11 @@ def validate_entity_values(
         errors.append(f"{definition.singular} name is required.")
     for field in definition.fields:
         value = values.get(field.name, "").strip()
+        if field.storage_kind == "alias":
+            aliases = parse_aliases(value)
+            if len(aliases) != len({alias.casefold() for alias in aliases}):
+                errors.append(f"{field.label} must not contain duplicates.")
+            continue
         if field.storage_kind == "measurement":
             if value:
                 try:
@@ -279,6 +288,21 @@ def validate_entity_values(
         structured_error = validate_structured_value(value, field.value_kind, field.label)
         if structured_error:
             errors.append(structured_error)
+    optional_groups: dict[str, list] = {}
+    for field in definition.fields:
+        if field.optional_group:
+            optional_groups.setdefault(field.optional_group, []).append(field)
+    for fields in optional_groups.values():
+        populated = [bool(values.get(field.name, "").strip()) for field in fields]
+        if any(populated) and not all(populated):
+            label = fields[0].optional_group_label or fields[0].optional_group.replace("_", " ").title()
+            errors.append(f"{label} requires both {fields[0].label} and {fields[1].label}.")
+    if definition.type == "project" and values.get("started_at") and values.get("ended_at"):
+        if values["ended_at"] < values["started_at"]:
+            errors.append("Ended / completed must not be before Started.")
+    if definition.type == "document" and values.get("document_date") and values.get("expiry_date"):
+        if values["expiry_date"] < values["document_date"]:
+            errors.append("Expiry date must not be before Document date.")
     return errors
 
 
@@ -291,7 +315,7 @@ def normalise_form_values(
     }
     for field in definition.fields:
         raw_value = str(raw_values.get(field.name, field.default)).strip() or field.default
-        if field.storage_kind == "reference":
+        if field.storage_kind in {"reference", "alias"}:
             raw_value = str(raw_values.get(field.name, "")).strip()
         values[field.name] = normalise_structured_value(raw_value, field.value_kind)
         if field.storage_kind == "measurement":
@@ -344,6 +368,10 @@ def update_typed_row(
     )
 
 
+def parse_aliases(value: str) -> list[str]:
+    return [line.strip() for line in value.splitlines() if line.strip()]
+
+
 def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord) -> None:
     if record.type == "organisation":
         from app.taxonomy import hydrate_organisation_taxonomy
@@ -359,6 +387,12 @@ def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord
                 record.metadata[field.name] = measurement.display_text
                 record.metadata[f"{field.name}__value"] = format(measurement.display_value.normalize(), "f")
                 record.metadata[f"{field.name}__unit"] = str(measurement.display_unit.id)
+        elif field.storage_kind == "alias":
+            rows = connection.execute(
+                "SELECT value FROM entity_aliases WHERE entity_id=? ORDER BY lower(value), id",
+                (record.id,),
+            )
+            record.metadata[field.name] = "\n".join(row["value"] for row in rows)
 
 
 def sync_external_fields(
@@ -379,6 +413,12 @@ def sync_external_fields(
                 replace_entity_reference_values(
                     connection, entity_id, field.name, item_ids, field.reference_type
                 )
+        elif field.storage_kind == "alias":
+            connection.execute("DELETE FROM entity_aliases WHERE entity_id=?", (entity_id,))
+            connection.executemany(
+                "INSERT INTO entity_aliases(entity_id,value,created_at) VALUES(?,?,?)",
+                ((entity_id, alias, utc_now()) for alias in parse_aliases(values.get(field.name, ""))),
+            )
         elif field.storage_kind == "measurement":
             value = values.get(field.name, "").strip()
             unit_id = values.get(f"{field.name}__unit", "").strip()

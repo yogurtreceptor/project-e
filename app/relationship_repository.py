@@ -20,6 +20,7 @@ def list_relationships(connection: sqlite3.Connection) -> list[RelationshipRecor
         """
         SELECT *
         FROM relationships
+        WHERE deleted_at = ''
         ORDER BY updated_at DESC, id DESC
         """
     ).fetchall()
@@ -39,7 +40,7 @@ def list_relationships_for_entity(
         """
         SELECT *
         FROM relationships
-        WHERE source_entity_id = ? OR target_entity_id = ?
+        WHERE deleted_at = '' AND (source_entity_id = ? OR target_entity_id = ?)
         ORDER BY updated_at DESC, id DESC
         """,
         (entity_id, entity_id),
@@ -54,10 +55,11 @@ def list_relationships_for_entity(
 
 
 def get_relationship(
-    connection: sqlite3.Connection, relationship_id: int
+    connection: sqlite3.Connection, relationship_id: int, include_deleted: bool = False
 ) -> RelationshipRecord | None:
     row = connection.execute(
-        "SELECT * FROM relationships WHERE id = ?", (relationship_id,)
+        "SELECT * FROM relationships WHERE id = ? AND (? OR deleted_at = '')",
+        (relationship_id, include_deleted)
     ).fetchone()
     if row is None:
         return None
@@ -97,7 +99,7 @@ def create_relationship(connection: sqlite3.Connection, values: dict[str, str]) 
     )
     relationship_id = int(cursor.lastrowid)
     from app.audit import record_audit_event, set_provenance
-    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], after=values, notes="Relationship created")
+    record_audit_event(connection, "create", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], after=values, notes="Relationship created")
     set_provenance(connection, "relationship", relationship_id, "*", "manual")
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_created", relationship_id)
@@ -134,18 +136,46 @@ def update_relationship(
         ),
     )
     from app.audit import record_audit_event
-    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], before=before.to_form_values() if before else None, after=values, notes="Relationship edited")
+    record_audit_event(connection, "edit", [("relationship", relationship_id), ("entity", int(values["source_entity_id"])), ("entity", int(values["target_entity_id"]))], before=before.to_form_values() if before else None, after=values, notes="Relationship edited")
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_updated", relationship_id)
 
 
-def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> None:
+def delete_relationship(connection: sqlite3.Connection, relationship_id: int) -> bool:
     before = get_relationship(connection, relationship_id)
+    if before is None:
+        return False
     from app.audit import record_audit_event
-    record_audit_event(connection, "relationship_change", [("relationship", relationship_id), *(("entity", before.source.id), ("entity", before.target.id))] if before else [("relationship", relationship_id)], before=before.to_form_values() if before else None, notes="Relationship deleted")
-    connection.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
+    deleted_at = utc_now()
+    record_audit_event(connection, "delete", [("relationship", relationship_id), ("entity", before.source.id), ("entity", before.target.id)], before=before.to_form_values(), after={"deleted_at": deleted_at}, notes="Relationship moved to Recycle Bin")
+    connection.execute("UPDATE relationships SET deleted_at=?, updated_at=? WHERE id=? AND deleted_at=''", (deleted_at, deleted_at, relationship_id))
     from app.relationship_inference import recompute_inferences
     recompute_inferences(connection, "relationship_deleted", relationship_id)
+    return True
+
+
+def restore_relationship(connection: sqlite3.Connection, relationship_id: int) -> bool:
+    before = get_relationship(connection, relationship_id, include_deleted=True)
+    if before is None or not before.is_deleted:
+        return False
+    restored_at = utc_now()
+    connection.execute("UPDATE relationships SET deleted_at='', updated_at=? WHERE id=?", (restored_at, relationship_id))
+    from app.audit import record_audit_event
+    record_audit_event(connection, "restore", [("relationship", relationship_id), ("entity", before.source.id), ("entity", before.target.id)], before={"deleted_at": before.deleted_at}, after={"deleted_at": ""}, notes="Relationship restored from Recycle Bin")
+    from app.relationship_inference import recompute_inferences
+    recompute_inferences(connection, "relationship_restored", relationship_id)
+    return True
+
+
+def list_deleted_relationships(connection: sqlite3.Connection) -> list[RelationshipRecord]:
+    rows = connection.execute("SELECT * FROM relationships WHERE deleted_at<>'' ORDER BY deleted_at DESC, id DESC").fetchall()
+    records = []
+    for row in rows:
+        try:
+            records.append(to_relationship_record(connection, row, include_deleted_entities=True))
+        except ValueError:
+            continue
+    return records
 
 
 def normalise_relationship_values(raw_values: dict[str, Any]) -> dict[str, str]:
@@ -214,7 +244,7 @@ def validate_relationship_values(
         exclude_sql = " AND id<>?" if relationship_id is not None else ""
         if relationship_id is not None:
             params.append(relationship_id)
-        duplicate = connection.execute(f"SELECT 1 FROM relationships WHERE type=? AND ((source_entity_id=? AND target_entity_id=?){reverse_sql}){exclude_sql}", params).fetchone()
+        duplicate = connection.execute(f"SELECT 1 FROM relationships WHERE deleted_at='' AND type=? AND ((source_entity_id=? AND target_entity_id=?){reverse_sql}){exclude_sql}", params).fetchone()
         if duplicate:
             errors.append("This relationship already exists.")
         family_types = ("parent_child", "grandparent_child", "sibling_of", "aunt_uncle_niece_nephew", "cousin_of")
@@ -224,7 +254,7 @@ def validate_relationship_values(
             conflict_params = [source_id, target_id, target_id, source_id, *family_types, type_key]
             if relationship_id is not None:
                 conflict_params.append(relationship_id)
-            conflict = connection.execute(f"SELECT 1 FROM relationships WHERE ((source_entity_id=? AND target_entity_id=?) OR (source_entity_id=? AND target_entity_id=?)) AND type IN ({placeholders}) AND type<>?{conflict_exclude}", conflict_params).fetchone()
+            conflict = connection.execute(f"SELECT 1 FROM relationships WHERE deleted_at='' AND ((source_entity_id=? AND target_entity_id=?) OR (source_entity_id=? AND target_entity_id=?)) AND type IN ({placeholders}) AND type<>?{conflict_exclude}", conflict_params).fetchone()
             if conflict:
                 errors.append("A conflicting bloodline relationship already connects these people.")
         if type_key == "parent_child" and _parent_path_exists(connection, target_id, source_id, relationship_id):
@@ -269,10 +299,10 @@ def normalise_relationship_direction(connection: sqlite3.Connection, values: dic
 
 
 def to_relationship_record(
-    connection: sqlite3.Connection, row: sqlite3.Row
+    connection: sqlite3.Connection, row: sqlite3.Row, include_deleted_entities: bool = False
 ) -> RelationshipRecord:
-    source = get_entity_by_id(connection, int(row["source_entity_id"]))
-    target = get_entity_by_id(connection, int(row["target_entity_id"]))
+    source = get_entity_by_id(connection, int(row["source_entity_id"]), include_deleted=include_deleted_entities)
+    target = get_entity_by_id(connection, int(row["target_entity_id"]), include_deleted=include_deleted_entities)
     if source is None or target is None:
         raise ValueError(f"Relationship {row['id']} references a missing entity")
     return RelationshipRecord(
@@ -293,11 +323,12 @@ def to_relationship_record(
         provenance_json=row["provenance_json"],
         created_from_inference=bool(row["created_from_inference"]),
         inference_evidence_status=row["inference_evidence_status"],
+        deleted_at=row["deleted_at"],
     )
 
 
 def _parent_path_exists(connection: sqlite3.Connection, start_id: int, goal_id: int, exclude_id: int | None = None) -> bool:
-    rows = connection.execute("SELECT id, source_entity_id, target_entity_id FROM relationships WHERE type='parent_child' AND status='active'").fetchall()
+    rows = connection.execute("SELECT id, source_entity_id, target_entity_id FROM relationships WHERE deleted_at='' AND type='parent_child' AND status='active'").fetchall()
     children = {}
     for row in rows:
         if exclude_id is not None and int(row["id"]) == exclude_id:

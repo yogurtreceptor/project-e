@@ -40,6 +40,16 @@ Trigger: users need richer event types, ordering or provenance.
 
 Direction: extend derived events first. Introduce persisted event records only when concrete workflows require them.
 
+## Journals are People-only
+
+Severity: low
+
+Journal storage already links entries generically, but the UI remains intentionally unchanged and People-only. Journals and Documents are distinct: journals are internal observations and progress; Documents are real-world artefacts.
+
+Trigger: a concrete Organisation, Project, Asset, Document or Location workflow needs dated internal observations.
+
+Direction: make journal entries platform-wide first-class records linked to entities; do not embed journal streams in typed entity data.
+
 ## Contact details are single-value fields
 
 Severity: low
@@ -49,3 +59,13 @@ Person and Organisation phone, email and website values are direct fields. This 
 Trigger: a real workflow requires multiple contact points or lifecycle metadata.
 
 Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain in Stage 1.
+
+## Soft-deletable record consistency review
+
+Severity: low
+
+Entities and relationships use the Recycle Bin. Journal entries instead use domain-specific archive plus hard delete, while taxonomy entries are archived and data-quality dispositions are state transitions. These are deliberate semantic differences, not currently interchangeable deletion mechanisms.
+
+Trigger: a requirement to recover deleted journals, taxonomy nodes or finding state.
+
+Direction: evaluate that record type's lifecycle and user expectations before applying the generic Recycle Bin pattern; do not equate archive, dismissal and deletion automatically.

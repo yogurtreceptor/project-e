@@ -145,5 +145,8 @@ def _matches(event: TimelineEvent, filters: TimelineFilters) -> bool:
 registry = TimelineRegistry()
 registry.register_date_field("birthday", "Birth")
 registry.register_date_field("started_at", "Project started")
+registry.register_date_field("target_date", "Project target date")
+registry.register_date_field("ended_at", "Project ended")
 registry.register_date_field("document_date", "Document dated")
+registry.register_date_field("expiry_date", "Document expires")
 registry.register_date_field("acquisition_date", "Asset acquired")

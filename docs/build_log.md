@@ -4,7 +4,14 @@ Historical summary only. Current behaviour is documented in the Stage 1 specific
 
 ## 2026-07-05
 
-Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. License and security-policy decisions remain intentionally separate because they require maintainer choices about legal permissions and a private reporting channel.
+Added versioned, checksummed portable bundles containing consistent SQLite snapshots and referenced uploaded documents; staged import preview and confirmation; clean-target enforcement; automatic recovery backups for import, merge and permanent deletion; a deliberate recovery command; and focused round-trip, checksum, rollback, recovery and offline-operation coverage. Entity merge now preserves and repoints recycled relationships, while merge and permanent-delete previews distinguish their exact active/recycled effects.
+
+
+Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. Added a security policy using GitHub private vulnerability reporting and clarified the project's current source-available, all-rights-reserved copyright status pending any future explicit software licence.
+
+Cleaned the Phase 1 domain model: removed free-text Document issuer in favour of existing creator/issuer relationships; separated Document purpose from MIME-backed format; removed the overlapping Document-like Asset type; added Project target dates and timeline events; and introduced normalized repeatable Organisation aliases used by forms, search, merges and duplicate review. Recorded the active-development preference for clean architecture over compatibility layers and documented the deferred platform-wide Journal direction.
+
+Extended definition-driven progressive disclosure across Organisations, Locations, Projects, Documents and Assets. Optional details now appear inline in canonical order, use **Add details**, can be hidden without clearing values, and support compound coordinate pairs. Added Project ended/completed date, Document identifier and expiry date, and Asset manufacturer/model through additive typed columns, including chronology validation, identifier duplicate matching, search participation and timeline events.
 
 ## 2026-07-04
 
@@ -53,3 +60,5 @@ Standardised structured entity forms and controlled values. Redesigned relations
 ## 2026-06-21
 
 Established the standard-library Python/SQLite local application, reusable entity definitions and CRUD, first-class relationships, entity profiles, search/favourites/recent discovery, and the geographic view. Added Projects, Documents and Assets through the shared architecture; introduced local Document uploads and optional Leaflet/OpenStreetMap/Nominatim map support. Recorded G-NAF as an optional future Australian address index. Early attachment and organisation-address concepts were superseded by first-class Document entities and Location relationships.
+
+Completed the Platform Maturity / Pre-Operational Intelligence milestone: relationships now use migration-safe soft deletion, appear in the Recycle Bin, restore with stable identity and provenance, and remain aligned with audit and derived timeline behaviour. Added a filterable System Tools Audit over normalized action and record-kind projections while retaining legacy events. Defined Phase 1 exit criteria, separated foundational gaps from Operational Intelligence and later AI work, and recorded deferred relationship knowledge, graph and future operational audit evolution.

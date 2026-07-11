@@ -57,12 +57,15 @@ Current fields include:
 
 - organisation name
 - taxonomy-backed organisation classification
+- repeatable other names / aliases
 - website
 - phone
 - email
 - notes
 
 Classification is one reusable path of up to three levels rather than unrelated broad and specific text values.
+
+Other names are normalized rows, one value per alias. They cover alternate, former, trading and abbreviated names and participate in search and duplicate review.
 
 Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
 
@@ -103,6 +106,8 @@ Current fields include:
 - project type
 - status
 - started date
+- target date
+- ended / completed date
 - notes
 
 Controlled-value rules are:
@@ -124,17 +129,20 @@ Documents should be linked to other entities through relationships. A passport, 
 Current fields include:
 
 - document name
-- document type
+- document purpose
 - document date
-- issuer / created by
+- identifier / reference number
+- expiry date
 - notes
 - optional local file metadata
 
-Document type is controlled with custom values allowed.
+Document purpose is controlled with custom values allowed. It describes what the record is; uploaded MIME metadata describes file format.
+
+Issuer and creator are relationship concepts linked to canonical People or Organisations. The Document model has no duplicate issuer/creator text field.
 
 ## Assets
 
-An Asset represents a physical or digital item such as a vehicle, laptop, phone, passport, appliance or smart device.
+An Asset represents a physical or digital thing such as a vehicle, laptop, phone, appliance or smart device. A passport, receipt, certificate, manual or similar record is a Document, not an Asset.
 
 Assets can relate to People, Organisations, Locations, Projects and Documents. Assets may also carry direct coordinates when that is the most accurate available geographic information.
 
@@ -143,6 +151,8 @@ Current fields include:
 - asset name
 - asset type
 - status
+- manufacturer
+- model
 - serial number / asset number
 - acquisition date
 - value
@@ -160,20 +170,20 @@ Controlled category fields currently follow these rules:
 
 - Most remain direct typed text.
 - Organisation classification is the first entity field migrated to the reusable taxonomy framework.
-- Document, Asset and Project type systems remain unchanged in this milestone.
+- Document purpose, Asset type and Project type remain small controlled/custom value sets rather than taxonomies.
 
 Current controlled fields are:
 
 - Organisation classification: a selected taxonomy path, for example `Business › Finance › Bank`. Clear legacy values are mapped; ambiguous and custom legacy values are retained as archived entries until reclassified.
 - Project `project_type`: Personal, Work, Education, Health, Finance, Home, Vehicle, Travel, Civic, Other, or custom.
 - Project `status`: Active, Paused, Completed, Abandoned.
-- Document `document_type`: Identification, Certificate, Contract, Receipt, Invoice, Manual, Medical, Government, Letter, Image, PDF, Other, or custom.
-- Asset `asset_type`: Vehicle, Appliance, Tool, Electronic device, Computer, Phone, Document-like asset, Smart device, Furniture, Other, or custom.
+- Document `document_type`: Letter, Licence, Receipt, Certificate, Statement, Contract, Invoice, Manual, Other, or custom purpose.
+- Asset `asset_type`: Vehicle, Appliance, Tool, Electronic device, Computer, Phone, Smart device, Furniture, Other, or custom.
 - Asset `status`: Owned, Sold, Lost, Destroyed, In disrepair, Loaned out, Other, or custom.
 
 ## Relationships
 
-A relationship is a first-class record connecting two canonical entities.
+A relationship is a first-class record connecting two canonical entities. Its identity and canonical facts survive soft deletion and restoration; recycled relationships are excluded from active graph views.
 
 Relationships support:
 

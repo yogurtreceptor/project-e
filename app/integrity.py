@@ -16,7 +16,7 @@ class IntegrityWarning:
 
 def audit_relationships(connection: sqlite3.Connection) -> list[IntegrityWarning]:
     entities = {row["id"]: row["type"] for row in connection.execute("SELECT id, type FROM entities")}
-    rows = connection.execute("SELECT * FROM relationships ORDER BY id").fetchall()
+    rows = connection.execute("SELECT * FROM relationships WHERE deleted_at='' ORDER BY id").fetchall()
     warnings: list[IntegrityWarning] = []
     valid_rows = []
     for row in rows:

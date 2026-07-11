@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
@@ -7,7 +8,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app import views
-from app.config import DATABASE_PATH, DOCUMENT_STORAGE_DIR, initialise_local_storage
+from app.config import (BACKUP_DIR, DATABASE_PATH, DOCUMENT_STORAGE_DIR, IMPORT_STAGING_DIR, initialise_local_storage)
 from app.db import (
     connect,
     count_entities,
@@ -15,8 +16,10 @@ from app.db import (
     create_relationship,
     delete_entity,
     restore_entity,
+    restore_relationship,
     permanent_delete_entity,
     list_deleted_entities,
+    list_deleted_relationships,
     entity_dependency_counts,
     delete_relationship,
     get_entity,
@@ -59,7 +62,7 @@ from app.document_storage import (
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
-from app.audit import list_audit_events
+from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
@@ -71,12 +74,15 @@ from app.relationship_workflow import (
     inline_entity_values as build_inline_entity_values,
 )
 from app.timeline import TimelineFilters, registry as timeline_registry
+from app.portability import (apply_import_bundle, consume_staged_bundle, create_bundle, create_recovery_backup, inspect_bundle, stage_bundle)
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 class EddyRequestHandler(BaseHTTPRequestHandler):
     database_path = DATABASE_PATH
     document_storage_dir = DOCUMENT_STORAGE_DIR
+    backup_dir = BACKUP_DIR
+    import_staging_dir = IMPORT_STAGING_DIR
 
     def do_GET(self) -> None:
         self.route_request()
@@ -106,6 +112,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "system-tools" and len(parts) == 1:
             self.respond_page("System Tools", views.system_tools_page(), active_slug="system-tools")
+            return
+
+        if parts[:2] == ["system-tools", "audit"] and len(parts) == 2:
+            self.handle_system_audit(query)
+            return
+
+        if parts[:2] == ["system-tools", "portability"]:
+            self.handle_portability(parts)
             return
 
         if parts[0] == "timeline":
@@ -220,7 +234,20 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if len(parts) == 1 and self.command == "GET":
             with connect(self.database_path) as connection:
                 records = list_deleted_entities(connection)
-            self.respond_page("Recycle Bin", views.recycle_bin_page(records), active_slug="system-tools")
+                relationships = list_deleted_relationships(connection)
+            self.respond_page("Recycle Bin", views.recycle_bin_page(records, relationships), active_slug="system-tools")
+            return
+        if len(parts) == 4 and parts[1] == "relationships" and parts[3] == "restore" and self.command == "POST":
+            relationship_id = self.parse_entity_id(parts[2])
+            if relationship_id is None:
+                self.respond_not_found()
+                return
+            with connect(self.database_path) as connection:
+                restored = restore_relationship(connection, relationship_id)
+            if not restored:
+                self.respond_not_found()
+                return
+            self.redirect("/recycle-bin")
             return
         entity_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
         if entity_id is None:
@@ -245,6 +272,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     self.respond_page("Confirm permanent deletion", views.permanent_delete_confirmation_page(record, dependencies), active_slug="system-tools")
                     return
                 if self.command == "POST" and self.read_form().get("confirm") == "yes":
+                    create_recovery_backup(self.database_path, self.document_storage_dir, self.backup_dir, "before-permanent-delete")
                     _record_type, file_path = permanent_delete_entity(connection, entity_id)
                     if file_path:
                         delete_unreferenced_document_file(connection, file_path, self.document_storage_dir)
@@ -256,6 +284,41 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         with connect(self.database_path) as connection:
             graph = full_family_component(list_relationships(connection))
         self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph)), active_slug="relationships")
+
+    def handle_portability(self, parts: list[str]) -> None:
+        try:
+            if len(parts) == 2 and self.command == "GET":
+                self.respond_page("Import and export", views.portability_page(), active_slug="system-tools")
+                return
+            if len(parts) == 3 and parts[2] == "export" and self.command == "GET":
+                content = create_bundle(self.database_path, self.document_storage_dir)
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Length", str(len(content)))
+                self.send_header("Content-Disposition", 'attachment; filename="project-e-export.zip"')
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            if len(parts) == 3 and parts[2] == "preview" and self.command == "POST":
+                _values, upload = self.read_multipart_form()
+                if upload is None:
+                    raise ValueError("Choose a Project E ZIP bundle.")
+                preview = inspect_bundle(upload.data)
+                token = stage_bundle(upload.data, self.import_staging_dir)
+                self.respond_page("Import preview", views.import_preview_page(preview, token), active_slug="system-tools")
+                return
+            if len(parts) == 3 and parts[2] == "import" and self.command == "POST":
+                form = self.read_form()
+                if form.get("confirm") != "yes":
+                    raise ValueError("Import confirmation is required.")
+                bundle = consume_staged_bundle(form.get("token", ""), self.import_staging_dir)
+                apply_import_bundle(bundle, self.database_path, self.document_storage_dir, self.backup_dir)
+                self.redirect("/system-tools/portability")
+                return
+        except (ValueError, OSError, sqlite3.Error) as error:
+            self.respond_page("Import and export", views.portability_page(str(error)), HTTPStatus.BAD_REQUEST, active_slug="system-tools")
+            return
+        self.respond_not_found()
 
     def handle_dashboard(self) -> None:
         with connect(self.database_path) as connection:
@@ -305,6 +368,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug="timeline",
         )
 
+
+    def handle_system_audit(self, query: dict[str, str]) -> None:
+        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""))
+        with connect(self.database_path) as connection:
+            events = list_audit_events(connection, filters=filters)
+        self.respond_page("System Audit", views.system_audit_page(events, filters), active_slug="system-tools")
 
     def handle_data_quality(self) -> None:
         from app.data_quality import registry
@@ -482,6 +551,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             try:
                 preview = preview_entity_merge(connection, survivor_id, duplicate_id)
                 if self.command == "POST":
+                    create_recovery_backup(self.database_path, self.document_storage_dir, self.backup_dir, "before-merge")
                     merge_entities(connection, survivor_id, duplicate_id)
                     self.redirect(f"/{definition.slug}/{survivor_id}")
                     return
