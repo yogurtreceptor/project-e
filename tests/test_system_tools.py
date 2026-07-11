@@ -31,17 +31,24 @@ class SystemToolsViewTests(unittest.TestCase):
         self.assertIn("passed manifest, checksum, SQLite integrity", confirmation)
         self.assertIn("Confirm import", confirmation)
 
-    def test_navigation_replaces_individual_tool_links_with_active_hub(self):
-        html = views.layout("Tools", views.system_tools_page(), "system-tools")
-        nav = html.split("<nav>", 1)[1].split("</nav>", 1)[0]
-        self.assertIn('<a class="active" href="/system-tools">', nav)
-        self.assertIn('src="/static/icons/system.svg"', nav)
-        self.assertIn("System Tools</a>", nav)
-        self.assertNotIn('href="/taxonomies"', nav)
-        self.assertNotIn('href="/data-quality"', nav)
-        self.assertNotIn('href="/recycle-bin"', nav)
-        self.assertNotIn('href="/search"', nav)
-        self.assertIn('action="/search"', html)
+    def test_navigation_exposes_tool_hierarchy_and_active_parent(self):
+        html = views.layout("Taxonomies", views.taxonomies_page({}), "system-tools")
+        nav = html.split('<nav class="browse-nav"', 1)[1].split("</nav>", 1)[0]
+        self.assertIn('href="/system-tools" aria-expanded="true"', nav)
+        self.assertIn('class="active" aria-current="page" href="/taxonomies"', nav)
+        for href in ("/search", "/data-quality", "/recycle-bin", "/system-tools/audit", "/system-tools/portability"):
+            self.assertIn(f'href="{href}"', nav)
+        self.assertNotIn('action="/search"', html)
+
+    def test_shell_has_accessible_collapsible_browse_and_distinct_search(self):
+        html = views.layout("People", "<h1>People</h1>", "people")
+        self.assertIn('class="skip-link" href="#main-content"', html)
+        self.assertIn('aria-label="Browse"', html)
+        self.assertIn('aria-current="page" href="/people"', html)
+        self.assertIn('data-sidebar-toggle', html)
+        self.assertIn('src="/static/shell.js"', html)
+        self.assertIn('class="global-search-link" href="/search"', html)
+        self.assertIn('aria-label="Go with Super Key"', html)
 
 
 class SystemAuditTests(unittest.TestCase):

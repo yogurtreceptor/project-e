@@ -942,6 +942,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         content_types = {
             "confirmation.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
+            "shell.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
         }

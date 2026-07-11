@@ -98,3 +98,9 @@ Standardised structured entity forms and controlled values. Redesigned relations
 Established the standard-library Python/SQLite local application, reusable entity definitions and CRUD, first-class relationships, entity profiles, search/favourites/recent discovery, and the geographic view. Added Projects, Documents and Assets through the shared architecture; introduced local Document uploads and optional Leaflet/OpenStreetMap/Nominatim map support. Recorded G-NAF as an optional future Australian address index. Early attachment and organisation-address concepts were superseded by first-class Document entities and Location relationships.
 
 Completed the Platform Maturity / Pre-Operational Intelligence milestone: relationships now use migration-safe soft deletion, appear in the Recycle Bin, restore with stable identity and provenance, and remain aligned with audit and derived timeline behaviour. Added a filterable System Tools Audit over normalized action and record-kind projections while retaining legacy events. Defined Phase 1 exit criteria, separated foundational gaps from Operational Intelligence and later AI work, and recorded deferred relationship knowledge, graph and future operational audit evolution.
+
+## 2026-07-11 — Desktop shell and Browse navigation
+
+- Replaced the horizontal prototype header with the persistent Project E shell and 240px/56px Browse sidebar states.
+- Added session-only collapse persistence, complete current-route hierarchy, distinct Search access, skip navigation and accessible current/parent state.
+- Reserved the documented Super Key location for the separately scoped Step 6 interaction.

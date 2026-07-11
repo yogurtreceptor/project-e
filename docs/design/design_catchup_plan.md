@@ -101,6 +101,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 5. Desktop shell and Browse navigation
 
+**Status:** Completed 2026-07-11. The horizontal prototype header is replaced by the persistent Project E shell: a 240px labelled Browse sidebar, a 56px icon state, session-only collapse persistence, semantic navigation groups, all existing System Tools destinations, a distinct global Search action, skip navigation, `aria-current` state and non-colour active/parent cues. The Super Key position is reserved without implementing Step 6 behaviour. Focused tests cover hierarchy, route reachability and shell accessibility; the full suite, compile check and running-app smoke passed. Final browser-driven visual review at both target sizes remains consolidated in Step 11.
+
 **Goal:** replace the prototype horizontal header with the persistent Project E shell.
 
 **Implement:**

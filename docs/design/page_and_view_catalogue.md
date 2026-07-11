@@ -29,7 +29,7 @@ This module split is maintainable and worth preserving. Design work should impro
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
 | `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Useful launch/discovery patterns, but “Operation Eddy” branding and domain-count emphasis conflict with the Project E command-centre philosophy. Retain curated launch/discovery; add attention/upcoming summaries only with delivered capability. |
-| Every page | Horizontal header with brand, all domain/global links and compact Search | `layout()` | Stable frame worth evolving. Replace with Project E header plus nested collapsible sidebar; separate Browse, Go and Search. |
+| Every page | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell now exposes all current routes through Information, Connections and views, and System Tools groups; the reserved Super Key container is implemented in Step 6. |
 | Unknown route | Generic not-found response | `not_found_page()` | Needs designed missing/recycled distinctions where known and a route back to useful context. |
 
 ### Entity domains
@@ -102,13 +102,13 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Do not formalise:** horizontal all-destination header, Operation Eddy identity, one responsive stack for every width and no nested navigation.
 
-**Open:** exact sidebar dimensions, narrow-screen mechanics and whether Search remains continuously visible. The initial coherent local SVG set and Super Key shortcut/syntax are decided; the icon assets are now used by the transitional shell ahead of its Step 5 sidebar conversion.
+**Established:** 240px expanded and 56px collapsed desktop sidebar candidates, session-only state, labelled global Search, and the local SVG set. Narrow-screen mechanics remain non-committal because Stage 1 is desktop-only; Super Key behaviour follows in Step 6.
 
 ### Persistent header and sidebar
 
 **Established:** header has global scope and should remain route-independent.
 
-**Missing:** persistent left sidebar, expanded/icon-only states, nesting and accessible collapse state. The transitional shell now uses the Project E wordmark and original E mark.
+**Established:** persistent left Browse sidebar, expanded/icon states, shallow labelled hierarchy, `aria-current`, active-parent treatment, accessible collapse state and Project E identity.
 
 ### Domain indexes
 

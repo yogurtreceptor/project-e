@@ -5,7 +5,7 @@ Project E's Stage 1 UI should stay quiet, structured and useful for repeated inf
 ## Navigation
 
 - Entity types are first-class navigation items.
-- Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export are grouped under System Tools, while compact global search remains available in the header.
+- Relationships, Timeline and Map are global views over the same entity system. Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export are grouped under System Tools, while Search remains a distinct labelled global destination in the header and Browse hierarchy.
 - Entity detail pages are the primary place to inspect and expand knowledge about a real-world object.
 
 The target application shell preserves these reachable destinations while introducing the philosophy-required Project E header, nested collapsible sidebar and distinct Browse, Super Key Go and Search intentions. See [Application Shell and Navigation](design/application_shell_and_navigation.md).

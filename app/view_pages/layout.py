@@ -10,20 +10,21 @@ def layout(
     active_slug: str | None = None,
     show_save_toast: bool = False,
 ) -> str:
+    def nav_link(href, label, icon_name, current=False):
+        state = ' class="active" aria-current="page"' if current else ""
+        return f'<a{state} href="{href}" title="{escape(label)}">{icon(icon_name)}<span class="nav-label">{escape(label)}</span></a>'
+
     entity_nav = "".join(
-        '<a class="{class_name}" href="/{slug}">{icon}{label}</a>'.format(
-            class_name="active" if definition.slug == active_slug else "",
-            slug=definition.slug,
-            label=escape(definition.plural),
-            icon=icon(DOMAIN_ICONS[definition.slug]),
-        )
+        nav_link(f"/{definition.slug}", definition.plural, DOMAIN_ICONS[definition.slug], definition.slug == active_slug)
         for definition in ENTITY_DEFINITIONS
     )
-    relationship_class = "active" if active_slug == "relationships" else ""
-    map_class = "active" if active_slug == "map" else ""
-    timeline_class = "active" if active_slug == "timeline" else ""
-    system_tools_class = "active" if active_slug == "system-tools" else ""
-    nav_items = entity_nav + f'<a class="{relationship_class}" href="/relationships">{icon("relationships")}Relationships</a><a class="{timeline_class}" href="/timeline">{icon("timeline")}Timeline</a><a class="{map_class}" href="/map">{icon("map")}Map</a><a class="{system_tools_class}" href="/system-tools">{icon("system")}System Tools</a>'
+    connection_nav = "".join((
+        nav_link("/relationships", "Relationships", "relationships", active_slug == "relationships"),
+        nav_link("/timeline", "Timeline", "timeline", active_slug == "timeline"),
+        nav_link("/map", "Map", "map", active_slug == "map"),
+    ))
+    tools = (("/search", "Search", "search", "Search"), ("/data-quality", "Data Quality", "system", "Data Quality Centre"), ("/taxonomies", "Taxonomies", "system", "Taxonomies"), ("/recycle-bin", "Recycle Bin", "delete", "Recycle Bin"), ("/system-tools/audit", "Audit", "system", "System Audit"), ("/system-tools/portability", "Import and Export", "system", "Import and export"))
+    tool_nav = "".join(nav_link(href, label, icon_name, title == page_title) for href, label, icon_name, page_title in tools)
     save_toast = (
         '<div class="save-toast" role="status" aria-live="polite">Changes saved</div>'
         if show_save_toast else ""
@@ -47,15 +48,24 @@ def layout(
 </head>
 <body>
     {save_toast}
-    <header class="site-header">
-        <a class="brand" href="/">{icon("e-mark", "Project E", "brand-mark")}<span>Project E</span></a>
-        <nav>{nav_items}</nav>
-        <form class="global-search" method="get" action="/search">
-            <input name="q" placeholder="Search entities and relationships">
-            <button type="submit">{icon("search")}Search</button>
-        </form>
-    </header>
-    <main>{content}</main>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="app-shell" data-app-shell>
+      <header class="site-header">
+        <a class="brand" href="/" title="Project E — Home">{icon("e-mark", "Project E", "brand-mark")}<span class="brand-name">Project E</span></a>
+        <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
+      </header>
+      <aside class="sidebar" aria-label="Browse">
+        <div class="sidebar-super-key-placeholder" aria-label="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl K</kbd></span></div>
+        <nav class="browse-nav" aria-label="Browse">
+          {nav_link("/", "Home", "home", active_slug is None)}
+          <section class="nav-group" aria-labelledby="information-nav-label"><h2 id="information-nav-label">{icon("information")}<span class="nav-label">Information</span></h2><div class="nav-children">{entity_nav}</div></section>
+          <section class="nav-group" aria-labelledby="connections-nav-label"><h2 id="connections-nav-label">{icon("connections")}<span class="nav-label">Connections and views</span></h2><div class="nav-children">{connection_nav}</div></section>
+          <section class="nav-group" aria-labelledby="tools-nav-label"><a class="nav-group-heading{' active-parent' if active_slug == 'system-tools' else ''}" id="tools-nav-label" href="/system-tools" aria-expanded="{'true' if active_slug == 'system-tools' else 'false'}" title="System Tools">{icon("system")}<span class="nav-label">System Tools</span></a><div class="nav-children">{tool_nav}</div></section>
+        </nav>
+        <button class="sidebar-toggle" type="button" aria-expanded="true" title="Collapse Browse" data-sidebar-toggle>{icon("overflow")}<span class="nav-label">Collapse</span></button>
+      </aside>
+      <main id="main-content" tabindex="-1">{content}</main>
+    </div>
     <dialog class="confirmation-dialog" data-confirmation-dialog aria-labelledby="confirmation-title" aria-describedby="confirmation-consequence">
         <form method="dialog">
             <h2 id="confirmation-title">Confirm action</h2>
@@ -67,6 +77,7 @@ def layout(
             </div>
         </form>
     </dialog>
+    <script src="/static/shell.js"></script>
     <script src="/static/taxonomy.js"></script>
     <script src="/static/confirmation.js"></script>
     {save_cleanup}

@@ -35,7 +35,7 @@ class IconAssetTests(unittest.TestCase):
         html = layout("Icons", "<h1>Icons</h1>", active_slug="people")
 
         self.assertIn('src="/static/icons/e-mark.svg" alt="Project E"', html)
-        self.assertIn("<span>Project E</span>", html)
+        self.assertIn('<span class="brand-name">Project E</span>', html)
         self.assertIn('src="/static/icons/people.svg" alt="" aria-hidden="true"', html)
         self.assertIn('src="/static/icons/search.svg" alt="" aria-hidden="true"', html)
         self.assertNotIn("Operation Eddy", html)
@@ -61,6 +61,9 @@ class IconAssetTests(unittest.TestCase):
             with urlopen(f"{base}/icons/e-mark.svg", timeout=5) as response:
                 self.assertEqual(response.headers.get_content_type(), "image/svg+xml")
                 self.assertIn(b'viewBox="0 0 24 24"', response.read())
+            with urlopen(f"{base}/shell.js", timeout=5) as response:
+                self.assertEqual(response.headers.get_content_type(), "text/javascript")
+                self.assertIn(b"sessionStorage", response.read())
             with self.assertRaises(HTTPError) as invalid:
                 urlopen(f"{base}/icons/../styles.svg", timeout=5)
             self.assertEqual(invalid.exception.code, 404)
