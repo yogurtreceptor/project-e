@@ -10,6 +10,8 @@ Added versioned, checksummed portable bundles containing consistent SQLite snaps
 
 Closed PR #1 and recorded Phase 1 as complete enough to close as a development milestone after representative rather than exhaustive verification. Documented the planned Phase 2 operational time and deterministic-automation foundation, its architectural boundaries, implementation sequence, exclusions and end-to-end completion review. No application features were implemented by this documentation alignment.
 
+Clarified the planned Phase 2 temporal and operational defaults: `Australia/Brisbane` as the initial platform timezone, deterministic short-period recurrence shifting, local-inbox-only notification delivery with startup recovery, and an in-process scheduler designed for later separation into a local worker. No application features were implemented.
+
 
 Added the repository's initial community health documentation: contributor guidance, structured bug and feature issue forms, and a pull request checklist. Added a security policy using GitHub private vulnerability reporting and clarified the project's current source-available, all-rights-reserved copyright status pending any future explicit software licence.
 

@@ -295,3 +295,33 @@ Isolated tables and pages do not prove an operational platform.
 
 Consequences:
 The implementation sequence and completion scenario in `docs/phase_2_plan.md` govern closure review; starting Phase 2 does not imply completion.
+
+## ADR-018: Use a Brisbane platform timezone and deterministic constrained recurrence
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Initial Phase 2 timed records use `Australia/Brisbane` as their platform timezone and do not offer per-record timezone selection. Precise instants may use backend-safe UTC storage. Recurrence is limited to daily, weekly, monthly and yearly rules; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
+
+Reason:
+The current product has one private user in Brisbane, so a single explicit IANA zone supplies clear temporal meaning without premature multi-zone configuration. Constrained, deterministic recurrence gives predictable derived occurrences while avoiding a broad recurrence engine.
+
+Consequences:
+Selecting the 29th–31st requires a warning about shorter-period shifting. Derived occurrences remain traceable and do not create duplicate canonical Event records. A later multi-zone design can extend the temporal boundary without changing existing record semantics.
+
+## ADR-019: Deliver initial notifications locally and keep the scheduler separable
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Initial notification delivery creates local actionable inbox items only. Items persist until acted upon; startup creates one deduplicated recovered item for a due reminder or job-triggered notice missed while the application was unavailable. The scheduler runs in-process while the application is running, with schedules, handlers, locking and run history exposed through an application-runtime boundary suitable for a later local worker.
+
+Reason:
+This provides reliable local attention management without external delivery dependencies or a second process, while preserving a direct evolution path for continuous local operation.
+
+Consequences:
+No email, SMS, push, operating-system notification, service manager or external queue is introduced initially. Recovery preserves the original due time and prevents duplicate delivery; a later worker reuses registered handlers and schedule definitions rather than creating a second scheduling model.

@@ -248,6 +248,10 @@ A first-class entity representing work to be performed. A Task is neither an Eve
 
 A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.
 
+## Platform Timezone
+
+The initial single-user time interpretation and display zone, `Australia/Brisbane`. Initial Phase 2 records do not select individual timezones; precise instants may be stored in UTC while retaining this platform meaning.
+
 ## Derived Occurrence
 
 A deterministic, traceable temporal instance produced from a canonical record and definition, such as a yearly birthday from a Person birth date.
@@ -258,7 +262,7 @@ A notification or attention policy attached to a record or derived occurrence, p
 
 ## Notification
 
-An actionable attention item, such as a due reminder or required approval. It is distinct from a Persistent Issue, Audit Event and Job Run.
+An actionable local-inbox attention item, such as a due reminder or required approval. It persists until acted upon and is distinct from a Persistent Issue, Audit Event and Job Run. Startup may create one deduplicated recovered Notification for a missed due condition.
 
 ## Persistent Issue
 
