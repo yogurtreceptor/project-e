@@ -130,7 +130,7 @@ The visual language is modern, timeless, restrained and professional. It should 
 
 ### Colour
 
-The core palette is cool and cohesive, led by a restrained light blue while most surfaces and text remain black/white neutrals. Colours should generally be muted rather than highly saturated. Semantic status colours are defined separately from the brand palette so warnings, approvals and failures remain clear.
+The core palette is cool and cohesive, led by the `#66ccff` base blue accent while most surfaces and text remain black/white neutrals. Colours should generally be muted rather than highly saturated. Semantic status colours are defined separately from the brand palette so warnings, approvals and failures remain clear.
 
 ### Typography
 

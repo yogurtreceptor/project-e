@@ -47,7 +47,7 @@ The shell has two persistent regions at desktop widths:
 1. A header containing Project E identity with the Super Key immediately beneath it at the left, plus genuinely global actions or status.
 2. A left sidebar containing browseable destinations and nested view groups.
 
-Global Search is a clearly labelled destination/action, not silently relabelled as the Super Key. Its input may live in the header only if it remains visually and semantically distinct from Go; otherwise the header exposes a Search action that opens the search page.
+Global Search is a clearly labelled global destination outside entity pages, not silently relabelled as the Super Key. It opens the canonical Search page rather than occupying an entity-level field.
 
 ## Project E identity
 
@@ -106,7 +106,7 @@ The header contains only persistent global capability:
 
 - Project E identity and Home link.
 - Super Key beneath Project E identity.
-- Global Search entry if not continuously visible.
+- Global Search destination/action.
 - A future concise attention indicator that opens the system inbox; it must not render an uncontrolled notification stream.
 - A constrained-width navigation control when the sidebar is not persistent.
 
@@ -118,11 +118,12 @@ The Super Key is a deterministic destination launcher.
 
 ### Responsibilities
 
-- Within an entity context, accept a few characters or a concise word naming a relevant specialised view, such as `tree` for the current Person's Family Tree. It may also accept short route codes, aliases and concise known destinations.
+- Within an entity context, accept a few characters or a concise word naming a relevant specialised view, such as `tree` for the current Person's Family Tree. Outside an entity, accept unique short route aliases such as `map` and `bin` that navigate directly to their global destinations.
 - Return destinations quickly and predictably.
 - Prefer one-step navigation over displaying a research-style result page.
-- Teach available codes through visible examples, recent destinations or a compact help affordance.
-- Support keyboard invocation once a discoverable, non-conflicting shortcut convention is chosen.
+- Teach available codes through visible examples or a compact help affordance.
+- Authorised future power/admin destinations may be reached by unique aliases, but consequential actions and essential ordinary routes remain visibly navigable.
+- The recommended keyboard invocation is `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS, pending confirmation.
 
 ### Boundaries
 
@@ -134,7 +135,7 @@ The Super Key is a deterministic destination launcher.
 
 ### Result behaviour
 
-When one exact destination exists, Go may navigate directly. When several destinations match, show a compact keyboard-navigable chooser grouped by destination kind. Each row names its type and destination. Search remains a final explicit option.
+Every Super Key term has one unique destination. It navigates directly; it does not use a multiple-match chooser. Search remains a final explicit option when no destination term applies.
 
 ## Global Search
 
@@ -174,7 +175,7 @@ Ordinary relationship links from Overview continue to open the related entity's 
 
 ## Home within the shell
 
-Home is a restrained jumping-off point, not a content-heavy command centre or resume screen. The current domain create/browse cards, favourites and recent records are useful discovery patterns. When Inbox exists, Home may show a link and a small notification count/ticker but does not embed the attention queue. Layout remains curated and opinionated; no dashboard builder is planned.
+Home is a restrained jumping-off point, not a content-heavy command centre or resume screen. The current domain create/browse cards, favourites and recent records are useful discovery patterns. When Inbox exists, Home may show a link and a small count/ticker for active, not-dismissed items but does not embed the attention queue. Layout remains curated and opinionated; no dashboard builder is planned.
 
 ## Constrained-width behaviour
 
@@ -194,7 +195,7 @@ Any later breakpoints are chosen after content fails in representative pages. Ca
 - Use semantic header, navigation, main and complementary landmarks.
 - Provide a skip link to main content.
 - Use `aria-current="page"` for the current destination and an appropriate state for expanded groups.
-- Collapse, nested group, Super Key chooser and constrained-width menu states are keyboard operable and announced.
+- Collapse, nested group, Super Key, Views and constrained-width menu states are keyboard operable and announced.
 - Focus moves predictably when a menu or chooser opens and returns to the invoker when it closes.
 - Navigation order is stable between pages.
 - Keyboard shortcuts do not override browser or assistive-technology conventions and are discoverable without memorisation.

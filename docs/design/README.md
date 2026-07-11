@@ -19,7 +19,7 @@ The embedded SQLite database remains the source of canonical information. Design
 
 | Document | Purpose | Initial maturity |
 | --- | --- | --- |
-| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; palette direction, local SVG icons and dark-first theming are decided; exact metrics remain draft decisions |
+| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; palette direction, local SVG icons and system-selected theme policy are decided; exact metrics remain draft decisions |
 | [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key placement, entity-view access and narrow-screen mechanics are decided |
 | [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Working standard; domain page compositions need implementation prototypes |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
@@ -106,7 +106,7 @@ These decisions are sufficiently grounded to guide implementation now:
 6. Entity pages share grammar and components but use domain-specific composition.
 7. Entity overview pages are read-only by default; complete-page edit forms are separate.
 8. Domain, operational and administrative information are separate layers. Provenance may appear near a fact when it changes interpretation.
-9. Dark mode is the preferred baseline, selected by the operating-system preference; light mode is a supported companion theme. Both themes must be implemented through shared semantic tokens, never piecemeal overrides.
+9. Follow the operating-system theme when it is known; otherwise start in dark mode. Both themes must be implemented through shared semantic tokens, never piecemeal overrides.
 10. Text labels are the default; icons can replace text only in constrained, familiar, labelled contexts.
 11. Transient messages, actionable notifications, persistent issues, audit events and job runs are not interchangeable.
 12. Reminders are behaviour attached to source records or policies, never a standalone entity navigation domain.
@@ -120,10 +120,10 @@ These decisions are sufficiently grounded to guide implementation now:
 
 ## Resolved design decisions
 
-- **D-02 — Palette direction:** use restrained light blue as the primary accent, with predominantly black/white neutral surfaces and text. Exact semantic values still require contrast testing.
-- **D-03 — Theme policy:** implement both themes through semantic tokens. Prefer dark mode when the operating system indicates dark; defer an explicit user switch until later.
-- **D-04 — Icons:** maintain a coherent local SVG set instead of adding an icon-library dependency. New icons must follow documented dimensions and accessibility rules.
-- **D-05 — Super Key:** place it beneath the Project E identity at the left of the shell. It accepts a few characters or a word to navigate within the current entity context, such as `tree` on a Person record opening that Person's Family Tree. It is not global full-text Search.
+- **D-02 — Palette direction:** use `#66ccff` once as the base accent primitive, with predominantly black/white neutral surfaces and text. Semantic roles derive from it and still require contrast testing.
+- **D-03 — Theme policy:** implement both themes through semantic tokens. Follow the operating-system preference when known; otherwise default to dark. Defer an explicit user switch until later.
+- **D-04 — Icons:** maintain a coherent local SVG set instead of adding an icon-library dependency. Use a 24px view box, 20px ordinary rendering, 24px collapsed-sidebar rendering and rounded stroke endings.
+- **D-05 — Super Key:** place it beneath the Project E identity at the left of the shell. Unique short terms navigate directly: within an entity, `tree` opens that record's Family Tree; outside an entity, aliases such as `map` and `bin` open global destinations. It is not global full-text Search.
 - **D-06 — Entity views:** make the Overview the direct base-data view. Reach specialised representations, such as Family Tree, Timeline and Map, through a labelled secondary **Views** control rather than persistent tabs or a local rail. The control may be keyboard-operated.
 - **D-08 — Viewport scope:** Stage 1 is desktop-only. Design and verify the ordinary experience at 1440 × 900 and 1920 × 1080; no narrower-width continuity commitment exists yet.
 - **D-09 — Home:** use Home as a restrained jumping-off point, not a content-heavy command centre. When Inbox exists, show a link and a small count/ticker for notifications rather than embedding the inbox on Home.

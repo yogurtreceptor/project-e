@@ -72,7 +72,7 @@ Do not encode a single global `main` width for all page types. Page layout selec
 
 ## Colour roles
 
-The palette uses restrained light blue for its primary accent, while most surfaces and text remain black/white neutrals. Exact values must be contrast-tested. The next implementation must define at least these semantic roles:
+The palette uses restrained light blue for its primary accent, while most surfaces and text remain black/white neutrals. Define `#66ccff` once as the base accent primitive; semantic action, selected and focus roles derive from it rather than repeating literal colours in renderers. Derived values must be contrast-tested. The next implementation must define at least these semantic roles:
 
 | Group | Required roles |
 | --- | --- |
@@ -157,7 +157,7 @@ Text is the default interface language. Icons are appropriate for the collapsed 
 - Decorative icons are hidden from assistive technology.
 - Meaningful icons have accessible names or adjacent text.
 - Emoji and miscellaneous Unicode glyphs are not a substitute for a coherent icon set.
-- Maintain a coherent local SVG icon set. New icons follow documented dimensions, accessible-name and consistency rules; do not add a broad icon-library dependency.
+- Maintain a coherent local SVG icon set. Icons use a 24px view box, render at 20px in ordinary toolbars and 24px in the collapsed sidebar, and use rounded stroke endings. New icons follow accessible-name and consistency rules; do not add a broad icon-library dependency.
 
 ## Accessibility baseline
 
@@ -174,7 +174,7 @@ The current taxonomy combobox includes promising ARIA roles and keyboard scripti
 
 ## Light and dark mode policy
 
-Both light and dark themes are required in the design foundation. Dark is the preferred presentation when the operating system indicates dark; light is the supported companion theme. An explicit user theme switch is deferred. Components consume shared semantic tokens and must not ship with private theme overrides. Both themes require a complete contrast and visual QA pass across shell, forms, tables, maps, graphs and status states.
+Both light and dark themes are required in the design foundation. Follow the operating-system theme when it is known; if no preference is available, use dark mode. An explicit user theme switch is deferred. Dark surfaces use charcoal neutrals. Components consume shared semantic tokens and must not ship with private theme overrides. Both themes require a complete contrast and visual QA pass across shell, forms, tables, maps, graphs and status states.
 
 ## Acceptance checks for design-system implementation
 

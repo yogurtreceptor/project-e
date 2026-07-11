@@ -14,54 +14,45 @@ Answers update the responsible design standard and are then removed from this re
 - The shell uses Project E identity, a session-only collapsible sidebar and a Super Key beneath the identity.
 - Browse, Go and Search remain distinct.
 - Entity Overview is the immediate base-data view. Specialist representations are reached through a labelled, keyboard-operable **Views** control.
-- Visual language is predominantly black/white neutrals with a restrained light-blue accent, flat surfaces and local SVG icons.
-- Both dark and light themes use semantic tokens; keyboard focus uses a persistent 2px outer ring during keyboard navigation.
+- Visual language is predominantly black/white neutrals with `#66ccff` as the single base accent value, flat surfaces and local SVG icons.
+- Both dark and light themes use semantic tokens. Follow the operating-system preference when it is known; otherwise start in dark mode. Keyboard focus uses a persistent 2px outer ring during keyboard navigation.
 - Home is a jumping-off point. When delivered, Inbox is linked with a small count/ticker rather than embedded there.
 
-## Owner-answer questions
+## Decisions recorded from the first readiness review
 
-### Theme and visual identity
+- Dark surfaces use charcoal neutrals. `#66ccff` is the one base accent primitive; semantic primary, hover, selected and focus roles must derive from it in one token definition, not repeat literal colours through renderers.
+- The E mark may use an original, deliberately nerdy corporate/industrial letterform inspired by that general aesthetic. It must not copy the Mr. Robot or E Corp artwork.
+- The local SVG system uses a 24px view box, with 20px default toolbar rendering and 24px collapsed-sidebar rendering. Use rounded stroke endings for a familiar, legible standard style.
+- Search is a dedicated global destination outside entity pages, not an entity-level search field.
+- Super Key uses unique aliases only: `map`, `bin`, and similar terms navigate directly with no multiple-match chooser. It may reach authorised future power/admin destinations, but not consequential actions or essential ordinary routes that lack visible navigation.
+- The Views button groups representations by kind and includes relevant empty views with clear guidance.
+- Document pages lead with preview/open/download. Small safe text/image content may render directly or open in a new tab; large or unsupported files use download.
+- Project pages lead with status and milestones.
+- Edit and Delete are directly visible entity actions; Merge is contextual/overflow work.
+- Application-owned graph and map rendering follows the Project E palette. Exact category assignments wait for the first real layers/relationship categories.
+- Inbox count shows all active, not-dismissed items. Dismissal, resolution and conversion to a task must update the item state deliberately.
 
-1. **Theme selection:** when the operating system prefers light, should Project E still open dark by default, or follow the operating-system preference? The current wording contains both intentions and needs one rule.
-2. **Accent colour:** which starting blue should be prototyped: a cool sky blue, a muted steel blue, or a deeper ink blue? A named visual reference or hex value is sufficient.
-3. **Neutral character:** should dark mode use near-black charcoal surfaces, dark blue-grey surfaces, or black surfaces with subtle blue-grey panels?
-4. **Brand identity:** should the E mark be a letterform only, or may it include a simple geometric device? Provide/approve a reference before the shell is treated as visually final.
-5. **Icon style:** should local SVG icons be 20px or 24px by default, and use rounded or squared stroke endings? These choices must be consistent across the first icon set.
+## Immediate owner questions
 
-### Shell and navigation
+These are the only questions worth answering before the first shell and entity-page prototypes. They are deliberately phrased in product terms rather than implementation jargon.
 
-6. **Sidebar width:** is the 240px expanded / 56px collapsed starting point acceptable for the shell prototype, or should a different width be tried first?
-7. **Global Search entry:** should Search be a labelled header action that opens the canonical Search page, or a persistent separate search field in the header?
-8. **Super Key scope outside an entity:** should a term such as `people`, `map` or `taxonomies` navigate directly, and should an entity-name match open its Overview? Confirm the allowed destination types.
-9. **Super Key result choice:** when a term matches several destinations, should the chooser show a short list immediately or require a confirming Enter key before navigating?
-10. **Super Key shortcut:** should the initial version have no shortcut until tested, or use a particular shortcut? Do not choose a browser- or assistive-technology-conflicting combination.
-11. **Views control content:** should it show only views with meaningful data, or always show relevant views and give empty-state guidance when there is no qualifying data?
-12. **Views menu organisation:** should the labelled **Views** button group representations by kind (for example Data, Visual and Administrative), or use one flat menu while the initial set is small?
+1. **Shortcut:** may we use the common `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS to put the typing cursor in Super Key?
+2. **Person page:** when you open a Person, what information should appear first underneath their name? For example: contact details, important relationships, key dates, recent journal notes, or something else. Pick roughly three to five groups.
+3. **Warnings:** imagine a Person has a possible duplicate or a Document is close to expiry. Should the page show a noticeable short message directly under the name, or a quieter one-line status with a **Details** link?
+4. **Long forms:** for a long edit page, should fields run in one easy-to-read vertical column, or should short related fields sit side by side? For example, Start date and Target date beside each other, with Notes still full width.
+5. **After Save:** when someone presses Save changes and sees the updated record, should there also be a brief “Changes saved” message, or is the changed page enough?
+6. **Before a risky action:** for something reversible but important, such as removing a relationship, should Project E show a small confirmation box over the current page, or take the user to a separate review page that explains the effect before they confirm?
+7. **Long lists:** when People or Documents eventually has many rows, should the user move through numbered pages, press **Load more**, or scroll one long list? This can be answered later if realistic volumes are still unknown.
+8. **Empty views:** if a Person has no relationships, should the empty Relationships view show a clear **Add relationship** button, or just a quieter text link?
+9. **Messages:** if a save fails, should the error appear near the field that needs fixing, at the top of the page, or both? For example, a bad date needs a message by that date and a short summary at the top.
+10. **Graph click:** when a user clicks someone in a family tree, should Project E open that person's Family Tree immediately, or first show a small information panel about them?
 
-### Entity pages and actions
+## Deliberately deferred questions
 
-13. **Person Overview:** which three to five groups are highest priority after identity—for example contact, important relationships, recent journal context, key dates and chosen identity details?
-14. **Document Overview:** should preview/download be the dominant first region, or should document classification and key dates lead before the preview?
-15. **Project Overview:** should immediate status/milestones lead, or should relationships/documents lead when they are more useful than schedule data?
-16. **Header actions:** apart from Edit, which actions deserve direct visibility on an entity page (for example Favourite or Add relationship), and which must always remain in overflow?
-17. **Warnings:** should interpretation-affecting data-quality warnings be shown as a compact inline callout under the header, or as a small status row with a Details link?
-
-### Forms, collections and feedback
-
-18. **Form layout:** should long desktop forms use a readable single column, or a two-column arrangement for short related fields such as dates and measurements?
-19. **Save feedback:** after a successful save, should the page use only the resulting updated state, or also show a brief non-blocking confirmation message?
-20. **Confirmation surfaces:** outside permanent delete, should ordinary consequential confirmations use a modal dialog or a dedicated review page? The design system permits either where the consequence is reviewable; choose the ordinary default.
-21. **Table navigation:** should ordinary entity indexes paginate, use a Load more control, or use a fixed scrolling table region when record counts grow?
-22. **Table density exception:** which non-administrative data views, if any, should start compact—for example Timeline, Relationships, Search results or none?
-23. **Empty states:** should relevant empty views lead with an inline action button (for example “Add relationship”), or a text link to keep empty states quieter by default?
-24. **Transient messages:** should success/error messages appear at the top of the content column, near the triggering control, or both according to scope?
-
-### Maps, graphs and future operational work
-
-25. **Graph/map categories:** which initial relationship or map-layer categories need distinct palette colours? Give the first real set rather than example transport layers if those are not planned.
-26. **Graph detail:** should a selected graph node open a compact inspect panel first, or navigate immediately to the corresponding entity View as current context-preservation guidance allows?
-27. **Provenance:** when provenance is implemented, which source states require an immediate visual marker: imported, inferred, lookup-assisted, user-entered, system-derived, or only selected states?
-28. **Inbox signal:** when Inbox is delivered, should its Home/sidebar count show every unresolved item, only action-required items, or a separate count by severity?
+- Compact density outside administrative views is decided while implementing the first real high-volume data screen.
+- Exact graph/map colours are decided with the first real application-owned layer categories.
+- Provenance markers are decided when provenance is delivered as a feature.
+- A user-facing theme switch is decided after both system-selected themes exist and have been tested.
 
 ## Prototype-evidence questions
 

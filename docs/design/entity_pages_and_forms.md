@@ -67,7 +67,7 @@ The header establishes identity and orientation before actions.
 
 - **Edit** is the ordinary primary action.
 - **Add relationship**, **Favourite** and comparable frequent actions are secondary or contextual.
-- **Merge**, **Delete**, record IDs and developer actions belong in an overflow or administrative view.
+- **Delete** is directly visible but uses danger styling only at final confirmation; **Merge**, record IDs and developer actions belong in an overflow or administrative view.
 - Destructive action styling appears on the final confirmation action, not on a constantly prominent profile-header button.
 - Back navigation uses breadcrumbs or a clear contextual return label; a generic `Back` button should not depend on presumed history.
 
@@ -98,8 +98,8 @@ The following compositions are initial standards to prototype. They deliberately
 | Person | Identity, birth date, contact, chosen identity details, important relationships, recent journal context | Relationships, Family Tree, Timeline, Journal, Documents, Map, Audit | Raw metadata, six empty relationship groups, full audit stream |
 | Organisation | Identity and aliases, classification, contact, key people/roles, locations, active projects | Relationships, Timeline, Documents, Map, Audit | Generic Notes as primary browse/profile content when structured facts exist |
 | Location | Place identity, human-readable address, coordinate/source confidence, related occupants/assets | Map, Relationships, Timeline, Documents, Audit | Duplicate raw/formatted address fields without clear purpose |
-| Project | Identity, status, type, start/target/end, immediate milestones or summaries | Timeline; future Tasks, Events and activity; Relationships, Documents, Audit | Treating related records as owned children or exposing empty generic sections |
-| Document | Name, purpose, preview/download, identifier, date/expiry, issuer/creator/subject relationships, provenance | Relationships, Timeline, Audit; preview where safe | File path, raw MIME/size as dominant content, generic relationship dump ahead of the document |
+| Project | Identity, status, immediate milestones, type, start/target/end | Timeline; future Tasks, Events and activity; Relationships, Documents, Audit | Treating related records as owned children or exposing empty generic sections |
+| Document | Preview/open/download, name, purpose, identifier, date/expiry, issuer/creator/subject relationships, provenance | Relationships, Timeline, Audit; preview where safe | File path, raw MIME/size as dominant content, generic relationship dump ahead of the document |
 | Asset | Identity, status, type, manufacturer/model/serial, value semantics, current location | Relationships, Timeline, Documents, Map, Audit | Ambiguous coordinate/location duplication or administrative metadata |
 
 Phase 2 Event and Task layouts require their own domain composition work when implementation is authorised. They should inherit the page grammar, not be added speculatively here.

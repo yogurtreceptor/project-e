@@ -107,7 +107,7 @@ The inbox is an operational queue, not a social-notification feed.
 ### Placement
 
 - Reachable from a restrained global header indicator and the operational navigation group once implemented.
-- Home may show a restrained Inbox link with a small notification count/ticker; the Inbox remains the canonical attention destination.
+- Home may show a restrained Inbox link with a small count/ticker for all active, not-dismissed items; the Inbox remains the canonical attention destination. Dismissal, resolution and conversion to a task are deliberate state changes, not merely hiding the count.
 - Entity pages may show related attention in context, but the canonical item remains in the inbox model.
 
 ### Organisation
