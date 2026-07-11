@@ -35,6 +35,10 @@ Entity viewing and editing are separate experiences, but they operate on one dom
 
 These gaps are documented directions, not permission for a broad redesign in this branch.
 
+## Delivered shared frame
+
+The shared entity frame now provides domain breadcrumbs, record identity, direct **Edit** and recoverable **Delete**, grouped native **Views**, and an overflow for favourite, relationship creation and Merge. Integrity findings use the shared quiet warning row with a **Details** link. Entity edit forms return to their canonical record on Cancel and use one dirty-form warning with **Keep editing** and **Discard changes** across in-app and browser navigation. Domain-specific Overview composition remains a separate prototype step.
+
 ## Entity-page model
 
 Each entity owns a family of page-first views over the same canonical record:

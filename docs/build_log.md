@@ -1,5 +1,9 @@
 # Build History
 
+## 2026-07-11 - Entity frame and deliberate forms
+
+Added shared entity breadcrumbs, identity/action hierarchy, grouped Views, restrained overflow actions, quiet integrity warnings and accessible icon-only relationship creation. Edit forms now Cancel to the canonical record and all entity forms use a consistent Keep editing/Discard changes warning for dirty navigation, while retaining existing linked validation, progressive disclosure, save feedback and recoverable-delete confirmation.
+
 ## 2026-07-11 - Super Key Go
 
 Replaced the reserved shell placeholder with a deterministic, keyboard-operable Super Key dialog. Exact `map` and `bin` aliases navigate to ordinary routes, Person-context `tree` opens Family Tree with the current Person selected, and unknown terms offer an explicit canonical Search link. Added focused shell, static-serving and alias-boundary coverage without dependencies, schema changes or fuzzy/entity lookup.

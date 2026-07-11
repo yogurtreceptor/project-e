@@ -75,6 +75,13 @@ def layout(
             <p class="super-key-feedback" id="super-key-feedback" aria-live="polite" data-super-key-feedback></p>
         </form>
     </dialog>
+    <dialog class="dirty-form-dialog" data-dirty-form-dialog aria-labelledby="dirty-form-title" aria-describedby="dirty-form-message">
+        <form method="dialog">
+            <h2 id="dirty-form-title">Discard unsaved changes?</h2>
+            <p id="dirty-form-message">Changes on this form have not been saved.</p>
+            <div class="actions"><button class="button secondary" value="cancel" data-dirty-keep>Keep editing</button><button class="button danger" type="button" data-dirty-discard>Discard changes</button></div>
+        </form>
+    </dialog>
     <dialog class="confirmation-dialog" data-confirmation-dialog aria-labelledby="confirmation-title" aria-describedby="confirmation-consequence">
         <form method="dialog">
             <h2 id="confirmation-title">Confirm action</h2>
@@ -90,6 +97,7 @@ def layout(
     <script src="/static/super-key.js"></script>
     <script src="/static/taxonomy.js"></script>
     <script src="/static/confirmation.js"></script>
+    <script src="/static/dirty-form.js"></script>
     {save_cleanup}
 </body>
 </html>"""

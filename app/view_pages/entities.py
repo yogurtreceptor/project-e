@@ -5,6 +5,7 @@ from app.relationships import RelationshipRecord
 from app.journal import JournalEntry
 from app.view_pages.common import format_relationship_dates
 from app.view_pages.dashboard import favourite_form
+from app.view_pages.icons import icon
 from app.view_pages.forms import (
     address_lookup_field,
     address_lookup_script,
@@ -89,8 +90,8 @@ def entity_detail_page(
     journal_entries = journal_entries or []
     warning_html = ""
     if integrity_warnings:
-        items = "".join(f"<li>{escape(item.message)}</li>" for item in integrity_warnings)
-        warning_html = f'<section class="warnings"><h2>Data integrity warnings</h2><ul>{items}</ul></section>'
+        count = len(integrity_warnings)
+        warning_html = f'<div class="status-row warning" role="status"><span>{count} data integrity warning{"s" if count != 1 else ""} may affect this record.</span> <a href="/data-quality">Details</a></div>'
     return f"""
     <article class="entity-profile">
         {entity_profile_header(record)}
@@ -117,21 +118,32 @@ def entity_detail_page(
 
 def entity_profile_header(record: EntityRecord) -> str:
     definition = record.definition
+    view_links = [
+        ("Overview", f"/{definition.slug}/{record.id}"),
+        ("Relationships", "#relationships"),
+        ("Timeline", f"/timeline?entity_id={record.id}"),
+    ]
+    if record.type == "person":
+        view_links.append(("Family Tree", f"/relationships/family-tree?person={record.id}"))
+    if record.type in {"person", "organisation", "location", "asset"}:
+        view_links.append(("Map", f"/map?entity_id={record.id}"))
+    representation_links = "".join(
+        f'<li><a href="{href}">{escape(label)}</a></li>' for label, href in view_links
+    )
     return f"""
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/{definition.slug}">{escape(definition.plural)}</a></li><li aria-current="page">{escape(record.title)}</li></ol></nav>
     <section class="entity-hero panel">
-        <div>
+        <div class="entity-identity">
             <p class="eyebrow">{escape(definition.singular)}</p>
             <h1>{escape(record.title)}</h1>
         </div>
-        <div class="actions">
-            <a class="button secondary" href="/{definition.slug}">Back</a>
-            {favourite_form(record)}
-            <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
-            <a class="button secondary" href="/{definition.slug}/{record.id}/merge">Merge duplicate</a>
+        <div class="actions entity-actions">
+            <details class="action-menu views-menu"><summary class="button secondary">Views</summary><div class="menu-panel"><strong>Record views</strong><ul>{representation_links}</ul><strong>Administrative</strong><ul><li><a href="/system-tools/audit?record_kind=entity&amp;record_id={record.id}">Audit</a></li></ul></div></details>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
             <form method="post" action="/{definition.slug}/{record.id}/delete" data-confirm-object="{escape(record.title)}" data-confirm-consequence="Move this record to the Recycle Bin. It can be restored later.">
-                <button class="button danger" type="submit">Delete</button>
+                <button class="button secondary" type="submit">Delete</button>
             </form>
+            <details class="action-menu"><summary class="button quiet" aria-label="More record actions" title="More record actions">{icon("overflow")}</summary><div class="menu-panel"><ul><li>{favourite_form(record)}</li><li><a href="/relationships/new?source_entity_id={record.id}&amp;context_entity_id={record.id}">Add relationship</a></li><li><a href="/{definition.slug}/{record.id}/merge">Merge duplicate</a></li></ul></div></details>
         </div>
     </section>
     """
@@ -294,10 +306,10 @@ def entity_relationships_panel(record: EntityRecord, relationships: list[Relatio
             """
         )
     return f"""
-    <section class="panel relationships-panel profile-section">
+    <section class="panel relationships-panel profile-section" id="relationships">
         <div class="section-heading split">
             <h2>Relationships</h2>
-            <a href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Add relationship</a>
+            <a class="icon-button" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}" aria-label="Add relationship" title="Add relationship">{icon("add")}</a>
         </div>
         {''.join(sections)}
     </section>
@@ -501,6 +513,7 @@ def entity_form_page(
     entity_id: int | None = None,
     duplicate_matches: list | None = None,
     field_options: dict[str, list[tuple[str, str]]] | None = None,
+    return_to: str | None = None,
 ) -> str:
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
@@ -524,7 +537,9 @@ def entity_form_page(
 
     location_class = " location-form" if definition.type == "location" else ""
     enctype = ' enctype="multipart/form-data"' if definition.type == "document" else ""
+    cancel_href = return_to or (f"/{definition.slug}/{entity_id}" if entity_id else f"/{definition.slug}")
     return f"""
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/{definition.slug}">{escape(definition.plural)}</a></li>{f'<li><a href="/{definition.slug}/{entity_id}">Record</a></li>' if entity_id else ''}<li aria-current="page">{escape(action)}</li></ol></nav>
     <section class="page-heading split">
         <div>
             <p class="eyebrow">{escape(definition.singular)}</p>
@@ -535,10 +550,10 @@ def entity_form_page(
     <section class="panel">
         {error_html}
         {duplicate_html}
-        <form class="record-form{location_class}" method="post" action="{form_action}"{enctype}>
+        <form class="record-form{location_class}" method="post" action="{form_action}"{enctype} data-dirty-form>
             {''.join(fields)}
             <div class="actions">
-                <a class="button secondary" href="/{definition.slug}">Cancel</a>
+                <a class="button secondary" href="{escape(cancel_href)}" data-dirty-cancel>Cancel</a>
                 <button class="button" type="submit"{' name="confirm_duplicate" value="1"' if duplicate_matches else ''}>{'Save anyway' if duplicate_matches else 'Save'}</button>
             </div>
         </form>

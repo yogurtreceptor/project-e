@@ -138,6 +138,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 7. Entity-page frame and forms
 
+**Status:** Completed 2026-07-11. Entity pages now share breadcrumbs, identity grammar, direct Edit/Delete, grouped keyboard-native **Views**, and a restrained overflow containing favourite, Add relationship and Merge. Integrity findings use the quiet warning row with **Details**, and the relationship section exposes an accessible icon-only Add relationship action in empty and populated states. Edit Cancel returns to the canonical record; all entity forms use the established one-column, retained-value and linked-validation foundation plus a consistent dirty-form dialog with Keep editing/Discard changes and browser-navigation protection. Save toast and recoverable-delete confirmation remain integrated. Focused tests cover the frame, menu content, warnings, relationship action, form context and dirty states; the full suite, compile check and running-app smoke passed. Domain-specific Overview conversion remains correctly scoped to Step 8.
+
 **Goal:** apply shared page grammar to read-only entity views and deliberate editing.
 
 **Implement:**

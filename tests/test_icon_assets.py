@@ -64,6 +64,9 @@ class IconAssetTests(unittest.TestCase):
             with urlopen(f"{base}/shell.js", timeout=5) as response:
                 self.assertEqual(response.headers.get_content_type(), "text/javascript")
                 self.assertIn(b"sessionStorage", response.read())
+            with urlopen(f"{base}/dirty-form.js", timeout=5) as response:
+                self.assertEqual(response.headers.get_content_type(), "text/javascript")
+                self.assertIn(b"beforeunload", response.read())
             with urlopen(f"{base}/super-key.js", timeout=5) as response:
                 self.assertEqual(response.headers.get_content_type(), "text/javascript")
                 self.assertIn(b"contextualAliases", response.read())

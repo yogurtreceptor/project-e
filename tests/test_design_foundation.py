@@ -229,6 +229,45 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn('value="not-a-date"', html)
         self.assertIn('class="field-error" id="birthday-error"', html)
 
+
+    def test_entity_frame_groups_views_actions_and_quiet_warning(self) -> None:
+        from app.entities import EntityRecord, DEFINITIONS_BY_SLUG
+        from app.view_pages.entities import entity_detail_page
+
+        record = EntityRecord(1, DEFINITIONS_BY_SLUG["people"], "Ada Lovelace", "", "", "", "", "", False, {})
+        warning = type("Warning", (), {"message": "Example"})()
+        html = entity_detail_page(record, [], integrity_warnings=[warning])
+
+        self.assertIn('class="breadcrumbs" aria-label="Breadcrumb"', html)
+        self.assertIn('class="action-menu views-menu"', html)
+        self.assertIn('>Views</summary>', html)
+        self.assertIn('>Family Tree</a>', html)
+        self.assertIn('>Audit</a>', html)
+        self.assertIn('aria-label="More record actions"', html)
+        self.assertIn('class="status-row warning" role="status"', html)
+        self.assertIn('href="/data-quality">Details</a>', html)
+        self.assertIn('aria-label="Add relationship" title="Add relationship"', html)
+        self.assertNotIn('>Add relationship</a>', html.split('id="relationships"', 1)[1].split('</div>', 1)[0])
+
+    def test_edit_form_cancel_returns_to_record_and_warns_when_dirty(self) -> None:
+        from app.entities import DEFINITIONS_BY_SLUG
+        from app.view_pages.entities import entity_form_page
+
+        html = entity_form_page(DEFINITIONS_BY_SLUG["people"], {"given_name": "Ada"}, [], "Edit", 7)
+        shell = layout("Edit", html)
+        script = (STATIC_DIR / "dirty-form.js").read_text()
+
+        self.assertIn('href="/people/7" data-dirty-cancel', html)
+        self.assertIn('data-dirty-form', html)
+        self.assertIn('Discard unsaved changes?', shell)
+        self.assertIn('>Keep editing</button>', shell)
+        self.assertIn('>Discard changes</button>', shell)
+        self.assertIn('dialog.showModal()', script)
+        self.assertIn('keepButton.focus()', script)
+        self.assertIn('beforeunload', script)
+        self.assertIn('submitting = true', script)
+        self.assertIn('value instanceof File', script)
+
     def test_relationship_validation_associates_responsible_control(self) -> None:
         from app.view_pages.relationships import relationship_form_page
 
