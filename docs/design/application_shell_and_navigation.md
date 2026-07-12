@@ -100,6 +100,8 @@ Group labels are orientation aids, not destinations unless they have a real hub 
 - Nested destinations open through a labelled flyout or temporary expanded panel; they must not become unlabelled icon puzzles.
 - Each session starts expanded. The expanded/collapsed choice may persist for the current session only; broader sidebar customisation and cross-session persistence are deferred.
 
+Current implementation note: destination icons retain accessible names and hover/focus titles, but the labelled nested-destination flyout or temporary expansion has not yet been implemented. This is tracked as unresolved accessibility/discoverability debt and must be completed before treating the collapsed state as accepted.
+
 ## Header responsibilities
 
 The header contains only persistent global capability:

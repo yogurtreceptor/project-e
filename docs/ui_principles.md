@@ -12,7 +12,7 @@ The target application shell preserves these reachable destinations while introd
 
 ## Entity Pages
 
-Current entity pages expose reusable sections:
+Entity pages use a shared frame and can expose these reusable specialised sections where relevant:
 
 - Overview
 - Geography where relevant
@@ -23,7 +23,7 @@ Current entity pages expose reusable sections:
 - Timeline
 - Metadata
 
-The post-prototype direction keeps shared components but uses deliberately domain-specific Overview compositions and specialised views. Routine Metadata and full Change History belong in an Audit or Developer lens; Overview should show only provenance or warnings that affect interpretation. See [Entity Pages and Forms](design/entity_pages_and_forms.md).
+Delivered Person, Document and Project Overviews use deliberately domain-specific compositions; the remaining domains follow the same shared grammar without duplicating related or administrative content in Overview. Routine Metadata and full Change History belong in an Audit or Developer lens; Overview shows only provenance or warnings that affect interpretation. See [Entity Pages and Forms](design/entity_pages_and_forms.md).
 
 The Universal Timeline is a chronological global view derived from those same canonical records. Each entry links to its originating entity or relationship. Filtering stays intentionally simple: entity type, date range, and directly related Person, Organisation or Project.
 

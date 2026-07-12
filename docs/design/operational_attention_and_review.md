@@ -29,7 +29,7 @@ Established Phase 1 patterns provide evidence for the target design:
 - Audit and real-world Timeline are kept separate.
 - Recycle Bin and permanent delete distinguish reversible from irreversible consequences.
 
-Current gaps include inconsistent transient messages, no shared success/notice styling, no system inbox, no persistent-issue surface, no severity vocabulary across tools, and no global attention placement. These should be solved through the Phase 2 attention foundation, not by scattering notification cards across pages now.
+The delivered Phase 1 shell now has shared success, notice, warning and error presentation, including a passive save toast and quiet record warnings. It still has no system inbox, persistent-issue surface, cross-tool severity vocabulary or global attention placement. Those remaining capabilities belong to the Phase 2 attention foundation, not to scattered notification cards in current pages.
 
 ## Attention model
 
@@ -164,7 +164,7 @@ Transient messages confirm immediate interaction outcomes or local failures. The
 - Error messages do not auto-dismiss.
 - Success may auto-dismiss only after sufficient time and when a persistent resulting state is visible.
 - Navigation redirects may carry one message, but a refresh must not replay it indefinitely.
-- A notice class without shared styling, as currently used by portability, is not a complete message pattern.
+- Message styling must use the shared semantic message pattern; route-specific notice classes are not a substitute for it.
 
 ## Avoiding system noise
 

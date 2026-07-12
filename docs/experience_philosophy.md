@@ -2,7 +2,7 @@
 
 > A working philosophy for how people should experience, navigate and understand the platform.
 
-Status: Working draft. This document defines experience-level principles. Concrete tokens, dimensions and component specifications belong in the [design system](design/design_system.md).
+Status: Working standard. This document defines experience-level principles. Concrete tokens, dimensions and component specifications belong in the [design system](design/design_system.md).
 
 This repository edition transcribes the supplied **Project E Experience Philosophy** so that future work can cite a version-controlled authority. The philosophy explains why the interface should feel and behave as it does. The documents in [`docs/design/`](design/README.md) explain how those principles are to be applied consistently.
 
