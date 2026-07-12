@@ -19,9 +19,9 @@ The embedded SQLite database remains the source of canonical information. Design
 
 | Document | Purpose | Initial maturity |
 | --- | --- | --- |
-| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Working foundation; palette direction, local SVG icons and system-selected theme policy are decided; exact metrics remain draft decisions |
-| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Working standard; Super Key placement, entity-view access and narrow-screen mechanics are decided |
-| [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Working standard; domain page compositions need implementation prototypes |
+| [Design system](design_system.md) | Visual roles, tokens, states, density, responsiveness, icons and accessibility | Implemented foundation; palette, local SVG icons and system-selected theme policy are in use; final human visual/assistive-technology QA remains |
+| [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Implemented working standard; desktop shell, Super Key and entity-view access are in use |
+| [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Implemented working standard; representative Person, Document and Project compositions are in use |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
 | [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
 | [Page and view catalogue](page_and_view_catalogue.md) | Current routes, purposes, shared renderers, recurring patterns, inconsistencies and intended direction | Audited baseline for the current post-prototype UI |
@@ -55,18 +55,18 @@ Every normative rule should be traceable to the Experience Philosophy, a reposit
 - Phase 2 attention semantics, especially the distinction between reminders, notifications, persistent issues, audit events and job runs.
 - A route-level inventory and classification of current patterns.
 
-### Audit or prototype before fixing exact values
+### Verify and refine with human visual evidence
 
 - Measure representative dense and sparse pages at wide, medium and constrained widths before fixing sidebar widths, content widths, compact row heights or breakpoints.
 - Test Roboto across real forms, tables, timelines and family trees before fixing the complete type scale.
-- Build one shell prototype before fixing the expanded and icon-only dimensions, icon set and Super Key shortcut.
-- Prototype Person, Document and Project pages as three deliberately different compositions before formalising a full entity-header component.
+- Complete the external Windows visual matrix for the implemented shell, icon set and Super Key at the required desktop sizes.
+- Complete the external visual review of the implemented Person, Document and Project compositions before treating every layout decision as stable.
 - Check colour candidates against WCAG contrast in every interaction state before adopting a palette.
 - Run keyboard and assistive-technology checks on taxonomy, reference and optional-detail controls before treating their current behaviour as complete.
 
 ### Intentionally deferred
 
-- The visual implementation of both light and dark themes. Dark is the preferred default based on the operating-system preference; the eventual manual theme switch remains deferred.
+- An explicit user theme switch. Both system-selected light and dark themes are implemented; the manual switch remains deferred.
 - User-configurable dashboards, arbitrary navigation layout and user-defined density scales.
 - Dockable workspaces or a workspace manager.
 - Mobile-specific product workflows; constrained-width continuity is documented so mobile can be added later without invalidating page architecture.
@@ -93,7 +93,7 @@ The page catalogue can be updated independently whenever routes or shared render
 
 ## Catch-up implementation readiness
 
-The [implementation-readiness register](implementation_readiness.md) is the single place to collect remaining decisions and prototype evidence needed to close the gap between the current UI prototype and the documented design direction. It separates product-owner answers from questions that must be settled by visual, contrast and keyboard testing. Do not treat unanswered register items as permission to invent a competing design during implementation.
+The [implementation-readiness register](implementation_readiness.md) records the evidence and external visual/assistive-technology verification that remains after the design catch-up implementation. Do not treat an open verification item as permission to invent a competing design.
 
 For implementation work, use the [design catch-up plan](design_catchup_plan.md) after reading `AGENTS.md`. It authorises the ordered catch-up steps and gives their scope, acceptance checks, commit boundaries and stop conditions.
 
@@ -102,7 +102,7 @@ For implementation work, use the [design catch-up plan](design_catchup_plan.md) 
 These decisions are sufficiently grounded to guide implementation now:
 
 1. The Experience Philosophy remains the experience-level authority; this directory is subordinate implementation guidance.
-2. The current UI is an audited prototype, not the design system.
+2. The implemented UI is evidence of the design system, but a current renderer does not silently override the documented standard.
 3. The persistent shell identifies the product as **Project E**, using the E mark in its collapsed state. The current unexplained **Operation Eddy** label is not a second product identity to preserve.
 4. Project E uses a page-first shell with a persistent header and collapsible nested left sidebar.
 5. Browse, Go through the Super Key, and global Search are separate intentions and controls.

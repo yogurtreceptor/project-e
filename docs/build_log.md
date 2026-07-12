@@ -4,6 +4,8 @@ Historical summary only. The Stage 1 specification and reference documents defin
 
 ## 2026-07-12 — Phase 2 operational-planning decisions
 
+- Aligned the architecture and design-document status language with the completed desktop shell, theme foundation and representative domain-page conversion; preserved the remaining external human visual and assistive-technology QA as an open verification item.
+
 - Recorded the initial user-centred Event, Calendar, Task, reminder, Inbox, System Health and local archive decisions in the canonical Phase 2 plan.
 - Kept Phase 2 implementation unstarted: this session defines authorised future design direction, not delivered product behaviour.
 

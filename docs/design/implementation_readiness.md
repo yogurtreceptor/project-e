@@ -1,6 +1,6 @@
 # Design Implementation Readiness
 
-Status: Decision and prototype register. This document turns the design direction into the remaining choices and evidence needed to catch up from the current prototype. It does not authorise an application redesign by itself.
+Status: Implementation evidence and external-verification register. The authorised design catch-up implementation is complete; this document records its decisions and the remaining human visual/assistive-technology evidence. It does not authorise unrelated redesign work.
 
 ## How to use this register
 
@@ -43,7 +43,7 @@ Answers update the responsible design standard and are then removed from this re
 
 ## Immediate owner questions
 
-There are no remaining owner decisions required before the first shell and entity-page prototypes. Deferred questions remain deferred until their relevant capability or realistic data volume exists.
+There are no remaining owner decisions for the completed shell and entity-page conversion. Deferred questions remain deferred until their relevant capability or realistic data volume exists.
 
 ## Deliberately deferred questions
 
@@ -58,7 +58,7 @@ There are no remaining owner decisions required before the first shell and entit
 30. Do Roboto and the proposed type scale remain readable in a dense table, long form, timeline and family tree at both target desktop sizes?
 31. Does the 240px sidebar fit every initial label without routine truncation, and does its 56px mode retain clearly recognisable icons and usable targets?
 32. Can keyboard-only users open, operate and exit the sidebar, Super Key chooser, Views menu, taxonomy control, overflow menus and destructive confirmation flow with reliable focus return?
-33. Do the Person, Document and Project prototypes look appropriately domain-specific while sharing the same tokens, header grammar and form controls?
+33. Do the implemented Person, Document and Project pages remain appropriately domain-specific while sharing the same tokens, header grammar and form controls at both required desktop sizes?
 34. Are dark and light theme changes complete across controls, tables, maps, graphs, overlays, empty/loading/error states and status combinations?
 35. Does the local SVG set remain visually coherent at sidebar and toolbar sizes, with accessible names and no ambiguous glyphs?
 36. Does the selected table/navigation pattern remain usable with realistic record volumes and long values without hiding identity or priority information?

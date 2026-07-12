@@ -19,7 +19,7 @@ The interface must not make derived output look like an independently stored com
 
 The current UI has useful shared tables, definition lists, panels, compact linked-record lists, filters, timeline entries, relationship tables, an accessible SVG family-tree label/legend, map marker lists and consistent empty-message styling. These are foundations worth retaining.
 
-The prototype also overuses bordered panels, applies one global table style regardless of density or purpose, duplicates relationships as both tables and related cards, has no standard loading/skeleton state, uses status badges inconsistently, mixes status colours outside the root token roles, and does not distinguish empty datasets from empty filtered results in every view. Those behaviours should not be formalised unchanged.
+The completed route conversion applies shared semantic tokens, differentiated table/list treatments and clearer domain compositions. It does not introduce speculative asynchronous loading states; current server-rendered workflows should continue to use explicit empty, filtered-empty and error states. Final browser-driven visual and assistive-technology review remains required before every presentation is declared fully verified.
 
 ## Tables
 

@@ -97,7 +97,7 @@ Overview answers: “What is this entity, what matters most now, and where shoul
 
 ## Shared grammar, domain-specific composition
 
-The following compositions are initial standards to prototype. They deliberately differ while reusing identity, section, definition-list, compact-list, status, relationship-summary and provenance components.
+The following compositions are implemented standards. They deliberately differ while reusing identity, section, definition-list, compact-list, status, relationship-summary and provenance components; final human visual review remains tracked in the implementation-readiness register.
 
 | Domain | Overview priorities | Specialised views / projections | Avoid on default Overview |
 | --- | --- | --- | --- |
