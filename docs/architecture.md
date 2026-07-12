@@ -74,21 +74,9 @@ Architectural correction: typed tables now receive missing definition-driven col
 
 ## Entity Page Architecture
 
-Entity pages are the primary interaction surface. Opening any entity should feel like opening a complete profile of a real-world object.
+Entity pages are primary views over canonical records. `entity_detail_page()` retains one stable facade and shared frame, then delegates the Overview composition by domain: Person contact and relationship-derived locations; Organisation classification/contact/location; Location address/coordinates; Project status/milestones; Document safe file actions and document facts; and Asset identity/status/value/location.
 
-Reusable entity pages include:
-
-- Header with name, type and quick actions.
-- Overview with concise structured fields from the entity definition.
-- Relationships grouped by connected entity type.
-- Related Entities for graph exploration.
-- Notes for free-text information.
-- A chronological journal replaces the Notes section on Person pages; its independent entries are rendered as message-style bubbles with explicit edit, archive and secondary delete actions.
-- Documents section backed by first-class Document entity relationships.
-- Derived timeline for creation, modification, edit history and relationship events.
-- Metadata with system information.
-
-Future domains should inherit this structure by adding an `EntityDefinition` and fields, not by creating a one-off page.
+Every entity detail page shares breadcrumbs, identity, Edit/Delete, grouped Views, restrained overflow actions, interpretation warnings, a concise relationship summary, linked Documents and derived real-world Timeline. Routine IDs, timestamps, storage metadata, full change history and duplicated related-record groups do not appear on Overview; the System Audit is the administrative lens. Person Journal remains the deliberate domain exception. Future domains add an `EntityDefinition` and an explicit Overview strategy rather than inheriting an undifferentiated field dump.
 
 Entity deletion is a shared repository concern. Normal entity hydration excludes rows with `deleted_at`; because relationship records resolve both endpoints through that same boundary, deleted entities and their relationships disappear consistently from profiles, global relationship views, search, maps and derived navigation. The Recycle Bin is the sole opt-in deleted-record view. Restore clears one entity's deleted state while leaving other deleted endpoints untouched. Permanent deletion is a separate confirmed action that previews active relationships, recycled relationships and journal dependencies, creates a local recovery bundle, then cascades removal; audit history remains append-only.
 

@@ -116,3 +116,5 @@ Completed the Platform Maturity / Pre-Operational Intelligence milestone: relati
 - 2026-07-12: Delivered domain-specific Person, Document and Project Overview prototypes, including relationship-derived Person addresses, safe Document open/download actions and Project milestone-first presentation.
 
 - 2026-07-12: Converted collections and specialist views to shared domain columns, filter/result/empty states, accessible table and graph scrolling, Map failure guidance, and Family Tree text alternatives.
+
+- 2026-07-12: Completed route-family conversion across remaining entity compositions, relationship edit/delete/Audit flows, System Tools tables and states, taxonomy confirmation, and semantic-only component styling.

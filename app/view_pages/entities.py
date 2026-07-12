@@ -75,17 +75,16 @@ def entity_detail_page(
         <div class="profile-grid">
             <div class="profile-main">
                 {domain_overview_section(record, relationships)}
-                {'' if record.type in {'person', 'document', 'project'} else entity_geography_section(record, relationships)}
-                {relationship_summary_section(record, relationships) if record.type in {'person', 'document', 'project'} else entity_relationships_panel(record, relationships)}
-                {'' if record.type in {'person', 'document', 'project'} else related_entities_section(record, relationships)}
+                {entity_geography_section(record, relationships) if record.type in {'organisation', 'asset'} else ''}
+                {relationship_summary_section(record, relationships)}
+
                 {person_journal_section(record, journal_entries) if record.type == 'person' else entity_notes_section(record)}
             </div>
             <aside class="profile-side">
                 {'' if record.type == 'document' else document_file_section(record)}
                 {linked_documents_section(record, relationships)}
                 {timeline_section(record, relationships)}
-                {audit_history_section(history, audit_events) if record.type not in {'person', 'document', 'project'} else ''}
-                {metadata_section(record, relationships) if record.type not in {'person', 'document', 'project'} else ''}
+
             </aside>
         </div>
     </article>
@@ -96,7 +95,18 @@ def domain_overview_section(record, relationships):
     if record.type == "person": return person_overview_section(record, relationships)
     if record.type == "document": return document_overview_section(record)
     if record.type == "project": return project_overview_section(record)
+    if record.type == "organisation":
+        return named_overview_section("Organisation details", record, ("organisation_type", "aliases", "website", "phone", "email"))
+    if record.type == "location":
+        return entity_geography_section(record, relationships)
+    if record.type == "asset":
+        return named_overview_section("Asset details", record, ("asset_type", "status", "manufacturer", "model", "serial_number", "acquisition_date", "value"))
     return entity_overview_section(record)
+
+def named_overview_section(title, record, field_names):
+    fields = {field.name: field for field in record.definition.fields}
+    facts = [(fields[name].label, record.display_field_value(fields[name])) for name in field_names if name in fields]
+    return f'<section class="panel profile-section"><h2>{escape(title)}</h2>{definition_list(facts)}</section>'
 
 def definition_list(items):
     items = [(label, value) for label, value in items if value]
@@ -424,7 +434,7 @@ def journal_edit_page(record: EntityRecord, entry: JournalEntry, error: str = ""
     <section class="page-heading"><h1>Edit journal entry</h1><p>{escape(record.title)}</p></section>
     {error_html}
     <section class="panel">
-        <form class="record-form" method="post" action="/people/{record.id}/journal/{entry.id}/edit">
+        <form class="record-form" method="post" action="/people/{record.id}/journal/{entry.id}/edit" data-dirty-form>
             <label><span>Entry</span><textarea name="body" rows="6" required>{escape(entry.body)}</textarea></label>
             <div class="actions"><button class="button" type="submit">Save</button><a class="button secondary" href="/people/{record.id}">Cancel</a></div>
         </form>

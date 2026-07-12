@@ -2,14 +2,6 @@
 
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
-## Interface foundation predates the Experience Philosophy
-
-Severity: medium
-
-The current horizontal header, generic all-domain profile composition and default-visible administrative metadata predate the Project E Experience Philosophy. The shared foundation now supplies Project E identity/assets, semantic tokens and component states, but the transitional stylesheet still contains duplicate declarations and route-specific one-off styling pending incremental conversion.
-
-Direction: use the [design documentation](../design/README.md) and [current interface audit](../design/page_and_view_catalogue.md) to implement one scoped shell and design-foundation branch. Preserve stable routes, shared render facades, separate view/edit pages and proven workflows. Do not introduce a frontend framework, component library or broad page redesign incidentally.
-
 ## Search is in-memory and linear
 
 Severity: medium
@@ -29,14 +21,6 @@ Leaflet assets, map tiles and Nominatim address lookup require WAN access. Core 
 Trigger: the map becomes a core offline workflow.
 
 Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
-
-## Domain list pages are generic
-
-Severity: low
-
-Browse tables do not yet expose the most useful structured fields for every domain.
-
-Direction: derive domain-prioritised list columns from entity metadata using the [entity-index standard](../design/entity_pages_and_forms.md#entity-indexes) so, for example, project status and document or asset type can be scanned without opening each record.
 
 ## Timeline is derived and limited
 

@@ -40,11 +40,11 @@ The following route family exists for People, Organisations, Locations, Projects
 | --- | --- | --- | --- |
 | `/{domain}` | Browse/filter by text and favourites; Create; Edit per row | `entity_list_page()` | Shared index/filter pattern now uses domain-priority scan columns, labelled keyboard-scrollable tables, result counts, distinct empty/no-match states and Edit-only row actions. |
 | `/{domain}/new` | Complete-page create form; Save/Save anyway; Cancel | `entity_form_page()` + definition-driven fields | Shared form foundation includes one-column layout, linked summary/field validation, retained values and a consistent dirty-form discard warning. Create Cancel returns to the domain index. |
-| `/{domain}/{id}` | Read-only profile with identity/actions, Overview, Geography, all relationship groups, Related Entities, Notes/Journal, Documents, Timeline, Change History and Metadata | `entity_detail_page()` | Shared breadcrumbs, identity/action hierarchy, grouped Views, quiet warnings and icon-only relationship addition are established. Person, Document and Project now use distinct concise compositions and omit duplicate related cards and routine admin metadata; Organisation, Location and Asset remain on the transitional shared composition. |
+| `/{domain}/{id}` | Read-only domain-specific Overview with shared identity/actions, relationship summary, Notes/Journal, linked Documents and Timeline | `entity_detail_page()` | All six domains use concise compositions over the shared frame; duplicate related groups and routine Metadata/Change History are omitted in favour of record-scoped Audit. |
 | `/{domain}/{id}/edit` | Complete-page edit form | Same as create | Correct separation; Cancel returns to the canonical record and dirty navigation requires deliberate discard. |
 | `/{domain}/{id}/favourite` | Toggle favourite and return to entity | `favourite_form()` | Useful low-risk direct action; status should be accessible and not dominate header. |
 | `/{domain}/{id}/delete` | Soft delete after native confirm and return to index | Inline form in index/header | Recoverable lifecycle uses the shared confirmation modal; entity headers expose Delete directly without permanent danger styling before confirmation. |
-| `/{domain}/{id}/merge` | Select duplicate, preview field/relationship effects, confirm merge | `merge_select_page()`, `merge_preview_page()` | Strong review-before-consequence pattern; needs standard breadcrumbs and responsive table treatment. |
+| `/{domain}/{id}/merge` | Select duplicate, preview field/relationship effects, confirm merge | `merge_select_page()`, `merge_preview_page()` | Strong review-before-consequence pattern with a labelled keyboard-scrollable field comparison and final-danger confirmation. |
 
 ### Domain-specific entity routes and content
 
@@ -76,23 +76,23 @@ The following route family exists for People, Organisations, Locations, Projects
 
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
-| `/search` | Global text/relationship search; type, favourites and one structured filter; open entity/relationship results | `search_page()` | Canonical Search view is established. Differentiate from Super Key, preserve query/filter state, add result counts and filter-specific value controls. |
-| `/timeline` | Universal derived real-world chronology; filters by type/date/direct related Person, Organisation or Project | `universal_timeline_page()` | Strong derived-view semantics and origin links. Retain separation from Audit; refine density and empty-state explanation. |
-| `/map` | Leaflet map with entity-derived layer toggles, focused entity query, marker popups and textual marker list | `map_page()` | Strong view-over-canonical-data model and text list. Remote script/tile failure has no designed page state; constrained width and context-preserving entity navigation need standards. |
+| `/search` | Global text/relationship search; type, favourites and one structured filter; open entity/relationship results | `search_page()` | Canonical Search remains distinct from Go and now has labelled controls, preserved filter state, result count and distinct initial/no-match states. Filter-specific value controls remain deferred until a demonstrated filter requires them. |
+| `/timeline` | Universal derived real-world chronology; filters by type/date/direct related Person, Organisation or Project | `universal_timeline_page()` | Derived chronology remains separate from Audit, with origin links, result count and distinct empty/filtered-empty guidance. |
+| `/map` | Leaflet map with entity-derived layer toggles, focused entity query, marker popups and textual marker list | `map_page()` | Derived map retains its text alternative and focused context; optional remote-client failure is explicit while canonical coordinates and links remain usable. |
 | `/geocoding/search` | JSON address lookup used by Location form | Not a page | Optional provider boundary is correct. UI must retain manual entry during loading/failure. |
 
 ### System Tools
 
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
-| `/system-tools` | Hub cards for Search, Data Quality, Taxonomies, Recycle Bin, Audit and Import/Export | `system_tools_page()` | Useful nested-navigation hub. Current cards use decorative hover motion contrary to minimal-motion direction; retain labelled descriptions without translation. |
-| `/data-quality` | Table of severity, category, explanation, records, status and finding actions | `data_quality_page()` | Correct explainable-tool direction. Needs links to affected records, empty state, shared severity vocabulary and filter/scale plan. |
-| `/taxonomies` | Manage Organisation/Relationship hierarchies; filter, show archived, create and archive | `taxonomies_page()` | Strong specialised administrative view with useful hierarchy controls. Needs breadcrumb/local tool nav, explicit validation placement and constrained-width QA. |
-| `/recycle-bin` | List deleted entities/relationships, Restore, open entity permanent-delete confirmation | `recycle_bin_page()` | Correct lifecycle separation. Restore and permanent delete need clearer distinct action hierarchy; current table combines record kinds with partially different actions. |
+| `/system-tools` | Hub cards for Search, Data Quality, Taxonomies, Recycle Bin, Audit and Import/Export | `system_tools_page()` | Labelled nested-navigation hub using semantic border/colour feedback without decorative translation. |
+| `/data-quality` | Compact table of severity, category, explanation, record IDs and status | `data_quality_page()` | Explainable deterministic findings use shared severity/status roles and an honest empty state; nonfunctional placeholder actions were removed. Record navigation awaits typed finding references. |
+| `/taxonomies` | Manage Organisation/Relationship hierarchies; filter, show archived, create and archive | `taxonomies_page()` | Specialised administrative hierarchy with explicit validation, System Tools return and shared recoverable archive confirmation. |
+| `/recycle-bin` | List deleted entities/relationships, Restore, open entity permanent-delete confirmation | `recycle_bin_page()` | Labelled keyboard-scrollable mixed-record table distinguishes ordinary Restore from entity-only permanent-delete review. |
 | `/recycle-bin/{id}/permanent-delete` | Dependency review, irreversible confirmation and recovery explanation | `permanent_delete_confirmation_page()` | Established consequential-flow standard worth reusing. |
-| `/system-tools/audit` | Filterable operational events by action and record kind | `system_audit_page()` | Correct administrative lens. Move entity-local audit detail here/specialised views instead of default Overview. Needs scalable filtering and compact-table design. |
+| `/system-tools/audit` | Filterable operational events by action, record kind and contextual record ID | `system_audit_page()` | Compact keyboard-scrollable administrative lens; entity and relationship links preserve record scope while Timeline remains real-world chronology. |
 | `/system-tools/portability` | Export direct download; upload import bundle for validation | `portability_page()` | Clear separation of read-only export and consequential import. Its existing notice now consumes the shared semantic success treatment. |
-| `/system-tools/portability/preview` | Verified counts and consequences before confirmed import | `import_preview_page()` | Strong review precedent; add breadcrumb and consistent confirmation layout. |
+| `/system-tools/portability/preview` | Verified counts and consequences before confirmed import | `import_preview_page()` | Shared consequential-review grammar with verified counts, warning status, Cancel and final-danger confirmation. |
 
 ## Recurring pattern audit
 
@@ -122,13 +122,13 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Do not formalise:** all-domain identical long profile, six empty relationship groups, duplicated Related Entities, narrow sidebar full of Timeline/Change History/Metadata and prominent administrative actions.
 
-**Missing:** entity-local specialised routes for Relationships, Timeline, Documents, Map/Family Tree and Audit; person-centred family-tree context; concise domain compositions.
+**Established:** concise domain compositions, grouped contextual Views, Person-centred Family Tree, Map/Timeline context and record-scoped Audit. Relationship and Document projections remain concise sections until dedicated routes are justified.
 
 ### Forms
 
 **Established:** dedicated pages, shared definition-driven fields, Add details, compound coordinates, manual fallback, taxonomy/reference controls, duplicate review and server validation.
 
-**Do not formalise:** generic Cancel destination and absence of dirty-form warning. Linked summary/field validation and reversible soft-delete confirmation are now shared foundations.
+**Established:** context-aware Cancel, linked summary/field validation, retained values, progressive disclosure and shared dirty-form protection across entity and relationship forms.
 
 ### Tables, lists and filters
 
@@ -152,13 +152,13 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Established:** derived markers, layer visibility, marker-to-entity links, focused query and textual record list.
 
-**Do not formalise:** blank map region when optional remote assets fail or fixed 620px height without task/viewport validation.
+**Established:** explicit optional-client failure status and a textual mapped-record alternative. The constrained map height is a task-specific desktop choice, not a global panel rule.
 
 ### Relationships and family tree
 
 **Established:** perspective-aware relationship workflow, first-class relationship pages, deterministic graph layout, connector legend and visual selection that does not alter geometry.
 
-**Do not formalise:** every empty connected-domain group on each profile, missing context-preserving graph navigation and graph-only presentation without equivalent textual relationships.
+**Established:** concise Overview relationship summaries, context-preserving Person Family Tree navigation, labelled keyboard scrolling, connector legend, cyclic warning and textual relationship alternative.
 
 ### Dashboard
 
@@ -170,19 +170,17 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Established:** dedicated hub, clear separation from everyday domain navigation, specialised management/review pages and two-step consequential flows.
 
-**Do not formalise:** inconsistent breadcrumbs/back links, one-off message styles and uncoordinated severity/status vocabulary.
+**Established:** consistent System Tools return navigation, shared semantic warnings/empty states, compact administrative tables and deliberate review-before-consequence flows.
 
 ### Modals and confirmation flows
 
-No custom modal/dialog component exists. Native `confirm()` is used for soft delete and taxonomy archive; dedicated pages are used for merge, import preview and permanent delete.
-
-**Direction:** dedicated pages are the standard for complex or irreversible consequences. A later accessible modal may handle concise recoverable changes, but only with consistent object/consequence language, focus management and keyboard behaviour.
+The shared accessible confirmation dialog handles concise recoverable entity/relationship deletion and taxonomy archive with object/consequence language, focus containment, Escape/cancel and focus return. Dedicated pages remain the standard for merge, import preview and permanent deletion.
 
 ### Empty, loading, validation and error states
 
 **Established:** `.empty`, `.errors` and `.warnings` presentations; address lookup has status text; many pages name no-content conditions.
 
-**Gaps:** filtered-empty and dataset-empty are not always distinct; Data Quality does not yet consume the shared empty state; remote map failure is silent; not-found is generic. Shared loading/busy, notice and field-associated validation foundations now exist for incremental adoption.
+**Established:** shared distinct empty/no-match, loading/busy, failure, notice, warning and field-associated validation states. Generic not-found remains an HTTP boundary rather than a collection state.
 
 ## Stylesheet audit
 
@@ -193,19 +191,9 @@ No custom modal/dialog component exists. Native `confirm()` is used for soft del
 - Shared control, table, warning, error and responsive rules.
 - Specialist styles for taxonomy, relationship workflows, timeline, map and family tree remain locally named.
 
-### Remaining inconsistencies and defects
+### Delivered foundation state
 
-- The foundation supplies complete shared roles, but literal colours remain in transitional page/component rules pending their numbered conversions.
-- Some status and graph renderers still consume independent one-offs rather than the available semantic roles.
-- Duplicate declarations exist (`color` in `.readonly-field span`, `z-index` in taxonomy empty state).
-- Units mix `px` and `rem`; the documented token scale is available but not yet consumed by every rule.
-- `font-weight: 750` and other one-off weights lack a type-scale contract.
-- Selected/current state adoption remains incomplete in legacy page-specific components; shared disabled, busy/loading and success/notice foundations are implemented.
-- System Tool cards translate upward on hover despite the philosophy's minimal-motion direction.
-- Breakpoints at 720px and 920px are accumulated implementation values rather than content-tested tokens.
-- One `main` maximum width serves ordinary pages and wide map/graph/table tasks.
-
-The foundation now resolves the Roboto mismatch, missing dark/light theme model, undefined Family Tree token, shared focus treatment and reduced-motion base. Remaining items are addressed by the relevant component, specialist-view and route-family steps rather than expanded opportunistically here.
+Active route families consume shared semantic colour roles; `styles.css` contains no literal component colours. Shared controls, statuses, tables, graph/map states, focus, reduced motion and both themes use the foundation roles. Route-specific selectors remain only where the task differs (for example taxonomy hierarchy, Map and Family Tree), not as a competing visual system. Desktop breakpoints and task-specific wide-view dimensions remain implementation values to validate in Step 11 rather than user-configurable settings.
 
 ## Cross-document conflicts found
 

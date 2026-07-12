@@ -377,7 +377,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
 
     def handle_system_audit(self, query: dict[str, str]) -> None:
-        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""))
+        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""), record_id=int(query["record_id"]) if query.get("record_id", "").isdigit() else None)
         with connect(self.database_path) as connection:
             events = list_audit_events(connection, filters=filters)
         self.respond_page("System Audit", views.system_audit_page(events, filters), active_slug="system-tools")

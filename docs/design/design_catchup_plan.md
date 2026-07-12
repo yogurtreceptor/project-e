@@ -191,6 +191,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 10. Incremental route-family conversion
 
+**Status:** Completed 2026-07-12. All entity families now use concise domain compositions without duplicated related/admin sections; relationship forms and Journal edit share dirty-form protection, relationship soft deletion uses the shared recoverable confirmation, and record-scoped Audit is the administrative lens. System Tools use accessible compact tables, honest empty states, semantic warnings, consistent return navigation and shared taxonomy archive confirmation. Remaining prototype colour literals and decorative tool-card motion were removed; no route-specific styling exception remains.
+
 **Goal:** complete the visual catch-up safely rather than via a single high-risk rewrite.
 
 **Implement:**

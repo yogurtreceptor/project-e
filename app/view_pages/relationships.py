@@ -264,6 +264,8 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
         <div class="actions">
             <a class="button secondary" href="/relationships">Back</a>
             <a class="button" href="/relationships/{relationship.id}/edit">Edit</a>
+            <form method="post" action="/relationships/{relationship.id}/delete" data-confirm-object="{escape(relationship.source.title)} — {escape(relationship.target.title)}" data-confirm-consequence="Move this relationship to the Recycle Bin. It can be restored later."><button class="button secondary" type="submit">Delete</button></form>
+            <a class="button quiet" href="/system-tools/audit?record_kind=relationship&amp;record_id={relationship.id}">Audit</a>
         </div>
     </section>
     <section class="panel">
@@ -283,13 +285,6 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
     <section class="panel">
         <h2>Notes</h2>
         <p class="notes">{escape(relationship.notes) if relationship.notes else 'No notes yet.'}</p>
-    </section>
-    <section class="panel metadata">
-        <h2>Metadata</h2>
-        <dl>
-            <dt>Created</dt><dd>{escape(relationship.created_at)}</dd>
-            <dt>Updated</dt><dd>{escape(relationship.updated_at)}</dd>
-        </dl>
     </section>
     """
 
@@ -342,7 +337,7 @@ def relationship_form_page(
     </section>
     <section class="panel">
         {error_block(errors, error_fields)}
-        <form class="record-form relationship-form" method="post" action="{form_action}">
+        <form class="record-form relationship-form" method="post" data-dirty-form action="{form_action}">
             {associate_field_errors(''.join(fields), errors, error_fields)}
             <div class="actions">
                 <a class="button secondary" href="{'/' + context_entity.slug + '/' + str(context_entity.id) if context_entity else '/relationships'}">Cancel</a>
