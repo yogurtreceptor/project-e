@@ -2,6 +2,11 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-12 — Phase 2 operational-planning decisions
+
+- Recorded the initial user-centred Event, Calendar, Task, reminder, Inbox, System Health and local archive decisions in the canonical Phase 2 plan.
+- Kept Phase 2 implementation unstarted: this session defines authorised future design direction, not delivered product behaviour.
+
 ## 2026-07-12 — Design-system route conversion and verification
 
 Completed the authorised design catch-up across the implemented Stage 1 interface.
