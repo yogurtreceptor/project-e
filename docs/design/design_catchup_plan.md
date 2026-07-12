@@ -173,6 +173,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 9. Collections and specialist representations
 
+**Status:** Completed 2026-07-12. Entity indexes now expose domain-priority scan fields, balanced keyboard-scrollable tables and distinct empty/filter states without destructive row actions. Relationship lists, Search and Timeline share labelled collection/filter/result patterns. Map retains its mapped-record alternative and now gives explicit remote-client failure guidance; Family Tree uses semantic roles, a labelled focusable scroll region, cyclic warnings and a textual relationship alternative. Focused tests cover these contracts.
+
 **Goal:** bring reusable data views into the foundation without sacrificing their task-specific strengths.
 
 **Implement:**

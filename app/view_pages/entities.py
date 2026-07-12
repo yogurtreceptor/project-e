@@ -21,59 +21,35 @@ from app.view_pages.forms import (
 
 
 def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], query: str = "", favourites_only: bool = False) -> str:
+    column_specs = {
+        "person": (("DOB", "birthday"), ("Email", "email")),
+        "organisation": (("Classification", "organisation_type"), ("Email", "email")),
+        "location": (("City", "city"), ("State", "state")),
+        "project": (("Status", "status"), ("Target", "target_date")),
+        "document": (("Purpose", "document_type"), ("Expiry", "expiry_date")),
+        "asset": (("Type", "asset_type"), ("Status", "status")),
+    }
+    columns = column_specs[definition.type]
     rows = []
-    secondary_heading = "DOB" if definition.type == "person" else "Notes"
     for record in records:
-        if definition.type == "person":
-            description = escape(record.metadata.get("birthday", "")) or "Not recorded"
-        else:
-            description = escape(record.notes) if record.notes else "No notes yet."
-        rows.append(
-            f"""
-            <tr>
-                <td><a href="/{definition.slug}/{record.id}">{escape(record.title)}</a></td>
-                <td>{description}</td>
-                <td class="row-actions">
-                    <a href="/{definition.slug}/{record.id}/edit">Edit</a>
-                    <form method="post" action="/{definition.slug}/{record.id}/delete" data-confirm-object="{escape(record.title)}" data-confirm-consequence="Move this record to the Recycle Bin. It can be restored later.">
-                        <button class="link-button" type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            """
-        )
-
-    empty = f'<p class="empty">No {escape(definition.plural.lower())} yet.</p>' if not rows else ""
-    table = (
-        f"""
-        <table>
-            <thead><tr><th>Name</th><th>{secondary_heading}</th><th></th></tr></thead>
-            <tbody>"""
-        + "".join(rows)
-        + "</tbody></table>"
-        if rows
-        else ""
-    )
-
+        facts = "".join(f'<td>{escape(record.metadata.get(field, "")) or "Not recorded"}</td>' for _, field in columns)
+        rows.append(f'<tr><td><a href="/{definition.slug}/{record.id}">{escape(record.title)}</a></td>{facts}<td class="row-actions"><a href="/{definition.slug}/{record.id}/edit">Edit</a></td></tr>')
+    active_filters = bool(query or favourites_only)
+    if rows:
+        headings = "".join(f"<th>{escape(label)}</th>" for label, _ in columns)
+        table = f'<div class="table-scroll" tabindex="0" role="region" aria-label="{escape(definition.plural)} records"><table><thead><tr><th>Name</th>{headings}<th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
+        empty = ""
+    elif active_filters:
+        table = ""
+        empty = f'<div class="empty-state"><h2>No matches</h2><p>No {escape(definition.plural.lower())} match the current filters.</p><a class="button secondary" href="/{definition.slug}">Clear filters</a></div>'
+    else:
+        table = ""
+        empty = f'<div class="empty-state"><h2>No {escape(definition.plural.lower())} yet</h2><p>Create the first canonical {escape(definition.singular.lower())} record.</p><a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a></div>'
     favourite_checked = " checked" if favourites_only else ""
-    return f"""
-    <section class="page-heading split">
-        <div>
-            <h1>{escape(definition.plural)}</h1>
-            <p>Browse and filter canonical {escape(definition.plural.lower())} records.</p>
-        </div>
-        <a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a>
-    </section>
-    <section class="panel filter-panel">
-        <form method="get" action="/{definition.slug}">
-            <input name="q" value="{escape(query)}" placeholder="Filter {escape(definition.plural.lower())}">
-            <label class="inline-check"><input type="checkbox" name="favourites" value="1"{favourite_checked}> Favourites only</label>
-            <button class="button" type="submit">Apply</button>
-            <a class="button secondary" href="/{definition.slug}">Clear</a>
-        </form>
-    </section>
-    <section class="panel">{empty}{table}</section>
-    """
+    result_summary = f'<p class="collection-summary" role="status">{len(records)} result{"s" if len(records) != 1 else ""}{" with filters applied" if active_filters else ""}.</p>'
+    return f"""<section class="page-heading split"><div><h1>{escape(definition.plural)}</h1><p>Browse and filter canonical {escape(definition.plural.lower())} records.</p></div><a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a></section>
+    <section class="panel filter-panel"><form method="get" action="/{definition.slug}"><label><span>Filter {escape(definition.plural.lower())}</span><input name="q" value="{escape(query)}"></label><label class="inline-check"><input type="checkbox" name="favourites" value="1"{favourite_checked}> Favourites only</label><button class="button" type="submit">Apply</button><a class="button secondary" href="/{definition.slug}">Clear</a></form></section>
+    {result_summary}<section class="panel collection-panel">{empty}{table}</section>"""
 
 
 def entity_detail_page(

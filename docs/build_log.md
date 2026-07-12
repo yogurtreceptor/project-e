@@ -114,3 +114,5 @@ Completed the Platform Maturity / Pre-Operational Intelligence milestone: relati
 - Reserved the documented Super Key location for the separately scoped Step 6 interaction.
 
 - 2026-07-12: Delivered domain-specific Person, Document and Project Overview prototypes, including relationship-derived Person addresses, safe Document open/download actions and Project milestone-first presentation.
+
+- 2026-07-12: Converted collections and specialist views to shared domain columns, filter/result/empty states, accessible table and graph scrolling, Map failure guidance, and Family Tree text alternatives.

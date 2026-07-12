@@ -135,7 +135,7 @@ Maps are derived views over entities and relationships, never a separate source 
 - Projects and Documents remain absent as direct markers under current ontology.
 - Wide map regions may use the page's wide layout variant and a constrained height that still leaves shell/navigation usable.
 
-The current map correctly derives markers and includes a marker list, but if the remote Leaflet script fails the map region currently becomes blank without a designed failure state. That requires a future implementation fix.
+The map derives markers from canonical Locations and relationships, retains a mapped-record list, and exposes a visible failure status when the optional remote Leaflet client is unavailable; canonical records and coordinates remain usable.
 
 ## Graph and family-tree views
 
@@ -147,7 +147,7 @@ The current map correctly derives markers and includes a marker list, but if the
 - Horizontal or two-dimensional internal scrolling is acceptable for a large graph if the container is labelled and keyboard reachable.
 - Contradictory or cyclic data is displayed with a clear warning and inspectable underlying relationships.
 
-The current deterministic family-tree layout, selected-node styling and connector legend are established specialist patterns. The undefined `--ink` token, one-off graph colours and absence of a textual relationship alternative are prototype gaps.
+The deterministic Family Tree retains its established layout, selected-node styling and connector legend while using semantic graph roles. Its labelled keyboard-scrollable visual is paired with a textual relationship list, and contradictory/cyclic edges expose a warning.
 
 ## Status indicators
 

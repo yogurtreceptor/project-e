@@ -1429,15 +1429,15 @@ dd {
 .family-tree path { fill: none; stroke: var(--line); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .family-tree .family-edge-casing { stroke: var(--panel); stroke-width: 8; }
 .family-tree .family-edge-peer-strong { stroke-width: 4; }
-.family-tree .family-edge-cyclic { stroke: #b56a5a; stroke-dasharray: 3 5; }
+.family-tree .family-edge-cyclic { stroke: var(--color-status-danger); stroke-dasharray: 3 5; }
 .family-tree-legend { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 10px 14px; }
 .family-tree-legend span { align-items: center; color: var(--muted); display: inline-flex; font-size: 13px; gap: 8px; }
 .legend-line { border-top: 2px solid var(--line); display: inline-block; width: 34px; }
 .legend-partner { border-top-width: 4px; }
 .legend-parent { border-left: 2px solid var(--line); border-top: 0; height: 20px; width: 0; }
-.family-tree rect { fill: #fff; stroke: var(--accent); stroke-width: 2; }
-.family-tree a:hover rect, .family-tree a:focus rect { fill: #eaf5f1; }
-.family-tree .family-node-selected rect { fill: #fff3c4; stroke-width: 4; }
+.family-tree rect { fill: var(--color-surface-panel); stroke: var(--color-series-1); stroke-width: 2; }
+.family-tree a:hover rect, .family-tree a:focus rect { fill: var(--color-action-primary-subtle); }
+.family-tree .family-node-selected rect { fill: var(--color-status-warning-surface); stroke-width: 4; }
 .family-tree text { fill: var(--text); font-size: 14px; font-weight: 700; text-anchor: middle; }
 
 
@@ -1480,3 +1480,34 @@ dd {
 .dirty-form-dialog::backdrop { background: var(--color-surface-overlay); }
 .dirty-form-dialog .actions { justify-content: flex-end; margin-top: var(--space-6); }
 .record-form { grid-template-columns: minmax(0, 1fr); }
+
+
+/* Shared collection and specialist-view foundation. */
+.visually-hidden {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+.table-scroll { overflow-x: auto; }
+.table-scroll:focus-visible,
+.family-tree-scroll:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+.collection-summary { color: var(--color-text-secondary); font-size: var(--font-size-compact); }
+.collection-panel table { font-size: var(--font-size-compact); }
+.map-remote-status {
+    background: var(--color-status-warning-surface);
+    border: 1px solid var(--color-status-warning-border);
+    color: var(--color-status-warning);
+    left: var(--space-5);
+    max-width: 34rem;
+    padding: var(--space-3);
+    position: absolute;
+    top: var(--space-5);
+    z-index: 500;
+}
+.map-remote-status[hidden] { display: none; }
+.family-relationship-list { display: grid; gap: var(--space-2); }
+.family-relationship-list span { color: var(--color-text-secondary); margin-inline: var(--space-2); }

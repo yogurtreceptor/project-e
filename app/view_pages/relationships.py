@@ -50,15 +50,22 @@ def family_tree_page(tree: GraphLayout) -> str:
                 path = f"M {source.x} {start_y} V {midpoint_y} H {target.x} V {end_y}"
             lines.append(f'<path class="{css_class}" d="{path}" />')
         nodes = "".join(f'<a href="{escape(node.href)}" class="{"family-node-selected" if node.selected else "family-node"}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
-        visual = f'<div class="family-tree-scroll"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
+        visual = f'<div class="family-tree-scroll" tabindex="0" role="region" aria-label="Scrollable family relationship tree"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
+    node_names = {node.id: node.label for node in tree.nodes}
+    relationship_items = "".join(
+        f'<li><a href="{escape(next(node.href for node in tree.nodes if node.id == edge.source_id))}">{escape(node_names.get(edge.source_id, "Unknown person"))}</a> <span>{escape(edge.label)}</span> <a href="{escape(next(node.href for node in tree.nodes if node.id == edge.target_id))}">{escape(node_names.get(edge.target_id, "Unknown person"))}</a>{" <strong>Contradictory/cyclic</strong>" if edge.cyclic else ""}</li>'
+        for edge in tree.edges if edge.source_id in node_names and edge.target_id in node_names
+    )
+    text_alternative = f'<ul class="family-relationship-list">{relationship_items}</ul>' if relationship_items else '<p class="empty">No included relationships.</p>'
+    cycle_warning = '<div class="status-row warning"><span>Contradictory or cyclic family relationships are present.</span> Inspect the relationships below.</div>' if any(edge.cyclic for edge in tree.edges) else ""
     return f"""
     <section class="page-heading split">
         <div><p class="eyebrow">Relationship visualisation</p><h1>Family tree</h1><p>A derived view of existing family relationships. No separate family data is stored.</p></div>
         <a class="button secondary" href="/relationships">Back to relationships</a>
     </section>
-    <section class="panel family-tree-panel">{visual}</section>
+    {cycle_warning}<section class="panel family-tree-panel">{visual}</section>
     <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
-    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling connections are inferred only from shared parent-set connectors; no separate sibling lines are drawn. Spouse and partner links are shown directly on the same generation. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
+    <section class="panel"><h2>Included relationships</h2>{text_alternative}<p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling connections are inferred only from shared parent-set connectors; no separate sibling lines are drawn. Spouse and partner links are shown directly on the same generation. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
 
 
@@ -216,20 +223,17 @@ def relationship_list_page(relationships: list[RelationshipRecord], integrity_wa
                     <td><a href="/{relationship.source.slug}/{relationship.source.id}">{escape(relationship.source.title)}</a></td>
                     <td><a href="/{relationship.target.slug}/{relationship.target.id}">{escape(relationship.target.title)}</a></td>
                     <td>{escape(relationship.status)} {('<span class="origin-badge origin-inferred">created from inference</span>' if relationship.created_from_inference else '')}</td>
-                    <td class="row-actions">
-                        <a href="/relationships/{relationship.id}/edit">Edit</a>
-                        <form method="post" action="/relationships/{relationship.id}/delete"><button class="link-button" type="submit">Delete</button></form>
-                    </td>
+                    <td class="row-actions"><a href="/relationships/{relationship.id}/edit">Edit</a></td>
                 </tr>
                 """
             )
         content = (
             """
-            <table>
-                <thead><tr><th>Type</th><th>Source</th><th>Target</th><th>Status</th><th></th></tr></thead>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Relationship records"><table>
+                <thead><tr><th>Type</th><th>Source</th><th>Target</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
                 <tbody>"""
             + "".join(rows)
-            + "</tbody></table>"
+            + "</tbody></table></div>"
         )
     return f"""
     <section class="page-heading split">
