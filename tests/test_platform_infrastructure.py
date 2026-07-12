@@ -23,5 +23,5 @@ class PlatformTests(unittest.TestCase):
         events=timeline_registry.derive(result,[]); self.assertEqual('Birth',events[0].title); self.assertNotIn('create',[e.category for e in events])
         record_entity_edit(self.c,eid,{'given_name':'A'},{'given_name':'Ada'}); self.c.commit()
         html=views.entity_detail_page(result,[],history=list_entity_history(self.c,eid),audit_events=list_audit_events(self.c,'entity',eid))
-        self.assertIn('Timeline',html); self.assertIn('Birth',html); self.assertIn('Change History',html); self.assertIn('Create',html); self.assertIn('Legacy edit history',html)
+        self.assertIn('Timeline',html); self.assertIn('Birth',html); self.assertIn('/system-tools/audit?record_kind=entity',html); self.assertNotIn('Change History',html); self.assertNotIn('Legacy edit history',html)
 if __name__=='__main__': unittest.main()

@@ -112,3 +112,5 @@ Completed the Platform Maturity / Pre-Operational Intelligence milestone: relati
 - Replaced the horizontal prototype header with the persistent Project E shell and 240px/56px Browse sidebar states.
 - Added session-only collapse persistence, complete current-route hierarchy, distinct Search access, skip navigation and accessible current/parent state.
 - Reserved the documented Super Key location for the separately scoped Step 6 interaction.
+
+- 2026-07-12: Delivered domain-specific Person, Document and Project Overview prototypes, including relationship-derived Person addresses, safe Document open/download actions and Project milestone-first presentation.

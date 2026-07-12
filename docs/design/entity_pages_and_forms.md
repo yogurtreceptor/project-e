@@ -37,7 +37,7 @@ These gaps are documented directions, not permission for a broad redesign in thi
 
 ## Delivered shared frame
 
-The shared entity frame now provides domain breadcrumbs, record identity, direct **Edit** and recoverable **Delete**, grouped native **Views**, and an overflow for favourite, relationship creation and Merge. Integrity findings use the shared quiet warning row with a **Details** link. Entity edit forms return to their canonical record on Cancel and use one dirty-form warning with **Keep editing** and **Discard changes** across in-app and browser navigation. Domain-specific Overview composition remains a separate prototype step.
+The shared entity frame now provides domain breadcrumbs, record identity, direct **Edit** and recoverable **Delete**, grouped native **Views**, and an overflow for favourite, relationship creation and Merge. Integrity findings use the shared quiet warning row with a **Details** link. Entity edit forms return to their canonical record on Cancel and use one dirty-form warning with **Keep editing** and **Discard changes** across in-app and browser navigation. Person, Document and Project now use domain-specific Overview compositions: contact and relationship-derived locations for People, safe file actions and document facts for Documents, and status/milestones for Projects. These prototypes omit routine administrative metadata and duplicated related-entity output. Remaining domains retain the transitional shared composition pending incremental conversion.
 
 ## Entity-page model
 

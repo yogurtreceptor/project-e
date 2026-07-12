@@ -156,6 +156,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 8. Representative domain prototypes
 
+**Status:** Completed 2026-07-12. Person now foregrounds contact facts and relationship-derived Location addresses; Document foregrounds safe local open/download actions and document facts; Project foregrounds status and lifecycle milestones. All three retain the shared entity frame while omitting duplicated relationship groups and routine administrative metadata from Overview. Focused tests cover the distinct compositions and safe-file action boundary.
+
 **Goal:** prove the system supports genuinely different domain compositions before broad conversion.
 
 **Implement:**

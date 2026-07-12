@@ -590,7 +590,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Content-Disposition", f'attachment; filename="{file_name.replace(chr(34), "")}"')
+        disposition = "inline" if parse_qs(urlparse(self.path).query).get("open") == ["1"] and (content_type.startswith("text/") or content_type.startswith("image/")) else "attachment"
+        self.send_header("Content-Disposition", f'{disposition}; filename="{file_name.replace(chr(34), "")}"')
         self.end_headers()
         self.wfile.write(content)
 

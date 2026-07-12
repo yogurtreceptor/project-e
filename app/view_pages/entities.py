@@ -98,22 +98,69 @@ def entity_detail_page(
         {warning_html}
         <div class="profile-grid">
             <div class="profile-main">
-                {entity_overview_section(record)}
-                {entity_geography_section(record, relationships)}
-                {entity_relationships_panel(record, relationships)}
-                {related_entities_section(record, relationships)}
+                {domain_overview_section(record, relationships)}
+                {'' if record.type in {'person', 'document', 'project'} else entity_geography_section(record, relationships)}
+                {relationship_summary_section(record, relationships) if record.type in {'person', 'document', 'project'} else entity_relationships_panel(record, relationships)}
+                {'' if record.type in {'person', 'document', 'project'} else related_entities_section(record, relationships)}
                 {person_journal_section(record, journal_entries) if record.type == 'person' else entity_notes_section(record)}
             </div>
             <aside class="profile-side">
-                {document_file_section(record)}
+                {'' if record.type == 'document' else document_file_section(record)}
                 {linked_documents_section(record, relationships)}
                 {timeline_section(record, relationships)}
-                {audit_history_section(history, audit_events)}
-                {metadata_section(record, relationships)}
+                {audit_history_section(history, audit_events) if record.type not in {'person', 'document', 'project'} else ''}
+                {metadata_section(record, relationships) if record.type not in {'person', 'document', 'project'} else ''}
             </aside>
         </div>
     </article>
     """
+
+
+def domain_overview_section(record, relationships):
+    if record.type == "person": return person_overview_section(record, relationships)
+    if record.type == "document": return document_overview_section(record)
+    if record.type == "project": return project_overview_section(record)
+    return entity_overview_section(record)
+
+def definition_list(items):
+    items = [(label, value) for label, value in items if value]
+    return "<dl>" + "".join(f"<dt>{escape(label)}</dt><dd>{escape(value)}</dd>" for label, value in items) + "</dl>" if items else '<p class="empty">No details recorded yet.</p>'
+
+def person_overview_section(record, relationships):
+    locations=[]
+    for relationship in relationships:
+        location=relationship.other_entity(record.id)
+        if location.type != "location": continue
+        address=location.metadata.get("formatted_address") or ", ".join(v for v in (location.metadata.get("address_line_1", ""), location.metadata.get("suburb", ""), location.metadata.get("city", ""), location.metadata.get("state", ""), location.metadata.get("country", "")) if v)
+        locations.append(f'<li><a href="/{location.slug}/{location.id}">{escape(location.title)}</a><span>{escape(relationship.display_label_from(record.id))}{": " + escape(address) if address else ""}</span></li>')
+    location_content=f'<ul class="entity-link-list">{"".join(locations)}</ul>' if locations else f'<p class="empty">No linked locations yet. <a href="/relationships/new?source_entity_id={record.id}&amp;target_type=location&amp;context_entity_id={record.id}">Link a location</a>.</p>'
+    contact=definition_list([("Birthday",record.metadata.get("birthday","")),("Phone",record.metadata.get("phone","")),("Email",record.metadata.get("email","")),("Alias",record.metadata.get("alias","")),("Nickname",record.metadata.get("nickname",""))])
+    supporting=definition_list([(field.label, record.display_field_value(field)) for field in record.definition.fields if field.name in {"height", "weight", "languages", "nationalities", "ethnicities"}])
+    supporting_html = "" if "No details recorded" in supporting else f"<h2>Personal details</h2>{supporting}"
+    return f'<section class="panel profile-section person-overview"><h2>Contact</h2>{contact}{supporting_html}<div class="section-heading split"><h2>Locations</h2><a href="/map?entity_id={record.id}">View on map</a></div>{location_content}</section>'
+
+def document_overview_section(record):
+    file_name=record.metadata.get("file_name",""); mime=record.metadata.get("mime_type","")
+    if file_name:
+        open_action=f'<a class="button" href="/documents/{record.id}/download?open=1" target="_blank">Open</a>' if mime.startswith(("text/","image/")) else ""
+        actions=f'<div class="actions document-file-actions">{open_action}<a class="button secondary" href="/documents/{record.id}/download" download>Download</a></div>'
+    else: actions='<p class="empty">No uploaded file recorded.</p>'
+    facts=definition_list([("Purpose",record.metadata.get("document_type","")),("Identifier",record.metadata.get("identifier","")),("Document date",record.metadata.get("document_date","")),("Expiry date",record.metadata.get("expiry_date",""))])
+    return f'<section class="panel profile-section document-overview"><div class="section-heading split"><h2>Document</h2>{actions}</div>{facts}</section>'
+
+def project_overview_section(record):
+    status=record.metadata.get("status",""); badge=f'<span class="badge">{escape(status)}</span>' if status else '<span class="muted">Not recorded</span>'
+    milestones=definition_list([("Started",record.metadata.get("started_at","")),("Target",record.metadata.get("target_date","")),("Completed",record.metadata.get("ended_at",""))])
+    kind=definition_list([("Project type",record.metadata.get("project_type",""))])
+    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}</section>'
+
+def relationship_summary_section(record, relationships):
+    rows=[]
+    for relationship in relationships:
+        other=relationship.other_entity(record.id)
+        rows.append(f'<li><a href="/{other.slug}/{other.id}">{escape(other.title)}</a><span><a href="/relationships/{relationship.id}">{escape(relationship.display_label_from(record.id))}</a></span></li>')
+    content=f'<ul class="entity-link-list">{"".join(rows)}</ul>' if rows else '<p class="empty">No relationships yet.</p>'
+    return f'<section class="panel profile-section relationship-summary" id="relationships"><div class="section-heading split"><h2>Relationships</h2><a class="icon-button" href="/relationships/new?source_entity_id={record.id}&amp;context_entity_id={record.id}" aria-label="Add relationship" title="Add relationship">{icon("add")}</a></div>{content}</section>'
 
 
 def entity_profile_header(record: EntityRecord) -> str:
