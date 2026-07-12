@@ -80,7 +80,7 @@ There are no remaining owner decisions required before the first shell and entit
 - Shared component interaction states, local SVG geometry/serving, domain compositions, collection semantics, Map failure guidance and Family Tree textual alternatives have focused regression coverage.
 - Keyboard contracts and focus return are verified structurally for sidebar, Super Key, Views/overflow, dirty forms and confirmation dialog; labelled focusable regions cover wide tables and Family Tree.
 - Source audits found no undefined tokens, literal component colours outside the foundation, native confirmation calls or inaccessible implemented icon-only controls.
-- Actual Windows visual/keyboard inspection at 1440 x 900 and 1920 x 1080 in both themes is not yet captured. The available computer-use runtime failed during initialization because it rejected the WSL workspace URI, before any browser connection or interaction.
+- Actual Windows visual/keyboard inspection at 1440 x 900 and 1920 x 1080 in both themes is not yet captured.
 
 ## Implementation exit evidence
 

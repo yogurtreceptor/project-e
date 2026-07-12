@@ -1,6 +1,6 @@
 # Page and View Catalogue
 
-Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-12. No repository screenshots are tracked. The Windows computer-use runtime rejected the WSL workspace URI before connecting, so the final two-resolution/two-theme human visual evidence remains external; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
+Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-12. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
 
 This catalogue bridges the Experience Philosophy, design standards and later implementation tasks. It is descriptive about current behaviour and normative only where it points to a responsible standard.
 

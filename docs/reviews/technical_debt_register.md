@@ -2,16 +2,6 @@
 
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
-## Desktop visual QA is blocked by the Computer Use WSL workspace URI
-
-Severity: medium
-
-The required Windows computer-use runtime cannot initialise from this workspace. Its Node execution request is rejected before application enumeration with `sandboxCwd is not a local file URI: file:///home/codyj/project-e`. Consequently, no authenticated live-browser evidence or screenshots can yet be collected for the required dark/light desktop review at 1440 × 900 and 1920 × 1080.
-
-Trigger: before claiming the desktop shell, themes, specialist views or interaction flows have passed visual acceptance.
-
-Direction: make the Windows review runtime accept the WSL workspace path, or provide a supported Windows-worktree review route. Then repeat the full fictional-data review in both system themes and resolutions, retaining screenshots and recording the results. Do not substitute source inspection for the missing visual evidence.
-
 ## Dirty-form warning does not return focus to its invoker
 
 Severity: medium

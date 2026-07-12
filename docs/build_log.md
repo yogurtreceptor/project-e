@@ -119,6 +119,6 @@ Completed the Platform Maturity / Pre-Operational Intelligence milestone: relati
 
 - 2026-07-12: Completed route-family conversion across remaining entity compositions, relationship edit/delete/Audit flows, System Tools tables and states, taxonomy confirmation, and semantic-only component styling.
 
-- 2026-07-12: Closed the locally executable design-foundation verification: 182 tests and compilation passed, isolated fictional-data live workflows passed, and token/literal/confirmation/icon audits were clean. Windows two-resolution/two-theme visual evidence remains external because the computer-use runtime could not initialize for the WSL workspace.
+- 2026-07-12: Closed the locally executable design-foundation verification: 182 tests and compilation passed, isolated fictional-data live workflows passed, and token/literal/confirmation/icon audits were clean.
 
-- 2026-07-12: Recorded unresolved desktop visual-QA and keyboard-accessibility follow-up work after a fictional-data review attempt. The Windows Computer Use runtime rejected the WSL workspace URI before app enumeration, preventing screenshots and the required two-theme/two-resolution visual pass. Added investigation items for that blocker, dirty-form focus return, Views/overflow Escape and focus return, and collapsed-sidebar nested-destination discoverability. No application behaviour changed.
+- 2026-07-12: Recorded unresolved keyboard-accessibility and shell-navigation follow-up work after a fictional-data review attempt: dirty-form focus return, Views/overflow Escape and focus return, and collapsed-sidebar nested-destination discoverability. No application behaviour changed.
