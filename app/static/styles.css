@@ -171,8 +171,7 @@ p {
     padding: 20px;
 }
 
-nav a,
-.global-search button {
+nav a {
     align-items: center;
     display: inline-flex;
     gap: var(--space-2);
@@ -1443,9 +1442,7 @@ dd {
 
 
 .origin-badge, .status-badge { display: inline-block; padding: .15rem .45rem; border-radius: 999px; font-size: .75rem; background: var(--color-surface-inset); color: var(--color-text-secondary); }
-.origin-inferred, .status-confirmed { background: var(--color-status-success-surface); color: var(--color-status-success); }
-.status-pending { border-left: 4px solid var(--color-status-warning-border); }
-.status-rejected, .status-invalidated { opacity: .72; }
+.origin-inferred { background: var(--color-status-success-surface); color: var(--color-status-success); }
 .inference-batch { margin-bottom: 1rem; }
 .inference-card { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1.25rem; }
 .inference-card h3 { font-size: 1.5rem; margin: .35rem 0 1rem; }

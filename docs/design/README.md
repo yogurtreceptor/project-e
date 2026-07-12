@@ -25,7 +25,7 @@ The embedded SQLite database remains the source of canonical information. Design
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
 | [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
 | [Page and view catalogue](page_and_view_catalogue.md) | Current routes, purposes, shared renderers, recurring patterns, inconsistencies and intended direction | Audited baseline for the current post-prototype UI |
-| [Implementation readiness](implementation_readiness.md) | Remaining product-owner questions, prototype evidence and ordered catch-up implementation sequence | Active register until the foundation is implemented and verified |
+| [Implementation readiness](implementation_readiness.md) | Prototype evidence and design-foundation close-out record | Implementation evidence recorded; external Windows visual matrix remains |
 | [Design catch-up implementation plan](design_catchup_plan.md) | Authorised beginning-to-end, step-sized implementation work plan | Primary hand-off document for design catch-up work |
 
 Entity-page and form standards intentionally share one document. Both depend on the same domain definition, field order, view/edit boundary, context-return behaviour and validation model; splitting them now would duplicate rules. They may split later only if either section becomes difficult to navigate.

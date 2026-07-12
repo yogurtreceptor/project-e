@@ -208,6 +208,8 @@ Preserve unrelated changes. Work on one numbered step at a time. Before each com
 
 ### 11. Verification and close-out
 
+**Status:** Implementation and locally available verification completed 2026-07-12. The 182-test suite and compile check pass; an isolated temporary server with fictional data exercised the shell, Person, Document, Project, edit form, domain table, Timeline, Map and Person-focused Family Tree. Source audits report no undefined CSS tokens, component colour literals outside `foundation.css`, native `confirm()` calls or inaccessible implemented icon-only controls; obsolete global-search and unused inference-status selectors were removed. Focus/keyboard/contrast/theme contracts are covered by focused structural and calculation tests. Human visual review at 1440 x 900 and 1920 x 1080 in both operating-system themes remains external evidence: the Windows computer-use runtime rejected this WSL workspace URI before connecting, so no browser interaction or screenshot was possible in this task.
+
 **Goal:** establish that the design foundation is genuinely delivered rather than only documented.
 
 **Verify:**

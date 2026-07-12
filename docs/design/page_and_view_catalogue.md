@@ -1,6 +1,6 @@
 # Page and View Catalogue
 
-Status: Audited baseline of the current post-prototype interface. Routes and behaviour were inspected in `app/web.py`, `app/view_pages/`, `app/static/`, entity definitions, UI-oriented tests and current repository documentation on 2026-07-11. No repository screenshots are present; `README.md` explicitly defers them. A Windows visual smoke connection was unavailable for this WSL workspace, so visual findings are grounded in rendered HTML structure and CSS rather than captured pages.
+Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-12. No repository screenshots are tracked. The Windows computer-use runtime rejected the WSL workspace URI before connecting, so the final two-resolution/two-theme human visual evidence remains external; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
 
 This catalogue bridges the Experience Philosophy, design standards and later implementation tasks. It is descriptive about current behaviour and normative only where it points to a responsible standard.
 

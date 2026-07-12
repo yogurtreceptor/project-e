@@ -73,6 +73,15 @@ There are no remaining owner decisions required before the first shell and entit
 6. Replace prototype CSS incrementally by route family, updating the page catalogue and evidence as each family reaches the standard.
 7. Complete keyboard, contrast and desktop visual QA before declaring the design foundation stable.
 
+## Close-out evidence (2026-07-12)
+
+- Contrast calculations cover representative text, primary action, focus and status pairs in both themes; the single accent primitive and semantic role completeness are enforced by tests.
+- Shell, Person, Document, Project, table, form, Map and Family Tree routes passed an isolated running-application smoke with fictional data.
+- Shared component interaction states, local SVG geometry/serving, domain compositions, collection semantics, Map failure guidance and Family Tree textual alternatives have focused regression coverage.
+- Keyboard contracts and focus return are verified structurally for sidebar, Super Key, Views/overflow, dirty forms and confirmation dialog; labelled focusable regions cover wide tables and Family Tree.
+- Source audits found no undefined tokens, literal component colours outside the foundation, native confirmation calls or inaccessible implemented icon-only controls.
+- Actual Windows visual/keyboard inspection at 1440 x 900 and 1920 x 1080 in both themes is not yet captured. The available computer-use runtime failed during initialization because it rejected the WSL workspace URI, before any browser connection or interaction.
+
 ## Implementation exit evidence
 
 - Both themes pass contrast checks and use only semantic component tokens.
