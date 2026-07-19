@@ -280,6 +280,10 @@ The initial single-user time interpretation and display zone, `Australia/Brisban
 
 A deterministic, traceable temporal instance produced from a canonical record and definition, such as a yearly birthday from a Person birth date.
 
+## Approximate Date
+
+A closest known calendar date marked as approximate. It does not represent a date range or a partial year/month value.
+
 ## Reminder
 
 A notification or attention policy attached to a record or derived occurrence, potentially governed by a global policy and an entity-level override. Delivery history is a notification record, not the reminder's canonical definition.

@@ -325,3 +325,33 @@ This provides reliable local attention management without external delivery depe
 
 Consequences:
 No email, SMS, push, operating-system notification, service manager or external queue is introduced initially. Recovery preserves the original due time and prevents duplicate delivery; a later worker reuses registered handlers and schedule definitions rather than creating a second scheduling model.
+
+## ADR-020: Keep automatic operations non-consequential
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Phase 2 may automatically recalculate derived state and create or update notifications, persistent issues, audit records and job-run records. Creating, editing, completing or deleting a canonical Event or Task requires user approval; automation creates an actionable proposal when such a mutation is appropriate.
+
+Reason:
+Operational assistance should be useful and reliable without silently changing the user's canonical commitments or work.
+
+Consequences:
+Automation uses normal application services and approval-item workflows. Derived operational records remain auditable, while user approval remains the authority boundary for canonical Event and Task mutations.
+
+## ADR-021: Recover scheduled work serially with per-job catch-up policy
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Record clean shutdown and startup when possible, retain a durable scheduler checkpoint, and recover work due during unavailability in scheduled order, one completed run at a time. Each registered job declares whether recovery runs every missed occurrence, coalesces missed work into one current run, or skips stale work.
+
+Reason:
+Serial recovery prevents overlapping work, while a declared policy prevents a high-frequency job from replaying days of obsolete checks after downtime.
+
+Consequences:
+Recovery remains deterministic and auditable after clean or unclean stops. Job registration, not ad hoc scheduler guessing, owns stale-work behaviour.
