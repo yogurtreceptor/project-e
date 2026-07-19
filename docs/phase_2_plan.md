@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards; canonical Event storage and lifecycle services; standard Event relationship integration; Event discovery/read-only related-record projections; Calendar-originated Event creation and editing; Week/Month Calendar projections; deterministic recurrence definitions, derived occurrences, cancellation exceptions and successor-series splits. The explicit recurrence scope chooser and occurrence-specific mutation UI remain pending. The Event integration checkpoint is complete. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards; canonical Event storage and lifecycle services; standard Event relationship integration; Event discovery/read-only related-record projections; Calendar-originated Event creation and editing; Month/Week/Day Calendar projections, including timed duration grids; deterministic recurrence definitions, derived occurrences, cancellation exceptions and successor-series splits. The explicit recurrence scope chooser and occurrence-specific mutation UI remain pending. The Event integration checkpoint is complete. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -76,13 +76,14 @@ Calendar archival retains each assigned Event and its Calendar identity; it neit
 
 Human-created Events originate from the Calendar rather than the generic entity-create menu. The Calendar provides a compact **Add Event** control that opens a dedicated form. The fast first layer contains title, Calendar, all-day choice, either an inclusive date range or timed start/end datetimes, timezone and optional notes; it selects the default Calendar and applies its default duration and timezone for a new form. Existing Events open a dedicated editing form from their Calendar preview. Relationships are added after creation or from Event editing through the standard relationship system, not special People, Location or Project pickers in the initial form. Calendar management, reminders, recurrence and other facts remain outside this first form.
 
-Every Event selects a Calendar and uses that Calendar's defaults. The default duration and Event timezone are overridable as approved; other default precedence remains unresolved below. The initial Calendar prioritises Week and Month views, starts weeks on Monday, and preserves Calendar context:
+Every Event selects a Calendar and uses that Calendar's defaults. The default duration and Event timezone are overridable as approved; other default precedence remains unresolved below. The initial Calendar provides Month, Week and Day views, starts weeks on Monday, and preserves Calendar context:
 
 - Selecting an Event opens a compact preview with clear Edit and Delete actions.
-- Editing opens in a Calendar overlay or panel rather than navigating immediately to a dedicated Event page.
+- Editing opens in a dedicated Calendar Event form rather than the generic read-only Event projection.
 - The timezone remains a compact, readily available creation and edit control rather than a hidden advanced field.
+- Week and Day views render timed Event intervals as duration blocks against an hourly grid, clipping an overnight Event into each affected display day while retaining its visible start/end time.
 - Direct Week-view time-slot creation, drag-and-drop rescheduling and Event resizing follow only after the overlay-based create and edit workflow is stable.
-- Day and agenda/list views follow only after the core Event workflow is stable.
+- Agenda/list views follow only after the core Event workflow is stable.
 
 The desktop baseline remains usable at 800 × 600. Phone responsiveness is deferred. A later visual-design review may use familiar Google Calendar interaction and layout patterns as reference, but must not alter the local-first Calendar, Event or Relationship model. That review is deferred until current functional workflows are confirmed.
 
@@ -250,11 +251,11 @@ The behaviour above is authoritative. The following sequence establishes impleme
 5. **Complete:** implement canonical Event storage and validated lifecycle services, including timed/all-day normalization, cancellation, reinstatement, rescheduling and independent archive state.
 6. **Complete:** integrate Event Relationships with existing entity types.
 7. **Complete:** add Event search and read-only related-entity projections. Events are searchable by their canonical title/notes and relationship context, can be filtered as Events, and open from Search or existing related-record links into a read-only projection with Calendar-derived colour, temporal/lifecycle facts, relationships and change history. This deliberately does not provide generic Event browsing, creation or editing.
-8. **Complete:** add Calendar-originated Event creation and editing. The `/calendar` workflow provides a panel with Calendar defaults, all-day and timed scheduling, readily available timezone, notes, post-creation relationship entry, and edit/reschedule actions routed through the existing Event services. It intentionally remains a form-and-current-Events workflow until Calendar projections arrive.
-9. **Complete:** build Monday-first Week and Month Calendar projections over canonical Events. The projection converts timed Event instants into the active default Calendar timezone, retains all-day date boundaries, displays Calendar-derived colour and cancelled treatment, and supports non-mutating visible-Calendar filters. Selecting an Event opens a compact Calendar preview with Edit and confirmed Recycle Bin Delete actions.
+8. **Complete:** add Calendar-originated Event creation and editing. The `/calendar` workflow provides dedicated forms with Calendar defaults, all-day and timed scheduling, readily available timezone, notes, post-creation relationship entry, and edit/reschedule actions routed through the existing Event services. The Calendar projection remains an Event-free overview and preview surface.
+9. **Complete:** build Month, Monday-first Week and Day Calendar projections over canonical Events. Week and Day convert timed Event instants into the active default Calendar timezone and render their occupied duration on an hourly grid, including a clipped continuation block for overnight spans; Month retains a compact interval overview. All views retain all-day date boundaries, display Calendar-derived colour and cancelled treatment, and support non-mutating visible-Calendar filters. Selecting an Event opens a compact Calendar preview with Edit and confirmed Recycle Bin Delete actions.
 10. **In progress:** add the approved recurrence definitions, generated occurrences, exceptions and series operations through Event editing. Recurrence definitions, versioned deterministic daily/weekly/monthly/yearly projection, bounded end dates, month-end backward shifting, selected-weekday and ordinal-weekday controls, persisted cancellation exceptions, and traceable successor-series splits are implemented. Remaining: occurrence-specific edit/delete actions and their scope chooser in the Event editor.
 
-**Complete:** the Event integration checkpoint defined in Phase 2A now passes: Events can be created and edited from the Calendar, projected in Week and Month views, related to multiple peers, found through Search, opened from related-record contexts, and inspected with their history. The final recurrence scope flow remains before Phase 2A closure.
+**Complete:** the Event integration checkpoint defined in Phase 2A now passes: Events can be created and edited from the Calendar, projected in Month, Week and Day views, related to multiple peers, found through Search, opened from related-record contexts, and inspected with their history. The final recurrence scope flow remains before Phase 2A closure.
 
 ### Phase 2B — Work management
 
@@ -346,7 +347,7 @@ The following are outside initial Phase 2 scope:
 - Point-in-time timed Events without a bounded end.
 - Initial Task priority, In progress state, estimates, hierarchy, dependencies, recurring Tasks, nested lists, sharing, permissions or a separate workflow engine.
 - Phone/mobile support.
-- Day and agenda/list Calendar views before the Week/Month workflow is stable.
+- Agenda/list Calendar views before the Week/Day workflow is stable.
 - Direct Week-view slot creation, drag-and-drop rescheduling and Event resizing before overlay creation and editing are stable.
 - Unspecified scheduled maintenance checks beyond Event reminders and overdue Tasks; those require later design within the existing Phase 2 boundaries.
 - A normal browsing or removal program for immutable deep Inbox archive storage.

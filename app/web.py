@@ -229,7 +229,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 preview_id = self.parse_entity_id(query.get("preview", ""))
                 preview_event = get_event(connection, preview_id) if preview_id else None
             anchor_date = self.calendar_anchor_date(query.get("date", ""))
-            view = query.get("view", "month") if query.get("view") in {"month", "week"} else "month"
+            view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
             self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)

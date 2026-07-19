@@ -2,6 +2,11 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Timed Calendar grids
+
+- Replaced the Week projection's timed-event list columns with an hourly time grid, with weekday/date headers and a labelled time axis.
+- Added the matching Day projection; timed Event intervals display as duration blocks and overnight intervals continue in each affected display day.
+
 ## 2026-07-19 — Event recurrence foundation
 
 - Added migration-safe Event series definitions, deterministic derived occurrences and versioned cancellation exceptions without duplicating canonical Event records.

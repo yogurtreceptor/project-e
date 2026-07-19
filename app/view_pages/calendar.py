@@ -48,7 +48,7 @@ def calendar_projection(
     recurrences: dict[int, RecurrenceDefinition] | None = None,
     recurrence_exceptions: dict[int, set[str]] | None = None,
 ) -> str:
-    """Build a Week or Month read projection from canonical Event intervals."""
+    """Build Month, Week or Day read projections from canonical Event intervals."""
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
     selected = selected_calendar_ids or {calendar.id for calendar in active_calendars}
     visible_events = [event for event in events if event.calendar_id in selected]
@@ -64,6 +64,13 @@ def calendar_projection(
         previous = period_start - timedelta(days=7)
         following = period_start + timedelta(days=7)
         title = f"Week of {period_start.strftime('%-d %B %Y')}"
+    elif view == "day":
+        period_start = period_end = anchor_date
+        visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
+        grid = _time_grid(visible_events, calendar_by_id, [period_start], display_timezone, urlencode(parameters))
+        previous = period_start - timedelta(days=1)
+        following = period_start + timedelta(days=1)
+        title = period_start.strftime("%A, %-d %B %Y")
     else:
         period_start = anchor_date.replace(day=1)
         period_end = period_start.replace(day=monthrange(period_start.year, period_start.month)[1])
@@ -77,13 +84,14 @@ def calendar_projection(
     today_url = _calendar_url([( "view", view), ("date", date.today().isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     month_url = _calendar_url([("view", "month"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     week_url = _calendar_url([("view", "week"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    day_url = _calendar_url([("view", "day"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     filters = "".join(
         f'<label class="calendar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected else ""}> <span style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</label>'
         for calendar in active_calendars
     )
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
     return f"""
-    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
+    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button{' secondary' if view != 'day' else ''}" href="{day_url}">Day</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
         <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
         {preview}
         {grid}
@@ -106,8 +114,25 @@ def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceD
 
 def _week_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], monday: date, display_timezone: str, context_query: str) -> str:
     days = [monday + timedelta(days=index) for index in range(7)]
-    cells = "".join(_day_cell(day, events, calendars, display_timezone, True, include_weekday=True, context_query=context_query) for day in days)
-    return f'<div class="calendar-week-grid">{cells}</div>'
+    return _time_grid(events, calendars, days, display_timezone, context_query)
+
+
+def _time_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], days: list[date], display_timezone: str, context_query: str) -> str:
+    """Render timed intervals on an hourly grid, clipping each to its visible day."""
+    headers = "".join(
+        f'<header class="calendar-time-day-header"><span>{day.strftime("%a")}</span><time datetime="{day.isoformat()}">{day.day}</time></header>'
+        for day in days
+    )
+    all_day_cells = "".join(
+        f'<div class="calendar-time-all-day-cell">{"".join(_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if event.is_all_day and _event_occurs_on(event, day, display_timezone))}</div>'
+        for day in days
+    )
+    hour_labels = "".join(f'<time style="top:{hour * 48}px">{hour:02d}:00</time>' for hour in range(24))
+    timed_cells = "".join(
+        f'<div class="calendar-time-day" aria-label="{day.isoformat()}">{"".join(_timed_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if not event.is_all_day and _event_occurs_on(event, day, display_timezone))}</div>'
+        for day in days
+    )
+    return f'<div class="calendar-time-grid-scroll"><div class="calendar-time-grid" style="--calendar-day-count:{len(days)}"><div class="calendar-time-axis-heading"></div>{headers}<div class="calendar-time-all-day-label">All day</div>{all_day_cells}<div class="calendar-time-axis">{hour_labels}</div>{timed_cells}</div></div>'
 
 
 def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, CalendarRecord], display_timezone: str, in_current_month: bool, include_weekday: bool = False, context_query: str = "") -> str:
@@ -121,6 +146,21 @@ def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, d
     query = f"{context_query}&preview={event.id}"
     state = " cancelled" if event.is_cancelled else ""
     return f'<a class="calendar-event{state}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
+
+
+def _timed_projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:
+    zone = ZoneInfo(display_timezone)
+    start = datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(zone)
+    end = datetime.fromisoformat(event.end_utc.removesuffix("Z") + "+00:00").astimezone(zone)
+    day_start = datetime.combine(day, datetime.min.time(), tzinfo=zone)
+    day_end = day_start + timedelta(days=1)
+    segment_start, segment_end = max(start, day_start), min(end, day_end)
+    start_minutes = segment_start.hour * 60 + segment_start.minute
+    duration_minutes = max(1, int((segment_end - segment_start).total_seconds() / 60))
+    query = f"{context_query}&preview={event.id}"
+    state = " cancelled" if event.is_cancelled else ""
+    label = f"{segment_start.strftime('%H:%M')}–{segment_end.strftime('%H:%M')}"
+    return f'<a class="calendar-timed-event{state}" style="--calendar-colour:{escape(calendar.colour)};top:{start_minutes * .8:.1f}px;height:{max(duration_minutes * .8, 24):.1f}px" href="{_calendar_url_with_query(query)}"><span>{label}</span>{escape(event.title)}</a>'
 
 
 def _event_occurs_on(event: EventRecord, day: date, display_timezone: str) -> bool:

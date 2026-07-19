@@ -236,6 +236,14 @@ class EventServiceTests(unittest.TestCase):
                 end_local="2026-09-15T10:00",
             ),
         )
+        create_event(
+            self.connection,
+            EventInput(
+                "Overnight focus", False, work_calendar_id,
+                timezone="Australia/Brisbane", start_local="2026-09-15T18:00",
+                end_local="2026-09-16T02:00",
+            ),
+        )
         EddyRequestHandler.database_path = self.database_path
         server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
         thread = threading.Thread(target=server.serve_forever)
@@ -256,7 +264,15 @@ class EventServiceTests(unittest.TestCase):
             client.request("GET", "/calendar?view=week&date=2026-09-15")
             week_page = client.getresponse().read().decode()
             self.assertIn("Week of 14 September 2026", week_page)
-            self.assertIn("calendar-week-grid", week_page)
+            self.assertIn("calendar-time-grid", week_page)
+            self.assertIn("18:00–00:00", week_page)
+            self.assertIn("00:00–02:00", week_page)
+            self.assertIn("Overnight focus", week_page)
+
+            client.request("GET", "/calendar?view=day&date=2026-09-15")
+            day_page = client.getresponse().read().decode()
+            self.assertIn("Tuesday, 15 September 2026", day_page)
+            self.assertIn('aria-label="2026-09-15"', day_page)
 
             client.request("GET", f"/calendar?view=month&date=2026-09-15&preview={all_day_id}")
             preview_page = client.getresponse().read().decode()
