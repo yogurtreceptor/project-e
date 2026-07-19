@@ -77,6 +77,7 @@ from app.view_pages.search import (
     search_result_card,
 )
 from app.view_pages.events import event_projection_page
+from app.view_pages.calendar import calendar_page, default_event_values, event_form_values
 from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
@@ -133,6 +134,9 @@ __all__ = [
     "search_page",
     "search_result_card",
     "event_projection_page",
+    "calendar_page",
+    "default_event_values",
+    "event_form_values",
     "not_found_page",
     "recycle_bin_page",
     "permanent_delete_confirmation_page",

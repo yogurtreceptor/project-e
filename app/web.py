@@ -65,8 +65,8 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
-from app.calendar_service import get_calendar
-from app.event_service import get_event
+from app.calendar_service import get_calendar, list_calendars
+from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -159,6 +159,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_not_found()
             return
 
+        if parts[0] == "calendar":
+            self.route_calendar_request(parts, query)
+            return
+
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
         if definition is None:
             self.respond_not_found()
@@ -208,6 +212,71 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_delete(parts[1], query)
         else:
             self.respond_not_found()
+
+    def route_calendar_request(self, parts: list[str], query: dict[str, str]) -> None:
+        if len(parts) == 1 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                events = list_events(connection)
+                created_id = self.parse_entity_id(query.get("created", ""))
+                created_event = get_event(connection, created_id) if created_id else None
+            self.respond_page("Calendar", views.calendar_page(calendars, events, views.default_event_values(calendars), created_event=created_event), active_slug="calendar", show_save_toast=created_event is not None)
+            return
+        editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
+        if editing_id is not None and self.command == "GET":
+            with connect(self.database_path) as connection:
+                event = get_event(connection, editing_id, include_archived=True)
+                calendars = list_calendars(connection, include_archived=True)
+                events = list_events(connection)
+                calendar = get_calendar(connection, event.calendar_id, include_archived=True) if event else None
+            if event is None or calendar is None:
+                self.respond_not_found(); return
+            self.respond_page("Edit Event", views.calendar_page(calendars, events, views.event_form_values(event, calendar), editing_event=event), active_slug="calendar", show_save_toast=query.get("saved") == "1")
+            return
+        if len(parts) == 2 and parts[1] == "events" and self.command == "POST":
+            self.handle_calendar_event_create()
+            return
+        if editing_id is not None and self.command == "POST":
+            self.handle_calendar_event_edit(editing_id)
+            return
+        self.respond_not_found()
+
+    def handle_calendar_event_create(self) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                event_id = create_event(connection, self.event_input_from_form(values))
+        except (ValueError, sqlite3.Error) as error:
+            self.respond_calendar_event_form(values, [str(error)])
+            return
+        self.redirect(f"/calendar?created={event_id}")
+
+    def handle_calendar_event_edit(self, event_id: int) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                event = get_event(connection, event_id, include_archived=True)
+                if event is None:
+                    self.respond_not_found(); return
+                event_input = self.event_input_from_form(values)
+                update_event(connection, event_id, EventUpdate(event_input.title, event_input.calendar_id, event_input.notes))
+                reschedule_event(connection, event_id, EventSchedule(event_input.all_day, event_input.timezone, event_input.start_local, event_input.end_local, start_date=event_input.start_date, end_date=event_input.end_date))
+        except (ValueError, sqlite3.Error) as error:
+            self.respond_calendar_event_form(values, [str(error)], event_id)
+            return
+        self.redirect(f"/calendar/events/{event_id}/edit?saved=1")
+
+    @staticmethod
+    def event_input_from_form(values: dict[str, str]) -> EventInput:
+        calendar_id = int(values["calendar_id"]) if values.get("calendar_id", "").isdigit() else None
+        return EventInput(values.get("title", ""), values.get("all_day") == "1", calendar_id, values.get("notes", ""), values.get("timezone", ""), values.get("start_local", ""), values.get("end_local", ""), start_date=values.get("start_date", ""), end_date=values.get("end_date", ""))
+
+    def respond_calendar_event_form(self, values: dict[str, str], errors: list[str], event_id: int | None = None) -> None:
+        with connect(self.database_path) as connection:
+            calendars = list_calendars(connection, include_archived=True)
+            events = list_events(connection)
+            event = get_event(connection, event_id, include_archived=True) if event_id else None
+        self.respond_page("Edit Event" if event else "Calendar", views.calendar_page(calendars, events, values, errors, event), HTTPStatus.BAD_REQUEST, active_slug="calendar")
 
     def route_taxonomy_request(self, parts: list[str]) -> None:
         from app.taxonomy import archive_entry, create_entry, list_entries, load_relationship_catalog

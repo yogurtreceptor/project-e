@@ -5,6 +5,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from urllib.parse import urlencode
 
 from app.audit import list_audit_events
 from app.db import (
@@ -158,6 +159,57 @@ class EventServiceTests(unittest.TestCase):
             client.request("GET", "/events")
             self.assertEqual(404, client.getresponse().status)
         finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_calendar_originates_event_creation_and_editing(self) -> None:
+        EddyRequestHandler.database_path = self.database_path
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+            client.request("GET", "/calendar")
+            page = client.getresponse().read().decode()
+            self.assertIn("Add Event", page)
+            self.assertIn('action="/calendar/events"', page)
+
+            create_body = urlencode({
+                "title": "Calendar-created Event", "calendar_id": "1",
+                "start_date": "2026-09-10", "end_date": "2026-09-10",
+                "start_local": "2026-09-10T09:00", "end_local": "2026-09-10T10:00",
+                "timezone": "Australia/Brisbane", "notes": "Created in Calendar",
+            })
+            client.request("POST", "/calendar/events", create_body, {
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual("/calendar?created=1", response.getheader("Location"))
+
+            client.request("GET", "/calendar/events/1/edit")
+            edit_page = client.getresponse().read().decode()
+            self.assertIn('value="2026-09-10T09:00"', edit_page)
+            self.assertIn("add a relationship", edit_page)
+
+            edit_body = urlencode({
+                "title": "Calendar-edited Event", "calendar_id": "1",
+                "start_date": "2026-09-11", "end_date": "2026-09-11",
+                "start_local": "2026-09-11T11:00", "end_local": "2026-09-11T12:00",
+                "timezone": "Australia/Brisbane", "notes": "Rescheduled in Calendar",
+            })
+            client.request("POST", "/calendar/events/1/edit", edit_body, {
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual("/calendar/events/1/edit?saved=1", response.getheader("Location"))
+            event = get_event(self.connection, 1)
+            self.assertEqual("Calendar-edited Event", event.title)
+            self.assertEqual("2026-09-11T01:00:00Z", event.start_utc)
+        finally:
+            client.close()
             server.shutdown()
             server.server_close()
             thread.join()

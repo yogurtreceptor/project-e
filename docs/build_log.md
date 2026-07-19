@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Calendar-originated Event creation and editing
+
+- Added the Calendar navigation workflow for human-created Events, with Calendar defaults, all-day and timed scheduling, timezone and optional notes.
+- Routed Event detail edits and schedule changes through the existing semantic Event services, and linked relationship work to the shared post-creation/edit workflow.
+- Kept Calendar projections, compact previews and recurrence deferred; the initial Calendar currently provides the creation/editing panel and current-Event list.
+
 ## 2026-07-19 — Event search and related-record projections
 
 - Added Events to global Search through the existing canonical-record and relationship-context query path, including the Event type filter, without adding search-index or projection storage.

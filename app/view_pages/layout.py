@@ -20,6 +20,7 @@ def layout(
     )
     connection_nav = "".join((
         nav_link("/relationships", "Relationships", "relationships", active_slug == "relationships"),
+        nav_link("/calendar", "Calendar", "timeline", active_slug == "calendar"),
         nav_link("/timeline", "Timeline", "timeline", active_slug == "timeline"),
         nav_link("/map", "Map", "map", active_slug == "map"),
     ))
