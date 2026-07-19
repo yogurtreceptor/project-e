@@ -7,8 +7,11 @@ from pathlib import Path
 from app.audit import list_audit_events
 from app.db import (
     connect,
+    create_entity,
+    create_relationship,
     delete_entity,
     initialise_database,
+    list_relationships_for_entity,
     restore_entity,
 )
 from app.db_schema import (
@@ -33,7 +36,7 @@ from app.event_service import (
     unarchive_event,
     update_event,
 )
-from app.entities import DEFINITIONS_BY_SLUG, EVENT_DEFINITION
+from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 
 
@@ -91,6 +94,22 @@ class EventServiceTests(unittest.TestCase):
         self.assertEqual("", event.start_utc)
         self.assertEqual("", event.timezone)
         self.assertEqual("approximate", event.date_precision)
+
+    def test_event_uses_standard_relationships_with_multiple_peer_entities(self) -> None:
+        event_id = create_event(self.connection, EventInput(title="Project kickoff", all_day=False, start_local="2026-08-10T09:00", end_local="2026-08-10T10:00"))
+        person_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["person"], {"given_name": "Ada", "middle_name": "", "family_name": "", "sex": "Unknown", "birthday": "", "email": "", "phone": "", "display_name": "", "summary": "", "notes": ""})
+        location_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["location"], {"display_name": "Meeting room", "summary": "", "notes": ""})
+        project_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["project"], {"display_name": "Launch", "summary": "", "notes": "", "project_type": "", "status": "Active", "started_at": "", "target_date": "", "ended_at": ""})
+
+        create_relationship(self.connection, {"source_entity_id": str(event_id), "target_entity_id": str(person_id), "type": "event_involves_person"})
+        create_relationship(self.connection, {"source_entity_id": str(event_id), "target_entity_id": str(location_id), "type": "event_at_location"})
+        create_relationship(self.connection, {"source_entity_id": str(event_id), "target_entity_id": str(project_id), "type": "event_related_to_project"})
+        self.connection.commit()
+
+        event_relationships = list_relationships_for_entity(self.connection, event_id)
+        self.assertEqual({"event_involves_person", "event_at_location", "event_related_to_project"}, {relationship.type_key for relationship in event_relationships})
+        self.assertEqual({person_id, location_id, project_id}, {relationship.other_entity(event_id).id for relationship in event_relationships})
+        self.assertEqual("involved in", list_relationships_for_entity(self.connection, person_id)[0].label_from(person_id))
 
     def test_create_rejects_invalid_time_and_rolls_back_identity(self) -> None:
         with self.assertRaises(TemporalValueError):

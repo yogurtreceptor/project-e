@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Event relationship integration
+
+- Added pair-aware standard Relationship definitions for Events and every current canonical peer type, including other Events.
+- Kept Event links in the shared relationship lifecycle, preserving normal validation, audit, provenance, soft deletion and restoration instead of introducing Event-specific foreign keys.
+- Verified one Event can connect to multiple existing peer records while remaining outside the deferred Calendar/Event UI and generic Event creation paths.
+
 ## 2026-07-19 — Calendar-only Event model correction
 
 - Corrected the Phase 2 model so every canonical Event belongs to exactly one Calendar and Calendars alone provide Event grouping, colour, defaults, ordering, archive state and filtering.

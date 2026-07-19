@@ -212,6 +212,19 @@ DOCUMENT_PROJECT_TYPES: tuple[RelationshipType, ...] = (
 )
 
 
+# Events remain peer canonical records. These links deliberately use the
+# shared relationship lifecycle instead of Event-specific foreign keys.
+EVENT_RELATIONSHIP_TYPES: tuple[RelationshipType, ...] = (
+    rt("event_involves_person", "event", "person", "Event", "Involves person", "involves", "involved in", roles=("Event", "Involved person")),
+    rt("event_involves_organisation", "event", "organisation", "Event", "Involves organisation", "involves", "involved in", roles=("Event", "Involved organisation")),
+    rt("event_at_location", "event", "location", "Event", "Takes place at", "takes place at", "hosts event", roles=("Event", "Venue")),
+    rt("event_related_to_project", "event", "project", "Event", "Related project", "relates to", "has related event", roles=("Event", "Related project")),
+    rt("event_references_document", "event", "document", "Event", "References document", "references", "referenced by", roles=("Event", "Referenced document")),
+    rt("event_involves_asset", "event", "asset", "Event", "Involves asset", "involves", "involved in", roles=("Event", "Involved asset")),
+    rt("event_related_to_event", "event", "event", "Event", "Related event", "related to", "related to", directional=False),
+)
+
+
 LEGACY_TYPES: tuple[RelationshipType, ...] = (
     rt("located_at", "entity", "location", "Location", "Located at", "located at", "location of", notes="Legacy location relationship. Existing records still load and map; new records use pair-specific location types.", selectable=False),
     rt("related_to", "entity", "entity", "Legacy / Other", "Related to", "related to", "related to", directional=False, notes="Legacy fallback. Preserved for existing relationships, not offered for specific supported pairs.", selectable=False),
@@ -234,6 +247,7 @@ RELATIONSHIP_TYPE_GROUPS: tuple[tuple[RelationshipType, ...], ...] = (
     DOCUMENT_ORGANISATION_TYPES,
     DOCUMENT_ASSET_TYPES,
     DOCUMENT_PROJECT_TYPES,
+    EVENT_RELATIONSHIP_TYPES,
     LEGACY_TYPES,
 )
 

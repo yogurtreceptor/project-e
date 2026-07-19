@@ -61,6 +61,13 @@ EXPECTED_SELECTABLE_KEYS_BY_PAIR = {
         "document_belongs_to_project", "document_created_for_project",
         "references", "document_project_other",
     ),
+    ("event", "person"): ("event_involves_person",),
+    ("event", "organisation"): ("event_involves_organisation",),
+    ("event", "location"): ("event_at_location",),
+    ("event", "project"): ("event_related_to_project",),
+    ("event", "document"): ("event_references_document",),
+    ("event", "asset"): ("event_involves_asset",),
+    ("event", "event"): ("event_related_to_event",),
 }
 
 
@@ -73,7 +80,7 @@ class RelationshipCatalogueTests(unittest.TestCase):
     def test_selectable_keys_for_every_entity_pair(self) -> None:
         entity_types = (
             "person", "organisation", "location",
-            "project", "document", "asset",
+            "project", "document", "asset", "event",
         )
         for pair in combinations_with_replacement(entity_types, 2):
             expected_keys = EXPECTED_SELECTABLE_KEYS_BY_PAIR.get(
