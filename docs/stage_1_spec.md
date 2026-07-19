@@ -98,7 +98,7 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 is in progress under [the Phase 2 plan](phase_2_plan.md); only its first temporal-foundation milestone is currently delivered.
+The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 is in progress under [the Phase 2 plan](phase_2_plan.md); temporal and canonical Event service foundations are delivered, while human-facing Event workflows remain pending.
 
 Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 

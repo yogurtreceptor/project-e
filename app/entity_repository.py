@@ -4,7 +4,7 @@ from typing import Any
 
 from app.db_support import sql_identifier, utc_now
 from app.entities import (
-    DEFINITIONS_BY_TYPE,
+    ALL_DEFINITIONS_BY_TYPE,
     ENTITY_DEFINITIONS,
     EntityDefinition,
     EntityRecord,
@@ -81,7 +81,7 @@ def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_del
     row = connection.execute(f"SELECT id, type FROM entities WHERE id = ? {clause}", (entity_id,)).fetchone()
     if row is None:
         return None
-    definition = DEFINITIONS_BY_TYPE.get(row["type"])
+    definition = ALL_DEFINITIONS_BY_TYPE.get(row["type"])
     if definition is None:
         return None
     return get_entity(connection, definition, entity_id, include_deleted=include_deleted)

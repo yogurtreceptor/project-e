@@ -314,9 +314,25 @@ ENTITY_DEFINITIONS: tuple[EntityDefinition, ...] = (
     ),
 )
 
+EVENT_DEFINITION = EntityDefinition(
+    type="event",
+    slug="events",
+    singular="Event",
+    plural="Events",
+    table="events",
+    fields=(),
+)
 
-DEFINITIONS_BY_SLUG = {definition.slug: definition for definition in ENTITY_DEFINITIONS}
-DEFINITIONS_BY_TYPE = {definition.type: definition for definition in ENTITY_DEFINITIONS}
+ALL_ENTITY_DEFINITIONS = ENTITY_DEFINITIONS + (EVENT_DEFINITION,)
+DEFINITIONS_BY_SLUG = {
+    definition.slug: definition for definition in ENTITY_DEFINITIONS
+}
+DEFINITIONS_BY_TYPE = {
+    definition.type: definition for definition in ENTITY_DEFINITIONS
+}
+ALL_DEFINITIONS_BY_TYPE = {
+    definition.type: definition for definition in ALL_ENTITY_DEFINITIONS
+}
 
 
 def to_entity_record(definition: EntityDefinition, row: Any) -> EntityRecord:

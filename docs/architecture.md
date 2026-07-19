@@ -1,6 +1,6 @@
 # Architecture
 
-Project E uses a simple local-first architecture. Phase 1 is complete as a development milestone; this document describes its current implementation. [Phase 2](phase_2_plan.md) is in progress, with only its first temporal-foundation milestone currently implemented, and [future direction](future_direction.md) describes later capability layers.
+Project E uses a simple local-first architecture. Phase 1 is complete as a development milestone; this document describes its current implementation. [Phase 2](phase_2_plan.md) is in progress, with its temporal and canonical Event service foundations implemented, and [future direction](future_direction.md) describes later capability layers.
 
 ## Shape
 
@@ -185,7 +185,7 @@ Candidates enter an Inference Review Queue rather than the active relationship s
 
 ## Platform maturity boundary
 
-Phase 1's information model and main human-facing platform are complete as a development milestone. Phase 2 is in progress and not yet complete. Its first Phase 2A milestone adds `app/temporal.py` as the shared boundary for IANA-timezone wall times, precise UTC instants and end-exclusive all-day intervals, plus local Calendar and Event-category configuration tables. Canonical Events and Calendar projections remain subsequent Phase 2A work. Further implementation must follow the temporal, projection, reminder, scheduler and automation boundaries in [the Phase 2 plan](phase_2_plan.md) without speculative service boundaries.
+Phase 1's information model and main human-facing platform are complete as a development milestone. Phase 2 is in progress and not yet complete. `app/temporal.py` owns IANA-timezone wall-time normalization, precise UTC instants and end-exclusive all-day intervals. `app/event_service.py` owns canonical Event validation, persistence and create/edit/archive operations over shared `entities` identity and Event-specific storage. Event is registered as a canonical type for schema integrity, portability and future relationships, but remains outside generic browsing and creation because human-created Events must originate from the Calendar workflow. Calendar UI, relationship/search integration, projections and recurrence remain subsequent Phase 2A work.
 
 Relationships use the same recoverable lifecycle pattern as entities: `deleted_at` is canonical soft-delete state, active repositories exclude recycled rows by default, and the Recycle Bin restores them. Audit records remain append-only and reference records by kind and identifier even while those records are deleted. The platform-wide System Audit reads the existing audit tables through a small action/record-kind normalization layer; it is a view, not a second event store. Timelines remain derived real-world chronology and intentionally exclude operational mutation events.
 

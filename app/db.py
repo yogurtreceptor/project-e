@@ -95,6 +95,17 @@ from app.discovery_repository import (
     search_entities,
     matching_relationships_for_entity,
 )
+from app.event_service import (
+    EventInput,
+    EventRecord,
+    archive_event,
+    create_event,
+    get_event,
+    list_events,
+    unarchive_event,
+    update_event,
+    validate_stored_event,
+)
 
 __all__ = [
     "utc_now",
@@ -169,6 +180,15 @@ __all__ = [
     "search_entities",
     "entity_matches_query",
     "matching_relationships_for_entity",
+    "EventInput",
+    "EventRecord",
+    "archive_event",
+    "create_event",
+    "get_event",
+    "list_events",
+    "unarchive_event",
+    "update_event",
+    "validate_stored_event",
     "parse_int",
     "sql_identifier",
     "sql_literal",

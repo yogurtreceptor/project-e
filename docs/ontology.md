@@ -327,7 +327,9 @@ Relationship dates support exact calendar dates plus certainty metadata.
 
 ## Planned Phase 2 temporal entities and projections
 
-Phase 2 is in progress. Its temporal normalization and Calendar/Event-category reference foundation are implemented, but Event and Task canonical entities are not yet delivered. An Event represents something that occurs, occurred or is expected to occur at a point or interval; a Task represents work that should be performed. Neither requires a Project, and neither is a reminder. Both use standard relationships to connect to any appropriate entity type, including each other.
+Phase 2 is in progress. Its temporal normalization, Calendar/Event-category reference foundation and canonical Event persistence lifecycle are implemented; Task entities and human-facing Event integration are not yet delivered. An Event represents something that occurs, occurred or is expected to occur at an interval; the initial timed model requires bounded start and end instants. A Task represents work that should be performed. Neither requires a Project, and neither is a reminder. Both use standard relationships to connect to any appropriate entity type, including each other.
+
+An Event has one stable canonical entity identity, one Calendar and one category. Its planned time is either a precise timed interval or an all-day date interval, never both. Cancellation records that the Event will not occur, archival removes it from ordinary views, and Recycle Bin deletion identifies an erroneous record; these states are semantically distinct.
 
 A Calendar is a first-class local Event grouping and configuration record; it supplies Event defaults without becoming a second Event store. A calendar view is a derived projection over canonical records and traceable derived occurrences. A canonical record remains its source type; a derived occurrence is a deterministically generated temporal instance such as a birthday; a calendar projection displays either one. See [the Phase 2 plan](phase_2_plan.md) for the detailed temporal, reminder, scheduler and automation semantics.
 

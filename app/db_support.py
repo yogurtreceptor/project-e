@@ -1,7 +1,7 @@
 import re
 from datetime import UTC, datetime
 
-from app.entities import ENTITY_DEFINITIONS
+from app.entities import ALL_ENTITY_DEFINITIONS
 
 
 def utc_now() -> str:
@@ -26,4 +26,6 @@ def sql_literal(value: str) -> str:
 
 
 def allowed_entity_type_sql() -> str:
-    return ", ".join(sql_literal(definition.type) for definition in ENTITY_DEFINITIONS)
+    return ", ".join(
+        sql_literal(definition.type) for definition in ALL_ENTITY_DEFINITIONS
+    )

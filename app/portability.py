@@ -16,7 +16,7 @@ from pathlib import Path, PurePosixPath
 
 from app.audit import record_audit_event
 from app.db_schema import SCHEMA_MIGRATION_IDS, connect
-from app.entities import DEFINITIONS_BY_TYPE
+from app.entities import ALL_DEFINITIONS_BY_TYPE
 from app.entity_repository import validate_entity_values
 from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES
 from app.structured_values import validate_structured_value
@@ -247,7 +247,7 @@ def _validate_database(connection: sqlite3.Connection) -> None:
     if not set(SCHEMA_MIGRATION_IDS) <= migrations:
         raise ValueError("Imported database is not at the current supported schema.")
     for row in connection.execute("SELECT id,type FROM entities"):
-        definition = DEFINITIONS_BY_TYPE.get(row["type"])
+        definition = ALL_DEFINITIONS_BY_TYPE.get(row["type"])
         if definition is None:
             raise ValueError(f"Entity {row['id']} has an unknown type.")
         if not connection.execute(
@@ -257,6 +257,9 @@ def _validate_database(connection: sqlite3.Connection) -> None:
         errors = validate_entity_values(
             definition, _entity_values_for_validation(connection, row["id"], definition), connection
         )
+        if row["type"] == "event":
+            from app.event_service import validate_stored_event
+            errors.extend(validate_stored_event(connection, int(row["id"])))
         if errors:
             raise ValueError(f"Entity {row['id']} is invalid: {'; '.join(errors)}")
     entity_types = {

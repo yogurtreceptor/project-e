@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 
 from app.db_support import allowed_entity_type_sql, sql_identifier, sql_literal, utc_now
-from app.entities import ENTITY_DEFINITIONS, EntityDefinition
+from app.entities import ALL_ENTITY_DEFINITIONS, ENTITY_DEFINITIONS, EntityDefinition
 from app.reference_data import create_reference_data_tables
 from app.units import create_unit_tables
 
@@ -65,6 +65,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_journal_table(connection)
     create_entity_alias_table(connection)
     create_temporal_foundation_tables(connection)
+    create_event_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -131,6 +132,54 @@ def create_temporal_foundation_tables(connection: sqlite3.Connection) -> None:
             """,
             (now, now),
         )
+
+
+def create_event_table(connection: sqlite3.Connection) -> None:
+    """Create canonical planned-time Event storage without recurrence."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS events (
+            entity_id INTEGER PRIMARY KEY
+                REFERENCES entities(id) ON DELETE CASCADE,
+            calendar_id INTEGER NOT NULL
+                REFERENCES calendars(id) ON DELETE RESTRICT,
+            category_id INTEGER NOT NULL
+                REFERENCES event_categories(id) ON DELETE RESTRICT,
+            is_all_day INTEGER NOT NULL CHECK (is_all_day IN (0, 1)),
+            start_utc TEXT NOT NULL DEFAULT '',
+            end_utc TEXT NOT NULL DEFAULT '',
+            start_date TEXT NOT NULL DEFAULT '',
+            end_date_exclusive TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT '',
+            date_precision TEXT NOT NULL DEFAULT 'exact'
+                CHECK (date_precision IN ('exact', 'approximate')),
+            status TEXT NOT NULL DEFAULT 'planned'
+                CHECK (status IN ('planned', 'cancelled')),
+            archived_at TEXT NOT NULL DEFAULT '',
+            CHECK (
+                (
+                    is_all_day = 0
+                    AND start_utc <> '' AND end_utc <> '' AND start_utc < end_utc
+                    AND start_date = '' AND end_date_exclusive = ''
+                    AND timezone <> ''
+                )
+                OR
+                (
+                    is_all_day = 1
+                    AND start_date <> '' AND end_date_exclusive <> ''
+                    AND start_date < end_date_exclusive
+                    AND start_utc = '' AND end_utc = '' AND timezone = ''
+                )
+            )
+        );
+        CREATE INDEX IF NOT EXISTS idx_events_active_time
+            ON events (archived_at, is_all_day, start_utc, start_date, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_events_calendar
+            ON events (calendar_id, archived_at, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_events_category
+            ON events (category_id, archived_at, entity_id);
+        """
+    )
 
 
 def create_journal_table(connection: sqlite3.Connection) -> None:
@@ -273,7 +322,10 @@ def ensure_entity_type_constraint(connection: sqlite3.Connection) -> None:
         "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entities'"
     ).fetchone()
     create_sql = row["sql"] if row else ""
-    if all(sql_literal(definition.type) in create_sql for definition in ENTITY_DEFINITIONS):
+    if all(
+        sql_literal(definition.type) in create_sql
+        for definition in ALL_ENTITY_DEFINITIONS
+    ):
         return
 
     connection.commit()
@@ -490,6 +542,7 @@ SCHEMA_MIGRATIONS = (
     ("20260705_14_document_domain_cleanup", clean_document_domain_fields),
     ("20260705_15_relationship_soft_delete", ensure_relationship_columns),
     ("20260719_16_temporal_foundation", create_temporal_foundation_tables),
+    ("20260719_17_canonical_events", create_event_table),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

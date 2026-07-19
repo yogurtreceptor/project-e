@@ -2,6 +2,13 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Phase 2A canonical Event lifecycle
+
+- Added Event as a stable canonical entity type with migration-safe typed storage referencing Calendars and Event categories.
+- Implemented validated timed and all-day creation, editing, cancellation state, archive/unarchive, default resolution, audit, provenance and entity history through a dedicated Event service.
+- Kept Event creation out of generic entity routes so the next UI milestone can implement the approved Calendar-originated workflow.
+- Extended portable-database validation and System Audit vocabulary for the new Event contract and archive lifecycle.
+
 ## 2026-07-19 — Phase 2A temporal foundation
 
 - Began authorised Phase 2 implementation with shared, standard-library temporal normalization for IANA timezones, UTC instants, bounded timed intervals and end-exclusive all-day intervals.
