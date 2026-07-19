@@ -176,6 +176,8 @@ class EventServiceTests(unittest.TestCase):
             page = client.getresponse().read().decode()
             self.assertIn('href="/calendar/events/new"', page)
             self.assertNotIn("Current Events", page)
+            self.assertIn('class="calendar-page"', page)
+            self.assertNotIn("Operational time", page)
             client.request("GET", "/calendar/events/new")
             form_page = client.getresponse().read().decode()
             self.assertIn('action="/calendar/events/new"', form_page)

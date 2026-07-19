@@ -26,12 +26,7 @@ def calendar_page(
         <a href="/relationships/new?context_entity_id={created_event.id}">Add relationships</a>
         or <a href="/events/{created_event.id}">open the Event record</a>.</section>
         """
-    return f"""
-    <section class="page-heading split"><div><p class="eyebrow">Operational time</p><h1>Calendar</h1>
-    <p>Week and Month views project canonical Events without creating another Event store.</p></div></section>
-    {projection}
-    {created_notice}
-    """
+    return f'<div class="calendar-page">{projection}{created_notice}</div>'
 
 
 def event_form_page(calendars, values, *, editing_event=None, recurrence=None, errors=None) -> str:
