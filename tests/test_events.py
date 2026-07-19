@@ -42,7 +42,7 @@ from app.event_service import (
     unarchive_event,
     update_event,
 )
-from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, occurrences_between, set_recurrence
+from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, get_recurrence, occurrences_between, set_recurrence, split_series
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 from app import views
@@ -289,6 +289,18 @@ class EventServiceTests(unittest.TestCase):
         cancel_occurrence(self.connection, definition, "2026-03-31")
         remaining = occurrences_between(event, definition, date(2026, 1, 1), date(2026, 5, 1), exception_dates(self.connection, definition))
         self.assertNotIn("2026-03-31", [item.occurrence_date for item in remaining])
+
+    def test_split_series_creates_traceable_successor(self) -> None:
+        event_id = create_event(self.connection, EventInput("Stand-up", True, start_date="2026-01-05", end_date="2026-01-05"))
+        event = get_event(self.connection, event_id)
+        definition = set_recurrence(self.connection, event, RecurrenceRule("weekly"))
+        successor_id = split_series(self.connection, event, definition, "2026-01-19")
+        source = get_recurrence(self.connection, event_id)
+        successor = get_event(self.connection, successor_id)
+        self.assertEqual("2026-01-12", source.rule.until_date)
+        self.assertEqual("2026-01-19", successor.start_date)
+        self.assertIsNotNone(get_recurrence(self.connection, successor_id))
+        self.assertEqual((event_id, successor_id, "2026-01-19"), tuple(self.connection.execute("SELECT source_event_id, successor_event_id, split_occurrence_date FROM event_recurrence_splits").fetchone()))
 
     def test_create_rejects_invalid_time_and_rolls_back_identity(self) -> None:
         with self.assertRaises(TemporalValueError):

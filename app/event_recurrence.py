@@ -8,7 +8,7 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from app.db_support import utc_now
-from app.event_service import EventRecord
+from app.event_service import EventInput, EventRecord, create_event
 from app.temporal import normalise_timed_interval
 
 
@@ -44,6 +44,13 @@ def get_recurrence(connection: sqlite3.Connection, event_id: int) -> RecurrenceD
     if row is None:
         return None
     return RecurrenceDefinition(int(row["event_id"]), _rule_from_row(row), int(row["version"]))
+
+
+def _rule_from_row(row: sqlite3.Row) -> RecurrenceRule:
+    return RecurrenceRule(
+        row["frequency"], int(row["interval"]), tuple(json.loads(row["weekdays_json"])),
+        int(row["monthly_ordinal"]), int(row["monthly_weekday"]), row["until_date"],
+    )
 
 
 def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: RecurrenceRule) -> RecurrenceDefinition:
@@ -93,6 +100,35 @@ def exception_dates(connection: sqlite3.Connection, definition: RecurrenceDefini
         "SELECT occurrence_date FROM event_recurrence_exceptions WHERE event_id = ? AND recurrence_version = ? AND exception_type = 'cancelled'",
         (definition.event_id, definition.version),
     )}
+
+
+def split_series(connection: sqlite3.Connection, event: EventRecord, definition: RecurrenceDefinition, split_date: str, successor_rule: RecurrenceRule | None = None) -> int:
+    """End a source series before one occurrence and create its traceable successor."""
+    split_day = date.fromisoformat(split_date)
+    generated = [item.occurrence_date for item in occurrences_between(event, definition, _anchor_date(event), split_day)]
+    if split_date not in generated or split_day == _anchor_date(event):
+        raise ValueError("Series can be split only at a later generated occurrence.")
+    prior_day = date.fromisoformat(generated[-2])
+    source_rule = RecurrenceRule(**{**definition.rule.__dict__, "until_date": prior_day.isoformat()})
+    set_recurrence(connection, event, source_rule)
+    occurrence = _event_for_date(event, split_day)
+    if occurrence.is_all_day:
+        successor_input = EventInput(occurrence.title, True, occurrence.calendar_id, occurrence.notes,
+            start_date=occurrence.start_date,
+            end_date=(date.fromisoformat(occurrence.end_date_exclusive) - timedelta(days=1)).isoformat(),
+            date_precision=occurrence.date_precision)
+    else:
+        successor_input = EventInput(occurrence.title, False, occurrence.calendar_id, occurrence.notes,
+            occurrence.timezone, _local_value(occurrence.start_utc, occurrence.timezone),
+            _local_value(occurrence.end_utc, occurrence.timezone), date_precision=occurrence.date_precision)
+    successor_id = create_event(connection, successor_input)
+    successor = connection.execute("SELECT entity.*, event.* FROM entities entity JOIN events event ON event.entity_id=entity.id WHERE entity.id=?", (successor_id,)).fetchone()
+    successor_event = EventRecord(int(successor["id"]), successor["display_name"], successor["notes"], int(successor["calendar_id"]), bool(successor["is_all_day"]), successor["start_utc"], successor["end_utc"], successor["start_date"], successor["end_date_exclusive"], successor["timezone"], successor["date_precision"], successor["status"], successor["archived_at"], successor["deleted_at"], successor["created_at"], successor["updated_at"])
+    rule = successor_rule or definition.rule
+    set_recurrence(connection, successor_event, RecurrenceRule(**{**rule.__dict__, "until_date": rule.until_date}))
+    connection.execute("INSERT INTO event_recurrence_splits (source_event_id, successor_event_id, split_occurrence_date, created_at) VALUES (?, ?, ?, ?)", (event.id, successor_id, split_date, utc_now()))
+    connection.commit()
+    return successor_id
 
 
 def occurrences_between(event: EventRecord, definition: RecurrenceDefinition | None, start: date, end: date, cancelled_dates: set[str] | None = None) -> list[EventOccurrence]:
@@ -196,3 +232,7 @@ def _event_for_date(event: EventRecord, occurrence_day: date) -> EventRecord:
     end_local = start_local + (original_end.replace(tzinfo=None) - original_start.replace(tzinfo=None))
     interval = normalise_timed_interval(start_local.isoformat(timespec="minutes"), end_local.isoformat(timespec="minutes"), event.timezone)
     return replace(event, start_utc=interval.start_utc, end_utc=interval.end_utc)
+
+
+def _local_value(utc_value: str, timezone_name: str) -> str:
+    return datetime.fromisoformat(utc_value.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(timezone_name)).strftime("%Y-%m-%dT%H:%M")

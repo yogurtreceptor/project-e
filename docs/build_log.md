@@ -6,7 +6,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 
 - Added migration-safe Event series definitions, deterministic derived occurrences and versioned cancellation exceptions without duplicating canonical Event records.
 - Added daily, weekly, monthly and yearly recurrence generation with bounded end dates and documented month-end backward shifting, plus initial recurrence controls in Event editing.
-- Deferred occurrence-specific edit/delete controls, selected/ordinal weekday controls and prospective series splits to finish the recurrence milestone.
+- Added selected/ordinal weekday controls and traceable successor-series split operations; occurrence-specific edit/delete controls remain for the separate Event-editor redesign.
 
 ## 2026-07-19 — Week and Month Calendar projections
 

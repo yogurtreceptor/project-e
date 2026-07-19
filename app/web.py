@@ -281,7 +281,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 updated = get_event(connection, event_id, include_archived=True)
                 if values.get("recurrence_frequency", ""):
                     interval = int(values.get("recurrence_interval", "1"))
-                    set_recurrence(connection, updated, RecurrenceRule(values["recurrence_frequency"], interval, until_date=values.get("recurrence_until", "")))
+                    weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
+                    set_recurrence(connection, updated, RecurrenceRule(values["recurrence_frequency"], interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", "")))
                 else:
                     remove_recurrence(connection, event_id)
         except (ValueError, sqlite3.Error) as error:
