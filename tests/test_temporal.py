@@ -66,12 +66,17 @@ class TemporalTests(unittest.TestCase):
                     WHERE migration_id = '20260719_16_temporal_foundation'
                     """
                 ).fetchone()
+                calendar_history = connection.execute(
+                    """SELECT 1 FROM sqlite_master
+                       WHERE type = 'table' AND name = 'calendar_edit_history'"""
+                ).fetchone()
         self.assertIsNotNone(migration)
         self.assertEqual("Australia/Brisbane", calendar["timezone"])
         self.assertEqual(60, calendar["default_event_duration_minutes"])
         self.assertEqual("General", calendar["name"])
         self.assertEqual(0, calendar["sort_order"])
         self.assertIsNone(category_table)
+        self.assertIsNotNone(calendar_history)
 
 
 if __name__ == "__main__":

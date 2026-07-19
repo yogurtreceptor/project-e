@@ -414,7 +414,7 @@ Reason:
 This matches the intended basic Google Calendar structure and avoids two competing grouping/configuration systems whose colour, defaults, filtering and management semantics would overlap.
 
 Consequences:
-Event colour always derives from its Calendar. The category-bearing development schema is removed through a forward-only corrective migration while its historical migration identifiers remain append-only. Future broad reminder precedence is occurrence override, Event override, Calendar policy, then global policy; reminder storage remains deferred to Phase 2C.
+Event colour always derives from its Calendar. The category-bearing development schema is removed through a forward-only corrective migration while its historical migration identifiers remain append-only. Archiving a Calendar retains its Event assignments and prevents new selection; it cannot be the active default, and deletion is limited to empty non-default Calendars so no Event is silently reassigned. Future broad reminder precedence is occurrence override, Event override, Calendar policy, then global policy; reminder storage remains deferred to Phase 2C.
 
 ## ADR-026: Use semantic Event lifecycle operations
 

@@ -91,3 +91,8 @@ Standardised entity forms and controlled values. Redesigned relationship creatio
 ## 2026-06-21 — Initial local information platform
 
 Established the standard-library Python/SQLite application with reusable CRUD definitions, first-class relationships, entity profiles, discovery, favourites, recent records and geography. Added Projects, Documents and Assets through the shared architecture, local Document uploads, and optional Leaflet/OpenStreetMap/Nominatim map support. Early attachment and organisation-address concepts were superseded by first-class Documents and Location relationships.
+## 2026-07-19 — Calendar management services
+
+- Added validated Calendar listing, retrieval, creation, rename/configuration, ordering, active-default selection, archive/unarchive and empty-only deletion services with audit, provenance and append-only Calendar history.
+- Defined archive safety: Events retain their archived-Calendar assignment, archived Calendars cannot receive new assignments, and no automatic or bulk Event reassignment occurs.
+- Added a forward-only Calendar-history migration plus fresh and upgrade schema coverage.

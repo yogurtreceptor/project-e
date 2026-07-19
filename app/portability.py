@@ -246,6 +246,19 @@ def _validate_database(connection: sqlite3.Connection) -> None:
     }
     if not set(SCHEMA_MIGRATION_IDS) <= migrations:
         raise ValueError("Imported database is not at the current supported schema.")
+    from app.calendar_service import validate_stored_calendar
+    calendars = list(connection.execute("SELECT id FROM calendars"))
+    if not calendars:
+        raise ValueError("Imported database has no Calendar.")
+    defaults = [row for row in connection.execute(
+        "SELECT id FROM calendars WHERE is_default = 1 AND archived_at = ''"
+    )]
+    if len(defaults) != 1:
+        raise ValueError("Imported database must have one active default Calendar.")
+    for row in calendars:
+        errors = validate_stored_calendar(connection, int(row["id"]))
+        if errors:
+            raise ValueError(f"Calendar {row['id']} is invalid: {'; '.join(errors)}")
     for row in connection.execute("SELECT id,type FROM entities"):
         definition = ALL_DEFINITIONS_BY_TYPE.get(row["type"])
         if definition is None:

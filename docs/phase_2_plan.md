@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Delivered foundations include shared temporal normalization, first-class Calendar storage and the canonical Event persistence/service lifecycle. Calendar-originated UI, relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Delivered foundations include shared temporal normalization, Calendar management services, and the canonical Event persistence/service lifecycle. Calendar-originated UI, relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -71,6 +71,8 @@ Whole-platform export and import remain the portability boundary. Phase 2 canoni
 Events are broad, user-owned time records rather than only appointments or meetings. Intended uses include appointments, birthdays, transport, holidays, work, sleep and time blocking. An Event may be physical, remote, virtual, inferred, derived or not meaningfully tied to a place; Location is optional.
 
 Users may create, rename, archive and order Calendars as local configuration records. An Event derives its colour from its Calendar. Users may temporarily show or hide Calendars as a view filter without mutating the Calendar or its Events. Event-specific colour overrides are not part of the model.
+
+Calendar archival retains each assigned Event and its Calendar identity; it neither archives nor silently moves Events. Existing Events may remain assigned to and be edited without changing an archived Calendar, but archived Calendars cannot be selected for a new Event or a reassignment. Before archiving the default Calendar, a user must explicitly select another active Calendar as default. Calendar deletion is limited to empty, non-default Calendars, including no recycled Event assignments; no bulk reassignment operation is introduced in this milestone.
 
 Human-created Events originate from the Calendar rather than the generic entity-create menu. The initial Calendar provides an **Add Event** action. The fast first layer of Event creation contains title, date and start/end entry, quietly applies the selected or default Calendar, and uses progressive disclosure for Calendar management, notes, relationships, reminders, recurrence and other facts. Relationships are added after creation through Event editing and the standard relationship system, not special People, Location or Project pickers in the initial form.
 

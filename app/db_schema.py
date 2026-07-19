@@ -65,6 +65,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_journal_table(connection)
     create_entity_alias_table(connection)
     create_calendar_table(connection)
+    create_calendar_history_table(connection)
     create_event_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
@@ -235,6 +236,23 @@ def create_calendar_table(connection: sqlite3.Connection) -> None:
             """,
             (now, now),
         )
+
+
+def create_calendar_history_table(connection: sqlite3.Connection) -> None:
+    """Create append-only management history for local Calendar records."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS calendar_edit_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            calendar_id INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            details TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_calendar_edit_history_calendar
+            ON calendar_edit_history (calendar_id, created_at, id);
+        """
+    )
 
 
 def create_event_table(connection: sqlite3.Connection) -> None:
@@ -721,6 +739,7 @@ SCHEMA_MIGRATIONS = (
     ),
     ("20260719_17_canonical_events", create_initial_event_table),
     ("20260719_18_remove_event_categories", correct_event_grouping_model),
+    ("20260719_19_calendar_management_history", create_calendar_history_table),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
