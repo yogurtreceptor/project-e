@@ -2,6 +2,11 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Phase 2 plan consolidation
+
+- Restructured the canonical Phase 2 plan around Phases 2A–2F, consolidating approved behaviour, architecture, sequencing, completion criteria and exclusions without starting implementation.
+- Aligned supporting Calendar and reminder terminology: Calendars are local Event configuration records, while calendar views remain derived projections.
+
 ## 2026-07-12 — Phase 2 operational-planning decisions
 
 - Aligned the architecture and design-document status language with the completed desktop shell, theme foundation and representative domain-page conversion; preserved the remaining external human visual and assistive-technology QA as an open verification item.

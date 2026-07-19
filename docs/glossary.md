@@ -290,7 +290,7 @@ A closest known calendar date marked as approximate. It does not represent a dat
 
 ## Reminder
 
-A notification or attention policy attached to a record or derived occurrence, potentially governed by a global policy and an entity-level override. Delivery history is a notification record, not the reminder's canonical definition.
+A notification or attention policy attached to a record or derived occurrence. Its source context and any record-level override are defined by the approved Phase 2 reminder rules; delivery history is a notification record, not the reminder's canonical definition.
 
 ## Notification
 
