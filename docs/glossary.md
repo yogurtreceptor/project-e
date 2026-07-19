@@ -256,7 +256,7 @@ See also: Deterministic Assistance, Local-first, Artificial Intelligence.
 
 ## Phase 2
 
-The planned operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
+The in-progress operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
 
 See also: Event, Task, Calendar Projection, Reminder, Scheduled Job.
 
@@ -274,7 +274,7 @@ A time-based display derived from a canonical record or derived occurrence. It i
 
 ## Calendar
 
-A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. It supplies a name, colour, IANA timezone, default Event duration and reminder preferences; it is not an independent Event store.
+A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and eventually a default reminder policy; it is not an independent Event store.
 
 ## Platform Timezone
 

@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Delivered foundations include shared temporal normalization, Calendar/Event-category reference storage and the canonical Event persistence/service lifecycle. Calendar-originated UI, relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Delivered foundations include shared temporal normalization, first-class Calendar storage and the canonical Event persistence/service lifecycle. Calendar-originated UI, relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -28,7 +28,7 @@ A **Project** is a peer entity and coordination hub, not the owner of its relate
 
 ### Calendars, occurrences and projections
 
-A **Calendar** is a first-class local Event grouping and configuration record. Every Event belongs to one Calendar, which supplies a name, colour, IANA timezone, default Event duration and reminder preferences. Events remain canonical records; the Calendar does not become a second Event store.
+A **Calendar** is a first-class local Event grouping and configuration record. Every Event belongs to exactly one Calendar, which supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and eventually a default reminder policy. Events remain canonical records; the Calendar does not become a second Event store. A fresh installation supplies one default General Calendar. Calendars alone provide Event grouping, management, filtering and colour; there is no separate Event classification layer.
 
 A calendar view is a projection over canonical records and traceable derived occurrences:
 
@@ -66,13 +66,13 @@ Whole-platform export and import remain the portability boundary. Phase 2 canoni
 
 ### Phase 2A — Temporal foundation
 
-#### Events, Calendars and categories
+#### Events and Calendars
 
 Events are broad, user-owned time records rather than only appointments or meetings. Intended uses include appointments, birthdays, transport, holidays, work, sleep and time blocking. An Event may be physical, remote, virtual, inferred, derived or not meaningfully tied to a place; Location is optional.
 
-User-managed Event categories organise these uses without creating separate Event storage models or weakening standard relationship, audit or lifecycle behaviour. A fresh installation supplies one general/default category. Users may create, rename, archive and organise additional categories as local reference data. Each category has a Calendar colour, Events inherit that colour by default, and a user may temporarily show or hide categories as a view filter without mutating the category or its Events.
+Users may create, rename, archive and order Calendars as local configuration records. An Event derives its colour from its Calendar. Users may temporarily show or hide Calendars as a view filter without mutating the Calendar or its Events. Event-specific colour overrides are not part of the model.
 
-Human-created Events originate from the Calendar rather than the generic entity-create menu. The initial Calendar provides an **Add Event** action. The fast first layer of Event creation contains title, date and start/end entry, quietly applies the default category, and uses progressive disclosure for category management, notes, relationships, reminders, recurrence and other facts. Relationships are added after creation through Event editing and the standard relationship system, not special People, Location or Project pickers in the initial form.
+Human-created Events originate from the Calendar rather than the generic entity-create menu. The initial Calendar provides an **Add Event** action. The fast first layer of Event creation contains title, date and start/end entry, quietly applies the selected or default Calendar, and uses progressive disclosure for Calendar management, notes, relationships, reminders, recurrence and other facts. Relationships are added after creation through Event editing and the standard relationship system, not special People, Location or Project pickers in the initial form.
 
 Every Event selects a Calendar and uses that Calendar's defaults. The default duration and Event timezone are overridable as approved; other default precedence remains unresolved below. The initial Calendar prioritises Week and Month views, starts weeks on Monday, and preserves Calendar context:
 
@@ -92,7 +92,7 @@ A timed Event always has start and end instants. Point-in-time timed Events are 
 
 Precise timed values are persisted in UTC. Calendars default to the IANA timezone `Australia/Brisbane` (UTC+10 without daylight saving), and an Event may select another IANA timezone when its originating local time matters. Calendar grids convert Events into the user's current display timezone, while Event details retain the originating timezone. The platform default must be capable of becoming user-configurable later without changing stored instants or existing record meaning.
 
-The shared design covers instants and intervals, all-day values, planned time, deadlines, timezones and daylight-saving behaviour, recurrence, exact and approximate dates, cancellation and rescheduling. An approximate date stores the user's closest known calendar date with an approximate marker; it is not a date range or partial year/month value.
+The shared design covers instants and intervals, all-day values, planned time, deadlines, timezones and daylight-saving behaviour, recurrence, exact and approximate dates, cancellation and rescheduling. Cancellation, reinstatement and rescheduling use dedicated Event service operations while retaining the persisted Event status. An approximate date stores the user's closest known calendar date with an approximate marker; it is not a date range or partial year/month value.
 
 #### Recurrence and lifecycle
 
@@ -108,7 +108,7 @@ Cancellation, archival and deletion remain distinct:
 - Archival removes a no-longer-relevant Event from ordinary Calendar views while retaining it locally and recoverably.
 - Permanent deletion is reserved for genuine errors and follows the existing confirmed, recovery-protected lifecycle.
 
-These states remain distinct in persistence, Calendar projection and history.
+These states remain distinct in persistence, Calendar projection and history. Event archival is independent from Recycle Bin deletion. Restoring a deleted Event preserves its prior archive and cancellation state.
 
 Before the full Calendar is considered integrated, the Event foundation must demonstrate:
 
@@ -127,7 +127,7 @@ The initial Task lifecycle is **Open**, **Completed** and **Archived**. **In pro
 
 Task creation exposes title, Task list, planned date/time, deadline, relationships and notes directly. Human-created Tasks originate from the Calendar. The dedicated Tasks view organises and completes existing work rather than creating a competing generic path. The Inbox may offer a controlled conversion of an attention item into a Task.
 
-A Task's deadline and planned work sessions are independent and optional. One Task may have multiple planned sessions; each appears as a separate Calendar block while remaining part of the same canonical Task. Events and Task sessions use distinct visual treatments, preserving Event category colours while making Tasks recognizable. Completing a Task removes its future planned blocks, retains past sessions as history, and marks those past blocks with a completed-check treatment.
+A Task's deadline and planned work sessions are independent and optional. One Task may have multiple planned sessions; each appears as a separate Calendar block while remaining part of the same canonical Task. Events and Task sessions use distinct visual treatments, preserving Calendar-derived Event colours while making Tasks recognizable. Completing a Task removes its future planned blocks, retains past sessions as history, and marks those past blocks with a completed-check treatment.
 
 An open Task that passes its deadline becomes visibly overdue and creates one deduplicated Inbox item. It remains overdue until completion, archival or a deadline change; age increases prominence without creating duplicate items.
 
@@ -146,7 +146,7 @@ source fact → derived occurrence → applicable reminder default
 → optional record-level override → notification delivery
 ```
 
-Global policies define defaults for source categories such as birthdays, anniversaries and Document expiries. Calendars, every Event category—including the general/default category—and Task lists also provide approved context-specific defaults. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**; for Events and Tasks it may remove, alter or add individual reminder timings without changing the applicable default policy. Events support multiple reminder configurations.
+Global policies define defaults for source kinds such as birthdays, anniversaries and Document expiries. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**; for Events and Tasks it may remove, alter or add individual reminder timings without changing the applicable default policy. Events support multiple reminder configurations. Reminder storage and detailed resolution mechanics remain deferred to Phase 2C.
 
 Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy.
 
@@ -243,7 +243,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 
 1. Update status and implementation documentation when Phase 2 work is authorised.
 2. Define shared temporal semantics, persistence contracts and migration-safe schema evolution.
-3. Implement Calendars, Event categories and Events as specified in Phase 2A.
+3. Implement Calendars and Events as specified in Phase 2A.
 4. Integrate Event Relationships with existing entity types.
 5. Add Event search, related-entity projections, Calendar preview and overlay editing.
 6. Build Week and Month Calendar projections over Events.
@@ -355,8 +355,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Calendar, Event-category and reminder precedence.** Calendars supply colour, timezone, default duration and reminder preferences; Event categories also supply colour and reminder defaults; global policies define source-category defaults; record-level overrides alter the applicable defaults. The precedence and conflict-resolution rules among these layers have not been approved.
-- **Calendars and Event categories.** Both are approved grouping/configuration concepts, but the exact interaction between a Calendar's colour and an Event category's inherited colour—and the management relationship between the two—has not been defined.
+- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage, merging behaviour, identity changes and conflict resolution remain deferred to Phase 2C.
 - **Calendar-originated undated Tasks.** Human-created Tasks originate from the Calendar, while planned sessions and deadlines are optional. The entry interaction for a Task with neither has not been defined.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.

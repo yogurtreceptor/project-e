@@ -388,7 +388,7 @@ The scheduler and notification services must claim work transactionally. A recur
 
 ## ADR-024: Model calendars as local Event configurations
 
-Status: Accepted (Phase 2 target architecture)
+Status: Superseded by ADR-025
 
 Date: 2026-07-19
 
@@ -400,3 +400,33 @@ Calendar-specific defaults support useful personal, work and other contexts with
 
 Consequences:
 The calendar is the source of Event presentation preferences, while Events remain canonical records. Actual-time tracking remains a documented future extension for shifts, travel, maintenance or time-tracking workflows.
+
+## ADR-025: Use Calendars as the sole Event grouping and configuration model
+
+Status: Accepted
+
+Date: 2026-07-19
+
+Decision:
+Every canonical Event belongs to exactly one Calendar. Calendars alone provide Event grouping, name, colour, default IANA timezone, default duration, ordering, archive state, filtering and future default reminder policy. A fresh installation has one default General Calendar. There is no separate Event classification or colour-override layer.
+
+Reason:
+This matches the intended basic Google Calendar structure and avoids two competing grouping/configuration systems whose colour, defaults, filtering and management semantics would overlap.
+
+Consequences:
+Event colour always derives from its Calendar. The category-bearing development schema is removed through a forward-only corrective migration while its historical migration identifiers remain append-only. Future broad reminder precedence is occurrence override, Event override, Calendar policy, then global policy; reminder storage remains deferred to Phase 2C.
+
+## ADR-026: Use semantic Event lifecycle operations
+
+Status: Accepted
+
+Date: 2026-07-19
+
+Decision:
+Retain persisted Event status while routing cancellation, reinstatement and rescheduling through dedicated `cancel_event`, `reinstate_event` and `reschedule_event` service operations. Keep Event archive state independent from platform Recycle Bin deletion; restoring a deleted Event preserves its archive and cancellation state.
+
+Reason:
+These transitions have distinct temporal and historical meaning and will later affect recurrence and reminder identity. Dedicated operations preserve clear validation, audit and provenance without introducing a separate lifecycle record model.
+
+Consequences:
+General Event detail edits do not change schedule or status. Calendar projections can distinguish cancelled, archived and deleted records deterministically. Recycle Bin restoration clears only `entities.deleted_at`.

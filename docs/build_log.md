@@ -2,9 +2,16 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Calendar-only Event model correction
+
+- Corrected the Phase 2 model so every canonical Event belongs to exactly one Calendar and Calendars alone provide Event grouping, colour, defaults, ordering, archive state and filtering.
+- Added a forward-only migration that preserves existing Event identities, Calendar links, temporal values and lifecycle state while removing the superseded category-bearing development schema.
+- Added dedicated cancellation, reinstatement and rescheduling operations; retained archive state independently from Recycle Bin deletion and verified restoration preserves archive and cancellation.
+- Kept reminder storage deferred while recording the broad future precedence of occurrence, Event, Calendar and global policies.
+
 ## 2026-07-19 — Phase 2A canonical Event lifecycle
 
-- Added Event as a stable canonical entity type with migration-safe typed storage referencing Calendars and Event categories.
+- Added Event as a stable canonical entity type with migration-safe typed storage. Its initial category-bearing grouping was superseded by the Calendar-only correction above.
 - Implemented validated timed and all-day creation, editing, cancellation state, archive/unarchive, default resolution, audit, provenance and entity history through a dedicated Event service.
 - Kept Event creation out of generic entity routes so the next UI milestone can implement the approved Calendar-originated workflow.
 - Extended portable-database validation and System Audit vocabulary for the new Event contract and archive lifecycle.
@@ -12,7 +19,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 ## 2026-07-19 — Phase 2A temporal foundation
 
 - Began authorised Phase 2 implementation with shared, standard-library temporal normalization for IANA timezones, UTC instants, bounded timed intervals and end-exclusive all-day intervals.
-- Added migration-safe Calendar and Event-category reference storage with deterministic fresh-install defaults, archive state and database-enforced default uniqueness.
+- Added the initial migration-safe temporal reference storage; its extra category layer was superseded by the Calendar-only correction above.
 - Covered UTC conversion, invalid/ambiguous daylight-saving times, interval validation, fresh schema creation and existing-database adoption with focused tests.
 - Kept canonical Events, Calendar projections, recurrence and reminder precedence for later Phase 2A milestones.
 

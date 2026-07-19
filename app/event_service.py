@@ -22,7 +22,6 @@ class EventInput:
     title: str
     all_day: bool
     calendar_id: int | None = None
-    category_id: int | None = None
     notes: str = ""
     timezone: str = ""
     start_local: str = ""
@@ -32,7 +31,26 @@ class EventInput:
     start_date: str = ""
     end_date: str = ""
     date_precision: str = "exact"
-    status: str = "planned"
+
+
+@dataclass(frozen=True)
+class EventUpdate:
+    title: str
+    calendar_id: int | None = None
+    notes: str = ""
+
+
+@dataclass(frozen=True)
+class EventSchedule:
+    all_day: bool
+    timezone: str = ""
+    start_local: str = ""
+    end_local: str = ""
+    start_fold: int | None = None
+    end_fold: int | None = None
+    start_date: str = ""
+    end_date: str = ""
+    date_precision: str = "exact"
 
 
 @dataclass(frozen=True)
@@ -41,7 +59,6 @@ class EventRecord:
     title: str
     notes: str
     calendar_id: int
-    category_id: int
     is_all_day: bool
     start_utc: str
     end_utc: str
@@ -97,19 +114,30 @@ def create_event(connection: sqlite3.Connection, event: EventInput) -> int:
 
 
 def update_event(
-    connection: sqlite3.Connection, event_id: int, event: EventInput
+    connection: sqlite3.Connection, event_id: int, event: EventUpdate
 ) -> None:
     current = get_event(connection, event_id, include_archived=True)
     if current is None:
         raise ValueError("Event does not exist.")
-    values = _normalise_event(
+    title = event.title.strip()
+    if not title:
+        raise ValueError("Event title is required.")
+    calendar = _resolve_reference(
         connection,
-        event,
-        current_calendar_id=current.calendar_id,
-        current_category_id=current.category_id,
+        "calendars",
+        event.calendar_id,
+        current.calendar_id,
+        "Calendar",
     )
     before = _record_snapshot(current)
-    after = _snapshot_values(values)
+    after = dict(before)
+    after.update(
+        {
+            "title": title,
+            "notes": event.notes.strip(),
+            "calendar_id": int(calendar["id"]),
+        }
+    )
     if before == after:
         return
     now = utc_now()
@@ -120,30 +148,11 @@ def update_event(
             SET display_name = ?, notes = ?, updated_at = ?
             WHERE id = ? AND type = 'event' AND deleted_at = ''
             """,
-            (values["title"], values["notes"], now, event_id),
+            (after["title"], after["notes"], now, event_id),
         )
         connection.execute(
-            """
-            UPDATE events SET
-                calendar_id = ?, category_id = ?, is_all_day = ?,
-                start_utc = ?, end_utc = ?, start_date = ?,
-                end_date_exclusive = ?, timezone = ?, date_precision = ?,
-                status = ?
-            WHERE entity_id = ?
-            """,
-            (
-                values["calendar_id"],
-                values["category_id"],
-                values["is_all_day"],
-                values["start_utc"],
-                values["end_utc"],
-                values["start_date"],
-                values["end_date_exclusive"],
-                values["timezone"],
-                values["date_precision"],
-                values["status"],
-                event_id,
-            ),
+            "UPDATE events SET calendar_id = ? WHERE entity_id = ?",
+            (after["calendar_id"], event_id),
         )
         _record_history(connection, event_id, "edit", before, after)
         record_audit_event(
@@ -158,6 +167,96 @@ def update_event(
             if before.get(field_name) != value:
                 set_provenance(connection, "entity", event_id, field_name, "manual")
         connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+
+
+def cancel_event(connection: sqlite3.Connection, event_id: int) -> bool:
+    return _change_event_status(
+        connection, event_id, expected="planned", replacement="cancelled",
+        action="cancel", note="Event cancelled",
+    )
+
+
+def reinstate_event(connection: sqlite3.Connection, event_id: int) -> bool:
+    return _change_event_status(
+        connection, event_id, expected="cancelled", replacement="planned",
+        action="reinstate", note="Event reinstated",
+    )
+
+
+def reschedule_event(
+    connection: sqlite3.Connection,
+    event_id: int,
+    schedule: EventSchedule,
+) -> bool:
+    current = get_event(connection, event_id, include_archived=True)
+    if current is None:
+        raise ValueError("Event does not exist.")
+    values = _normalise_event(
+        connection,
+        EventInput(
+            title=current.title,
+            notes=current.notes,
+            calendar_id=current.calendar_id,
+            all_day=schedule.all_day,
+            timezone=schedule.timezone,
+            start_local=schedule.start_local,
+            end_local=schedule.end_local,
+            start_fold=schedule.start_fold,
+            end_fold=schedule.end_fold,
+            start_date=schedule.start_date,
+            end_date=schedule.end_date,
+            date_precision=schedule.date_precision,
+        ),
+        current_calendar_id=current.calendar_id,
+        current_status=current.status,
+    )
+    before = _record_snapshot(current)
+    after = _snapshot_values(values)
+    temporal_fields = (
+        "is_all_day", "start_utc", "end_utc", "start_date",
+        "end_date_exclusive", "timezone", "date_precision",
+    )
+    if all(before[field] == after[field] for field in temporal_fields):
+        return False
+    now = utc_now()
+    try:
+        connection.execute(
+            """
+            UPDATE events SET
+                is_all_day = ?, start_utc = ?, end_utc = ?, start_date = ?,
+                end_date_exclusive = ?, timezone = ?, date_precision = ?
+            WHERE entity_id = ?
+            """,
+            (
+                after["is_all_day"], after["start_utc"], after["end_utc"],
+                after["start_date"], after["end_date_exclusive"],
+                after["timezone"], after["date_precision"], event_id,
+            ),
+        )
+        connection.execute(
+            "UPDATE entities SET updated_at = ? WHERE id = ?", (now, event_id)
+        )
+        history_before = {field: before[field] for field in temporal_fields}
+        history_after = {field: after[field] for field in temporal_fields}
+        _record_history(
+            connection, event_id, "reschedule", history_before, history_after
+        )
+        record_audit_event(
+            connection,
+            "reschedule",
+            [("entity", event_id)],
+            before=history_before,
+            after=history_after,
+            notes="Event rescheduled",
+        )
+        for field in temporal_fields:
+            if history_before[field] != history_after[field]:
+                set_provenance(connection, "entity", event_id, field, "manual")
+        connection.commit()
+        return True
     except Exception:
         connection.rollback()
         raise
@@ -300,7 +399,6 @@ def validate_stored_event(connection: sqlite3.Connection, event_id: int) -> list
         errors.append("Event status is invalid.")
     for table, reference_id, label in (
         ("calendars", row["calendar_id"], "Calendar"),
-        ("event_categories", row["category_id"], "Event category"),
     ):
         if connection.execute(
             f"SELECT 1 FROM {table} WHERE id = ?", (reference_id,)
@@ -334,15 +432,13 @@ def _normalise_event(
     event: EventInput,
     *,
     current_calendar_id: int | None = None,
-    current_category_id: int | None = None,
+    current_status: str = "planned",
 ) -> dict[str, Any]:
     title = event.title.strip()
     if not title:
         raise ValueError("Event title is required.")
     if event.date_precision not in ("exact", "approximate"):
         raise ValueError("Event date precision must be exact or approximate.")
-    if event.status not in ("planned", "cancelled"):
-        raise ValueError("Event status must be planned or cancelled.")
 
     calendar = _resolve_reference(
         connection,
@@ -351,18 +447,10 @@ def _normalise_event(
         current_calendar_id,
         "Calendar",
     )
-    category = _resolve_reference(
-        connection,
-        "event_categories",
-        event.category_id,
-        current_category_id,
-        "Event category",
-    )
     values: dict[str, Any] = {
         "title": title,
         "notes": event.notes.strip(),
         "calendar_id": int(calendar["id"]),
-        "category_id": int(category["id"]),
         "is_all_day": int(event.all_day),
         "start_utc": "",
         "end_utc": "",
@@ -370,7 +458,7 @@ def _normalise_event(
         "end_date_exclusive": "",
         "timezone": "",
         "date_precision": event.date_precision,
-        "status": event.status,
+        "status": current_status,
     }
     if event.all_day:
         interval = normalise_all_day_interval(event.start_date, event.end_date)
@@ -389,6 +477,50 @@ def _normalise_event(
         values["end_utc"] = interval.end_utc
         values["timezone"] = interval.timezone
     return values
+
+
+def _change_event_status(
+    connection: sqlite3.Connection,
+    event_id: int,
+    *,
+    expected: str,
+    replacement: str,
+    action: str,
+    note: str,
+) -> bool:
+    event = get_event(connection, event_id, include_archived=True)
+    if event is None:
+        raise ValueError("Event does not exist.")
+    if event.status == replacement:
+        return False
+    if event.status != expected:
+        raise ValueError(f"Event cannot be changed from {event.status}.")
+    now = utc_now()
+    try:
+        connection.execute(
+            "UPDATE events SET status = ? WHERE entity_id = ?",
+            (replacement, event_id),
+        )
+        connection.execute(
+            "UPDATE entities SET updated_at = ? WHERE id = ?", (now, event_id)
+        )
+        before = {"status": expected}
+        after = {"status": replacement}
+        _record_history(connection, event_id, action, before, after)
+        record_audit_event(
+            connection,
+            action,
+            [("entity", event_id)],
+            before=before,
+            after=after,
+            notes=note,
+        )
+        set_provenance(connection, "entity", event_id, "status", "manual")
+        connection.commit()
+        return True
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def _resolve_reference(
@@ -428,15 +560,14 @@ def _insert_event_row(
     connection.execute(
         """
         INSERT INTO events (
-            entity_id, calendar_id, category_id, is_all_day,
+            entity_id, calendar_id, is_all_day,
             start_utc, end_utc, start_date, end_date_exclusive,
             timezone, date_precision, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             event_id,
             values["calendar_id"],
-            values["category_id"],
             values["is_all_day"],
             values["start_utc"],
             values["end_utc"],
@@ -455,7 +586,6 @@ def _to_event_record(row: sqlite3.Row) -> EventRecord:
         title=row["display_name"],
         notes=row["notes"],
         calendar_id=int(row["calendar_id"]),
-        category_id=int(row["category_id"]),
         is_all_day=bool(row["is_all_day"]),
         start_utc=row["start_utc"],
         end_utc=row["end_utc"],
@@ -485,7 +615,6 @@ def _record_snapshot(event: EventRecord) -> dict[str, Any]:
         "title": values["title"],
         "notes": values["notes"],
         "calendar_id": values["calendar_id"],
-        "category_id": values["category_id"],
         "is_all_day": int(values["is_all_day"]),
         "start_utc": values["start_utc"],
         "end_utc": values["end_utc"],

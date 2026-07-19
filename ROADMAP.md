@@ -12,7 +12,7 @@ Pull request #1 is closed and Phase 1 is complete enough to close as a developme
 
 ## Phase 2 — Operational Time and Deterministic Automation
 
-### Status: Planned
+### Status: In progress
 
 Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 

@@ -48,14 +48,17 @@ class TemporalTests(unittest.TestCase):
         with self.assertRaisesRegex(TemporalValueError, "Unknown IANA timezone"):
             local_datetime_to_utc("2026-07-19T09:00", "Australia/Not_A_Place")
 
-    def test_schema_migration_creates_default_calendar_and_category(self) -> None:
+    def test_schema_migration_creates_default_general_calendar(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database_path = Path(directory) / "temporal.sqlite3"
             initialise_database(database_path)
             with connect(database_path) as connection:
                 calendar = connection.execute("SELECT * FROM calendars").fetchone()
-                category = connection.execute(
-                    "SELECT * FROM event_categories"
+                category_table = connection.execute(
+                    """
+                    SELECT 1 FROM sqlite_master
+                    WHERE type = 'table' AND name = 'event_categories'
+                    """
                 ).fetchone()
                 migration = connection.execute(
                     """
@@ -66,7 +69,9 @@ class TemporalTests(unittest.TestCase):
         self.assertIsNotNone(migration)
         self.assertEqual("Australia/Brisbane", calendar["timezone"])
         self.assertEqual(60, calendar["default_event_duration_minutes"])
-        self.assertEqual("General", category["name"])
+        self.assertEqual("General", calendar["name"])
+        self.assertEqual(0, calendar["sort_order"])
+        self.assertIsNone(category_table)
 
 
 if __name__ == "__main__":

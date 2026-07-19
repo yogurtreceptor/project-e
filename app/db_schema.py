@@ -64,7 +64,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_platform_tables(connection)
     create_journal_table(connection)
     create_entity_alias_table(connection)
-    create_temporal_foundation_tables(connection)
+    create_calendar_table(connection)
     create_event_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
@@ -73,8 +73,10 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     load_relationship_catalog(connection)
 
 
-def create_temporal_foundation_tables(connection: sqlite3.Connection) -> None:
-    """Create Phase 2A reference records used by future canonical Events."""
+def create_initial_temporal_foundation_tables(
+    connection: sqlite3.Connection,
+) -> None:
+    """Historical Phase 2A schema retained for migration compatibility."""
     connection.executescript(
         """
         CREATE TABLE IF NOT EXISTS calendars (
@@ -134,8 +136,8 @@ def create_temporal_foundation_tables(connection: sqlite3.Connection) -> None:
         )
 
 
-def create_event_table(connection: sqlite3.Connection) -> None:
-    """Create canonical planned-time Event storage without recurrence."""
+def create_initial_event_table(connection: sqlite3.Connection) -> None:
+    """Historical category-bearing Event schema retained for migration 17."""
     connection.executescript(
         """
         CREATE TABLE IF NOT EXISTS events (
@@ -180,6 +182,178 @@ def create_event_table(connection: sqlite3.Connection) -> None:
             ON events (category_id, archived_at, entity_id);
         """
     )
+
+
+def create_calendar_table(connection: sqlite3.Connection) -> None:
+    """Create the corrected Calendar-only Event grouping model."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS calendars (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE,
+            colour TEXT NOT NULL,
+            timezone TEXT NOT NULL,
+            default_event_duration_minutes INTEGER NOT NULL
+                CHECK (default_event_duration_minutes > 0),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT NOT NULL DEFAULT '',
+            UNIQUE (name)
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_calendars_one_default
+            ON calendars (is_default) WHERE is_default = 1;
+        CREATE INDEX IF NOT EXISTS idx_calendars_active_order
+            ON calendars (archived_at, sort_order, lower(name), id);
+        """
+    )
+    columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(calendars)")
+    }
+    if "sort_order" not in columns:
+        connection.execute(
+            "ALTER TABLE calendars ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"
+        )
+    connection.execute("DROP INDEX IF EXISTS idx_calendars_active_order")
+    connection.execute(
+        """
+        CREATE INDEX idx_calendars_active_order
+        ON calendars (archived_at, sort_order, lower(name), id)
+        """
+    )
+    now = utc_now()
+    if connection.execute("SELECT 1 FROM calendars LIMIT 1").fetchone() is None:
+        connection.execute(
+            """
+            INSERT INTO calendars (
+                name, colour, timezone, default_event_duration_minutes,
+                sort_order, is_default, created_at, updated_at
+            ) VALUES (
+                'General', '#2563EB', 'Australia/Brisbane', 60, 0, 1, ?, ?
+            )
+            """,
+            (now, now),
+        )
+
+
+def create_event_table(connection: sqlite3.Connection) -> None:
+    """Create canonical planned-time Event storage without categories."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS events (
+            entity_id INTEGER PRIMARY KEY
+                REFERENCES entities(id) ON DELETE CASCADE,
+            calendar_id INTEGER NOT NULL
+                REFERENCES calendars(id) ON DELETE RESTRICT,
+            is_all_day INTEGER NOT NULL CHECK (is_all_day IN (0, 1)),
+            start_utc TEXT NOT NULL DEFAULT '',
+            end_utc TEXT NOT NULL DEFAULT '',
+            start_date TEXT NOT NULL DEFAULT '',
+            end_date_exclusive TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT '',
+            date_precision TEXT NOT NULL DEFAULT 'exact'
+                CHECK (date_precision IN ('exact', 'approximate')),
+            status TEXT NOT NULL DEFAULT 'planned'
+                CHECK (status IN ('planned', 'cancelled')),
+            archived_at TEXT NOT NULL DEFAULT '',
+            CHECK (
+                (
+                    is_all_day = 0
+                    AND start_utc <> '' AND end_utc <> '' AND start_utc < end_utc
+                    AND start_date = '' AND end_date_exclusive = ''
+                    AND timezone <> ''
+                )
+                OR
+                (
+                    is_all_day = 1
+                    AND start_date <> '' AND end_date_exclusive <> ''
+                    AND start_date < end_date_exclusive
+                    AND start_utc = '' AND end_utc = '' AND timezone = ''
+                )
+            )
+        );
+        CREATE INDEX IF NOT EXISTS idx_events_active_time
+            ON events (archived_at, is_all_day, start_utc, start_date, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_events_calendar
+            ON events (calendar_id, archived_at, entity_id);
+        """
+    )
+
+
+def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
+    """Migrate category-bearing development databases to Calendar-only Events."""
+    create_calendar_table(connection)
+    event_columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(events)")
+    }
+    if "category_id" in event_columns:
+        connection.executescript(
+            """
+            CREATE TABLE events_corrected (
+                entity_id INTEGER PRIMARY KEY
+                    REFERENCES entities(id) ON DELETE CASCADE,
+                calendar_id INTEGER NOT NULL
+                    REFERENCES calendars(id) ON DELETE RESTRICT,
+                is_all_day INTEGER NOT NULL CHECK (is_all_day IN (0, 1)),
+                start_utc TEXT NOT NULL DEFAULT '',
+                end_utc TEXT NOT NULL DEFAULT '',
+                start_date TEXT NOT NULL DEFAULT '',
+                end_date_exclusive TEXT NOT NULL DEFAULT '',
+                timezone TEXT NOT NULL DEFAULT '',
+                date_precision TEXT NOT NULL DEFAULT 'exact'
+                    CHECK (date_precision IN ('exact', 'approximate')),
+                status TEXT NOT NULL DEFAULT 'planned'
+                    CHECK (status IN ('planned', 'cancelled')),
+                archived_at TEXT NOT NULL DEFAULT '',
+                CHECK (
+                    (
+                        is_all_day = 0
+                        AND start_utc <> '' AND end_utc <> ''
+                        AND start_utc < end_utc
+                        AND start_date = '' AND end_date_exclusive = ''
+                        AND timezone <> ''
+                    )
+                    OR
+                    (
+                        is_all_day = 1
+                        AND start_date <> '' AND end_date_exclusive <> ''
+                        AND start_date < end_date_exclusive
+                        AND start_utc = '' AND end_utc = '' AND timezone = ''
+                    )
+                )
+            );
+            INSERT INTO events_corrected (
+                entity_id, calendar_id, is_all_day, start_utc, end_utc,
+                start_date, end_date_exclusive, timezone, date_precision,
+                status, archived_at
+            )
+            SELECT
+                entity_id, calendar_id, is_all_day, start_utc, end_utc,
+                start_date, end_date_exclusive, timezone, date_precision,
+                status, archived_at
+            FROM events;
+            DROP TABLE events;
+            ALTER TABLE events_corrected RENAME TO events;
+            """
+        )
+    connection.execute(
+        """
+        UPDATE calendars
+        SET name = 'General', updated_at = ?
+        WHERE is_default = 1 AND name = 'Calendar'
+          AND NOT EXISTS (
+              SELECT 1 FROM calendars AS existing
+              WHERE existing.name = 'General'
+          )
+        """,
+        (utc_now(),),
+    )
+    connection.execute("DROP TABLE IF EXISTS event_categories")
+    connection.execute(
+        "DELETE FROM provenance_metadata WHERE field_name = 'category_id'"
+    )
+    create_event_table(connection)
 
 
 def create_journal_table(connection: sqlite3.Connection) -> None:
@@ -541,8 +715,12 @@ SCHEMA_MIGRATIONS = (
     ("20260705_13_entity_aliases", create_entity_alias_table),
     ("20260705_14_document_domain_cleanup", clean_document_domain_fields),
     ("20260705_15_relationship_soft_delete", ensure_relationship_columns),
-    ("20260719_16_temporal_foundation", create_temporal_foundation_tables),
-    ("20260719_17_canonical_events", create_event_table),
+    (
+        "20260719_16_temporal_foundation",
+        create_initial_temporal_foundation_tables,
+    ),
+    ("20260719_17_canonical_events", create_initial_event_table),
+    ("20260719_18_remove_event_categories", correct_event_grouping_model),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
