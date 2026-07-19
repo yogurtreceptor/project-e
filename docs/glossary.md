@@ -274,11 +274,11 @@ A time-based display derived from a canonical record or derived occurrence. It i
 
 ## Calendar
 
-A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. It supplies a name, colour, default Event duration and reminder preferences; it is not an independent Event store.
+A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. It supplies a name, colour, IANA timezone, default Event duration and reminder preferences; it is not an independent Event store.
 
 ## Platform Timezone
 
-The initial single-user time interpretation and display zone, `Australia/Brisbane`. Initial Phase 2 records do not select individual timezones; precise instants may be stored in UTC while retaining this platform meaning.
+The initial single-user time interpretation and display zone, `Australia/Brisbane`. Calendars default to this IANA zone, while individual timed Events may select another IANA timezone. Precise instants are stored in UTC and displayed through the selected timezone.
 
 ## Derived Occurrence
 

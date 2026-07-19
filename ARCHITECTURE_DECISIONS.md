@@ -303,7 +303,7 @@ Status: Accepted (Phase 2 target architecture)
 Date: 2026-07-11
 
 Decision:
-Initial Phase 2 timed records use `Australia/Brisbane` as their platform timezone and do not offer per-record timezone selection. Precise instants may use backend-safe UTC storage. Recurrence supports calendar-grade daily, weekly, monthly and yearly intervals, selected weekdays, ordinal weekdays and bounded date ranges; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
+Initial Phase 2 calendars default to `Australia/Brisbane` as their IANA timezone, and individual timed Events may select another IANA timezone. Precise instants use backend-safe UTC storage. Recurrence supports calendar-grade daily, weekly, monthly and yearly intervals, selected weekdays, ordinal weekdays and bounded date ranges; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
 
 Reason:
 The current product has one private user in Brisbane, so a single explicit IANA zone supplies clear temporal meaning without premature multi-zone configuration. Deterministic calendar-grade recurrence gives users familiar flexibility while preserving traceable derived occurrences.
@@ -393,7 +393,7 @@ Status: Accepted (Phase 2 target architecture)
 Date: 2026-07-19
 
 Decision:
-Calendars are first-class local Event grouping/configuration records, comparable to Google Calendar calendars. Every Event belongs to one calendar, which supplies name, colour, default Event duration and reminder preferences. Initial Events and Tasks store planned time only; actual start/end tracking is deferred.
+Calendars are first-class local Event grouping/configuration records, comparable to Google Calendar calendars. Every Event belongs to one calendar, which supplies name, colour, IANA timezone, default Event duration and reminder preferences. Events may override the calendar timezone. Initial Events and Tasks store planned time only; actual start/end tracking is deferred.
 
 Reason:
 Calendar-specific defaults support useful personal, work and other contexts without creating a second Event store. Deferring actual time preserves a simple initial temporal model.
