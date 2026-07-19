@@ -8,6 +8,11 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added daily, weekly, monthly and yearly recurrence generation with bounded end dates and documented month-end backward shifting, plus initial recurrence controls in Event editing.
 - Added selected/ordinal weekday controls and traceable successor-series split operations; occurrence-specific edit/delete controls remain for the separate Event-editor redesign.
 
+## 2026-07-19 — Dedicated Calendar Event forms
+
+- Moved Event creation and editing out of the Calendar projection into dedicated routes; the Calendar now supplies a compact add control and Event previews remain the entry point for edit/delete.
+- The Event form now presents either inclusive all-day dates or timed start/end datetimes, avoiding duplicate temporal inputs.
+
 ## 2026-07-19 — Week and Month Calendar projections
 
 - Added Monday-first Week and Month projections derived directly from canonical Event intervals, including all-day spans, timed timezone conversion, Calendar-derived colour and cancelled treatment.

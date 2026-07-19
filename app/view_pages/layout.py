@@ -99,6 +99,7 @@ def layout(
     <script src="/static/taxonomy.js"></script>
     <script src="/static/confirmation.js"></script>
     <script src="/static/dirty-form.js"></script>
+    <script src="/static/event-form.js"></script>
     {save_cleanup}
 </body>
 </html>"""

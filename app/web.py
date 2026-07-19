@@ -232,8 +232,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             view = query.get("view", "month") if query.get("view") in {"month", "week"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, views.default_event_values(calendars), created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
+            self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
             return
+        if len(parts) == 3 and parts[1:] == ["events", "new"]:
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                self.respond_page("Add Event", views.event_form_page(calendars, views.default_event_values(calendars)), active_slug="calendar")
+                return
+            if self.command == "POST":
+                self.handle_calendar_event_create()
+                return
         editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
         delete_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "delete" else None
         if delete_id is not None and self.command == "POST":
@@ -248,10 +257,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 recurrence = get_recurrence(connection, event.id) if event else None
             if event is None or calendar is None:
                 self.respond_not_found(); return
-            self.respond_page("Edit Event", views.calendar_page(calendars, events, views.event_form_values(event, calendar), editing_event=event, recurrence=recurrence), active_slug="calendar", show_save_toast=query.get("saved") == "1")
-            return
-        if len(parts) == 2 and parts[1] == "events" and self.command == "POST":
-            self.handle_calendar_event_create()
+            self.respond_page("Edit Event", views.event_form_page(calendars, views.event_form_values(event, calendar), editing_event=event, recurrence=recurrence), active_slug="calendar", show_save_toast=query.get("saved") == "1")
             return
         if editing_id is not None and self.command == "POST":
             self.handle_calendar_event_edit(editing_id)
@@ -317,7 +323,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             calendars = list_calendars(connection, include_archived=True)
             events = list_events(connection)
             event = get_event(connection, event_id, include_archived=True) if event_id else None
-        self.respond_page("Edit Event" if event else "Calendar", views.calendar_page(calendars, events, values, errors, event), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+        self.respond_page("Edit Event" if event else "Add Event", views.event_form_page(calendars, values, editing_event=event, errors=errors), HTTPStatus.BAD_REQUEST, active_slug="calendar")
 
     def route_taxonomy_request(self, parts: list[str]) -> None:
         from app.taxonomy import archive_entry, create_entry, list_entries, load_relationship_catalog
@@ -1090,6 +1096,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         content_types = {
             "confirmation.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",
+            "event-form.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",
             "super-key.js": "text/javascript; charset=utf-8",

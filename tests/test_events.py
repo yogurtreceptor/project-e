@@ -174,8 +174,12 @@ class EventServiceTests(unittest.TestCase):
             client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
             client.request("GET", "/calendar")
             page = client.getresponse().read().decode()
-            self.assertIn("Add Event", page)
-            self.assertIn('action="/calendar/events"', page)
+            self.assertIn('href="/calendar/events/new"', page)
+            self.assertNotIn("Current Events", page)
+            client.request("GET", "/calendar/events/new")
+            form_page = client.getresponse().read().decode()
+            self.assertIn('action="/calendar/events/new"', form_page)
+            self.assertIn("data-event-all-day", form_page)
 
             create_body = urlencode({
                 "title": "Calendar-created Event", "calendar_id": "1",
@@ -183,7 +187,7 @@ class EventServiceTests(unittest.TestCase):
                 "start_local": "2026-09-10T09:00", "end_local": "2026-09-10T10:00",
                 "timezone": "Australia/Brisbane", "notes": "Created in Calendar",
             })
-            client.request("POST", "/calendar/events", create_body, {
+            client.request("POST", "/calendar/events/new", create_body, {
                 "Content-Type": "application/x-www-form-urlencoded",
             })
             response = client.getresponse()
