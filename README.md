@@ -89,8 +89,9 @@ python3 -m compileall app run.py tests
 ```
 
 ## Screenshots
+Screenshot of the current home interface as at 19/07/2026
 
-Screenshots will be added as the current interface settles. Until then, the architecture and Stage 1 specification provide the clearest tour of the platform without committing stale UI imagery.
+<img width="1895" height="1077" alt="image" src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
 
 ## Portable export and recovery
 
