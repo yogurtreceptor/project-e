@@ -14,7 +14,8 @@ def universal_timeline_page(
         for definition in ENTITY_DEFINITIONS
     )
     cards = "".join(_event_card(event) for event in events)
-    empty = "" if cards else '<p class="empty">No timeline entries match these filters.</p>'
+    active_filters = bool(filters.entity_type or filters.date_from or filters.date_to or filters.related_person_id or filters.related_organisation_id or filters.related_project_id)
+    empty = "" if cards else ('<div class="empty-state"><h2>No matching events</h2><p>No timeline entries match these filters.</p><a class="button secondary" href="/timeline">Clear filters</a></div>' if active_filters else '<div class="empty-state"><h2>No timeline entries yet</h2><p>Dated entity facts and relationships contribute events here.</p></div>')
     return f"""
     <section class="page-heading">
         <h1>Universal Timeline</h1>
@@ -31,7 +32,7 @@ def universal_timeline_page(
             <div class="actions"><button class="button" type="submit">Apply</button><a class="button secondary" href="/timeline">Clear</a></div>
         </form>
     </section>
-    <section class="panel universal-timeline">{empty}<ol class="timeline-list">{cards}</ol></section>
+    <p class="collection-summary" role="status">{len(events)} event{"s" if len(events) != 1 else ""}.</p><section class="panel universal-timeline">{empty}<ol class="timeline-list">{cards}</ol></section>
     """
 
 

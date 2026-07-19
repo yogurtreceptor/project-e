@@ -102,7 +102,7 @@ class DuplicateDetectionTests(unittest.TestCase):
         self.assertIn(f'/people/{existing_id}', first_body)
         self.assertEqual(count_after_warning, 1)
         self.assertEqual(second_status, 303)
-        self.assertEqual(second_headers["Location"], "/people/2")
+        self.assertEqual(second_headers["Location"], "/people/2?saved=1")
         self.assertEqual(count_after_confirmation, 2)
 
     def test_http_edit_excludes_self_and_warns_before_matching_another_record(self) -> None:
@@ -137,7 +137,7 @@ class DuplicateDetectionTests(unittest.TestCase):
         self.assertIn("Possible duplicate records found", warning_body)
         self.assertEqual(after_warning.display_name, "Grace Hopper")
         self.assertEqual(confirmed_status, 303)
-        self.assertEqual(confirmed_headers["Location"], f"/people/{edited_id}")
+        self.assertEqual(confirmed_headers["Location"], f"/people/{edited_id}?saved=1")
         self.assertEqual(after_confirmation.display_name, "Ada Lovelace")
 
     @staticmethod

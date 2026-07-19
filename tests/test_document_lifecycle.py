@@ -63,7 +63,7 @@ class DocumentLifecycleTests(unittest.TestCase):
                 "original.txt",
                 b"original",
             )
-            document_id = int(create_headers["Location"].rsplit("/", 1)[1])
+            document_id = int(create_headers["Location"].rsplit("/", 1)[1].partition("?")[0])
             with connect(self.database_path) as connection:
                 original_record = get_entity(connection, self.definition, document_id)
             original_path = stored_document_path(
@@ -132,7 +132,7 @@ class DocumentLifecycleTests(unittest.TestCase):
                     "file_size": "5 B",
                 },
             )
-            created_id = int(create_headers["Location"].rsplit("/", 1)[1])
+            created_id = int(create_headers["Location"].rsplit("/", 1)[1].partition("?")[0])
             edit_status, _edit_headers = self.post_urlencoded(
                 server.server_port,
                 f"/documents/{existing_id}/edit",

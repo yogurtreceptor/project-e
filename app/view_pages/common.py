@@ -27,3 +27,11 @@ def format_date_with_precision(value: str, precision: str) -> str:
 
 def not_found_page() -> str:
     return '<section class="panel"><h1>Not found</h1><p>The requested page does not exist.</p></section>'
+
+
+def warning_status_row(message: str, details_href: str) -> str:
+    return (
+        '<div class="status-row warning" role="status">'
+        f'<span>{escape(message)}</span> <a href="{escape(details_href)}">Details</a>'
+        "</div>"
+    )

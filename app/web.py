@@ -66,7 +66,7 @@ from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
 from app.geo import build_map_payload, geocoder
-from app.relationship_graph import full_family_component
+from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
 from app.relationship_workflow import (
@@ -160,7 +160,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_new(definition)
         elif len(parts) == 2:
-            self.handle_detail(definition, parts[1])
+            self.handle_detail(definition, parts[1], query)
         elif len(parts) == 3 and parts[2] == "download" and definition.type == "document":
             self.handle_document_download(parts[1])
         elif len(parts) == 3 and parts[2] == "merge":
@@ -184,7 +184,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 2 and parts[1] == "new":
             self.handle_relationship_new(query)
         elif len(parts) == 2 and parts[1] == "family-tree":
-            self.handle_family_tree()
+            self.handle_family_tree(query)
         elif len(parts) == 2 and parts[1] == "inferences":
             self.handle_inference_queue()
         elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "review":
@@ -192,7 +192,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         elif len(parts) == 4 and parts[1] == "inferences" and parts[3] == "undo":
             self.handle_inference_undo(parts[2])
         elif len(parts) == 2:
-            self.handle_relationship_detail(parts[1])
+            self.handle_relationship_detail(parts[1], query)
         elif len(parts) == 3 and parts[2] == "edit":
             self.handle_relationship_edit(parts[1], query)
         elif len(parts) == 3 and parts[2] == "delete":
@@ -280,10 +280,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     return
         self.respond_not_found()
 
-    def handle_family_tree(self) -> None:
+    def handle_family_tree(self, query: dict[str, str]) -> None:
+        selected_person_id = self.parse_entity_id(query.get("person", ""))
         with connect(self.database_path) as connection:
-            graph = full_family_component(list_relationships(connection))
-        self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph)), active_slug="relationships")
+            relationships = list_relationships(connection)
+        if selected_person_id is None:
+            graph = full_family_component(relationships)
+        else:
+            components = connected_family_components(extract_family_graph(relationships))
+            graph = next((component for component in components if any(node.id == selected_person_id for node in component.nodes)), full_family_component(relationships))
+        selected_ids = frozenset((selected_person_id,)) if selected_person_id is not None else frozenset()
+        self.respond_page("Family Tree", views.family_tree_page(layered_layout(graph, selected_ids=selected_ids)), active_slug="relationships")
 
     def handle_portability(self, parts: list[str]) -> None:
         try:
@@ -370,7 +377,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
 
     def handle_system_audit(self, query: dict[str, str]) -> None:
-        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""))
+        filters = AuditFilters(event_type=query.get("event_type", ""), record_kind=query.get("record_kind", ""), record_id=int(query["record_id"]) if query.get("record_id", "").isdigit() else None)
         with connect(self.database_path) as connection:
             events = list_audit_events(connection, filters=filters)
         self.respond_page("System Audit", views.system_audit_page(events, filters), active_slug="system-tools")
@@ -411,7 +418,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug=definition.slug,
         )
 
-    def handle_detail(self, definition: EntityDefinition, raw_id: str) -> None:
+    def handle_detail(self, definition: EntityDefinition, raw_id: str, query: dict[str, str]) -> None:
         entity_id = self.parse_entity_id(raw_id)
         if entity_id is None:
             self.respond_not_found()
@@ -435,6 +442,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             record.title,
             views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries),
             active_slug=definition.slug,
+            show_save_toast=query.get("saved") == "1",
         )
 
     def handle_new(self, definition: EntityDefinition) -> None:
@@ -467,7 +475,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     if stored_metadata is not None:
                         self.delete_document_file(stored_metadata.get("file_path", ""))
                     raise
-                self.redirect(f"/{definition.slug}/{entity_id}")
+                self.redirect(f"/{definition.slug}/{entity_id}?saved=1")
                 return
             self.respond_form(definition, values, errors, "Create")
             return
@@ -526,7 +534,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         delete_unreferenced_document_file(
                             connection, previous_file_path, self.document_storage_dir
                         )
-                self.redirect(f"/{definition.slug}/{entity_id}")
+                self.redirect(f"/{definition.slug}/{entity_id}?saved=1")
                 return
             self.respond_form(definition, values, errors, "Edit", entity_id)
             return
@@ -582,7 +590,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Content-Disposition", f'attachment; filename="{file_name.replace(chr(34), "")}"')
+        disposition = "inline" if parse_qs(urlparse(self.path).query).get("open") == ["1"] and (content_type.startswith("text/") or content_type.startswith("image/")) else "attachment"
+        self.send_header("Content-Disposition", f'{disposition}; filename="{file_name.replace(chr(34), "")}"')
         self.end_headers()
         self.wfile.write(content)
 
@@ -730,7 +739,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             active_slug="relationships",
         )
 
-    def handle_relationship_detail(self, raw_id: str) -> None:
+    def handle_relationship_detail(self, raw_id: str, query: dict[str, str]) -> None:
         relationship_id = self.parse_entity_id(raw_id)
         if relationship_id is None:
             self.respond_not_found()
@@ -744,6 +753,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "Relationship",
             views.relationship_detail_page(relationship),
             active_slug="relationships",
+            show_save_toast=query.get("saved") == "1",
         )
 
     def handle_relationship_new(self, query: dict[str, str]) -> None:
@@ -922,8 +932,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         query = query or {}
         context_id = query.get("context_entity_id")
         if context_id:
-            return self.entity_url_from_id(context_id) or f"/relationships/{relationship_id}"
-        return f"/relationships/{relationship_id}"
+            destination = self.entity_url_from_id(context_id) or f"/relationships/{relationship_id}"
+            return f"{destination}?saved=1"
+        return f"/relationships/{relationship_id}?saved=1"
 
     def entity_url_from_id(self, raw_id: str) -> str | None:
         entity_id = self.parse_entity_id(raw_id)
@@ -937,15 +948,33 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def serve_static(self, relative_path: str) -> None:
         content_types = {
+            "confirmation.js": "text/javascript; charset=utf-8",
+            "dirty-form.js": "text/javascript; charset=utf-8",
+            "foundation.css": "text/css; charset=utf-8",
+            "shell.js": "text/javascript; charset=utf-8",
+            "super-key.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
         }
-        if relative_path not in content_types:
+        if relative_path.startswith("icons/") and relative_path.endswith(".svg"):
+            icon_name = relative_path.removeprefix("icons/").removesuffix(".svg")
+            if not icon_name or not icon_name.replace("-", "").isalnum():
+                self.respond_not_found()
+                return
+            path = STATIC_DIR / "icons" / f"{icon_name}.svg"
+            if not path.is_file():
+                self.respond_not_found()
+                return
+            content_type = "image/svg+xml"
+        elif relative_path in content_types:
+            path = STATIC_DIR / relative_path
+            content_type = content_types[relative_path]
+        else:
             self.respond_not_found()
             return
-        content = (STATIC_DIR / relative_path).read_bytes()
+        content = path.read_bytes()
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_types[relative_path])
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -1026,8 +1055,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         content: str,
         status: HTTPStatus = HTTPStatus.OK,
         active_slug: str | None = None,
+        show_save_toast: bool = False,
     ) -> None:
-        body = views.layout(title, content, active_slug)
+        body = views.layout(title, content, active_slug, show_save_toast)
         encoded = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1064,10 +1094,10 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     initialise_local_storage()
     initialise_database(EddyRequestHandler.database_path)
     server = ThreadingHTTPServer((host, port), EddyRequestHandler)
-    print(f"Operation Eddy running at http://{host}:{port}")
+    print(f"Project E running at http://{host}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Operation Eddy stopped.")
+        print("Project E stopped.")
     finally:
         server.server_close()

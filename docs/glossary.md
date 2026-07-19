@@ -2,6 +2,30 @@
 
 This glossary is the shared vocabulary for Project E. Use it when project terminology is unclear or when future implementation work needs consistent wording.
 
+## Experience Philosophy
+
+The experience-level authority describing why Project E should feel and behave as it does. It guides navigation, information layers, page architecture and visual character without defining low-level tokens or component specifications.
+
+See also: Design System, Entity Page, Super Key.
+
+## Design System
+
+The reusable visual and component rules that apply the Experience Philosophy consistently, including semantic tokens, typography, spacing, states, density, responsiveness and accessibility. It does not define domain-specific workflows or replace the Experience Philosophy.
+
+See also: Experience Philosophy, Entity Page.
+
+## Super Key
+
+A persistent deterministic quick-navigation control for short codes, concise destination names and one-step navigation. It is the **Go** intention and remains distinct from browsing the platform, global information Search, natural-language assistance and consequential commands.
+
+See also: Experience Philosophy, Entity Page.
+
+## Specialised View
+
+A focused page rendering of a canonical entity or connected information for a particular task, such as Relationships, Family Tree, Timeline, Documents, Map or Audit. It is a view over existing records, not a duplicate source of truth.
+
+See also: Entity Page, Canonical Record.
+
 ## Architecture Decision Record (ADR)
 
 A short record of an important architecture decision, why it was made and its consequences.

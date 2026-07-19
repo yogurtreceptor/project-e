@@ -2,6 +2,37 @@
 
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
+## Dirty-form warning does not return focus to its invoker
+
+Severity: medium
+
+After cancelling the dirty-form warning, `app/static/dirty-form.js` focuses the first control in the form rather than the link or Cancel control that opened the dialog. This breaks predictable focus return for keyboard users.
+
+Trigger: any unsaved entity, relationship or journal form where navigation is cancelled from the discard warning.
+
+Direction: retain the invoking element when opening the dialog and restore focus to it on non-discard close, with a safe fallback only when it no longer exists. Add browser-level regression coverage for Cancel, Escape and focus return.
+
+## Views and overflow menus have no explicit Escape or focus-return contract
+
+Severity: medium
+
+The entity Views and More actions use native `<details>` controls without menu-specific Escape handling or focus return. Their current interaction therefore depends on browser defaults and does not meet the documented predictable close/focus behaviour.
+
+Trigger: keyboard use of the Person Views control or entity overflow menu.
+
+Direction: define and implement one accessible disclosure/menu pattern that closes on Escape, returns focus to its summary/invoker, and preserves ordinary Enter/Space/Tab behaviour. Cover both controls with browser-level tests.
+
+## Collapsed sidebar exposes nested destinations as unexplained icons
+
+Severity: low
+
+In the 56px collapsed sidebar state, nested navigation labels are visually hidden and no labelled flyout or temporary expanded panel is supplied. The HTML titles and accessible names remain, but the visual interface does not satisfy the shell standard for discoverable nested destinations.
+
+Trigger: using Browse after collapsing the desktop sidebar.
+
+Direction: provide a labelled nested-destination flyout or temporary expansion on keyboard and pointer interaction, then verify it at both required desktop resolutions.
+
+
 ## Search is in-memory and linear
 
 Severity: medium
@@ -21,14 +52,6 @@ Leaflet assets, map tiles and Nominatim address lookup require WAN access. Core 
 Trigger: the map becomes a core offline workflow.
 
 Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
-
-## Domain list pages are generic
-
-Severity: low
-
-Browse tables do not yet expose the most useful structured fields for every domain.
-
-Direction: derive list columns from entity metadata so, for example, project status and document or asset type can be scanned without opening each record.
 
 ## Timeline is derived and limited
 

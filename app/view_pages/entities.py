@@ -5,10 +5,13 @@ from app.relationships import RelationshipRecord
 from app.journal import JournalEntry
 from app.view_pages.common import format_relationship_dates
 from app.view_pages.dashboard import favourite_form
+from app.view_pages.icons import icon
 from app.view_pages.forms import (
     address_lookup_field,
     address_lookup_script,
+    associate_field_errors,
     entity_form_fields,
+    entity_error_fields,
     duplicate_warning,
     error_block,
     existing_location_action,
@@ -18,59 +21,35 @@ from app.view_pages.forms import (
 
 
 def entity_list_page(definition: EntityDefinition, records: list[EntityRecord], query: str = "", favourites_only: bool = False) -> str:
+    column_specs = {
+        "person": (("DOB", "birthday"), ("Email", "email")),
+        "organisation": (("Classification", "organisation_type"), ("Email", "email")),
+        "location": (("City", "city"), ("State", "state")),
+        "project": (("Status", "status"), ("Target", "target_date")),
+        "document": (("Purpose", "document_type"), ("Expiry", "expiry_date")),
+        "asset": (("Type", "asset_type"), ("Status", "status")),
+    }
+    columns = column_specs[definition.type]
     rows = []
-    secondary_heading = "DOB" if definition.type == "person" else "Notes"
     for record in records:
-        if definition.type == "person":
-            description = escape(record.metadata.get("birthday", "")) or "Not recorded"
-        else:
-            description = escape(record.notes) if record.notes else "No notes yet."
-        rows.append(
-            f"""
-            <tr>
-                <td><a href="/{definition.slug}/{record.id}">{escape(record.title)}</a></td>
-                <td>{description}</td>
-                <td class="row-actions">
-                    <a href="/{definition.slug}/{record.id}/edit">Edit</a>
-                    <form method="post" action="/{definition.slug}/{record.id}/delete" onsubmit="return confirm('Move this record to the Recycle Bin?')">
-                        <button class="link-button" type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            """
-        )
-
-    empty = f'<p class="empty">No {escape(definition.plural.lower())} yet.</p>' if not rows else ""
-    table = (
-        f"""
-        <table>
-            <thead><tr><th>Name</th><th>{secondary_heading}</th><th></th></tr></thead>
-            <tbody>"""
-        + "".join(rows)
-        + "</tbody></table>"
-        if rows
-        else ""
-    )
-
+        facts = "".join(f'<td>{escape(record.metadata.get(field, "")) or "Not recorded"}</td>' for _, field in columns)
+        rows.append(f'<tr><td><a href="/{definition.slug}/{record.id}">{escape(record.title)}</a></td>{facts}<td class="row-actions"><a href="/{definition.slug}/{record.id}/edit">Edit</a></td></tr>')
+    active_filters = bool(query or favourites_only)
+    if rows:
+        headings = "".join(f"<th>{escape(label)}</th>" for label, _ in columns)
+        table = f'<div class="table-scroll" tabindex="0" role="region" aria-label="{escape(definition.plural)} records"><table><thead><tr><th>Name</th>{headings}<th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
+        empty = ""
+    elif active_filters:
+        table = ""
+        empty = f'<div class="empty-state"><h2>No matches</h2><p>No {escape(definition.plural.lower())} match the current filters.</p><a class="button secondary" href="/{definition.slug}">Clear filters</a></div>'
+    else:
+        table = ""
+        empty = f'<div class="empty-state"><h2>No {escape(definition.plural.lower())} yet</h2><p>Create the first canonical {escape(definition.singular.lower())} record.</p><a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a></div>'
     favourite_checked = " checked" if favourites_only else ""
-    return f"""
-    <section class="page-heading split">
-        <div>
-            <h1>{escape(definition.plural)}</h1>
-            <p>Browse and filter canonical {escape(definition.plural.lower())} records.</p>
-        </div>
-        <a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a>
-    </section>
-    <section class="panel filter-panel">
-        <form method="get" action="/{definition.slug}">
-            <input name="q" value="{escape(query)}" placeholder="Filter {escape(definition.plural.lower())}">
-            <label class="inline-check"><input type="checkbox" name="favourites" value="1"{favourite_checked}> Favourites only</label>
-            <button class="button" type="submit">Apply</button>
-            <a class="button secondary" href="/{definition.slug}">Clear</a>
-        </form>
-    </section>
-    <section class="panel">{empty}{table}</section>
-    """
+    result_summary = f'<p class="collection-summary" role="status">{len(records)} result{"s" if len(records) != 1 else ""}{" with filters applied" if active_filters else ""}.</p>'
+    return f"""<section class="page-heading split"><div><h1>{escape(definition.plural)}</h1><p>Browse and filter canonical {escape(definition.plural.lower())} records.</p></div><a class="button" href="/{definition.slug}/new">Create {escape(definition.singular)}</a></section>
+    <section class="panel filter-panel"><form method="get" action="/{definition.slug}"><label><span>Filter {escape(definition.plural.lower())}</span><input name="q" value="{escape(query)}"></label><label class="inline-check"><input type="checkbox" name="favourites" value="1"{favourite_checked}> Favourites only</label><button class="button" type="submit">Apply</button><a class="button secondary" href="/{definition.slug}">Clear</a></form></section>
+    {result_summary}<section class="panel collection-panel">{empty}{table}</section>"""
 
 
 def entity_detail_page(
@@ -87,49 +66,117 @@ def entity_detail_page(
     journal_entries = journal_entries or []
     warning_html = ""
     if integrity_warnings:
-        items = "".join(f"<li>{escape(item.message)}</li>" for item in integrity_warnings)
-        warning_html = f'<section class="warnings"><h2>Data integrity warnings</h2><ul>{items}</ul></section>'
+        count = len(integrity_warnings)
+        warning_html = f'<div class="status-row warning" role="status"><span>{count} data integrity warning{"s" if count != 1 else ""} may affect this record.</span> <a href="/data-quality">Details</a></div>'
     return f"""
     <article class="entity-profile">
         {entity_profile_header(record)}
         {warning_html}
         <div class="profile-grid">
             <div class="profile-main">
-                {entity_overview_section(record)}
-                {entity_geography_section(record, relationships)}
-                {entity_relationships_panel(record, relationships)}
-                {related_entities_section(record, relationships)}
+                {domain_overview_section(record, relationships)}
+                {entity_geography_section(record, relationships) if record.type in {'organisation', 'asset'} else ''}
+                {relationship_summary_section(record, relationships)}
+
                 {person_journal_section(record, journal_entries) if record.type == 'person' else entity_notes_section(record)}
             </div>
             <aside class="profile-side">
-                {document_file_section(record)}
+                {'' if record.type == 'document' else document_file_section(record)}
                 {linked_documents_section(record, relationships)}
                 {timeline_section(record, relationships)}
-                {audit_history_section(history, audit_events)}
-                {metadata_section(record, relationships)}
+
             </aside>
         </div>
     </article>
     """
 
 
+def domain_overview_section(record, relationships):
+    if record.type == "person": return person_overview_section(record, relationships)
+    if record.type == "document": return document_overview_section(record)
+    if record.type == "project": return project_overview_section(record)
+    if record.type == "organisation":
+        return named_overview_section("Organisation details", record, ("organisation_type", "aliases", "website", "phone", "email"))
+    if record.type == "location":
+        return entity_geography_section(record, relationships)
+    if record.type == "asset":
+        return named_overview_section("Asset details", record, ("asset_type", "status", "manufacturer", "model", "serial_number", "acquisition_date", "value"))
+    return entity_overview_section(record)
+
+def named_overview_section(title, record, field_names):
+    fields = {field.name: field for field in record.definition.fields}
+    facts = [(fields[name].label, record.display_field_value(fields[name])) for name in field_names if name in fields]
+    return f'<section class="panel profile-section"><h2>{escape(title)}</h2>{definition_list(facts)}</section>'
+
+def definition_list(items):
+    items = [(label, value) for label, value in items if value]
+    return "<dl>" + "".join(f"<dt>{escape(label)}</dt><dd>{escape(value)}</dd>" for label, value in items) + "</dl>" if items else '<p class="empty">No details recorded yet.</p>'
+
+def person_overview_section(record, relationships):
+    locations=[]
+    for relationship in relationships:
+        location=relationship.other_entity(record.id)
+        if location.type != "location": continue
+        address=location.metadata.get("formatted_address") or ", ".join(v for v in (location.metadata.get("address_line_1", ""), location.metadata.get("suburb", ""), location.metadata.get("city", ""), location.metadata.get("state", ""), location.metadata.get("country", "")) if v)
+        locations.append(f'<li><a href="/{location.slug}/{location.id}">{escape(location.title)}</a><span>{escape(relationship.display_label_from(record.id))}{": " + escape(address) if address else ""}</span></li>')
+    location_content=f'<ul class="entity-link-list">{"".join(locations)}</ul>' if locations else f'<p class="empty">No linked locations yet. <a href="/relationships/new?source_entity_id={record.id}&amp;target_type=location&amp;context_entity_id={record.id}">Link a location</a>.</p>'
+    contact=definition_list([("Birthday",record.metadata.get("birthday","")),("Phone",record.metadata.get("phone","")),("Email",record.metadata.get("email","")),("Alias",record.metadata.get("alias","")),("Nickname",record.metadata.get("nickname",""))])
+    supporting=definition_list([(field.label, record.display_field_value(field)) for field in record.definition.fields if field.name in {"height", "weight", "languages", "nationalities", "ethnicities"}])
+    supporting_html = "" if "No details recorded" in supporting else f"<h2>Personal details</h2>{supporting}"
+    return f'<section class="panel profile-section person-overview"><h2>Contact</h2>{contact}{supporting_html}<div class="section-heading split"><h2>Locations</h2><a href="/map?entity_id={record.id}">View on map</a></div>{location_content}</section>'
+
+def document_overview_section(record):
+    file_name=record.metadata.get("file_name",""); mime=record.metadata.get("mime_type","")
+    if file_name:
+        open_action=f'<a class="button" href="/documents/{record.id}/download?open=1" target="_blank">Open</a>' if mime.startswith(("text/","image/")) else ""
+        actions=f'<div class="actions document-file-actions">{open_action}<a class="button secondary" href="/documents/{record.id}/download" download>Download</a></div>'
+    else: actions='<p class="empty">No uploaded file recorded.</p>'
+    facts=definition_list([("Purpose",record.metadata.get("document_type","")),("Identifier",record.metadata.get("identifier","")),("Document date",record.metadata.get("document_date","")),("Expiry date",record.metadata.get("expiry_date",""))])
+    return f'<section class="panel profile-section document-overview"><div class="section-heading split"><h2>Document</h2>{actions}</div>{facts}</section>'
+
+def project_overview_section(record):
+    status=record.metadata.get("status",""); badge=f'<span class="badge">{escape(status)}</span>' if status else '<span class="muted">Not recorded</span>'
+    milestones=definition_list([("Started",record.metadata.get("started_at","")),("Target",record.metadata.get("target_date","")),("Completed",record.metadata.get("ended_at",""))])
+    kind=definition_list([("Project type",record.metadata.get("project_type",""))])
+    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}</section>'
+
+def relationship_summary_section(record, relationships):
+    rows=[]
+    for relationship in relationships:
+        other=relationship.other_entity(record.id)
+        rows.append(f'<li><a href="/{other.slug}/{other.id}">{escape(other.title)}</a><span><a href="/relationships/{relationship.id}">{escape(relationship.display_label_from(record.id))}</a></span></li>')
+    content=f'<ul class="entity-link-list">{"".join(rows)}</ul>' if rows else '<p class="empty">No relationships yet.</p>'
+    return f'<section class="panel profile-section relationship-summary" id="relationships"><div class="section-heading split"><h2>Relationships</h2><a class="icon-button" href="/relationships/new?source_entity_id={record.id}&amp;context_entity_id={record.id}" aria-label="Add relationship" title="Add relationship">{icon("add")}</a></div>{content}</section>'
+
+
 def entity_profile_header(record: EntityRecord) -> str:
     definition = record.definition
+    view_links = [
+        ("Overview", f"/{definition.slug}/{record.id}"),
+        ("Relationships", "#relationships"),
+        ("Timeline", f"/timeline?entity_id={record.id}"),
+    ]
+    if record.type == "person":
+        view_links.append(("Family Tree", f"/relationships/family-tree?person={record.id}"))
+    if record.type in {"person", "organisation", "location", "asset"}:
+        view_links.append(("Map", f"/map?entity_id={record.id}"))
+    representation_links = "".join(
+        f'<li><a href="{href}">{escape(label)}</a></li>' for label, href in view_links
+    )
     return f"""
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/{definition.slug}">{escape(definition.plural)}</a></li><li aria-current="page">{escape(record.title)}</li></ol></nav>
     <section class="entity-hero panel">
-        <div>
+        <div class="entity-identity">
             <p class="eyebrow">{escape(definition.singular)}</p>
             <h1>{escape(record.title)}</h1>
         </div>
-        <div class="actions">
-            <a class="button secondary" href="/{definition.slug}">Back</a>
-            {favourite_form(record)}
-            <a class="button secondary" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Create Relationship</a>
-            <a class="button secondary" href="/{definition.slug}/{record.id}/merge">Merge duplicate</a>
+        <div class="actions entity-actions">
+            <details class="action-menu views-menu"><summary class="button secondary">Views</summary><div class="menu-panel"><strong>Record views</strong><ul>{representation_links}</ul><strong>Administrative</strong><ul><li><a href="/system-tools/audit?record_kind=entity&amp;record_id={record.id}">Audit</a></li></ul></div></details>
             <a class="button" href="/{definition.slug}/{record.id}/edit">Edit</a>
-            <form method="post" action="/{definition.slug}/{record.id}/delete" onsubmit="return confirm('Move this record to the Recycle Bin?')">
-                <button class="button danger" type="submit">Delete</button>
+            <form method="post" action="/{definition.slug}/{record.id}/delete" data-confirm-object="{escape(record.title)}" data-confirm-consequence="Move this record to the Recycle Bin. It can be restored later.">
+                <button class="button secondary" type="submit">Delete</button>
             </form>
+            <details class="action-menu"><summary class="button quiet" aria-label="More record actions" title="More record actions">{icon("overflow")}</summary><div class="menu-panel"><ul><li>{favourite_form(record)}</li><li><a href="/relationships/new?source_entity_id={record.id}&amp;context_entity_id={record.id}">Add relationship</a></li><li><a href="/{definition.slug}/{record.id}/merge">Merge duplicate</a></li></ul></div></details>
         </div>
     </section>
     """
@@ -292,10 +339,10 @@ def entity_relationships_panel(record: EntityRecord, relationships: list[Relatio
             """
         )
     return f"""
-    <section class="panel relationships-panel profile-section">
+    <section class="panel relationships-panel profile-section" id="relationships">
         <div class="section-heading split">
             <h2>Relationships</h2>
-            <a href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}">Add relationship</a>
+            <a class="icon-button" href="/relationships/new?source_entity_id={record.id}&context_entity_id={record.id}" aria-label="Add relationship" title="Add relationship">{icon("add")}</a>
         </div>
         {''.join(sections)}
     </section>
@@ -387,7 +434,7 @@ def journal_edit_page(record: EntityRecord, entry: JournalEntry, error: str = ""
     <section class="page-heading"><h1>Edit journal entry</h1><p>{escape(record.title)}</p></section>
     {error_html}
     <section class="panel">
-        <form class="record-form" method="post" action="/people/{record.id}/journal/{entry.id}/edit">
+        <form class="record-form" method="post" action="/people/{record.id}/journal/{entry.id}/edit" data-dirty-form>
             <label><span>Entry</span><textarea name="body" rows="6" required>{escape(entry.body)}</textarea></label>
             <div class="actions"><button class="button" type="submit">Save</button><a class="button secondary" href="/people/{record.id}">Cancel</a></div>
         </form>
@@ -499,23 +546,33 @@ def entity_form_page(
     entity_id: int | None = None,
     duplicate_matches: list | None = None,
     field_options: dict[str, list[tuple[str, str]]] | None = None,
+    return_to: str | None = None,
 ) -> str:
     form_action = (
         f"/{definition.slug}/{entity_id}/edit" if entity_id else f"/{definition.slug}/new"
     )
-    error_html = error_block(errors)
+    error_fields = entity_error_fields(definition, values, errors)
+    error_html = error_block(errors, error_fields)
     duplicate_html = duplicate_warning(duplicate_matches or [], definition.type == "document")
 
     fields = []
     if definition.type == "location":
         fields.append(address_lookup_field())
-    fields.append(entity_form_fields(definition, values, field_options=field_options))
+    fields.append(
+        associate_field_errors(
+            entity_form_fields(definition, values, field_options=field_options),
+            errors,
+            error_fields,
+        )
+    )
     if definition.type == "document":
         fields.append(file_upload_field(values))
 
     location_class = " location-form" if definition.type == "location" else ""
     enctype = ' enctype="multipart/form-data"' if definition.type == "document" else ""
+    cancel_href = return_to or (f"/{definition.slug}/{entity_id}" if entity_id else f"/{definition.slug}")
     return f"""
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/{definition.slug}">{escape(definition.plural)}</a></li>{f'<li><a href="/{definition.slug}/{entity_id}">Record</a></li>' if entity_id else ''}<li aria-current="page">{escape(action)}</li></ol></nav>
     <section class="page-heading split">
         <div>
             <p class="eyebrow">{escape(definition.singular)}</p>
@@ -526,10 +583,10 @@ def entity_form_page(
     <section class="panel">
         {error_html}
         {duplicate_html}
-        <form class="record-form{location_class}" method="post" action="{form_action}"{enctype}>
+        <form class="record-form{location_class}" method="post" action="{form_action}"{enctype} data-dirty-form>
             {''.join(fields)}
             <div class="actions">
-                <a class="button secondary" href="/{definition.slug}">Cancel</a>
+                <a class="button secondary" href="{escape(cancel_href)}" data-dirty-cancel>Cancel</a>
                 <button class="button" type="submit"{' name="confirm_duplicate" value="1"' if duplicate_matches else ''}>{'Save anyway' if duplicate_matches else 'Save'}</button>
             </div>
         </form>

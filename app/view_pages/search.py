@@ -17,7 +17,7 @@ def search_page(query: str, entity_type: str, favourites_only: bool, results: li
     if results:
         cards = "".join(search_result_card(result) for result in results)
     else:
-        cards = '<p class="empty">No matching entities yet.</p>'
+        cards = ('<div class="empty-state"><h2>No matches</h2><p>No entities match the current search and filters.</p><a class="button secondary" href="/search">Clear search</a></div>' if query or entity_type or favourites_only or filter_key else '<div class="empty-state"><h2>Search canonical records</h2><p>Enter a term or choose a structured filter to begin.</p></div>')
     return f"""
     <section class="page-heading split">
         <div><p class="eyebrow">System Tools</p><h1>Search</h1>
@@ -26,16 +26,16 @@ def search_page(query: str, entity_type: str, favourites_only: bool, results: li
     </section>
     <section class="panel search-panel">
         <form method="get" action="/search">
-            <input name="q" value="{escape(query)}" placeholder="Search entities and relationships">
-            <select name="type">{''.join(type_options)}</select>
-            <select name="filter">{''.join(filter_options)}</select>
-            <input name="filter_value" value="{escape(filter_value)}" placeholder="Month or year (when required)">
+            <label><span>Search terms</span><input name="q" value="{escape(query)}"></label>
+            <label><span>Entity type</span><select name="type">{''.join(type_options)}</select></label>
+            <label><span>Structured filter</span><select name="filter">{''.join(filter_options)}</select></label>
+            <label><span>Filter value</span><input name="filter_value" value="{escape(filter_value)}" placeholder="Month or year (when required)"></label>
             <label class="inline-check"><input type="checkbox" name="favourites" value="1"{checked}> Favourites only</label>
             <button class="button" type="submit">Search</button>
             <a class="button secondary" href="/search">Clear</a>
         </form>
     </section>
-    <section class="search-results">{cards}</section>
+    <p class="collection-summary" role="status">{len(results)} result{"s" if len(results) != 1 else ""}.</p><section class="search-results">{cards}</section>
     """
 
 
