@@ -296,17 +296,17 @@ Isolated tables and pages do not prove an operational platform.
 Consequences:
 The implementation sequence and completion scenario in `docs/phase_2_plan.md` govern closure review; starting Phase 2 does not imply completion.
 
-## ADR-018: Use a Brisbane platform timezone and deterministic constrained recurrence
+## ADR-018: Use a Brisbane platform timezone and deterministic calendar-grade recurrence
 
 Status: Accepted (Phase 2 target architecture)
 
 Date: 2026-07-11
 
 Decision:
-Initial Phase 2 timed records use `Australia/Brisbane` as their platform timezone and do not offer per-record timezone selection. Precise instants may use backend-safe UTC storage. Recurrence is limited to daily, weekly, monthly and yearly rules; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
+Initial Phase 2 timed records use `Australia/Brisbane` as their platform timezone and do not offer per-record timezone selection. Precise instants may use backend-safe UTC storage. Recurrence supports calendar-grade daily, weekly, monthly and yearly intervals, selected weekdays, ordinal weekdays and bounded date ranges; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
 
 Reason:
-The current product has one private user in Brisbane, so a single explicit IANA zone supplies clear temporal meaning without premature multi-zone configuration. Constrained, deterministic recurrence gives predictable derived occurrences while avoiding a broad recurrence engine.
+The current product has one private user in Brisbane, so a single explicit IANA zone supplies clear temporal meaning without premature multi-zone configuration. Deterministic calendar-grade recurrence gives users familiar flexibility while preserving traceable derived occurrences.
 
 Consequences:
 Selecting the 29th–31st requires a warning about shorter-period shifting. Derived occurrences remain traceable and do not create duplicate canonical Event records. A later multi-zone design can extend the temporal boundary without changing existing record semantics.
@@ -355,3 +355,33 @@ Serial recovery prevents overlapping work, while a declared policy prevents a hi
 
 Consequences:
 Recovery remains deterministic and auditable after clean or unclean stops. Job registration, not ad hoc scheduler guessing, owns stale-work behaviour.
+
+## ADR-022: Require bounded timed Events and calendar defaults
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+A timed Event always has start and end instants; an all-day Event has date boundaries only. Intervals are start-inclusive and end-exclusive. Calendar settings provide overridable defaults for Event duration and reminder preferences.
+
+Reason:
+Every timed calendar commitment needs an unambiguous occupied interval, while different calendar contexts have legitimately different typical duration and reminder needs.
+
+Consequences:
+The Event form uses its selected calendar's defaults but lets the user override them. Point-in-time timed Events are not part of the initial model.
+
+## ADR-023: Enforce logical idempotency in the database
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Stable identities deduplicate logical occurrences, reminder deliveries, recovered notifications, persistent issues and escalations. Database uniqueness constraints and atomic claims protect the corresponding action, including future external side effects, from concurrent duplicate execution. Each record contract defines material changes that create a new logical item rather than updating the existing one.
+
+Reason:
+In-process execution is not a sufficient duplicate guarantee once recovery, crashes, restarts or later workers are involved.
+
+Consequences:
+The scheduler and notification services must claim work transactionally. A recurrence version change and escalation to a higher severity are examples of material changes that legitimately produce a new logical record.
