@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards; canonical Event storage and lifecycle services; standard Event relationship integration; Event discovery/read-only related-record projections; and Calendar-originated Event creation and editing. Week/Month projections and recurrence remain pending. The Event integration checkpoint is complete. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards; canonical Event storage and lifecycle services; standard Event relationship integration; Event discovery/read-only related-record projections; Calendar-originated Event creation and editing; and Week/Month Calendar projections. Event recurrence remains pending. The Event integration checkpoint is complete. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -251,10 +251,10 @@ The behaviour above is authoritative. The following sequence establishes impleme
 6. **Complete:** integrate Event Relationships with existing entity types.
 7. **Complete:** add Event search and read-only related-entity projections. Events are searchable by their canonical title/notes and relationship context, can be filtered as Events, and open from Search or existing related-record links into a read-only projection with Calendar-derived colour, temporal/lifecycle facts, relationships and change history. This deliberately does not provide generic Event browsing, creation or editing.
 8. **Complete:** add Calendar-originated Event creation and editing. The `/calendar` workflow provides a panel with Calendar defaults, all-day and timed scheduling, readily available timezone, notes, post-creation relationship entry, and edit/reschedule actions routed through the existing Event services. It intentionally remains a form-and-current-Events workflow until Calendar projections arrive.
-9. Build Week and Month Calendar projections over Events, including Calendar visibility filtering and compact Event previews with clear edit and delete actions.
+9. **Complete:** build Monday-first Week and Month Calendar projections over canonical Events. The projection converts timed Event instants into the active default Calendar timezone, retains all-day date boundaries, displays Calendar-derived colour and cancelled treatment, and supports non-mutating visible-Calendar filters. Selecting an Event opens a compact Calendar preview with Edit and confirmed Recycle Bin Delete actions.
 10. Add the approved recurrence definitions, generated occurrences, exceptions and series operations through Event editing.
 
-**Complete:** the Event integration checkpoint defined in Phase 2A now passes: Events can be created and edited from the Calendar, related to multiple peers, found through Search, opened from related-record contexts, and inspected with their history. Week and Month work may now follow.
+**Complete:** the Event integration checkpoint defined in Phase 2A now passes: Events can be created and edited from the Calendar, projected in Week and Month views, related to multiple peers, found through Search, opened from related-record contexts, and inspected with their history. Recurrence work may now follow.
 
 ### Phase 2B — Work management
 

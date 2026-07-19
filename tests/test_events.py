@@ -44,7 +44,7 @@ from app.event_service import (
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 from app import views
-from app.calendar_service import get_calendar
+from app.calendar_service import CalendarInput, create_calendar, get_calendar
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -208,6 +208,60 @@ class EventServiceTests(unittest.TestCase):
             event = get_event(self.connection, 1)
             self.assertEqual("Calendar-edited Event", event.title)
             self.assertEqual("2026-09-11T01:00:00Z", event.start_utc)
+        finally:
+            client.close()
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_calendar_renders_month_week_filters_and_event_preview(self) -> None:
+        work_calendar_id = create_calendar(
+            self.connection, CalendarInput("Work", "#EF4444", "Europe/London")
+        )
+        all_day_id = create_event(
+            self.connection,
+            EventInput("Conference", True, start_date="2026-09-14", end_date="2026-09-16"),
+        )
+        create_event(
+            self.connection,
+            EventInput(
+                "London call", False, work_calendar_id,
+                timezone="Europe/London", start_local="2026-09-15T09:00",
+                end_local="2026-09-15T10:00",
+            ),
+        )
+        EddyRequestHandler.database_path = self.database_path
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            client.request("GET", "/calendar?view=month&date=2026-09-15")
+            month_page = client.getresponse().read().decode()
+            self.assertIn("September 2026", month_page)
+            self.assertIn("Conference", month_page)
+            self.assertIn("18:00 · </span>London call", month_page)
+            self.assertIn("Visible Calendars", month_page)
+
+            client.request("GET", "/calendar?view=month&date=2026-09-15&calendars=1")
+            filtered_page = client.getresponse().read().decode()
+            self.assertNotIn("--calendar-colour:#EF4444", filtered_page)
+
+            client.request("GET", "/calendar?view=week&date=2026-09-15")
+            week_page = client.getresponse().read().decode()
+            self.assertIn("Week of 14 September 2026", week_page)
+            self.assertIn("calendar-week-grid", week_page)
+
+            client.request("GET", f"/calendar?view=month&date=2026-09-15&preview={all_day_id}")
+            preview_page = client.getresponse().read().decode()
+            self.assertIn("Event preview", preview_page)
+            self.assertIn(f'/calendar/events/{all_day_id}/delete', preview_page)
+
+            client.request("POST", f"/calendar/events/{all_day_id}/delete")
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual("/calendar", response.getheader("Location"))
+            self.assertIsNone(get_event(self.connection, all_day_id))
         finally:
             client.close()
             server.shutdown()

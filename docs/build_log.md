@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Week and Month Calendar projections
+
+- Added Monday-first Week and Month projections derived directly from canonical Event intervals, including all-day spans, timed timezone conversion, Calendar-derived colour and cancelled treatment.
+- Added non-mutating Calendar visibility filters and compact Event previews that route editing to the Calendar workflow and deletion through the standard confirmed Recycle Bin lifecycle.
+- Kept recurrence, direct grid interactions and Day/agenda views deferred.
+
 ## 2026-07-19 — Calendar-originated Event creation and editing
 
 - Added the Calendar navigation workflow for human-created Events, with Calendar defaults, all-day and timed scheduling, timezone and optional notes.

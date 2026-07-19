@@ -1,7 +1,9 @@
 """Calendar-originated Event creation and editing forms."""
 
+from calendar import monthrange
 from datetime import date, datetime, timedelta
 from html import escape
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from app.calendar_service import CalendarRecord
@@ -16,8 +18,9 @@ def calendar_page(
     errors: list[str] | None = None,
     editing_event: EventRecord | None = None,
     created_event: EventRecord | None = None,
+    projection: str = "",
 ) -> str:
-    """Render the first Calendar workflow before Week and Month projections."""
+    """Render Calendar projections with the Event form as their write boundary."""
     errors = errors or []
     form_action = (
         f"/calendar/events/{editing_event.id}/edit" if editing_event else "/calendar/events"
@@ -35,7 +38,8 @@ def calendar_page(
         """
     return f"""
     <section class="page-heading split"><div><p class="eyebrow">Operational time</p><h1>Calendar</h1>
-    <p>Create and edit Events here. Week and Month projections follow in the next milestone.</p></div></section>
+    <p>Week and Month views project canonical Events without creating another Event store.</p></div></section>
+    {projection}
     {created_notice}
     <section class="panel calendar-event-editor"><h2>{heading}</h2>
         {error_block(errors)}
@@ -59,6 +63,114 @@ def calendar_page(
     <section class="panel"><div class="section-heading split"><div><h2>Current Events</h2><p class="muted">Archived Events are intentionally excluded.</p></div></div>
     <div class="calendar-event-list">{event_rows or '<p class="empty">No Events yet.</p>'}</div></section>
     """
+
+
+def calendar_projection(
+    events: list[EventRecord], calendars: list[CalendarRecord], *, view: str,
+    anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None,
+) -> str:
+    """Build a Week or Month read projection from canonical Event intervals."""
+    active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
+    selected = selected_calendar_ids or {calendar.id for calendar in active_calendars}
+    visible_events = [event for event in events if event.calendar_id in selected]
+    calendar_by_id = {calendar.id: calendar for calendar in calendars}
+    display_timezone = next(calendar.timezone for calendar in active_calendars if calendar.is_default)
+    parameters = [("view", view), ("date", anchor_date.isoformat())]
+    parameters.extend(("calendars", str(calendar_id)) for calendar_id in sorted(selected))
+    if view == "week":
+        period_start = anchor_date - timedelta(days=anchor_date.weekday())
+        period_end = period_start + timedelta(days=6)
+        grid = _week_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
+        previous = period_start - timedelta(days=7)
+        following = period_start + timedelta(days=7)
+        title = f"Week of {period_start.strftime('%-d %B %Y')}"
+    else:
+        period_start = anchor_date.replace(day=1)
+        period_end = period_start.replace(day=monthrange(period_start.year, period_start.month)[1])
+        grid = _month_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
+        previous = (period_start - timedelta(days=1)).replace(day=1)
+        following = (period_end + timedelta(days=1)).replace(day=1)
+        title = period_start.strftime("%B %Y")
+    previous_url = _calendar_url([( "view", view), ("date", previous.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    following_url = _calendar_url([( "view", view), ("date", following.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    today_url = _calendar_url([( "view", view), ("date", date.today().isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    month_url = _calendar_url([("view", "month"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    week_url = _calendar_url([("view", "week"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    filters = "".join(
+        f'<label class="calendar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected else ""}> <span style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</label>'
+        for calendar in active_calendars
+    )
+    preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
+    return f"""
+    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a></div></div>
+        <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
+        {preview}
+        {grid}
+    </section>
+    """
+
+
+def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], month: date, display_timezone: str, context_query: str) -> str:
+    first = month - timedelta(days=month.weekday())
+    final = month.replace(day=monthrange(month.year, month.month)[1])
+    last = final + timedelta(days=6 - final.weekday())
+    days = [first + timedelta(days=index) for index in range((last - first).days + 1)]
+    cells = "".join(_day_cell(day, events, calendars, display_timezone, day.month == month.month, context_query=context_query) for day in days)
+    return f'<div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid">{cells}</div>'
+
+
+def _week_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], monday: date, display_timezone: str, context_query: str) -> str:
+    days = [monday + timedelta(days=index) for index in range(7)]
+    cells = "".join(_day_cell(day, events, calendars, display_timezone, True, include_weekday=True, context_query=context_query) for day in days)
+    return f'<div class="calendar-week-grid">{cells}</div>'
+
+
+def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, CalendarRecord], display_timezone: str, in_current_month: bool, include_weekday: bool = False, context_query: str = "") -> str:
+    event_items = "".join(_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if _event_occurs_on(event, day, display_timezone))
+    weekday = f'<span class="calendar-day-name">{day.strftime("%A")}</span>' if include_weekday else ""
+    return f'<section class="calendar-day{" outside-month" if not in_current_month else ""}"><header>{weekday}<time datetime="{day.isoformat()}">{day.day}</time></header>{event_items}</section>'
+
+
+def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:
+    label = _projection_label(event, day, display_timezone)
+    query = f"{context_query}&preview={event.id}"
+    state = " cancelled" if event.is_cancelled else ""
+    return f'<a class="calendar-event{state}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
+
+
+def _event_occurs_on(event: EventRecord, day: date, display_timezone: str) -> bool:
+    if event.is_all_day:
+        return event.start_date <= day.isoformat() < event.end_date_exclusive
+    start, end = _timed_dates(event, display_timezone)
+    return start <= day <= end
+
+
+def _projection_label(event: EventRecord, day: date, display_timezone: str) -> str:
+    if event.is_all_day:
+        return "All day · " if event.start_date == day.isoformat() else "Continues · "
+    start = datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(display_timezone))
+    return f"{start.strftime('%H:%M')} · " if start.date() == day else "Continues · "
+
+
+def _timed_dates(event: EventRecord, display_timezone: str) -> tuple[date, date]:
+    zone = ZoneInfo(display_timezone)
+    start = datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(zone)
+    end = datetime.fromisoformat(event.end_utc.removesuffix("Z") + "+00:00").astimezone(zone)
+    return start.date(), (end - timedelta(microseconds=1)).date()
+
+
+def _preview_panel(event: EventRecord, calendar: CalendarRecord | None) -> str:
+    calendar_name = calendar.name if calendar else "Unavailable Calendar"
+    colour = calendar.colour if calendar else "#6B7280"
+    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Move this Event to the Recycle Bin. It can be restored later."><button class="button danger" type="submit">Delete</button></form></div></aside>'
+
+
+def _calendar_url(parameters: list[tuple[str, str]]) -> str:
+    return "/calendar?" + urlencode(parameters)
+
+
+def _calendar_url_with_query(query: str) -> str:
+    return "/calendar?" + query
 
 
 def default_event_values(calendars: list[CalendarRecord]) -> dict[str, str]:

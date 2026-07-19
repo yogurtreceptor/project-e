@@ -64,7 +64,7 @@ from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
-from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
+from app.entities import DEFINITIONS_BY_SLUG, EVENT_DEFINITION, EntityDefinition
 from app.calendar_service import get_calendar, list_calendars
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.geo import build_map_payload, geocoder
@@ -98,7 +98,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def route_request(self) -> None:
         parsed = urlparse(self.path)
         parts = [part for part in parsed.path.split("/") if part]
-        query = {key: values[0] for key, values in parse_qs(parsed.query).items()}
+        query = {
+            key: ",".join(values) if key == "calendars" else values[0]
+            for key, values in parse_qs(parsed.query).items()
+        }
 
         if parsed.path.startswith("/static/"):
             self.serve_static(parsed.path.removeprefix("/static/"))
@@ -220,9 +223,19 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 events = list_events(connection)
                 created_id = self.parse_entity_id(query.get("created", ""))
                 created_event = get_event(connection, created_id) if created_id else None
-            self.respond_page("Calendar", views.calendar_page(calendars, events, views.default_event_values(calendars), created_event=created_event), active_slug="calendar", show_save_toast=created_event is not None)
+                preview_id = self.parse_entity_id(query.get("preview", ""))
+                preview_event = get_event(connection, preview_id) if preview_id else None
+            anchor_date = self.calendar_anchor_date(query.get("date", ""))
+            view = query.get("view", "month") if query.get("view") in {"month", "week"} else "month"
+            selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event)
+            self.respond_page("Calendar", views.calendar_page(calendars, events, views.default_event_values(calendars), created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
             return
         editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
+        delete_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "delete" else None
+        if delete_id is not None and self.command == "POST":
+            self.handle_calendar_event_delete(delete_id)
+            return
         if editing_id is not None and self.command == "GET":
             with connect(self.database_path) as connection:
                 event = get_event(connection, editing_id, include_archived=True)
@@ -265,6 +278,23 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_calendar_event_form(values, [str(error)], event_id)
             return
         self.redirect(f"/calendar/events/{event_id}/edit?saved=1")
+
+    def handle_calendar_event_delete(self, event_id: int) -> None:
+        with connect(self.database_path) as connection:
+            event = get_event(connection, event_id, include_archived=True)
+            if event is None:
+                self.respond_not_found()
+                return
+            delete_entity(connection, EVENT_DEFINITION, event_id)
+        self.redirect("/calendar")
+
+    @staticmethod
+    def calendar_anchor_date(value: str):
+        from datetime import date
+        try:
+            return date.fromisoformat(value) if value else date.today()
+        except ValueError:
+            return date.today()
 
     @staticmethod
     def event_input_from_form(values: dict[str, str]) -> EventInput:
