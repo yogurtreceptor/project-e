@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from app.calendar_service import CalendarRecord
 from app.event_service import EventRecord
+from app.event_recurrence import RecurrenceDefinition, occurrences_between
 from app.view_pages.forms import error_block
 
 
@@ -19,6 +20,7 @@ def calendar_page(
     editing_event: EventRecord | None = None,
     created_event: EventRecord | None = None,
     projection: str = "",
+    recurrence: RecurrenceDefinition | None = None,
 ) -> str:
     """Render Calendar projections with the Event form as their write boundary."""
     errors = errors or []
@@ -54,6 +56,7 @@ def calendar_page(
                 <label for="end_local"><span>Ends</span><input id="end_local" name="end_local" type="datetime-local" value="{escape(values.get('end_local', ''))}"></label>
                 <label for="timezone"><span>Timezone</span><input id="timezone" name="timezone" value="{escape(values.get('timezone', ''))}" placeholder="Australia/Brisbane"><small class="field-help">Use an IANA timezone when the Event's local time matters.</small></label>
                 <label for="notes"><span>Notes <em>(optional)</em></span><textarea id="notes" name="notes" rows="3">{escape(values.get('notes', ''))}</textarea></label>
+                {(_recurrence_fields(recurrence) if editing_event else '')}
             </div>
             <p class="help-text">All-day ranges include both selected dates. Timed Events require a start and end time.</p>
             <div class="actions"><a class="button secondary" href="/calendar">Cancel</a><button class="button" type="submit">{submit}</button></div>
@@ -68,6 +71,8 @@ def calendar_page(
 def calendar_projection(
     events: list[EventRecord], calendars: list[CalendarRecord], *, view: str,
     anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None,
+    recurrences: dict[int, RecurrenceDefinition] | None = None,
+    recurrence_exceptions: dict[int, set[str]] | None = None,
 ) -> str:
     """Build a Week or Month read projection from canonical Event intervals."""
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
@@ -80,6 +85,7 @@ def calendar_projection(
     if view == "week":
         period_start = anchor_date - timedelta(days=anchor_date.weekday())
         period_end = period_start + timedelta(days=6)
+        visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
         grid = _week_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
         previous = period_start - timedelta(days=7)
         following = period_start + timedelta(days=7)
@@ -87,6 +93,7 @@ def calendar_projection(
     else:
         period_start = anchor_date.replace(day=1)
         period_end = period_start.replace(day=monthrange(period_start.year, period_start.month)[1])
+        visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
         grid = _month_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
         previous = (period_start - timedelta(days=1)).replace(day=1)
         following = (period_end + timedelta(days=1)).replace(day=1)
@@ -117,6 +124,10 @@ def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord],
     days = [first + timedelta(days=index) for index in range((last - first).days + 1)]
     cells = "".join(_day_cell(day, events, calendars, display_timezone, day.month == month.month, context_query=context_query) for day in days)
     return f'<div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid">{cells}</div>'
+
+
+def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceDefinition], exceptions: dict[int, set[str]], start: date, end: date) -> list[EventRecord]:
+    return [occurrence.event for event in events for occurrence in occurrences_between(event, recurrences.get(event.id), start, end, exceptions.get(event.id))]
 
 
 def _week_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], monday: date, display_timezone: str, context_query: str) -> str:
@@ -232,3 +243,12 @@ def _as_local(utc_value: str, zone: ZoneInfo) -> str:
 
 def _edit_actions(event: EventRecord) -> str:
     return f'<p class="help-text">Relationships are managed through the shared workflow: <a href="/relationships/new?context_entity_id={event.id}">add a relationship</a>. <a href="/events/{event.id}">Open record</a>.</p>'
+
+
+def _recurrence_fields(recurrence: RecurrenceDefinition | None) -> str:
+    rule = recurrence.rule if recurrence else None
+    frequency = rule.frequency if rule else ""
+    interval = str(rule.interval) if rule else "1"
+    until = rule.until_date if rule else ""
+    options = '<option value="">Does not repeat</option>' + ''.join(f'<option value="{item}"{" selected" if item == frequency else ""}>{item.title()}</option>' for item in ("daily", "weekly", "monthly", "yearly"))
+    return f'<fieldset class="calendar-recurrence"><legend>Recurrence</legend><label for="recurrence_frequency"><span>Repeats</span><select id="recurrence_frequency" name="recurrence_frequency">{options}</select></label><label for="recurrence_interval"><span>Every</span><input id="recurrence_interval" name="recurrence_interval" type="number" min="1" value="{interval}"></label><label for="recurrence_until"><span>Ends</span><input id="recurrence_until" name="recurrence_until" type="date" value="{escape(until)}"></label><small class="field-help">Monthly and yearly repeats on the 29th–31st shift backward in shorter periods.</small></fieldset>'

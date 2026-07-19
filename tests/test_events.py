@@ -3,6 +3,7 @@ import http.client
 import sqlite3
 import tempfile
 import threading
+from datetime import date
 import unittest
 from pathlib import Path
 from urllib.parse import urlencode
@@ -41,6 +42,7 @@ from app.event_service import (
     unarchive_event,
     update_event,
 )
+from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, occurrences_between, set_recurrence
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 from app import views
@@ -267,6 +269,26 @@ class EventServiceTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join()
+
+    def test_monthly_recurrence_projects_clamped_dates_without_duplicate_events(self) -> None:
+        event_id = create_event(
+            self.connection,
+            EventInput("Month end", True, start_date="2026-01-31", end_date="2026-01-31"),
+        )
+        event = get_event(self.connection, event_id)
+        definition = set_recurrence(
+            self.connection, event, RecurrenceRule("monthly", until_date="2026-04-30")
+        )
+        occurrences = occurrences_between(event, definition, date(2026, 1, 1), date(2026, 5, 1))
+        self.assertEqual(
+            ["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"],
+            [item.occurrence_date for item in occurrences],
+        )
+        self.assertEqual(1, self.connection.execute("SELECT COUNT(*) FROM entities WHERE type = 'event'").fetchone()[0])
+
+        cancel_occurrence(self.connection, definition, "2026-03-31")
+        remaining = occurrences_between(event, definition, date(2026, 1, 1), date(2026, 5, 1), exception_dates(self.connection, definition))
+        self.assertNotIn("2026-03-31", [item.occurrence_date for item in remaining])
 
     def test_create_rejects_invalid_time_and_rolls_back_identity(self) -> None:
         with self.assertRaises(TemporalValueError):

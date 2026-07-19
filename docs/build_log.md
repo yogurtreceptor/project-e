@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Event recurrence foundation
+
+- Added migration-safe Event series definitions, deterministic derived occurrences and versioned cancellation exceptions without duplicating canonical Event records.
+- Added daily, weekly, monthly and yearly recurrence generation with bounded end dates and documented month-end backward shifting, plus initial recurrence controls in Event editing.
+- Deferred occurrence-specific edit/delete controls, selected/ordinal weekday controls and prospective series splits to finish the recurrence milestone.
+
 ## 2026-07-19 — Week and Month Calendar projections
 
 - Added Monday-first Week and Month projections derived directly from canonical Event intervals, including all-day spans, timed timezone conversion, Calendar-derived colour and cancelled treatment.
