@@ -2,6 +2,13 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Phase 2A temporal foundation
+
+- Began authorised Phase 2 implementation with shared, standard-library temporal normalization for IANA timezones, UTC instants, bounded timed intervals and end-exclusive all-day intervals.
+- Added migration-safe Calendar and Event-category reference storage with deterministic fresh-install defaults, archive state and database-enforced default uniqueness.
+- Covered UTC conversion, invalid/ambiguous daylight-saving times, interval validation, fresh schema creation and existing-database adoption with focused tests.
+- Kept canonical Events, Calendar projections, recurrence and reminder precedence for later Phase 2A milestones.
+
 ## 2026-07-19 — Phase 2 plan consolidation
 
 - Restructured the canonical Phase 2 plan around Phases 2A–2F, consolidating approved behaviour, architecture, sequencing, completion criteria and exclusions without starting implementation.

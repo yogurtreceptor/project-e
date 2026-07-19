@@ -64,11 +64,73 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_platform_tables(connection)
     create_journal_table(connection)
     create_entity_alias_table(connection)
+    create_temporal_foundation_tables(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
     create_taxonomy_tables(connection)
     load_relationship_catalog(connection)
+
+
+def create_temporal_foundation_tables(connection: sqlite3.Connection) -> None:
+    """Create Phase 2A reference records used by future canonical Events."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS calendars (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE,
+            colour TEXT NOT NULL,
+            timezone TEXT NOT NULL,
+            default_event_duration_minutes INTEGER NOT NULL
+                CHECK (default_event_duration_minutes > 0),
+            is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT NOT NULL DEFAULT '',
+            UNIQUE (name)
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_calendars_one_default
+            ON calendars (is_default) WHERE is_default = 1;
+        CREATE INDEX IF NOT EXISTS idx_calendars_active_order
+            ON calendars (archived_at, lower(name), id);
+
+        CREATE TABLE IF NOT EXISTS event_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE,
+            colour TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT NOT NULL DEFAULT '',
+            UNIQUE (name)
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_event_categories_one_default
+            ON event_categories (is_default) WHERE is_default = 1;
+        CREATE INDEX IF NOT EXISTS idx_event_categories_active_order
+            ON event_categories (archived_at, sort_order, lower(name), id);
+        """
+    )
+    now = utc_now()
+    if connection.execute("SELECT 1 FROM calendars LIMIT 1").fetchone() is None:
+        connection.execute(
+            """
+            INSERT INTO calendars (
+                name, colour, timezone, default_event_duration_minutes,
+                is_default, created_at, updated_at
+            ) VALUES ('Calendar', '#2563EB', 'Australia/Brisbane', 60, 1, ?, ?)
+            """,
+            (now, now),
+        )
+    if connection.execute("SELECT 1 FROM event_categories LIMIT 1").fetchone() is None:
+        connection.execute(
+            """
+            INSERT INTO event_categories (
+                name, colour, sort_order, is_default, created_at, updated_at
+            ) VALUES ('General', '#2563EB', 0, 1, ?, ?)
+            """,
+            (now, now),
+        )
 
 
 def create_journal_table(connection: sqlite3.Connection) -> None:
@@ -427,6 +489,7 @@ SCHEMA_MIGRATIONS = (
     ("20260705_13_entity_aliases", create_entity_alias_table),
     ("20260705_14_document_domain_cleanup", clean_document_domain_fields),
     ("20260705_15_relationship_soft_delete", ensure_relationship_columns),
+    ("20260719_16_temporal_foundation", create_temporal_foundation_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

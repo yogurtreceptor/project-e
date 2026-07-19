@@ -10,7 +10,7 @@ The immediate aim is deliberately human: make the platform genuinely useful, tru
 
 Project E has completed **Phase 1 — Information Platform** as a development milestone. Pull request #1 is closed. The local application provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
 
-The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Phase 2 is **planned**, not complete: it will establish temporal information, Events, calendar projections, Tasks, reminders and attention management, a lightweight scheduler, and deterministic automation. See the [Phase 2 plan](docs/phase_2_plan.md).
+The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Phase 2 is **in progress**, not complete: its first Phase 2A foundation is implemented, while Events, calendar projections, Tasks, reminders and attention management, a lightweight scheduler, and deterministic automation remain staged work. See the [Phase 2 plan](docs/phase_2_plan.md).
 
 ## Architecture at a glance
 

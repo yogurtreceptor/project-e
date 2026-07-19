@@ -1,6 +1,6 @@
 # Architecture
 
-Project E uses a simple local-first architecture. Phase 1 is complete as a development milestone; this document describes its current implementation. [Phase 2](phase_2_plan.md) is planned architecture, not current implementation, and [future direction](future_direction.md) describes later capability layers.
+Project E uses a simple local-first architecture. Phase 1 is complete as a development milestone; this document describes its current implementation. [Phase 2](phase_2_plan.md) is in progress, with only its first temporal-foundation milestone currently implemented, and [future direction](future_direction.md) describes later capability layers.
 
 ## Shape
 
@@ -44,7 +44,7 @@ the ignored runtime directories.
 
 The delivered Phase 1 foundation uses deterministic in-process assistance and internal maintenance only when behaviour is local, explainable and preserves user control. Duplicate warnings, derived views, display-name maintenance, review-batch archival and relationship candidate recomputation fit this boundary. Consequential mutations require explicit user confirmation.
 
-Phase 2 is planned to add a deliberately lightweight local operational runtime—Events, Tasks, local-inbox reminder and attention rules, registered scheduled jobs and deterministic automation—through the existing application and audit boundaries. The initial scheduler runs in-process while the application runs, but its schedules, handlers and locking remain behind a boundary that a later local worker can consume. It does not add AI, agents, cloud service layers, external notification channels or autonomous external side effects. The detailed target architecture is in [the Phase 2 plan](phase_2_plan.md).
+Phase 2 is in progress and will add a deliberately lightweight local operational runtime—Events, Tasks, local-inbox reminder and attention rules, registered scheduled jobs and deterministic automation—through the existing application and audit boundaries. The initial scheduler runs in-process while the application runs, but its schedules, handlers and locking remain behind a boundary that a later local worker can consume. It does not add AI, agents, cloud service layers, external notification channels or autonomous external side effects. The detailed target architecture is in [the Phase 2 plan](phase_2_plan.md).
 
 These are current-phase boundaries. The architecture should not prematurely implement future AI or agent layers, but should continue strengthening the shared platform capabilities they would eventually consume: deterministic rules, validation, relationships, provenance, audit history, data quality and safe domain operations. SQLite remains the canonical source of truth.
 
@@ -185,7 +185,7 @@ Candidates enter an Inference Review Queue rather than the active relationship s
 
 ## Platform maturity boundary
 
-Phase 1's information model and main human-facing platform are complete as a development milestone. Phase 2 is planned, not yet complete; its authorised work must follow the shared temporal, projection, reminder, scheduler and automation boundaries in [the Phase 2 plan](phase_2_plan.md) without speculative service boundaries.
+Phase 1's information model and main human-facing platform are complete as a development milestone. Phase 2 is in progress and not yet complete. Its first Phase 2A milestone adds `app/temporal.py` as the shared boundary for IANA-timezone wall times, precise UTC instants and end-exclusive all-day intervals, plus local Calendar and Event-category configuration tables. Canonical Events and Calendar projections remain subsequent Phase 2A work. Further implementation must follow the temporal, projection, reminder, scheduler and automation boundaries in [the Phase 2 plan](phase_2_plan.md) without speculative service boundaries.
 
 Relationships use the same recoverable lifecycle pattern as entities: `deleted_at` is canonical soft-delete state, active repositories exclude recycled rows by default, and the Recycle Bin restores them. Audit records remain append-only and reference records by kind and identifier even while those records are deleted. The platform-wide System Audit reads the existing audit tables through a small action/record-kind normalization layer; it is a view, not a second event store. Timelines remain derived real-world chronology and intentionally exclude operational mutation events.
 
