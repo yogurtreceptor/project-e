@@ -248,7 +248,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 3. **Complete:** implement Calendar storage and management services: list/retrieve, validated creation and configuration, ordering, active-default selection, archive/unarchive, audit, provenance and append-only history.
 4. **Complete:** implement Calendar lifecycle safeguards: archive retains Event assignments, archived Calendars cannot receive new assignments, no automatic reassignment occurs, and only empty non-default Calendars may be deleted.
 5. **Complete:** implement canonical Event storage and validated lifecycle services, including timed/all-day normalization, cancellation, reinstatement, rescheduling and independent archive state.
-6. Integrate Event Relationships with existing entity types.
+6. **Complete:** integrate Event Relationships with existing entity types.
 7. Add Event search and related-entity projections.
 8. Add Calendar preview and overlay-based Event creation and editing.
 9. Build Week and Month Calendar projections over Events.
