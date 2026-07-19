@@ -65,9 +65,9 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EVENT_DEFINITION, EntityDefinition
-from app.calendar_service import get_calendar, list_calendars
+from app.calendar_service import CalendarInput, archive_calendar, create_calendar, delete_calendar, get_calendar, list_calendars, set_default_calendar, unarchive_calendar, update_calendar
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
-from app.event_recurrence import RecurrenceRule, exception_dates, get_recurrence, remove_recurrence, set_recurrence
+from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -223,16 +223,42 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
-                recurrence_exceptions = {event_id: exception_dates(connection, recurrence) for event_id, recurrence in recurrences.items()}
+                recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
                 created_id = self.parse_entity_id(query.get("created", ""))
                 created_event = get_event(connection, created_id) if created_id else None
                 preview_id = self.parse_entity_id(query.get("preview", ""))
                 preview_event = get_event(connection, preview_id) if preview_id else None
+                preview_occurrence = query.get("occurrence", "")
             anchor_date = self.calendar_anchor_date(query.get("date", ""))
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
             self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
+            return
+        if len(parts) == 2 and parts[1] == "manage":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                self.respond_page("Manage Calendars", views.calendar_management_page(calendars), active_slug="calendar")
+                return
+            if self.command == "POST":
+                self.handle_calendar_management_create()
+                return
+        managed_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" else None
+        managed_action = parts[3] if managed_id is not None else ""
+        if managed_id is not None and managed_action == "edit":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendar = get_calendar(connection, managed_id, include_archived=True)
+                if calendar is None:
+                    self.respond_not_found(); return
+                self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar), active_slug="calendar")
+                return
+            if self.command == "POST":
+                self.handle_calendar_management_edit(managed_id)
+                return
+        if managed_id is not None and self.command == "POST" and managed_action in {"default", "archive", "unarchive", "delete"}:
+            self.handle_calendar_management_action(managed_id, managed_action)
             return
         if len(parts) == 3 and parts[1:] == ["events", "new"]:
             if self.command == "GET":
@@ -249,15 +275,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_calendar_event_delete(delete_id)
             return
         if editing_id is not None and self.command == "GET":
+            occurrence_date = query.get("occurrence", "")
             with connect(self.database_path) as connection:
                 event = get_event(connection, editing_id, include_archived=True)
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
                 calendar = get_calendar(connection, event.calendar_id, include_archived=True) if event else None
                 recurrence = get_recurrence(connection, event.id) if event else None
+                exceptions = occurrence_exceptions(connection, recurrence) if recurrence else {}
             if event is None or calendar is None:
                 self.respond_not_found(); return
-            self.respond_page("Edit Event", views.event_form_page(calendars, views.event_form_values(event, calendar), editing_event=event, recurrence=recurrence), active_slug="calendar", show_save_toast=query.get("saved") == "1")
+            form_event = event
+            if occurrence_date and recurrence:
+                try:
+                    target = self.calendar_anchor_date(occurrence_date)
+                    matches = occurrences_between(event, recurrence, target, target, exceptions)
+                except ValueError:
+                    matches = []
+                if not matches:
+                    self.respond_not_found(); return
+                form_event = matches[0].event
+            self.respond_page("Edit Event", views.event_form_page(calendars, views.event_form_values(form_event, calendar), editing_event=event, recurrence=recurrence, occurrence_date=occurrence_date if form_event is not event else ""), active_slug="calendar", show_save_toast=query.get("saved") == "1")
             return
         if editing_id is not None and self.command == "POST":
             self.handle_calendar_event_edit(editing_id)
@@ -274,6 +312,50 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         self.redirect(f"/calendar?created={event_id}")
 
+    def handle_calendar_management_create(self) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                create_calendar(connection, self.calendar_input_from_form(values))
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_page("Manage Calendars", views.calendar_management_page(calendars, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            return
+        self.redirect("/calendar/manage")
+
+    def handle_calendar_management_edit(self, calendar_id: int) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                update_calendar(connection, calendar_id, self.calendar_input_from_form(values))
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendar = get_calendar(connection, calendar_id, include_archived=True)
+            if calendar is None:
+                self.respond_not_found(); return
+            self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            return
+        self.redirect("/calendar/manage")
+
+    def handle_calendar_management_action(self, calendar_id: int, action: str) -> None:
+        try:
+            with connect(self.database_path) as connection:
+                if action == "default":
+                    set_default_calendar(connection, calendar_id)
+                elif action == "archive":
+                    archive_calendar(connection, calendar_id)
+                elif action == "unarchive":
+                    unarchive_calendar(connection, calendar_id)
+                else:
+                    delete_calendar(connection, calendar_id)
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_page("Manage Calendars", views.calendar_management_page(calendars, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            return
+        self.redirect("/calendar/manage")
+
     def handle_calendar_event_edit(self, event_id: int) -> None:
         values = self.read_form()
         try:
@@ -282,27 +364,52 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 if event is None:
                     self.respond_not_found(); return
                 event_input = self.event_input_from_form(values)
-                update_event(connection, event_id, EventUpdate(event_input.title, event_input.calendar_id, event_input.notes))
-                reschedule_event(connection, event_id, EventSchedule(event_input.all_day, event_input.timezone, event_input.start_local, event_input.end_local, start_date=event_input.start_date, end_date=event_input.end_date))
-                updated = get_event(connection, event_id, include_archived=True)
-                if values.get("recurrence_frequency", ""):
+                definition = get_recurrence(connection, event_id)
+                occurrence_date = values.get("occurrence_date", "")
+                scope = values.get("recurrence_scope", "all")
+                if occurrence_date and definition and scope == "this":
+                    override_occurrence(connection, event, definition, occurrence_date, event_input)
+                elif occurrence_date and definition and scope == "following" and not is_series_anchor(event, occurrence_date):
                     interval = int(values.get("recurrence_interval", "1"))
                     weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
-                    set_recurrence(connection, updated, RecurrenceRule(values["recurrence_frequency"], interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", "")))
+                    rule = RecurrenceRule(values.get("recurrence_frequency", definition.rule.frequency), interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", ""))
+                    successor_id = split_series(connection, event, definition, occurrence_date, rule, event_input)
+                    self.redirect(f"/calendar/events/{successor_id}/edit?saved=1")
+                    return
                 else:
-                    remove_recurrence(connection, event_id)
+                    update_event(connection, event_id, EventUpdate(event_input.title, event_input.calendar_id, event_input.notes))
+                    reschedule_event(connection, event_id, EventSchedule(event_input.all_day, event_input.timezone, event_input.start_local, event_input.end_local, start_date=event_input.start_date, end_date=event_input.end_date))
+                    updated = get_event(connection, event_id, include_archived=True)
+                    if values.get("recurrence_frequency", ""):
+                        interval = int(values.get("recurrence_interval", "1"))
+                        weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
+                        set_recurrence(connection, updated, RecurrenceRule(values["recurrence_frequency"], interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", "")))
+                    else:
+                        remove_recurrence(connection, event_id)
         except (ValueError, sqlite3.Error) as error:
             self.respond_calendar_event_form(values, [str(error)], event_id)
             return
         self.redirect(f"/calendar/events/{event_id}/edit?saved=1")
 
     def handle_calendar_event_delete(self, event_id: int) -> None:
+        values = self.read_form()
         with connect(self.database_path) as connection:
             event = get_event(connection, event_id, include_archived=True)
             if event is None:
                 self.respond_not_found()
                 return
-            delete_entity(connection, EVENT_DEFINITION, event_id)
+            definition = get_recurrence(connection, event_id)
+            occurrence_date = values.get("occurrence_date", "")
+            scope = values.get("recurrence_scope", "all")
+            if occurrence_date and definition and scope == "this":
+                cancel_occurrence(connection, definition, occurrence_date)
+            elif occurrence_date and definition and scope == "following":
+                if is_series_anchor(event, occurrence_date):
+                    delete_entity(connection, EVENT_DEFINITION, event_id)
+                else:
+                    truncate_series(connection, event, definition, occurrence_date)
+            else:
+                delete_entity(connection, EVENT_DEFINITION, event_id)
         self.redirect("/calendar")
 
     @staticmethod
@@ -317,6 +424,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def event_input_from_form(values: dict[str, str]) -> EventInput:
         calendar_id = int(values["calendar_id"]) if values.get("calendar_id", "").isdigit() else None
         return EventInput(values.get("title", ""), values.get("all_day") == "1", calendar_id, values.get("notes", ""), values.get("timezone", ""), values.get("start_local", ""), values.get("end_local", ""), start_date=values.get("start_date", ""), end_date=values.get("end_date", ""))
+
+    @staticmethod
+    def calendar_input_from_form(values: dict[str, str]) -> CalendarInput:
+        return CalendarInput(
+            values.get("name", ""), values.get("colour", "#2563EB"), values.get("timezone", "Australia/Brisbane"),
+            int(values.get("default_event_duration_minutes", "60")), int(values.get("sort_order", "0")),
+        )
 
     def respond_calendar_event_form(self, values: dict[str, str], errors: list[str], event_id: int | None = None) -> None:
         with connect(self.database_path) as connection:

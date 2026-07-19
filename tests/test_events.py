@@ -42,11 +42,11 @@ from app.event_service import (
     unarchive_event,
     update_event,
 )
-from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, get_recurrence, occurrences_between, set_recurrence, split_series
+from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, get_recurrence, occurrence_exceptions, occurrences_between, set_recurrence, split_series
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 from app import views
-from app.calendar_service import CalendarInput, create_calendar, get_calendar
+from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -323,6 +323,81 @@ class EventServiceTests(unittest.TestCase):
         self.assertEqual("2026-01-19", successor.start_date)
         self.assertIsNotNone(get_recurrence(self.connection, successor_id))
         self.assertEqual((event_id, successor_id, "2026-01-19"), tuple(self.connection.execute("SELECT source_event_id, successor_event_id, split_occurrence_date FROM event_recurrence_splits").fetchone()))
+        self.assertIn("series_split", [item["event_type"] for item in list_entity_history(self.connection, event_id)])
+
+    def test_recurring_occurrence_scope_routes_persist_override_and_cancellation(self) -> None:
+        event_id = create_event(self.connection, EventInput("Stand-up", True, start_date="2026-01-05", end_date="2026-01-05"))
+        event = get_event(self.connection, event_id)
+        definition = set_recurrence(self.connection, event, RecurrenceRule("weekly"))
+        EddyRequestHandler.database_path = self.database_path
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            client.request("GET", "/calendar?view=week&date=2026-01-19")
+            page = client.getresponse().read().decode()
+            self.assertIn("occurrence=2026-01-19", page)
+            client.request("GET", f"/calendar/events/{event_id}/edit?occurrence=2026-01-19")
+            form = client.getresponse().read().decode()
+            self.assertIn('name="recurrence_scope"', form)
+            self.assertIn("This and following", form)
+            body = urlencode({
+                "title": "One-off stand-up", "calendar_id": "1", "all_day": "1",
+                "start_date": "2026-01-19", "end_date": "2026-01-19", "notes": "Exception",
+                "occurrence_date": "2026-01-19", "recurrence_scope": "this",
+                "recurrence_frequency": "weekly", "recurrence_interval": "1",
+            })
+            client.request("POST", f"/calendar/events/{event_id}/edit", body, {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(303, client.getresponse().status)
+            projected = occurrences_between(event, definition, date(2026, 1, 19), date(2026, 1, 19), occurrence_exceptions(self.connection, definition))
+            self.assertEqual("One-off stand-up", projected[0].event.title)
+            self.assertEqual("Stand-up", get_event(self.connection, event_id).title)
+            delete_body = urlencode({"occurrence_date": "2026-01-26", "recurrence_scope": "this"})
+            client.request("POST", f"/calendar/events/{event_id}/delete", delete_body, {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(303, client.getresponse().status)
+            remaining = occurrences_between(event, definition, date(2026, 1, 26), date(2026, 1, 26), occurrence_exceptions(self.connection, definition))
+            self.assertEqual([], remaining)
+            split_body = urlencode({
+                "title": "Future stand-up", "calendar_id": "1", "all_day": "1",
+                "start_date": "2026-02-02", "end_date": "2026-02-02", "notes": "New series",
+                "occurrence_date": "2026-02-02", "recurrence_scope": "following",
+                "recurrence_frequency": "weekly", "recurrence_interval": "1",
+            })
+            client.request("POST", f"/calendar/events/{event_id}/edit", split_body, {"Content-Type": "application/x-www-form-urlencoded"})
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            successor_id = int(response.getheader("Location").split("/")[3])
+            self.assertEqual("Future stand-up", get_event(self.connection, successor_id).title)
+            self.assertEqual("2026-01-26", get_recurrence(self.connection, event_id).rule.until_date)
+            audit = list_audit_events(self.connection, "entity", event_id)
+            self.assertTrue(any("occurrence overridden" in item.notes.lower() for item in audit))
+        finally:
+            client.close()
+            server.shutdown(); server.server_close(); thread.join()
+
+    def test_calendar_management_routes_use_calendar_services(self) -> None:
+        EddyRequestHandler.database_path = self.database_path
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            client.request("GET", "/calendar/manage")
+            page = client.getresponse().read().decode()
+            self.assertIn("Manage Calendars", page)
+            body = urlencode({"name": "Work", "colour": "#EF4444", "timezone": "Europe/London", "default_event_duration_minutes": "45", "sort_order": "2"})
+            client.request("POST", "/calendar/manage", body, {"Content-Type": "application/x-www-form-urlencoded"})
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual("/calendar/manage", response.getheader("Location"))
+            work = next(item for item in list_calendars(self.connection) if item.name == "Work")
+            client.request("POST", f"/calendar/manage/{work.id}/default", "", {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(303, client.getresponse().status)
+            self.assertTrue(get_calendar(self.connection, work.id).is_default)
+        finally:
+            client.close()
+            server.shutdown(); server.server_close(); thread.join()
 
     def test_create_rejects_invalid_time_and_rolls_back_identity(self) -> None:
         with self.assertRaises(TemporalValueError):

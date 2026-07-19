@@ -29,19 +29,20 @@ def calendar_page(
     return f'<div class="calendar-page">{projection}{created_notice}</div>'
 
 
-def event_form_page(calendars, values, *, editing_event=None, recurrence=None, errors=None) -> str:
+def event_form_page(calendars, values, *, editing_event=None, recurrence=None, occurrence_date="", errors=None) -> str:
     errors = errors or []
     editing = editing_event is not None
     action = f"/calendar/events/{editing_event.id}/edit" if editing else "/calendar/events/new"
     relationship_link = f'<p class="help-text"><a href="/relationships/new?context_entity_id={editing_event.id}">add a relationship</a></p>' if editing else ""
-    return f'''<section class="page-heading"><p class="eyebrow">Calendar</p><h1>{"Edit" if editing else "Add"} Event</h1></section><section class="panel calendar-event-editor">{error_block(errors)}<form class="record-form" method="post" action="{action}" data-dirty-form data-event-form><div class="calendar-form-grid"><label for="title"><span>Title</span><input id="title" name="title" required value="{escape(values.get("title", ""))}"></label><label for="calendar_id"><span>Calendar</span><select id="calendar_id" name="calendar_id">{_calendar_options(calendars, values.get("calendar_id", ""))}</select></label><label class="inline-check" for="all_day"><input id="all_day" name="all_day" type="checkbox" value="1" data-event-all-day{" checked" if values.get("all_day") == "1" else ""}> All day</label><div data-all-day-fields><label for="start_date"><span>Start date</span><input id="start_date" name="start_date" type="date" value="{escape(values.get("start_date", ""))}"></label><label for="end_date"><span>End date</span><input id="end_date" name="end_date" type="date" value="{escape(values.get("end_date", ""))}"></label></div><div data-timed-fields><label for="start_local"><span>Starts</span><input id="start_local" name="start_local" type="datetime-local" value="{escape(values.get("start_local", ""))}"></label><label for="end_local"><span>Ends</span><input id="end_local" name="end_local" type="datetime-local" value="{escape(values.get("end_local", ""))}"></label><label for="timezone"><span>Timezone</span><input id="timezone" name="timezone" value="{escape(values.get("timezone", ""))}" placeholder="Australia/Brisbane"></label></div><label for="notes"><span>Notes <em>(optional)</em></span><textarea id="notes" name="notes" rows="3">{escape(values.get("notes", ""))}</textarea></label>{_recurrence_fields(recurrence) if editing else ""}</div><div class="actions"><a class="button secondary" href="/calendar">Cancel</a><button class="button" type="submit">{"Save changes" if editing else "Add Event"}</button></div></form>{relationship_link}</section>'''
+    scope_fields = _recurrence_scope_fields(occurrence_date) if occurrence_date else ""
+    return f'''<section class="page-heading"><p class="eyebrow">Calendar</p><h1>{"Edit" if editing else "Add"} Event</h1></section><section class="panel calendar-event-editor">{error_block(errors)}<form class="record-form" method="post" action="{action}" data-dirty-form data-event-form>{scope_fields}<div class="calendar-form-grid"><label for="title"><span>Title</span><input id="title" name="title" required value="{escape(values.get("title", ""))}"></label><label for="calendar_id"><span>Calendar</span><select id="calendar_id" name="calendar_id">{_calendar_options(calendars, values.get("calendar_id", ""))}</select></label><label class="inline-check" for="all_day"><input id="all_day" name="all_day" type="checkbox" value="1" data-event-all-day{" checked" if values.get("all_day") == "1" else ""}> All day</label><div data-all-day-fields><label for="start_date"><span>Start date</span><input id="start_date" name="start_date" type="date" value="{escape(values.get("start_date", ""))}"></label><label for="end_date"><span>End date</span><input id="end_date" name="end_date" type="date" value="{escape(values.get("end_date", ""))}"></label></div><div data-timed-fields><label for="start_local"><span>Starts</span><input id="start_local" name="start_local" type="datetime-local" value="{escape(values.get("start_local", ""))}"></label><label for="end_local"><span>Ends</span><input id="end_local" name="end_local" type="datetime-local" value="{escape(values.get("end_local", ""))}"></label><label for="timezone"><span>Timezone</span><input id="timezone" name="timezone" value="{escape(values.get("timezone", ""))}" placeholder="Australia/Brisbane"></label></div><label for="notes"><span>Notes <em>(optional)</em></span><textarea id="notes" name="notes" rows="3">{escape(values.get("notes", ""))}</textarea></label>{_recurrence_fields(recurrence) if editing else ""}</div><div class="actions"><a class="button secondary" href="/calendar">Cancel</a><button class="button" type="submit">{"Save changes" if editing else "Add Event"}</button></div></form>{relationship_link}</section>'''
 
 
 def calendar_projection(
     events: list[EventRecord], calendars: list[CalendarRecord], *, view: str,
-    anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None,
+    anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None, preview_occurrence: str = "",
     recurrences: dict[int, RecurrenceDefinition] | None = None,
-    recurrence_exceptions: dict[int, set[str]] | None = None,
+    recurrence_exceptions: dict[int, object] | None = None,
 ) -> str:
     """Build Month, Week or Day read projections from canonical Event intervals."""
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
@@ -84,9 +85,9 @@ def calendar_projection(
         f'<label class="calendar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected else ""}> <span style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</label>'
         for calendar in active_calendars
     )
-    preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
+    preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
     return f"""
-    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button{' secondary' if view != 'day' else ''}" href="{day_url}">Day</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
+    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Calendars</a><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button{' secondary' if view != 'day' else ''}" href="{day_url}">Day</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
         <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
         {preview}
         {grid}
@@ -103,7 +104,7 @@ def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord],
     return f'<div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid">{cells}</div>'
 
 
-def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceDefinition], exceptions: dict[int, set[str]], start: date, end: date) -> list[EventRecord]:
+def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceDefinition], exceptions: dict[int, object], start: date, end: date) -> list[EventRecord]:
     return [occurrence.event for event in events for occurrence in occurrences_between(event, recurrences.get(event.id), start, end, exceptions.get(event.id))]
 
 
@@ -138,7 +139,7 @@ def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, Calenda
 
 def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:
     label = _projection_label(event, day, display_timezone)
-    query = f"{context_query}&preview={event.id}"
+    query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
     return f'<a class="calendar-event{state}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
 
@@ -152,7 +153,7 @@ def _timed_projection_event(event: EventRecord, calendar: CalendarRecord, day: d
     segment_start, segment_end = max(start, day_start), min(end, day_end)
     start_minutes = segment_start.hour * 60 + segment_start.minute
     duration_minutes = max(1, int((segment_end - segment_start).total_seconds() / 60))
-    query = f"{context_query}&preview={event.id}"
+    query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
     label = f"{segment_start.strftime('%H:%M')}–{segment_end.strftime('%H:%M')}"
     return f'<a class="calendar-timed-event{state}" style="--calendar-colour:{escape(calendar.colour)};top:{start_minutes * .8:.1f}px;height:{max(duration_minutes * .8, 24):.1f}px" href="{_calendar_url_with_query(query)}"><span>{label}</span>{escape(event.title)}</a>'
@@ -179,10 +180,45 @@ def _timed_dates(event: EventRecord, display_timezone: str) -> tuple[date, date]
     return start.date(), (end - timedelta(microseconds=1)).date()
 
 
-def _preview_panel(event: EventRecord, calendar: CalendarRecord | None) -> str:
+def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurrence_date: str = "", recurrence: RecurrenceDefinition | None = None) -> str:
     calendar_name = calendar.name if calendar else "Unavailable Calendar"
     colour = calendar.colour if calendar else "#6B7280"
-    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Move this Event to the Recycle Bin. It can be restored later."><button class="button danger" type="submit">Delete</button></form></div></aside>'
+    occurrence_query = f"?occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
+    scope = _recurrence_scope_fields(occurrence_date, compact=True) if occurrence_date and recurrence else ""
+    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit{occurrence_query}">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Apply the selected deletion scope. The all-occurrences action moves this Event to the Recycle Bin.">{scope}<button class="button danger" type="submit">Delete</button></form></div></aside>'
+
+
+def _occurrence_date(event: EventRecord) -> str:
+    if event.is_all_day:
+        return event.start_date
+    return datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date().isoformat()
+
+
+def _recurrence_scope_fields(occurrence_date: str, compact: bool = False) -> str:
+    hidden = f'<input type="hidden" name="occurrence_date" value="{escape(occurrence_date)}">'
+    label = "Apply to" if compact else "Apply changes to"
+    help_text = "This occurrence keeps the series rule; following creates a linked successor series." if not compact else ""
+    return f'{hidden}<label class="recurrence-scope"><span>{label}</span><select name="recurrence_scope"><option value="this">This occurrence</option><option value="following">This and following</option><option value="all">All occurrences</option></select></label><small class="field-help">{help_text}</small>'
+
+
+def calendar_management_page(calendars: list[CalendarRecord], errors: list[str] | None = None) -> str:
+    errors = errors or []
+    rows = "".join(_calendar_management_row(calendar) for calendar in calendars)
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone and default duration.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input name="colour" type="color" value="#2563EB"></label><label><span>Timezone</span><input name="timezone" value="Australia/Brisbane" required></label><label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
+
+
+def calendar_management_edit_page(calendar: CalendarRecord, errors: list[str] | None = None) -> str:
+    errors = errors or []
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Edit {escape(calendar.name)}</h1></div><a class="button secondary" href="/calendar/manage">Back to Calendars</a></section><section class="panel">{error_block(errors)}<form class="record-form calendar-management-form" method="post" action="/calendar/manage/{calendar.id}/edit"><label><span>Name</span><input name="name" required value="{escape(calendar.name)}"></label><label><span>Colour</span><input name="colour" type="color" value="{escape(calendar.colour)}"></label><label><span>Timezone</span><input name="timezone" value="{escape(calendar.timezone)}" required></label><label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="{calendar.default_event_duration_minutes}" required></label><label><span>Order</span><input name="sort_order" type="number" value="{calendar.sort_order}" required></label><div class="actions"><a class="button secondary" href="/calendar/manage">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>'''
+
+
+def _calendar_management_row(calendar: CalendarRecord) -> str:
+    state = "Default" if calendar.is_default else "Archived" if calendar.is_archived else "Active"
+    archive_action = "unarchive" if calendar.is_archived else "archive"
+    archive_label = "Unarchive" if calendar.is_archived else "Archive"
+    default_action = "" if calendar.is_default or calendar.is_archived else f'<form method="post" action="/calendar/manage/{calendar.id}/default" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Make this the default Calendar for new Events."><button class="button secondary" type="submit">Make default</button></form>'
+    delete_action = "" if calendar.is_default else f'<form method="post" action="/calendar/manage/{calendar.id}/delete" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Permanently delete this empty Calendar. Assigned Events prevent deletion."><button class="button danger" type="submit">Delete</button></form>'
+    return f'<article class="calendar-management-row"><div><h2><span class="calendar-colour" style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</h2><p>{escape(calendar.timezone)} · {calendar.default_event_duration_minutes} minutes · order {calendar.sort_order} · {state}</p></div><div class="actions"><a class="button secondary" href="/calendar/manage/{calendar.id}/edit">Edit</a>{default_action}<form method="post" action="/calendar/manage/{calendar.id}/{archive_action}" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="{archive_label} this Calendar. Existing Event assignments are retained."><button class="button secondary" type="submit">{archive_label}</button></form>{delete_action}</div></article>'
 
 
 def _calendar_url(parameters: list[tuple[str, str]]) -> str:

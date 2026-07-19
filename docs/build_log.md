@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Phase 2A closeout
+
+- Added Calendar management for creating, editing, ordering, selecting the default, archiving, restoring and safely deleting Calendars through the existing audited services.
+- Added occurrence-aware Event editing and deletion scopes: this occurrence persists an override or cancellation exception, this-and-following creates or truncates a traceable series boundary, and all occurrences retains canonical Event mutation.
+- Recorded recurrence definition, exception and series operations in Event history, audit and provenance; Phase 2A functional requirements are complete.
+
 ## 2026-07-19 — Timed Calendar grids
 
 - Replaced the Week projection's timed-event list columns with an hourly time grid, with weekday/date headers and a labelled time axis.

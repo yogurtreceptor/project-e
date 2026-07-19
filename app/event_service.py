@@ -113,6 +113,20 @@ def create_event(connection: sqlite3.Connection, event: EventInput) -> int:
         raise
 
 
+def normalise_event_input(
+    connection: sqlite3.Connection,
+    event: EventInput,
+    *,
+    current_calendar_id: int | None = None,
+    current_status: str = "planned",
+) -> dict[str, Any]:
+    """Validate Event input without persisting a canonical Event row."""
+    return _normalise_event(
+        connection, event, current_calendar_id=current_calendar_id,
+        current_status=current_status,
+    )
+
+
 def update_event(
     connection: sqlite3.Connection, event_id: int, event: EventUpdate
 ) -> None:

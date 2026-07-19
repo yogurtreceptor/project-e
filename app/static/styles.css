@@ -176,6 +176,14 @@ p {
 
 .calendar-form-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .calendar-page .calendar-projection { margin-bottom: 0; }
+.calendar-management-list { display: grid; gap: var(--space-3); }
+.calendar-management-row { align-items: center; border-top: 1px solid var(--line); display: flex; gap: var(--space-4); justify-content: space-between; padding-top: var(--space-3); }
+.calendar-management-row:first-child { border-top: 0; padding-top: 0; }
+.calendar-management-row h2 { font-size: var(--font-size-body); margin-bottom: var(--space-1); }
+.calendar-management-row p { color: var(--muted); margin-bottom: 0; }
+.calendar-management-form { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.calendar-management-form .actions { align-self: end; }
+.recurrence-scope { display: grid; gap: var(--space-1); max-width: 22rem; }
 .calendar-form-grid label:last-of-type { grid-column: 1 / -1; }
 .calendar-form-grid [data-all-day-fields], .calendar-form-grid [data-timed-fields] { display: contents; }
 .calendar-event-list { display: grid; gap: var(--space-3); }
