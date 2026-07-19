@@ -6,7 +6,7 @@ from app.db_support import utc_now
 
 EVENT_TYPES = {
     "create", "edit", "archive", "unarchive", "delete", "restore",
-    "permanent_delete", "cancel", "reinstate", "reschedule",
+    "permanent_delete", "cancel", "reinstate", "reschedule", "complete", "reopen",
     "relationship_change", "inference", "validation", "merge", "import",
     "manual_override",
 }

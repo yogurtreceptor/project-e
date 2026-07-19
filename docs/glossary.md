@@ -268,6 +268,10 @@ A first-class entity representing something that occurs, occurred or is expected
 
 A first-class entity representing work to be performed. A Task is neither an Event nor a Reminder and can relate independently to Projects, Events and other entities.
 
+## Task List
+
+A first-class local organisational record that groups Tasks by the user's intended category. It is not a Calendar, ownership boundary or separate classification layer. Archiving retains its assigned Tasks and prevents new assignment.
+
 ## Calendar Projection
 
 A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.

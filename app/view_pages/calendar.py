@@ -26,7 +26,7 @@ def calendar_page(
         <a href="/relationships/new?context_entity_id={created_event.id}">Add relationships</a>
         or <a href="/events/{created_event.id}">open the Event record</a>.</section>
         """
-    return f'<div class="calendar-page">{projection}{created_notice}</div>'
+    return f'<div class="calendar-page"><div class="actions"><a class="button" href="/calendar/events/new">Add Event</a><a class="button secondary" href="/calendar/tasks/new">Add Task</a></div>{projection}{created_notice}</div>'
 
 
 def event_form_page(calendars, values, *, editing_event=None, recurrence=None, occurrence_date="", errors=None) -> str:

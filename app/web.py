@@ -67,6 +67,10 @@ from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EVENT_DEFINITION, EntityDefinition
 from app.calendar_service import CalendarInput, archive_calendar, create_calendar, delete_calendar, get_calendar, list_calendars, set_default_calendar, unarchive_calendar, update_calendar
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
+from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
+    complete_task, create_task, create_task_list, get_task, get_task_list,
+    list_task_lists, list_tasks, reopen_task, set_default_task_list,
+    unarchive_task, unarchive_task_list, update_task, rename_task_list)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
@@ -81,6 +85,13 @@ from app.portability import (apply_import_bundle, consume_staged_bundle, create_
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+def _default_task_list_value(task_lists) -> str:
+    default = next((item for item in task_lists if item.is_default), None)
+    return str(default.id) if default is not None else ""
+
+
 class EddyRequestHandler(BaseHTTPRequestHandler):
     database_path = DATABASE_PATH
     document_storage_dir = DOCUMENT_STORAGE_DIR
@@ -165,6 +176,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "calendar":
             self.route_calendar_request(parts, query)
+            return
+
+        if parts[0] == "tasks":
+            self.route_task_request(parts, query)
             return
 
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
@@ -269,6 +284,15 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "POST":
                 self.handle_calendar_event_create()
                 return
+        if len(parts) == 3 and parts[1:] == ["tasks", "new"]:
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    task_lists = list_task_lists(connection)
+                self.respond_page("Add Task", views.task_form_page(task_lists, {"title": "", "notes": "", "task_list_id": _default_task_list_value(task_lists)}), active_slug="calendar")
+                return
+            if self.command == "POST":
+                self.handle_calendar_task_create()
+                return
         editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
         delete_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "delete" else None
         if delete_id is not None and self.command == "POST":
@@ -311,6 +335,92 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_calendar_event_form(values, [str(error)])
             return
         self.redirect(f"/calendar?created={event_id}")
+
+    def handle_calendar_task_create(self) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                task_id = create_task(connection, TaskInput(
+                    values.get("title", ""),
+                    int(values["task_list_id"]) if values.get("task_list_id", "").isdigit() else None,
+                    values.get("notes", ""),
+                ))
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                task_lists = list_task_lists(connection)
+            self.respond_page("Add Task", views.task_form_page(task_lists, values, errors=[str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            return
+        self.redirect(f"/tasks/{task_id}?saved=1")
+
+    def route_task_request(self, parts: list[str], query: dict[str, str]) -> None:
+        if len(parts) == 1 and self.command == "GET":
+            self.handle_tasks(query)
+            return
+        if len(parts) == 2 and parts[1] == "lists" and self.command == "POST":
+            try:
+                with connect(self.database_path) as connection:
+                    create_task_list(connection, TaskListInput(self.read_form().get("name", "")))
+            except (ValueError, sqlite3.Error):
+                self.redirect("/tasks")
+                return
+            self.redirect("/tasks")
+            return
+        if len(parts) == 4 and parts[1] == "lists" and self.command == "POST":
+            task_list_id = self.parse_entity_id(parts[2])
+            if task_list_id is None:
+                self.respond_not_found(); return
+            try:
+                with connect(self.database_path) as connection:
+                    if parts[3] == "rename":
+                        rename_task_list(connection, task_list_id, self.read_form().get("name", ""))
+                    else:
+                        {"default": set_default_task_list, "archive": archive_task_list, "unarchive": unarchive_task_list}[parts[3]](connection, task_list_id)
+            except (KeyError, ValueError, sqlite3.Error):
+                self.redirect("/tasks"); return
+            self.redirect("/tasks")
+            return
+        task_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
+        if task_id is None:
+            self.respond_not_found(); return
+        if len(parts) == 2 and self.command == "GET":
+            self.handle_task_projection(task_id, query)
+            return
+        if len(parts) == 3 and self.command == "POST":
+            try:
+                with connect(self.database_path) as connection:
+                    if parts[2] == "move":
+                        current = get_task(connection, task_id, include_archived=True)
+                        if current is None:
+                            raise ValueError("Task does not exist.")
+                        form = self.read_form()
+                        update_task(connection, task_id, TaskInput(current.title, int(form["task_list_id"]) if form.get("task_list_id", "").isdigit() else None, current.notes))
+                    else:
+                        {"complete": complete_task, "reopen": reopen_task, "archive": archive_task, "unarchive": unarchive_task}[parts[2]](connection, task_id)
+            except (KeyError, ValueError, sqlite3.Error):
+                self.respond_not_found(); return
+            self.redirect("/tasks")
+            return
+        self.respond_not_found()
+
+    def handle_tasks(self, query: dict[str, str]) -> None:
+        show_completed = query.get("completed") == "1"
+        show_archived = query.get("archived") == "1"
+        with connect(self.database_path) as connection:
+            tasks = list_tasks(connection, include_completed=show_completed, include_archived=show_archived)
+            task_lists = list_task_lists(connection, include_archived=True)
+        self.respond_page("Tasks", views.tasks_page(tasks, task_lists, show_completed=show_completed, show_archived=show_archived), active_slug="tasks")
+
+    def handle_task_projection(self, task_id: int, query: dict[str, str]) -> None:
+        with connect(self.database_path) as connection:
+            task = get_task(connection, task_id, include_archived=True)
+            if task is None:
+                self.respond_not_found(); return
+            mark_entity_viewed(connection, task_id)
+            task_list = get_task_list(connection, task.task_list_id, include_archived=True)
+            relationships = list_relationships_for_entity(connection, task_id)
+            history = list_entity_history(connection, task_id)
+            audit_events = list_audit_events(connection, "entity", task_id)
+        self.respond_page(task.title, views.task_projection_page(task, task_list, relationships, history, audit_events), active_slug="tasks", show_save_toast=query.get("saved") == "1")
 
     def handle_calendar_management_create(self) -> None:
         values = self.read_form()

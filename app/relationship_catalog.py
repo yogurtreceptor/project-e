@@ -225,6 +225,18 @@ EVENT_RELATIONSHIP_TYPES: tuple[RelationshipType, ...] = (
 )
 
 
+TASK_RELATIONSHIP_TYPES: tuple[RelationshipType, ...] = (
+    rt("task_assigned_to_person", "task", "person", "Task", "Assigned to", "assigned to", "has assigned task", roles=("Task", "Assignee")),
+    rt("task_involves_organisation", "task", "organisation", "Task", "Involves organisation", "involves", "has involved task", roles=("Task", "Involved organisation")),
+    rt("task_at_location", "task", "location", "Task", "At location", "takes place at", "has task", roles=("Task", "Location")),
+    rt("task_related_to_project", "task", "project", "Task", "Related project", "relates to", "has related task", roles=("Task", "Related project")),
+    rt("task_references_document", "task", "document", "Task", "References document", "references", "referenced by", roles=("Task", "Referenced document")),
+    rt("task_involves_asset", "task", "asset", "Task", "Involves asset", "involves", "has involved task", roles=("Task", "Involved asset")),
+    rt("task_related_to_event", "task", "event", "Task", "Related event", "relates to", "has related task", roles=("Task", "Related event")),
+    rt("task_related_to_task", "task", "task", "Task", "Related task", "related to", "related to", directional=False),
+)
+
+
 LEGACY_TYPES: tuple[RelationshipType, ...] = (
     rt("located_at", "entity", "location", "Location", "Located at", "located at", "location of", notes="Legacy location relationship. Existing records still load and map; new records use pair-specific location types.", selectable=False),
     rt("related_to", "entity", "entity", "Legacy / Other", "Related to", "related to", "related to", directional=False, notes="Legacy fallback. Preserved for existing relationships, not offered for specific supported pairs.", selectable=False),
@@ -248,6 +260,7 @@ RELATIONSHIP_TYPE_GROUPS: tuple[tuple[RelationshipType, ...], ...] = (
     DOCUMENT_ASSET_TYPES,
     DOCUMENT_PROJECT_TYPES,
     EVENT_RELATIONSHIP_TYPES,
+    TASK_RELATIONSHIP_TYPES,
     LEGACY_TYPES,
 )
 

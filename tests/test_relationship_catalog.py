@@ -68,6 +68,14 @@ EXPECTED_SELECTABLE_KEYS_BY_PAIR = {
     ("event", "document"): ("event_references_document",),
     ("event", "asset"): ("event_involves_asset",),
     ("event", "event"): ("event_related_to_event",),
+    ("task", "person"): ("task_assigned_to_person",),
+    ("task", "organisation"): ("task_involves_organisation",),
+    ("task", "location"): ("task_at_location",),
+    ("task", "project"): ("task_related_to_project",),
+    ("task", "document"): ("task_references_document",),
+    ("task", "asset"): ("task_involves_asset",),
+    ("task", "event"): ("task_related_to_event",),
+    ("task", "task"): ("task_related_to_task",),
 }
 
 
@@ -80,7 +88,7 @@ class RelationshipCatalogueTests(unittest.TestCase):
     def test_selectable_keys_for_every_entity_pair(self) -> None:
         entity_types = (
             "person", "organisation", "location",
-            "project", "document", "asset", "event",
+            "project", "document", "asset", "event", "task",
         )
         for pair in combinations_with_replacement(entity_types, 2):
             expected_keys = EXPECTED_SELECTABLE_KEYS_BY_PAIR.get(

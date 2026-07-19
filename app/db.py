@@ -127,6 +127,13 @@ from app.calendar_service import (
     update_calendar,
     validate_stored_calendar,
 )
+from app.task_service import (
+    TaskInput, TaskListInput, TaskListRecord, TaskRecord,
+    archive_task, archive_task_list, complete_task, create_task, create_task_list,
+    get_task, get_task_list, list_task_lists, list_tasks, reopen_task,
+    rename_task_list, set_default_task_list, unarchive_task, unarchive_task_list,
+    update_task, validate_stored_task,
+)
 
 __all__ = [
     "utc_now",
@@ -229,6 +236,12 @@ __all__ = [
     "unarchive_calendar",
     "update_calendar",
     "validate_stored_calendar",
+    "TaskInput", "TaskListInput", "TaskListRecord", "TaskRecord",
+    "archive_task", "archive_task_list", "complete_task", "create_task",
+    "create_task_list", "get_task", "get_task_list", "list_task_lists",
+    "list_tasks", "reopen_task", "rename_task_list", "set_default_task_list",
+    "unarchive_task", "unarchive_task_list", "update_task",
+    "validate_stored_task",
     "parse_int",
     "sql_identifier",
     "sql_literal",

@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-20 — Phase 2B Task foundation
+
+- Added canonical Task and Task-list storage through a forward-only migration, including the seeded default Tasks list, active-list assignment checks, completion timestamps and independent archive state.
+- Added dedicated Task/List services, normal audit/provenance and Recycle Bin/Search integration, plus pair-aware standard Relationships to every current peer entity.
+- Added Calendar-originated undated Task capture and a dedicated Tasks view for organising, moving, completing, reopening and archiving work; Task deadlines, sessions and Calendar/Project projections remain the next Phase 2B milestone.
+
 ## 2026-07-19 — Phase 2A closeout
 
 - Added Calendar management for creating, editing, ordering, selecting the default, archiving, restoring and safely deleting Calendars through the existing audited services.

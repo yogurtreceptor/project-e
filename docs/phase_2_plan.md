@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is now complete. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards with a user-facing management surface; canonical Event storage and lifecycle services; standard Event relationship integration; Event discovery/read-only related-record projections; Calendar-originated Event creation and editing; Month/Week/Day Calendar projections, including timed duration grids; deterministic recurrence definitions, derived occurrences, scoped exceptions and successor-series splits with history, audit and provenance. The Event integration checkpoint is complete. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. The first Phase 2B Task foundation is also complete: canonical Task and Task-list storage, validated lifecycle services, standard Relationships and Search integration, Calendar-originated undated Task capture, and a dedicated Task organisation view. Task temporal persistence and Calendar/Project projections remain the next Phase 2B milestone. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -124,11 +124,11 @@ create Event → relate it to multiple existing entities → find it in search
 
 A Task is a small but extensible canonical work record. It remains useful without a Project or Event and may relate independently to Events, Projects, People, Locations, Documents and Assets. Tasks connected to Events remain ordinary Tasks through normal Relationships.
 
-Initial Tasks use one default Tasks list plus simple user-created lists. Users may create, rename and archive lists and move Tasks among them. A Task list is the user's intended category for Tasks, not a second classification layer. Nested lists, sharing, permissions and a separate workflow engine are deferred.
+Initial Tasks use one default Tasks list plus simple user-created lists. Users may create, rename and archive lists and move Tasks among them. Archiving a list retains its assigned Tasks but prevents new assignment; list deletion is deferred. A Task list is the user's intended category for Tasks, not a second classification layer. Nested lists, sharing, permissions and a separate workflow engine are deferred.
 
 The initial Task lifecycle is **Open**, **Completed** and **Archived**. **In progress**, priority, richer workflow state, hierarchy, recurrence, dependencies and estimates are not initial requirements. Completed Tasks are hidden from the default Task view but remain available through a completed/history filter.
 
-Task creation exposes title, Task list, planned date/time, deadline, relationships and notes directly. Human-created Tasks originate from the Calendar. The dedicated Tasks view organises and completes existing work rather than creating a competing generic path. The Inbox may offer a controlled conversion of an attention item into a Task.
+Human-created Tasks originate from the Calendar. The first capture form exposes title, Task list and notes, and deliberately supports an undated Task with no separate capture route. It routes relationship work through the standard post-creation Relationship workflow. A subsequent 2B temporal milestone will expose optional planned sessions and deadline fields in that same form. The dedicated Tasks view organises, moves, archives and completes existing work rather than creating a competing generic path. The Inbox may offer a controlled conversion of an attention item into a Task.
 
 A Task's deadline and planned work sessions are independent and optional. One Task may have multiple planned sessions; each appears as a separate Calendar block while remaining part of the same canonical Task. Events and Task sessions use distinct visual treatments, preserving Calendar-derived Event colours while making Tasks recognizable. Completing a Task removes its future planned blocks, retains past sessions as history, and marks those past blocks with a completed-check treatment.
 
@@ -259,12 +259,13 @@ The behaviour above is authoritative. The following sequence establishes impleme
 
 ### Phase 2B — Work management
 
-8. Implement Tasks as first-class entities.
-9. Add Task lists, Open/Completed/Archived lifecycle and completion behaviour.
-10. Integrate Task Relationships with existing entity types.
-11. Connect Tasks to Events and Projects through normal Relationships.
-12. Add Task and Event projections to Project pages.
-13. Add Task deadlines and one-or-more planned work sessions to Calendar projections.
+8. **Complete:** implement canonical Tasks and Task lists with migration-safe storage, a seeded default Tasks list, active-list assignment validation, list creation/rename/archive/default selection, standard Entity identity, Search, Recycle Bin, audit and provenance integration.
+9. **Complete:** add Open/Completed/Archived Task lifecycle behaviour. Completion records a timestamp; completed Tasks are hidden from the default Task view and may be reopened. Task archive remains distinct from Recycle Bin deletion.
+10. **Complete:** integrate pair-aware Task Relationships with every current peer entity, including Events, Projects and other Tasks, through the standard Relationship lifecycle.
+11. **Complete:** add Calendar-originated undated Task creation and a dedicated Task organisation/read-only record view. This milestone intentionally does not add a generic Task CRUD route or a second capture path.
+12. Implement optional Task deadline persistence: a date-only deadline or a local date/time plus IANA timezone. Keep deadlines separate from Calendar occupancy; Calendar deadline rendering follows only with the projection milestone.
+13. Implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, then add distinct Task-session and deadline projections to Calendar Month/Week/Day views.
+14. Add Task and Event projections to Project pages.
 
 ### Phase 2C — Reminder and attention foundation
 
@@ -362,7 +363,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
 - **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage, merging behaviour, identity changes and conflict resolution remain deferred to Phase 2C.
-- **Calendar-originated undated Tasks.** Human-created Tasks originate from the Calendar, while planned sessions and deadlines are optional. The entry interaction for a Task with neither has not been defined.
+- **Task temporal persistence and interaction.** Calendar-originated undated Task capture is implemented. The approved next model is an optional date-only or timed/timezone-aware deadline plus optional repeatable all-day or bounded timed planned sessions; exact form interaction, persistence shape and Calendar rendering remain the next authorised 2B design work.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.
 

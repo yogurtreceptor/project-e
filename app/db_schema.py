@@ -68,6 +68,8 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_calendar_history_table(connection)
     create_event_table(connection)
     create_event_recurrence_tables(connection)
+    create_task_list_table(connection)
+    create_task_table(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -340,6 +342,53 @@ def create_event_recurrence_tables(connection: sqlite3.Connection) -> None:
             ON event_recurrence_exceptions (event_id, recurrence_version, occurrence_date);
         CREATE INDEX IF NOT EXISTS idx_event_recurrence_splits_source
             ON event_recurrence_splits (source_event_id, split_occurrence_date);
+        """
+    )
+
+
+def create_task_list_table(connection: sqlite3.Connection) -> None:
+    """Create local Task-list configuration without a second classification layer."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS task_lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT NOT NULL DEFAULT ''
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_task_lists_one_default
+            ON task_lists (is_default) WHERE is_default = 1;
+        CREATE INDEX IF NOT EXISTS idx_task_lists_active_name
+            ON task_lists (archived_at, lower(name), id);
+        """
+    )
+    if connection.execute("SELECT 1 FROM task_lists LIMIT 1").fetchone() is None:
+        now = utc_now()
+        connection.execute(
+            """INSERT INTO task_lists (name, is_default, created_at, updated_at)
+               VALUES ('Tasks', 1, ?, ?)""",
+            (now, now),
+        )
+
+
+def create_task_table(connection: sqlite3.Connection) -> None:
+    """Create canonical Task storage; temporal session storage follows separately."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS tasks (
+            entity_id INTEGER PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE,
+            task_list_id INTEGER NOT NULL REFERENCES task_lists(id) ON DELETE RESTRICT,
+            status TEXT NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'completed')),
+            completed_at TEXT NOT NULL DEFAULT '',
+            archived_at TEXT NOT NULL DEFAULT '',
+            CHECK ((status = 'open' AND completed_at = '')
+                   OR (status = 'completed' AND completed_at <> ''))
+        );
+        CREATE INDEX IF NOT EXISTS idx_tasks_list_status
+            ON tasks (task_list_id, archived_at, status, entity_id);
         """
     )
 
@@ -786,6 +835,7 @@ SCHEMA_MIGRATIONS = (
     ("20260719_18_remove_event_categories", correct_event_grouping_model),
     ("20260719_19_calendar_management_history", create_calendar_history_table),
     ("20260719_20_event_recurrence", create_event_recurrence_tables),
+    ("20260720_21_task_lists_and_tasks", lambda connection: (create_task_list_table(connection), create_task_table(connection))),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

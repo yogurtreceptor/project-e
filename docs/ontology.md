@@ -23,6 +23,8 @@ Delivered Phase 1 entity types are:
 - Document
 - Asset
 
+Phase 2 additionally delivers Event and Task as canonical peer entity types. A Task represents work to be performed, is not an Event or reminder, and may relate independently to every current peer entity through normal Relationships. Tasks are grouped by one Task list selected by the user; the list is a personal organisational category, not ownership or a second classification system. A Task may be Open, Completed or Archived. Completion is a lifecycle fact with a timestamp; Task archive and Recycle Bin deletion remain distinct.
+
 Each real-world object should have one canonical entity record.
 
 - Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields.

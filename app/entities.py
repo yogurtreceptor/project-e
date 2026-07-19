@@ -323,7 +323,16 @@ EVENT_DEFINITION = EntityDefinition(
     fields=(),
 )
 
-ALL_ENTITY_DEFINITIONS = ENTITY_DEFINITIONS + (EVENT_DEFINITION,)
+TASK_DEFINITION = EntityDefinition(
+    type="task",
+    slug="tasks",
+    singular="Task",
+    plural="Tasks",
+    table="tasks",
+    fields=(),
+)
+
+ALL_ENTITY_DEFINITIONS = ENTITY_DEFINITIONS + (EVENT_DEFINITION, TASK_DEFINITION)
 DEFINITIONS_BY_SLUG = {
     definition.slug: definition for definition in ENTITY_DEFINITIONS
 }

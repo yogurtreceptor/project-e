@@ -273,6 +273,9 @@ def _validate_database(connection: sqlite3.Connection) -> None:
         if row["type"] == "event":
             from app.event_service import validate_stored_event
             errors.extend(validate_stored_event(connection, int(row["id"])))
+        if row["type"] == "task":
+            from app.task_service import validate_stored_task
+            errors.extend(validate_stored_task(connection, int(row["id"])))
         if errors:
             raise ValueError(f"Entity {row['id']} is invalid: {'; '.join(errors)}")
     entity_types = {
