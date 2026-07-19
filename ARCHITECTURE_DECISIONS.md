@@ -385,3 +385,18 @@ In-process execution is not a sufficient duplicate guarantee once recovery, cras
 
 Consequences:
 The scheduler and notification services must claim work transactionally. A recurrence version change and escalation to a higher severity are examples of material changes that legitimately produce a new logical record.
+
+## ADR-024: Model calendars as local Event configurations
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Calendars are first-class local Event grouping/configuration records, comparable to Google Calendar calendars. Every Event belongs to one calendar, which supplies name, colour, default Event duration and reminder preferences. Initial Events and Tasks store planned time only; actual start/end tracking is deferred.
+
+Reason:
+Calendar-specific defaults support useful personal, work and other contexts without creating a second Event store. Deferring actual time preserves a simple initial temporal model.
+
+Consequences:
+The calendar is the source of Event presentation preferences, while Events remain canonical records. Actual-time tracking remains a documented future extension for shifts, travel, maintenance or time-tracking workflows.
