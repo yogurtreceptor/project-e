@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Delivered foundations include shared temporal normalization, Calendar management services, and the canonical Event persistence/service lifecycle. Calendar-originated UI, relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19**. Completed implementation deliverables are shared temporal normalization; Calendar storage, management and lifecycle safeguards; and canonical Event storage and lifecycle services. Calendar-originated UI, Event relationship/search integration, projections and recurrence remain pending. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -243,15 +243,18 @@ The behaviour above is authoritative. The following sequence establishes impleme
 
 ### Phase 2A — Temporal foundation
 
-1. Update status and implementation documentation when Phase 2 work is authorised.
-2. Define shared temporal semantics, persistence contracts and migration-safe schema evolution.
-3. Implement Calendars and Events as specified in Phase 2A.
-4. Integrate Event Relationships with existing entity types.
-5. Add Event search, related-entity projections, Calendar preview and overlay editing.
-6. Build Week and Month Calendar projections over Events.
-7. Add the approved recurrence definitions, generated occurrences, exceptions and series operations.
+1. **Complete:** update Phase 2 status and implementation documentation for authorised work.
+2. **Complete:** define shared temporal semantics, persistence contracts and migration-safe schema evolution.
+3. **Complete:** implement Calendar storage and management services: list/retrieve, validated creation and configuration, ordering, active-default selection, archive/unarchive, audit, provenance and append-only history.
+4. **Complete:** implement Calendar lifecycle safeguards: archive retains Event assignments, archived Calendars cannot receive new assignments, no automatic reassignment occurs, and only empty non-default Calendars may be deleted.
+5. **Complete:** implement canonical Event storage and validated lifecycle services, including timed/all-day normalization, cancellation, reinstatement, rescheduling and independent archive state.
+6. Integrate Event Relationships with existing entity types.
+7. Add Event search and related-entity projections.
+8. Add Calendar preview and overlay-based Event creation and editing.
+9. Build Week and Month Calendar projections over Events.
+10. Add the approved recurrence definitions, generated occurrences, exceptions and series operations.
 
-Before proceeding beyond the Event foundation, pass the Event integration checkpoint defined in Phase 2A.
+Before Week and Month projections, pass the Event integration checkpoint defined in Phase 2A.
 
 ### Phase 2B — Work management
 
