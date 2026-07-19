@@ -76,6 +76,7 @@ from app.view_pages.search import (
     search_page,
     search_result_card,
 )
+from app.view_pages.events import event_projection_page
 from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
@@ -131,6 +132,7 @@ __all__ = [
     "date_precision_options",
     "search_page",
     "search_result_card",
+    "event_projection_page",
     "not_found_page",
     "recycle_bin_page",
     "permanent_delete_confirmation_page",

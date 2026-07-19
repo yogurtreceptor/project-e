@@ -2,6 +2,12 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-19 — Event search and related-record projections
+
+- Added Events to global Search through the existing canonical-record and relationship-context query path, including the Event type filter, without adding search-index or projection storage.
+- Added a read-only Event projection reachable from Search and normal related-record links; it exposes Calendar-derived colour, temporal/lifecycle details, relationships and existing change history while retaining the deferred Calendar-originated create/edit boundary.
+- Completed the Phase 2A Event integration checkpoint: a related Event can now be found, opened from a peer record and inspected with its history.
+
 ## 2026-07-19 — Event relationship integration
 
 - Added pair-aware standard Relationship definitions for Events and every current canonical peer type, including other Events.

@@ -1,6 +1,8 @@
 import json
+import http.client
 import sqlite3
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -10,9 +12,11 @@ from app.db import (
     create_entity,
     create_relationship,
     delete_entity,
+    get_entity,
     initialise_database,
     list_relationships_for_entity,
     restore_entity,
+    search_entities,
 )
 from app.db_schema import (
     create_entity_table,
@@ -38,6 +42,9 @@ from app.event_service import (
 )
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
+from app import views
+from app.calendar_service import get_calendar
+from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
 class EventServiceTests(unittest.TestCase):
@@ -110,6 +117,50 @@ class EventServiceTests(unittest.TestCase):
         self.assertEqual({"event_involves_person", "event_at_location", "event_related_to_project"}, {relationship.type_key for relationship in event_relationships})
         self.assertEqual({person_id, location_id, project_id}, {relationship.other_entity(event_id).id for relationship in event_relationships})
         self.assertEqual("involved in", list_relationships_for_entity(self.connection, person_id)[0].label_from(person_id))
+
+    def test_event_search_and_related_record_projection_use_shared_conventions(self) -> None:
+        event_id = create_event(self.connection, EventInput(title="Project kickoff", notes="Discuss launch plan", all_day=False, start_local="2026-08-10T09:00", end_local="2026-08-10T10:00"))
+        person_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["person"], {"given_name": "Ada", "middle_name": "", "family_name": "", "sex": "Unknown", "birthday": "", "email": "", "phone": "", "display_name": "", "summary": "", "notes": ""})
+        create_relationship(self.connection, {"source_entity_id": str(event_id), "target_entity_id": str(person_id), "type": "event_involves_person"})
+
+        event_results = search_entities(self.connection, "kickoff", entity_type="event")
+        relationship_results = search_entities(self.connection, "Ada")
+        person_record = get_entity(
+            self.connection, DEFINITIONS_BY_TYPE["person"], person_id
+        )
+        relationships = list_relationships_for_entity(self.connection, person_id)
+        event = get_event(self.connection, event_id)
+        calendar = get_calendar(self.connection, event.calendar_id)
+
+        self.assertEqual([event_id], [result["entity"].id for result in event_results])
+        self.assertIn(event_id, {result["entity"].id for result in relationship_results})
+        self.assertIn(f'href="/events/{event_id}"', views.entity_detail_page(person_record, relationships))
+        projection = views.event_projection_page(event, calendar, list_relationships_for_entity(self.connection, event_id), [], [])
+        self.assertIn("Project kickoff", projection)
+        self.assertIn("Australia/Brisbane", projection)
+        self.assertIn("Ada", projection)
+        self.assertNotIn("/events/new", projection)
+
+    def test_event_projection_route_is_read_only(self) -> None:
+        event_id = create_event(self.connection, EventInput(title="Read-only event", all_day=True, start_date="2026-08-10", end_date="2026-08-10"))
+        EddyRequestHandler.database_path = self.database_path
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+            client.request("GET", f"/events/{event_id}")
+            response = client.getresponse()
+            page = response.read().decode()
+            self.assertEqual(200, response.status)
+            self.assertIn("Read-only event", page)
+            self.assertNotIn("/events/new", page)
+            client.request("GET", "/events")
+            self.assertEqual(404, client.getresponse().status)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
 
     def test_create_rejects_invalid_time_and_rolls_back_identity(self) -> None:
         with self.assertRaises(TemporalValueError):

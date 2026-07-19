@@ -5,6 +5,7 @@ from typing import Any
 from app.db_support import sql_identifier, utc_now
 from app.entities import (
     ALL_DEFINITIONS_BY_TYPE,
+    EVENT_DEFINITION,
     ENTITY_DEFINITIONS,
     EntityDefinition,
     EntityRecord,
@@ -45,6 +46,18 @@ def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
     records: list[EntityRecord] = []
     for definition in ENTITY_DEFINITIONS:
         records.extend(list_entities(connection, definition))
+    return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
+
+
+def list_searchable_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+    """Return canonical records exposed through global Search.
+
+    Events are intentionally outside generic browsing and creation until the
+    Calendar workflow exists, but remain canonical peer records and therefore
+    participate in discovery through this explicit projection.
+    """
+    records = list_all_entities(connection)
+    records.extend(list_entities(connection, EVENT_DEFINITION))
     return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
 
 

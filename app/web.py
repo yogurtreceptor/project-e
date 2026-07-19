@@ -65,6 +65,8 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, EntityDefinition
+from app.calendar_service import get_calendar
+from app.event_service import get_event
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -148,6 +150,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "taxonomies":
             self.route_taxonomy_request(parts)
+            return
+
+        if parts[0] == "events":
+            if len(parts) == 2 and self.command == "GET":
+                self.handle_event_projection(parts[1])
+                return
+            self.respond_not_found()
             return
 
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
@@ -443,6 +452,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries),
             active_slug=definition.slug,
             show_save_toast=query.get("saved") == "1",
+        )
+
+    def handle_event_projection(self, raw_id: str) -> None:
+        event_id = self.parse_entity_id(raw_id)
+        if event_id is None:
+            self.respond_not_found()
+            return
+        with connect(self.database_path) as connection:
+            event = get_event(connection, event_id, include_archived=True)
+            if event is None:
+                self.respond_not_found()
+                return
+            mark_entity_viewed(connection, event_id)
+            calendar = get_calendar(connection, event.calendar_id, include_archived=True)
+            relationships = list_relationships_for_entity(connection, event_id)
+            history = list_entity_history(connection, event_id)
+            audit_events = list_audit_events(connection, "entity", event_id)
+        self.respond_page(
+            event.title,
+            views.event_projection_page(event, calendar, relationships, history, audit_events),
+            active_slug="system-tools",
         )
 
     def handle_new(self, definition: EntityDefinition) -> None:
