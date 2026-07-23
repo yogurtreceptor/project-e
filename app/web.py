@@ -73,6 +73,7 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     unarchive_task, unarchive_task_list, update_task, rename_task_list,
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
+from app.reminder_service import act_on_inbox_item, evaluate_due_reminders, list_inbox_items, reactivate_next_open_snoozes
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -142,6 +143,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "timeline":
             self.handle_timeline(query)
+            return
+
+        if parts[0] == "inbox":
+            self.route_inbox_request(parts, query)
             return
 
         if parts[0] == "recycle-bin":
@@ -232,6 +237,28 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.handle_relationship_delete(parts[1], query)
         else:
             self.respond_not_found()
+
+    def route_inbox_request(self, parts: list[str], query: dict[str, str]) -> None:
+        archived = query.get("archived") == "1"
+        if len(parts) == 1 and self.command == "GET":
+            page_size = int(query.get("page_size", "50")) if query.get("page_size", "50").isdigit() else 50
+            page_size = page_size if page_size in {10, 50, 100, 500} else 50
+            page = max(1, int(query.get("page", "1"))) if query.get("page", "1").isdigit() else 1
+            with connect(self.database_path) as connection:
+                reactivate_next_open_snoozes(connection)
+                items = list_inbox_items(connection, archived=archived, limit=page_size, offset=(page - 1) * page_size)
+            created = int(query.get("created", "0")) if query.get("created", "0").isdigit() else 0
+            self.respond_page("Inbox", views.inbox_page(items, archived=archived, created=created, page_size=page_size, page=page), active_slug="inbox")
+            return
+        if parts[1:] == ["evaluate"] and self.command == "POST":
+            with connect(self.database_path) as connection: created = evaluate_due_reminders(connection)
+            self.redirect(f"/inbox?created={created}"); return
+        if len(parts) == 3 and self.command == "POST":
+            item_id = self.parse_entity_id(parts[1])
+            if item_id is not None:
+                with connect(self.database_path) as connection: act_on_inbox_item(connection, item_id, parts[2])
+            self.redirect("/inbox"); return
+        self.respond_not_found()
 
     def route_calendar_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":

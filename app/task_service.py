@@ -209,6 +209,9 @@ def update_task(connection: sqlite3.Connection, task_id: int, task: TaskInput) -
         for key, value in values.items():
             if before.get(key) != value:
                 set_provenance(connection, "entity", task_id, key, "manual")
+        if (before.get("deadline_date"), before.get("deadline_utc")) != (values.get("deadline_date"), values.get("deadline_utc")):
+            from app.reminder_service import resolve_source_items
+            resolve_source_items(connection, "task_deadline", task_id)
         connection.commit()
         return True
     except Exception:
@@ -233,6 +236,8 @@ def archive_task(connection: sqlite3.Connection, task_id: int) -> bool:
         connection.execute("UPDATE tasks SET archived_at = ? WHERE entity_id = ?", (now, task_id))
         connection.execute("UPDATE entities SET updated_at = ? WHERE id = ?", (now, task_id))
         record_audit_event(connection, "archive", [("entity", task_id)], before={"archived_at": ""}, after={"archived_at": now}, notes="Task archived")
+        from app.reminder_service import resolve_source_items
+        resolve_source_items(connection, "task_deadline", task_id)
         connection.commit()
         return True
     except Exception:
@@ -331,6 +336,9 @@ def _change_status(connection: sqlite3.Connection, task_id: int, expected: str, 
         connection.execute("UPDATE entities SET updated_at = ? WHERE id = ?", (now, task_id))
         record_audit_event(connection, action, [("entity", task_id)], before={"status": expected, "completed_at": current.completed_at}, after={"status": replacement, "completed_at": completed_at, "removed_future_sessions": removed_sessions}, notes=note)
         set_provenance(connection, "entity", task_id, "status", "manual")
+        if replacement == "completed":
+            from app.reminder_service import resolve_source_items
+            resolve_source_items(connection, "task_deadline", task_id)
         connection.commit()
         return True
     except Exception:

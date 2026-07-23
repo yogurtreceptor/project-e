@@ -90,6 +90,7 @@ from app.view_pages.taxonomies import taxonomies_page
 from app.view_pages.system_tools import system_tools_page
 from app.view_pages.audit import system_audit_page
 from app.view_pages.portability import portability_page, import_preview_page
+from app.view_pages.inbox import inbox_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -160,6 +161,7 @@ __all__ = [
     "system_tools_page",
     "system_audit_page",
     "portability_page",
+    "inbox_page",
     "import_preview_page",
     "existing_location_action",
     "address_lookup_field",

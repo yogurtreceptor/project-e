@@ -173,8 +173,14 @@ def update_entity(
         from app.audit import record_audit_event
         record_audit_event(connection, "edit", [("entity", entity_id)], before=before.to_form_values(), after=values)
     if definition.type == "person" and before is not None and before.metadata.get("birthday", "") != values.get("birthday", ""):
+        from app.reminder_service import resolve_source_items
+        resolve_source_items(connection, "birthday", entity_id)
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_date_updated", entity_id)
+    elif definition.type == "document" and before is not None and before.metadata.get("expiry_date", "") != values.get("expiry_date", ""):
+        from app.reminder_service import resolve_source_items
+        resolve_source_items(connection, "document_expiry", entity_id)
+        connection.commit()
     else:
         connection.commit()
 
@@ -186,6 +192,9 @@ def delete_entity(
     from app.audit import record_audit_event
     if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
     connection.execute("UPDATE entities SET deleted_at = ?, updated_at = ? WHERE id = ? AND type = ? AND deleted_at = ''", (utc_now(), utc_now(), entity_id, definition.type))
+    if definition.type in {"person", "document"}:
+        from app.reminder_service import resolve_source_items
+        resolve_source_items(connection, "birthday" if definition.type == "person" else "document_expiry", entity_id)
     if definition.type == "person":
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_deleted", entity_id)

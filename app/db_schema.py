@@ -71,6 +71,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_task_list_table(connection)
     create_task_table(connection)
     create_task_temporal_tables(connection)
+    create_reminder_tables(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -415,6 +416,49 @@ def create_task_temporal_tables(connection: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_task_sessions_task ON task_sessions(task_id, id);
         CREATE INDEX IF NOT EXISTS idx_task_sessions_time ON task_sessions(is_all_day, start_date, start_utc, task_id);
+    """)
+
+
+def create_reminder_tables(connection: sqlite3.Connection) -> None:
+    """Persist Phase 2C reminder policy, delivery identity and Inbox state."""
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS reminder_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            context_kind TEXT NOT NULL CHECK (context_kind IN ('global', 'calendar', 'task_list')),
+            context_id INTEGER NOT NULL DEFAULT 0,
+            source_kind TEXT NOT NULL CHECK (source_kind IN ('event', 'task_deadline', 'birthday', 'document_expiry')),
+            timings_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (context_kind, context_id, source_kind)
+        );
+        CREATE TABLE IF NOT EXISTS reminder_overrides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_kind TEXT NOT NULL,
+            source_id INTEGER NOT NULL,
+            occurrence_key TEXT NOT NULL DEFAULT '',
+            mode TEXT NOT NULL CHECK (mode IN ('default', 'custom', 'disabled')) DEFAULT 'default',
+            custom_timings_json TEXT NOT NULL DEFAULT '[]',
+            suppressed_timings_json TEXT NOT NULL DEFAULT '[]',
+            updated_at TEXT NOT NULL,
+            UNIQUE (source_kind, source_id, occurrence_key)
+        );
+        CREATE TABLE IF NOT EXISTS inbox_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            delivery_key TEXT NOT NULL UNIQUE,
+            source_kind TEXT NOT NULL,
+            source_id INTEGER NOT NULL,
+            occurrence_key TEXT NOT NULL DEFAULT '',
+            reason TEXT NOT NULL,
+            title TEXT NOT NULL,
+            due_at TEXT NOT NULL,
+            delivered_at TEXT NOT NULL,
+            state TEXT NOT NULL CHECK (state IN ('active', 'acknowledged', 'dismissed', 'resolved', 'snoozed')) DEFAULT 'active',
+            next_attention_at TEXT NOT NULL DEFAULT '',
+            acted_at TEXT NOT NULL DEFAULT '',
+            action_note TEXT NOT NULL DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_inbox_active_attention ON inbox_items(state, next_attention_at, due_at, id);
+        CREATE INDEX IF NOT EXISTS idx_inbox_source_active ON inbox_items(source_kind, source_id, state);
     """)
 
 
@@ -862,6 +906,7 @@ SCHEMA_MIGRATIONS = (
     ("20260719_20_event_recurrence", create_event_recurrence_tables),
     ("20260720_21_task_lists_and_tasks", lambda connection: (create_task_list_table(connection), create_task_table(connection))),
     ("20260723_22_task_temporal_values", create_task_temporal_tables),
+    ("20260723_23_reminder_and_inbox_foundation", create_reminder_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

@@ -12,6 +12,12 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added optional all-day and timed/timezone-aware Task deadlines plus repeatable all-day or bounded timed planned sessions through the shared temporal contract.
 - Added Calendar Task deadline/session projections with neutral Task treatment; completion permanently removes future sessions while preserving past session history.
 
+## 2026-07-23 — Phase 2C reminder and Inbox foundation
+
+- Added forward-only SQLite storage for reminder policies, record/occurrence overrides and durable local Inbox deliveries with database-enforced delivery identity.
+- Implemented deterministic manual evaluation for Event, Task-deadline, birthday and Document-expiry reminders, including Brisbane all-day anchors, February-29 birthday handling, default timings, task-overdue delivery and Inbox acknowledge/dismiss/snooze actions.
+- Added the Inbox navigation surface; scheduler-driven delivery and startup recovery remain deferred to Phase 2D.
+
 ## 2026-07-20 — Phase 2B Task foundation
 
 - Added canonical Task and Task-list storage through a forward-only migration, including the seeded default Tasks list, active-list assignment checks, completion timestamps and independent archive state.
