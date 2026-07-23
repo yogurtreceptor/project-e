@@ -151,6 +151,8 @@ source fact → derived occurrence → applicable reminder default
 
 Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**. Custom timings add to inherited timings rather than replacing them; an Event or Task may also suppress individual inherited timings; coincident timings produce one delivery. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions.
 
+Reminder edits on a recurring Event use the established scopes **this event only**, **this event and future recurring events**, and **all instances of this event**. The first scope creates an occurrence-specific reminder exception; the second uses the existing traceable prospective-series split; the third changes the series policy. These edits affect pending and future deliveries only: historical Event occurrences and reminder deliveries are never rewritten or newly delivered.
+
 The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor:
 
 - Events: 1 hour and 10 minutes before.
