@@ -17,6 +17,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added forward-only SQLite storage for reminder policies, record/occurrence overrides and durable local Inbox deliveries with database-enforced delivery identity.
 - Implemented deterministic manual evaluation for Event, Task-deadline, birthday and Document-expiry reminders, including Brisbane all-day anchors, February-29 birthday handling, default timings, task-overdue delivery and Inbox acknowledge/dismiss/snooze actions.
 - Added the Inbox navigation surface; scheduler-driven delivery and startup recovery remain deferred to Phase 2D.
+- Extended manual evaluation to materialise current derived recurring Event occurrences and forthcoming birthday lead times; Event and Task record pages now expose default/custom/disabled reminder settings with additive and suppressive timings.
 
 ## 2026-07-20 — Phase 2B Task foundation
 

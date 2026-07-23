@@ -13,6 +13,7 @@ from app.db_support import utc_now
 from app.entity_repository import list_entities
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import list_events
+from app.event_recurrence import get_recurrence, occurrence_exceptions, occurrences_between
 from app.task_service import list_tasks
 
 PLATFORM_TIMEZONE = "Australia/Brisbane"
@@ -51,18 +52,24 @@ def set_override(connection: sqlite3.Connection, source_kind: str, source_id: in
     connection.commit()
 
 
+def get_override(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str = "") -> dict[str, object]:
+    row = connection.execute("SELECT * FROM reminder_overrides WHERE source_kind=? AND source_id=? AND occurrence_key=?", (source_kind, source_id, occurrence_key)).fetchone()
+    if row is None:
+        return {"mode": "default", "custom_timings": [], "suppressed_timings": []}
+    return {"mode": row["mode"], "custom_timings": json.loads(row["custom_timings_json"]), "suppressed_timings": json.loads(row["suppressed_timings_json"])}
+
+
 def evaluate_due_reminders(connection: sqlite3.Connection, *, now: datetime | None = None) -> int:
     """Materialise every currently due, eligible delivery exactly once."""
     now = (now or datetime.now(UTC)).astimezone(UTC)
     created = 0
     for kind, source_id, occurrence, title, due, context in _sources(connection, now):
-        if due > now: continue
         timings = _resolved_timings(connection, kind, source_id, context, occurrence)
         for timing in timings:
             attention = _subtract(due, timing)
             if attention > now: continue
             created += _deliver(connection, kind, source_id, occurrence, title, due, timing, "reminder", now)
-        if kind == "task_deadline":
+        if kind == "task_deadline" and due <= now:
             created += _deliver(connection, kind, source_id, occurrence, title, due, "overdue", "overdue", now)
     connection.commit()
     return created
@@ -105,8 +112,18 @@ def _sources(connection, now):
     zone = ZoneInfo(PLATFORM_TIMEZONE)
     for event in list_events(connection):
         if event.is_cancelled or event.is_archived or event.date_precision != "exact": continue
-        due = _parse_utc(event.start_utc) if not event.is_all_day else datetime.combine(date.fromisoformat(event.start_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-        yield "event", event.id, event.start_date or event.start_utc, event.title, due, ("calendar", event.calendar_id)
+        recurrence = get_recurrence(connection, event.id)
+        if recurrence is None:
+            occurrences = [event]
+        else:
+            local_today = now.astimezone(ZoneInfo(event.timezone or PLATFORM_TIMEZONE)).date()
+            exceptions = occurrence_exceptions(connection, recurrence)
+            occurrences = [item.event for item in occurrences_between(
+                event, recurrence, local_today - timedelta(days=1), local_today + timedelta(days=1), exceptions
+            )]
+        for occurrence in occurrences:
+            due = _parse_utc(occurrence.start_utc) if not occurrence.is_all_day else datetime.combine(date.fromisoformat(occurrence.start_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
+            yield "event", event.id, occurrence.start_date or occurrence.start_utc, occurrence.title, due, ("calendar", event.calendar_id)
     for task in list_tasks(connection):
         if not (task.deadline_date or task.deadline_utc): continue
         due = _parse_utc(task.deadline_utc) if task.deadline_utc else datetime.combine(date.fromisoformat(task.deadline_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
@@ -115,9 +132,10 @@ def _sources(connection, now):
         birthday = person.metadata.get("birthday", "")
         if not birthday: continue
         born = date.fromisoformat(birthday); year = now.astimezone(zone).year
-        day = _month_day(year, born.month, born.day)
-        due = datetime.combine(day, datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-        yield "birthday", person.id, day.isoformat(), f"{person.title}'s birthday", due, ("global", 0)
+        for occurrence_year in (year, year + 1):
+            day = _month_day(occurrence_year, born.month, born.day)
+            due = datetime.combine(day, datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
+            yield "birthday", person.id, day.isoformat(), f"{person.title}'s birthday", due, ("global", 0)
     for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
         expiry = document.metadata.get("expiry_date", "")
         if expiry:

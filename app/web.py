@@ -73,7 +73,7 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     unarchive_task, unarchive_task_list, update_task, rename_task_list,
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
-from app.reminder_service import act_on_inbox_item, evaluate_due_reminders, list_inbox_items, reactivate_next_open_snoozes
+from app.reminder_service import act_on_inbox_item, evaluate_due_reminders, get_override, list_inbox_items, reactivate_next_open_snoozes, set_override
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -324,7 +324,24 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 self.handle_calendar_task_create()
                 return
         editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
+        reminder_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "reminders" else None
         delete_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "delete" else None
+        if reminder_id is not None:
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    event = get_event(connection, reminder_id, include_archived=True)
+                    override = get_override(connection, "event", reminder_id)
+                if event is None: self.respond_not_found(); return
+                self.respond_page("Event reminder settings", views.reminder_settings_page(event.title, f"/calendar/events/{reminder_id}/edit", override), active_slug="calendar")
+                return
+            if self.command == "POST":
+                values = self.read_form()
+                try:
+                    with connect(self.database_path) as connection:
+                        set_override(connection, "event", reminder_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values.get("custom_timings", "")), suppressed_timings=self.reminder_timings(values.get("suppressed_timings", "")))
+                except ValueError:
+                    self.redirect(f"/calendar/events/{reminder_id}/reminders"); return
+                self.redirect(f"/calendar/events/{reminder_id}/edit?saved=1"); return
         if delete_id is not None and self.command == "POST":
             self.handle_calendar_event_delete(delete_id)
             return
@@ -416,6 +433,21 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if len(parts) == 2 and self.command == "GET":
             self.handle_task_projection(task_id, query)
             return
+        if len(parts) == 3 and parts[2] == "reminders":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    task = get_task(connection, task_id, include_archived=True)
+                    override = get_override(connection, "task_deadline", task_id)
+                if task is None: self.respond_not_found(); return
+                self.respond_page("Task reminder settings", views.reminder_settings_page(task.title, f"/tasks/{task_id}", override), active_slug="tasks")
+                return
+            values = self.read_form()
+            try:
+                with connect(self.database_path) as connection:
+                    set_override(connection, "task_deadline", task_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values.get("custom_timings", "")), suppressed_timings=self.reminder_timings(values.get("suppressed_timings", "")))
+            except ValueError:
+                self.redirect(f"/tasks/{task_id}/reminders"); return
+            self.redirect(f"/tasks/{task_id}?saved=1"); return
         if len(parts) == 3 and parts[2] == "sessions" and self.command == "POST":
             values = self.read_form()
             try:
@@ -1523,6 +1555,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return int(raw_id)
         except ValueError:
             return None
+
+    @staticmethod
+    def reminder_timings(raw: str) -> list[str]:
+        return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 

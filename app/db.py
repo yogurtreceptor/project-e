@@ -136,7 +136,7 @@ from app.task_service import (
     add_task_session, delete_task_session, list_task_sessions,
 )
 from app.reminder_service import (
-    InboxItem, act_on_inbox_item, evaluate_due_reminders, inbox_count,
+    InboxItem, act_on_inbox_item, evaluate_due_reminders, get_override, inbox_count,
     list_inbox_items, set_override, set_policy,
 )
 
@@ -249,7 +249,7 @@ __all__ = [
     "validate_stored_task",
     "TaskSessionInput", "TaskSessionRecord", "add_task_session",
     "delete_task_session", "list_task_sessions",
-    "InboxItem", "act_on_inbox_item", "evaluate_due_reminders", "inbox_count",
+    "InboxItem", "act_on_inbox_item", "evaluate_due_reminders", "get_override", "inbox_count",
     "list_inbox_items", "set_override", "set_policy",
     "parse_int",
     "sql_identifier",

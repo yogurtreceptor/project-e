@@ -6,6 +6,7 @@ from pathlib import Path
 from app.db import connect, create_entity, initialise_database
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import EventInput, create_event
+from app.event_recurrence import RecurrenceRule, set_recurrence
 from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
     list_inbox_items, set_override)
 from app.task_service import TaskInput, create_task
@@ -31,6 +32,21 @@ class ReminderFoundationTests(unittest.TestCase):
         items = list_inbox_items(self.connection)
         self.assertEqual({"event"}, {item.source_kind for item in items})
         self.assertEqual({event_id}, {item.source_id for item in items})
+
+    def test_future_event_delivers_when_its_reminder_time_arrives(self):
+        create_event(self.connection, EventInput("Future planning", False,
+            start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
+        self.assertEqual(1, evaluate_due_reminders(
+            self.connection, now=datetime(2025, 12, 31, 23, 0, tzinfo=UTC)))
+
+    def test_recurring_event_uses_derived_occurrence_identity(self):
+        event_id = create_event(self.connection, EventInput("Daily stand-up", True,
+            start_date="2026-01-01", end_date="2026-01-01"))
+        event = __import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)
+        set_recurrence(self.connection, event, RecurrenceRule("daily"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, 0, 0, tzinfo=UTC))
+        occurrences = {item.occurrence_key for item in list_inbox_items(self.connection)}
+        self.assertIn("2026-01-02", occurrences)
 
     def test_task_overdue_is_one_distinct_delivery(self):
         task_id = create_task(self.connection, TaskInput("Send proposal", deadline_date="2026-01-01"))
