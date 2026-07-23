@@ -99,7 +99,7 @@ Maps are a derived view over Location data, not the foundation of the Location m
 
 A Project represents ongoing work or an area of responsibility.
 
-- Projects coordinate information and relationships; they do not own related records.
+- Projects coordinate information and relationships; they do not own related records. Their overview projects related upcoming Events and open Tasks through normal Relationships.
 - Projects are not task-management records in Phase 1. Planned Phase 2 Tasks remain independent peer entities, linked through relationships rather than nested ownership.
 
 Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.

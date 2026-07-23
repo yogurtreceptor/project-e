@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. Phase 2B now includes canonical Task/List storage and lifecycle, standard Relationships/Search integration, Calendar-originated capture, optional deadlines and planned sessions, and Calendar Task projections. Project coordination projections remain. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. Phase 2B is complete: canonical Task/List storage and lifecycle, standard Relationships/Search integration, Calendar-originated capture, optional deadlines and planned sessions, Calendar Task projections, and Project coordination projections are delivered. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -265,7 +265,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 11. **Complete:** add Calendar-originated undated Task creation and a dedicated Task organisation/read-only record view. This milestone intentionally does not add a generic Task CRUD route or a second capture path.
 12. **Complete:** implement optional Task deadline persistence: a date-only all-day deadline or a local date/time plus IANA timezone. Deadlines remain separate from Calendar occupancy.
 13. **Complete:** implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, with Calendar deadline/session projections. Completing a Task permanently removes its future sessions while retaining past session history; Task sessions remain neutral rather than Calendar-coloured.
-14. Add Task and Event projections to Project pages.
+14. **Complete:** add read-only Project-page projections for related upcoming Events and open Tasks. Projects coordinate peer records through normal Relationships and do not own them.
 
 ### Phase 2C — Reminder and attention foundation
 

@@ -807,13 +807,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             history = list_entity_history(connection, entity_id) if record else []
             audit_events = list_audit_events(connection, "entity", entity_id) if record else []
             journal_entries = list_journal_entries(connection, "person", entity_id) if record and definition.type == "person" else []
+            project_events = []
+            project_tasks = []
+            if record and definition.type == "project":
+                from datetime import date
+                for relationship in relationships:
+                    other = relationship.other_entity(entity_id)
+                    if other.type == "event":
+                        event = get_event(connection, other.id)
+                        if event and (event.start_date >= date.today().isoformat() if event.is_all_day else event.start_utc[:10] >= date.today().isoformat()):
+                            project_events.append(event)
+                    elif other.type == "task":
+                        task = get_task(connection, other.id)
+                        if task and not task.is_completed:
+                            project_tasks.append(task)
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries),
+            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries, project_events, project_tasks),
             active_slug=definition.slug,
             show_save_toast=query.get("saved") == "1",
         )

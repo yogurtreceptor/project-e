@@ -59,11 +59,15 @@ def entity_detail_page(
     history: list = None,
     audit_events: list = None,
     journal_entries: list[JournalEntry] | None = None,
+    project_events: list = None,
+    project_tasks: list = None,
 ) -> str:
     integrity_warnings = integrity_warnings or []
     history = history or []
     audit_events = audit_events or []
     journal_entries = journal_entries or []
+    project_events = project_events or []
+    project_tasks = project_tasks or []
     warning_html = ""
     if integrity_warnings:
         count = len(integrity_warnings)
@@ -74,7 +78,7 @@ def entity_detail_page(
         {warning_html}
         <div class="profile-grid">
             <div class="profile-main">
-                {domain_overview_section(record, relationships)}
+                {domain_overview_section(record, relationships, project_events, project_tasks)}
                 {entity_geography_section(record, relationships) if record.type in {'organisation', 'asset'} else ''}
                 {relationship_summary_section(record, relationships)}
 
@@ -91,10 +95,10 @@ def entity_detail_page(
     """
 
 
-def domain_overview_section(record, relationships):
+def domain_overview_section(record, relationships, project_events=None, project_tasks=None):
     if record.type == "person": return person_overview_section(record, relationships)
     if record.type == "document": return document_overview_section(record)
-    if record.type == "project": return project_overview_section(record)
+    if record.type == "project": return project_overview_section(record, project_events or [], project_tasks or [])
     if record.type == "organisation":
         return named_overview_section("Organisation details", record, ("organisation_type", "aliases", "website", "phone", "email"))
     if record.type == "location":
@@ -134,11 +138,21 @@ def document_overview_section(record):
     facts=definition_list([("Purpose",record.metadata.get("document_type","")),("Identifier",record.metadata.get("identifier","")),("Document date",record.metadata.get("document_date","")),("Expiry date",record.metadata.get("expiry_date",""))])
     return f'<section class="panel profile-section document-overview"><div class="section-heading split"><h2>Document</h2>{actions}</div>{facts}</section>'
 
-def project_overview_section(record):
+def project_overview_section(record, events, tasks):
     status=record.metadata.get("status",""); badge=f'<span class="badge">{escape(status)}</span>' if status else '<span class="muted">Not recorded</span>'
     milestones=definition_list([("Started",record.metadata.get("started_at","")),("Target",record.metadata.get("target_date","")),("Completed",record.metadata.get("ended_at",""))])
     kind=definition_list([("Project type",record.metadata.get("project_type",""))])
-    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}</section>'
+    event_rows = ''.join(f'<li><a href="/events/{item.id}">{escape(item.title)}</a><span>{escape(_event_schedule(item))}</span></li>' for item in events) or '<li>No upcoming Events.</li>'
+    task_rows = ''.join(f'<li><a href="/tasks/{item.id}">{escape(item.title)}</a><span>{escape(_task_deadline(item))}</span></li>' for item in tasks) or '<li>No open Tasks.</li>'
+    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}<h2>Upcoming Events</h2><ul class="entity-link-list">{event_rows}</ul><h2>Open Tasks</h2><ul class="entity-link-list">{task_rows}</ul></section>'
+
+
+def _event_schedule(event):
+    return event.start_date if event.is_all_day else event.start_utc
+
+
+def _task_deadline(task):
+    return task.deadline_date or task.deadline_utc or 'No deadline'
 
 def relationship_summary_section(record, relationships):
     rows=[]

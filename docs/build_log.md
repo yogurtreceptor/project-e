@@ -2,6 +2,11 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-23 — Phase 2B closeout
+
+- Added read-only Project overview projections for related upcoming Events and open Tasks through the standard Relationship graph.
+- Closed Phase 2B work management; Projects remain coordination hubs rather than owners of Event or Task records.
+
 ## 2026-07-23 — Phase 2B Task temporal values
 
 - Added optional all-day and timed/timezone-aware Task deadlines plus repeatable all-day or bounded timed planned sessions through the shared temporal contract.

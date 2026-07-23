@@ -4,12 +4,14 @@ import threading
 import unittest
 from pathlib import Path
 
-from app.db import connect, create_entity, create_relationship, initialise_database, list_relationships_for_entity, search_entities
+from app.db import connect, create_entity, create_relationship, get_entity, initialise_database, list_relationships_for_entity, search_entities
 from app.entities import DEFINITIONS_BY_TYPE
 from app.task_service import (TaskInput, TaskListInput, TaskSessionInput, add_task_session, archive_task_list, complete_task,
     create_task, create_task_list, get_task, list_task_lists, list_tasks,
     reopen_task, set_default_task_list, list_task_sessions)
 from app.web import EddyRequestHandler, ThreadingHTTPServer
+from app import views
+from app.event_service import EventInput, create_event
 
 
 class TaskServiceTests(unittest.TestCase):
@@ -61,6 +63,20 @@ class TaskServiceTests(unittest.TestCase):
         self.assertEqual(1, len(list_task_sessions(self.connection, task_id)))
         complete_task(self.connection, task_id)
         self.assertEqual([], list_task_sessions(self.connection, task_id))
+
+    def test_project_projects_related_upcoming_events_and_open_tasks(self):
+        project_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["project"], {"display_name": "Launch", "summary": "", "notes": "", "project_type": "", "status": "Active", "started_at": "", "target_date": "", "ended_at": ""})
+        task_id = create_task(self.connection, TaskInput("Prepare launch"))
+        event_id = create_event(self.connection, EventInput("Launch meeting", True, start_date="2099-08-01", end_date="2099-08-01"))
+        create_relationship(self.connection, {"source_entity_id": str(task_id), "target_entity_id": str(project_id), "type": "task_related_to_project"})
+        create_relationship(self.connection, {"source_entity_id": str(event_id), "target_entity_id": str(project_id), "type": "event_related_to_project"})
+        self.connection.commit()
+        project = get_entity(self.connection, DEFINITIONS_BY_TYPE["project"], project_id)
+        html = views.entity_detail_page(project, list_relationships_for_entity(self.connection, project_id), project_events=[__import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)], project_tasks=[get_task(self.connection, task_id)])
+        self.assertIn("Upcoming Events", html)
+        self.assertIn("Launch meeting", html)
+        self.assertIn("Open Tasks", html)
+        self.assertIn("Prepare launch", html)
 
     def test_calendar_originates_undated_task_creation(self):
         EddyRequestHandler.database_path = self.database_path
