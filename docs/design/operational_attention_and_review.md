@@ -98,7 +98,7 @@ A reminder is a policy attached to an Event, Task or derived occurrence, potenti
 source fact → occurrence → reminder policy → override → notification delivery
 ```
 
-The interface places reminder controls with the relevant Event, Task or source-policy context. The system inbox may present the resulting attention item. Dismissal or snooze operates on delivery/attention state and does not silently change the underlying Event, Task or source fact.
+The interface places reminder controls with the relevant Event, Task or source-policy context. The system inbox may present the resulting attention item. Dismissal or snooze operates on delivery/attention state and does not silently change the underlying Event, Task or source fact. When a source lifecycle change removes its due condition, future deliveries are suppressed and active reminder attention resolves; historic deliveries remain retained.
 
 ## System inbox
 

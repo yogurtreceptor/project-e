@@ -149,7 +149,7 @@ source fact → derived occurrence → applicable reminder default
 → optional record-level override → notification delivery
 ```
 
-Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**. Custom timings add to inherited timings rather than replacing them; coincident timings produce one delivery. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions.
+Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**. Custom timings add to inherited timings rather than replacing them; an Event or Task may also suppress individual inherited timings; coincident timings produce one delivery. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions.
 
 The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor:
 
@@ -158,11 +158,11 @@ The initial default reminder timings are relative to the source's due instant or
 - Birthdays: 1 calendar month, 2 weeks, 1 week, 3 days, 1 day and 12 hours before.
 - Document expiries: 1 calendar month, 2 weeks, 1 week, 3 days and 1 day before.
 
-All all-day reminder sources use 09:00 in their relevant local timezone as their due-time anchor rather than midnight. Calendar-month offsets retain calendar semantics rather than being treated as a fixed number of days.
+All all-day reminder sources use 09:00 in the configured platform timezone as their due-time anchor rather than midnight. The platform timezone defaults to `Australia/Brisbane` (UTC+10) until a user configuration setting is introduced; that future setting must preserve existing reminder meaning. Calendar-month offsets retain calendar semantics rather than being treated as a fixed number of days.
 
 Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy. Birthdays and Document expiries project as all-day derived occurrences, not canonical Event records. A 29 February birthday follows the established month-end backward-shift rule and occurs on 28 February in a non-leap year. Approximate dates do not generate reminders in this milestone; a later design may introduce narrowly defined, explainable circumstances for them.
 
-A reminder timing or policy change creates a new pending delivery identity. Disabling a reminder suppresses pending delivery; re-enabling it delivers only if it is due under the current policy. A dismissed reminder remains dismissed as history, but a material Event reschedule or reminder-policy change creates a fresh pending delivery for the changed due time. An application refresh or other immaterial change never redelivers a dismissed item. Notification re-due state and other material changes follow their documented identity contracts.
+A reminder timing or policy change creates a new pending delivery identity. Disabling a reminder suppresses pending delivery; re-enabling it delivers only if it is due under the current policy. A dismissed reminder remains dismissed as history, but a material Event reschedule or reminder-policy change creates a fresh pending delivery for the changed due time. An application refresh or other immaterial change never redelivers a dismissed item. Startup recovery creates a missed delivery only when its logical pending delivery remains eligible and no matching active or historical delivery already exists. Notification re-due state and other material changes follow their documented identity contracts.
 
 Initial delivery creates a durable actionable local Inbox item. While Project E is open, the same item may also appear as an in-app popup; this is presentation of the local notification, not a separate delivery channel. An Event reminder popup provides **Open Event**, **Dismiss/Acknowledge**, and **View in inbox**. Email, SMS, external push and operating-system notifications are excluded.
 
@@ -173,6 +173,8 @@ Phase 2C establishes the reminder-resolution and delivery boundary without a bac
 The Inbox is a dedicated operational attention screen, not a notification dropdown or social feed. It contains due reminders, overdue Tasks, approvals, imports needing review, data-quality decisions, actionable job failures, expiring Documents, suggested Tasks and one-off acknowledgement messages. A restrained global indicator and Home link may show the count of active, not-dismissed items, but the Inbox remains the canonical attention destination.
 
 Each item persists until it is acknowledged, dismissed, snoozed, resolved or otherwise acted upon. It retains its source, reason for attention, original occurrence or due time, creation or delivery time, current state, relevant provenance and only the actions valid for its semantics. Actions may include **Open source**, **Review**, **Approve**, **Reject**, **Resolve**, **Acknowledge**, **Dismiss**, **Snooze**, and **Convert to Task**. Dismissing or snoozing a notification does not mutate its Event, Task, source fact or linked persistent issue.
+
+When a source no longer has the relevant due condition—for example an Event is cancelled, archived or recycled; a Task is completed, archived or recycled; or a Person or Document is recycled—future reminder deliveries are suppressed and any active reminder notification is resolved. Historical dismissed and acknowledged deliveries remain retained. Changing a deadline or expiry date produces new pending deliveries under the changed due time and resolves active reminder attention for the superseded due condition.
 
 The Inbox opens to one priority-ordered active feed with a separate Upcoming section. It groups and filters by meaningful item type and state, with source, severity and age filters where useful. Ordering is source-neutral and urgency-led: needs intervention, overdue, due now or soon, due today, upcoming, then informational; within a group the oldest due item appears first. Severity is used only where it changes ordering or treatment, and routine successful background work remains in activity or run history rather than active attention. The detailed severity vocabulary, review layout, transient-message and accessibility rules remain authoritative in [Operational Attention and Review](design/operational_attention_and_review.md).
 
@@ -211,7 +213,7 @@ Startup recovery evaluates work and reminder delivery due while Project E was un
 
 Jobs may override the applicable default. Recovery remains deterministic and auditable after clean or unclean stops.
 
-Job failures update run history and, where the condition persists, System Health. Intervention produces one appropriately escalated notification rather than repeated failure noise. The first scheduled maintenance checks beyond Event reminders and overdue Tasks remain unspecified; later design must define their record types, trigger conditions and lead times, derive attention from canonical records, and avoid duplicate Events.
+Job failures update Job Run history for manual inspection and rerun. Persistent System Health and escalation remain deferred. The first scheduled maintenance checks beyond Event reminders and overdue Tasks remain unspecified; later design must define their record types, trigger conditions and lead times, derive attention from canonical records, and avoid duplicate Events.
 
 This phase does not add a separate worker, service manager, application launch or termination control, external queue or distributed runtime.
 
@@ -223,7 +225,7 @@ The first automation layer uses explicit, deterministic rules:
 Trigger → optional conditions → action
 ```
 
-The framework supports a deliberately small built-in set of triggers and registered actions. Rules may recalculate derived state; create or update notifications, persistent issues, audit events and Job Runs; identify an overdue Task; deliver a due reminder; update findings from a data-quality scan; or escalate a repeated failure once when intervention is required.
+The framework supports a deliberately small built-in set of triggers and registered actions. Rules may recalculate derived state; create or update notifications, audit events and Job Runs; identify an overdue Task; deliver a due reminder; or update findings from a data-quality scan. Persistent issues and escalation remain deferred.
 
 When a rule proposes creating, editing, completing, archiving or deleting a canonical Event or Task—for example, creating work in response to a Document expiry or Project target—it creates an actionable review proposal. Only explicit user approval applies the canonical mutation through the same validated service used by the human interface.
 
@@ -279,7 +281,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 16. Add traceable derived occurrences for birthdays and expiries.
 17. Implement local notification persistence, manual delivery evaluation and acknowledgement history; Phase 2D adds scheduled delivery and startup recovery.
 18. Implement the actionable System Inbox and retention tiers.
-19. Add database-enforced reminder and Inbox-delivery deduplication, including material-change identities and snooze reactivation.
+19. Add database-enforced reminder and Inbox-delivery deduplication, including material-change identities, lifecycle suppression, snooze reactivation and recovered-delivery matching.
 20. Defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
 
 ### Phase 2D — Operational runtime
