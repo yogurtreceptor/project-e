@@ -128,7 +128,7 @@ Initial Tasks use one default Tasks list plus simple user-created lists. Users m
 
 The initial Task lifecycle is **Open**, **Completed** and **Archived**. **In progress**, priority, richer workflow state, hierarchy, recurrence, dependencies and estimates are not initial requirements. Completed Tasks are hidden from the default Task view but remain available through a completed/history filter.
 
-Human-created Tasks originate from the Calendar. The first capture form exposes title, Task list and notes, and deliberately supports an undated Task with no separate capture route. It routes relationship work through the standard post-creation Relationship workflow. A subsequent 2B temporal milestone will expose optional planned sessions and deadline fields in that same form. The dedicated Tasks view organises, moves, archives and completes existing work rather than creating a competing generic path. The Inbox may offer a controlled conversion of an attention item into a Task.
+Human-created Tasks originate from the Calendar. The first capture form exposes title, Task list and notes, and deliberately supports an undated Task with no separate capture route. It routes relationship work through the standard post-creation Relationship workflow. A subsequent 2B temporal milestone will expose optional planned sessions and deadline fields in that same form. The dedicated Tasks view organises, moves, archives and completes existing work rather than creating a competing generic path. The Inbox may offer a controlled conversion of an attention item into a Task. A later capture refinement will prefill a new Task's all-day deadline to three calendar days after capture; a newly added timed session uses a one-hour duration unless the user changes it.
 
 A Task's deadline and planned work sessions are independent and optional. One Task may have multiple planned sessions; each appears as a separate Calendar block while remaining part of the same canonical Task. Events and Task sessions use distinct visual treatments, preserving Calendar-derived Event colours while making Tasks recognizable. Completing a Task removes its future planned blocks, retains past sessions as history, and marks those past blocks with a completed-check treatment.
 
@@ -149,15 +149,15 @@ source fact → derived occurrence → applicable reminder default
 → optional record-level override → notification delivery
 ```
 
-Global policies define defaults for source kinds such as birthdays, anniversaries and Document expiries. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**; for Events and Tasks it may remove, alter or add individual reminder timings without changing the applicable default policy. Events support multiple reminder configurations. Reminder storage and detailed resolution mechanics remain deferred to Phase 2C.
+Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**; for Events and Tasks it may remove, alter or add individual reminder timings without changing the applicable default policy. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions. Reminder storage and detailed resolution mechanics remain deferred to Phase 2C.
 
-Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy.
+Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy. Birthdays and Document expiries project as all-day derived occurrences, not canonical Event records. A 29 February birthday follows the established month-end backward-shift rule and occurs on 28 February in a non-leap year. Approximate dates do not generate reminders in this milestone; a later design may introduce narrowly defined, explainable circumstances for them.
 
 A reminder timing or policy change creates a new pending delivery identity. Disabling a reminder suppresses pending delivery; re-enabling it delivers only if it is due under the current policy. Notification re-due state and other material changes follow their documented identity contracts.
 
 Initial delivery creates a durable actionable local Inbox item. While Project E is open, the same item may also appear as an in-app popup; this is presentation of the local notification, not a separate delivery channel. An Event reminder popup provides **Open Event**, **Dismiss/Acknowledge**, and **View in inbox**. Email, SMS, external push and operating-system notifications are excluded.
 
-At startup, when a reminder or job-triggered notice became due while the application was unavailable and no matching item exists, Project E creates one deduplicated recovered item retaining the original due time.
+Phase 2C establishes the reminder-resolution and delivery boundary without a background scan or general scheduler. Phase 2D invokes that boundary while Project E is running and at startup; when a reminder or job-triggered notice became due while the application was unavailable and no matching item exists, it creates one deduplicated recovered item retaining the original due time.
 
 #### System Inbox
 
@@ -169,15 +169,11 @@ The Inbox opens to one priority-ordered active feed with a separate Upcoming sec
 
 Reminder snooze is limited to 30 minutes or until Project E next opens. Longer deferral uses conversion to a Task. Snooze retains the original due time and records the next-attention time.
 
-Acted-on items leave the active feed for an Archived view containing the 1,000 most recent dismissed or acknowledged items. Older items move to immutable local deep archive rather than being deleted. Deep archive is not part of normal Inbox browsing; future retrieval may locate and export a copy without removing the retained original. Append-only audit history is unaffected by Inbox retention tiers.
+Acted-on items leave the active feed for an Archived view containing the 500 most recent items. The user may select 10, 50 or 100 items per page, producing respectively 50, 10 or 5 pages over that same retained set. A visible Deep archive control follows the 500th item and opens a prototype long-scroll view of all older retained Inbox history. No Inbox record is deleted or removed by this retention presentation, and append-only audit history is unaffected. More capable deep-archive retrieval and presentation remain later work.
 
-#### Persistent System Health
+#### Persistent System Health (deferred)
 
-A persistent issue is a durable condition such as an invalid storage path, unavailable optional service, missing reference data, disabled subsystem or continuously failed recurring job. System Health retains one current record per deduplication key and updates it as evidence, state or severity changes. An unchanged condition does not generate a new daily Inbox item.
-
-Persistent conditions primarily live on a dedicated System Health screen, where the user may move or quarantine an issue. A reversible **Don't remind me** action suppresses further Inbox surfacing without deleting the condition or its history. A high-severity issue creates one regular Inbox item linking to its System Health record; lower-severity conditions remain in System Health unless escalation becomes necessary.
-
-Create or update actionable attention when a condition is first detected, materially worsens, becomes actionable, changes state, resolves in a way worth acknowledging, or crosses a defined escalation threshold. Severity escalation creates a new logical escalation identity. Deduplication, suppression and escalation are required product behaviour.
+Persistent System Health is deferred from Phase 2C and Phase 2D. It should be introduced only after concrete condition producers and user actions are separately designed; the reminder and scheduler foundations must not add speculative health checks, a generic issue surface or escalation behaviour merely to fill that future role.
 
 Consequential review items show current and proposed state, evidence, consequences, reversibility and recovery before confirmation. Rejection records enough disposition to prevent useless resurfacing. Routine success stays in activity or process history.
 
@@ -231,10 +227,10 @@ Stabilisation integrates and verifies the preceding phases rather than adding an
 - cross-domain Calendar projections over canonical records and derived occurrences;
 - recurrence definitions, occurrence identities, exceptions, series splits and timezone behaviour;
 - data-quality rules for Events, Tasks, schedules and reminder policies;
-- notification, escalation, issue and job-run deduplication under restart and recovery;
+- notification and job-run deduplication under restart and recovery;
 - whole-platform export/import of Phase 2 canonical and operational data;
 - end-to-end workflow and migration testing;
-- review of Inbox noise, persistent warnings, approval boundaries, provenance and audit;
+- review of Inbox noise, approval boundaries, provenance and audit;
 - architecture, database, ontology, glossary, product and development documentation;
 - the formal Phase 2 completion review.
 
@@ -272,10 +268,10 @@ The behaviour above is authoritative. The following sequence establishes impleme
 14. Define the approved reminder-policy contexts and preserve unresolved precedence explicitly.
 15. Add record-level reminder overrides and material-change identity handling.
 16. Add traceable derived occurrences for birthdays and expiries.
-17. Implement local notification delivery, recovery and acknowledgement history.
+17. Implement local notification persistence, manual delivery evaluation and acknowledgement history; Phase 2D adds scheduled delivery and startup recovery.
 18. Implement the actionable System Inbox and retention tiers.
-19. Implement the separate persistent System Health surface.
-20. Add database-enforced deduplication, suppression and escalation behaviour.
+19. Add database-enforced reminder and Inbox-delivery deduplication, including material-change identities and snooze reactivation.
+20. Defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
 
 ### Phase 2D — Operational runtime
 
@@ -284,7 +280,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 23. Add transactional leases, execution records and Job Run history.
 24. Add checkpointed serial startup recovery and duplicate-run protection.
 25. Add manual execution, manual failure rerun and enable/disable controls.
-26. Integrate failures with System Health and actionable escalation.
+26. Record failures in Job Run history; persistent System Health and actionable escalation remain deferred pending separately authorised condition design.
 
 ### Phase 2E — Deterministic automation
 
@@ -300,7 +296,7 @@ The behaviour above is authoritative. The following sequence establishes impleme
 33. Verify recurrence, timezone and temporal-boundary behaviour.
 34. Add data-quality rules for Events, Tasks, schedules and reminder policies.
 35. Add migration, recovery, portability and end-to-end tests.
-36. Review system noise, logical idempotency, Inbox deduplication and persistent warnings.
+36. Review system noise, logical idempotency and Inbox deduplication; reconsider persistent System Health only if concrete condition producers and actions have been authorised.
 37. Update architecture, database, ontology, glossary, product and development documentation.
 38. Conduct the Phase 2 completion review.
 
@@ -319,16 +315,13 @@ Create a Project
 → apply an applicable reminder default and a record-level override
 → deliver one useful actionable local notification
 → recover a missed due item without duplicate delivery
-→ avoid duplicate Inbox warnings for an unchanged persistent issue
 → run a scheduled background check and record its Job Run separately
-→ update persistent System Health where necessary
-→ escalate once when user intervention is required
 → present any proposed canonical Event or Task mutation for explicit approval
 → show generated records, decisions and actions in provenance and audit history
 → export and validate the integrated Phase 2 records through whole-platform portability
 ```
 
-The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, persistent issues, audit events and Job Runs retain separate identities.
+The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. Persistent System Health remains a separately authorised future capability.
 
 An Event table, rendered Calendar, creatable Tasks, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The capabilities must work together as one operational system.
 
@@ -351,8 +344,8 @@ The following are outside initial Phase 2 scope:
 - Agenda/list Calendar views before the Week/Day workflow is stable.
 - Direct Week-view slot creation, drag-and-drop rescheduling and Event resizing before overlay creation and editing are stable.
 - Unspecified scheduled maintenance checks beyond Event reminders and overdue Tasks; those require later design within the existing Phase 2 boundaries.
-- A normal browsing or removal program for immutable deep Inbox archive storage.
-- Repeated Inbox items for unchanged persistent issues or routine successful background work.
+- Destructive Inbox retention or automatic deletion of historic Inbox records.
+- Repeated Inbox items for unchanged conditions or routine successful background work.
 
 These exclusions do not remove the documented within-phase follow-ups from the implementation order; they prevent them from being treated as prerequisites for earlier foundations or as authority for unrelated work.
 
@@ -362,7 +355,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage, merging behaviour, identity changes and conflict resolution remain deferred to Phase 2C.
+- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage and the merge rule for inherited and custom reminder timings remain deferred to Phase 2C. A timing or policy change creates a new pending delivery identity; snoozing reactivates the same Inbox item at its next-attention time.
 - **Task temporal interaction.** Calendar-originated undated Task capture, deadlines, sessions and Calendar projections are implemented. A later refinement may improve multi-session editing ergonomics.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.

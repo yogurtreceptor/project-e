@@ -4,7 +4,7 @@ Status: Target standard for increasingly important operational workflows. Phase 
 
 ## Purpose and authority
 
-Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019.
+Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019. The Inbox and reminder foundation remain planned Phase 2 work; Persistent System Health and escalation are deferred until concrete condition producers and user actions are separately authorised.
 
 The central rule is semantic separation:
 
@@ -56,9 +56,9 @@ Every item includes:
 - one primary action and restrained secondary actions;
 - current state and relevant provenance.
 
-### Persistent issues
+### Persistent issues (future)
 
-A persistent issue represents a condition that remains true: invalid storage path, unavailable optional service, missing reference data, unhealthy recurring job or configuration problem.
+A persistent issue represents a future condition that remains true: invalid storage path, unavailable optional service, missing reference data, unhealthy recurring job or configuration problem. It is not part of the Phase 2C or Phase 2D implementation scope.
 
 - Maintain one current issue per deduplication key.
 - Update that issue as state, severity or evidence changes.
