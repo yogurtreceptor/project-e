@@ -272,6 +272,10 @@ A first-class entity representing work to be performed. A Task is neither an Eve
 
 A first-class local organisational record that groups Tasks by the user's intended category. It is not a Calendar, ownership boundary or separate classification layer. Archiving retains its assigned Tasks and prevents new assignment.
 
+## Task Session
+
+A repeatable planned all-day or bounded timed interval belonging to one canonical Task. It is a Calendar projection source, not an Event or separate canonical entity.
+
 ## Calendar Projection
 
 A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.

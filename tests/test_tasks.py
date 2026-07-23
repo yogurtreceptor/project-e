@@ -6,9 +6,9 @@ from pathlib import Path
 
 from app.db import connect, create_entity, create_relationship, initialise_database, list_relationships_for_entity, search_entities
 from app.entities import DEFINITIONS_BY_TYPE
-from app.task_service import (TaskInput, TaskListInput, archive_task_list, complete_task,
+from app.task_service import (TaskInput, TaskListInput, TaskSessionInput, add_task_session, archive_task_list, complete_task,
     create_task, create_task_list, get_task, list_task_lists, list_tasks,
-    reopen_task, set_default_task_list)
+    reopen_task, set_default_task_list, list_task_sessions)
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -53,6 +53,14 @@ class TaskServiceTests(unittest.TestCase):
         self.connection.commit()
         self.assertEqual([task_id], [result["entity"].id for result in search_entities(self.connection, "prepare", entity_type="task")])
         self.assertEqual("task_related_to_project", list_relationships_for_entity(self.connection, task_id)[0].type_key)
+
+    def test_deadlines_and_sessions_use_shared_temporal_contract(self):
+        task_id = create_task(self.connection, TaskInput("Book venue", deadline_date="2026-08-10"))
+        self.assertEqual("2026-08-10", get_task(self.connection, task_id).deadline_date)
+        add_task_session(self.connection, task_id, TaskSessionInput(False, start_local="2026-08-01T09:00", end_local="2026-08-01T10:00"))
+        self.assertEqual(1, len(list_task_sessions(self.connection, task_id)))
+        complete_task(self.connection, task_id)
+        self.assertEqual([], list_task_sessions(self.connection, task_id))
 
     def test_calendar_originates_undated_task_creation(self):
         EddyRequestHandler.database_path = self.database_path

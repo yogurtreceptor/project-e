@@ -70,6 +70,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_event_recurrence_tables(connection)
     create_task_list_table(connection)
     create_task_table(connection)
+    create_task_temporal_tables(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -391,6 +392,30 @@ def create_task_table(connection: sqlite3.Connection) -> None:
             ON tasks (task_list_id, archived_at, status, entity_id);
         """
     )
+
+
+def create_task_temporal_tables(connection: sqlite3.Connection) -> None:
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS task_deadlines (
+            task_id INTEGER PRIMARY KEY REFERENCES tasks(entity_id) ON DELETE CASCADE,
+            due_date TEXT NOT NULL DEFAULT '', due_utc TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT '',
+            CHECK ((due_date <> '' AND due_utc = '' AND timezone = '') OR
+                   (due_date = '' AND due_utc <> '' AND timezone <> ''))
+        );
+        CREATE TABLE IF NOT EXISTS task_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL REFERENCES tasks(entity_id) ON DELETE CASCADE,
+            is_all_day INTEGER NOT NULL CHECK (is_all_day IN (0, 1)),
+            start_date TEXT NOT NULL DEFAULT '', end_date_exclusive TEXT NOT NULL DEFAULT '',
+            start_utc TEXT NOT NULL DEFAULT '', end_utc TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL,
+            CHECK ((is_all_day = 1 AND start_date <> '' AND end_date_exclusive <> '' AND start_date < end_date_exclusive AND start_utc = '' AND end_utc = '' AND timezone = '') OR
+                   (is_all_day = 0 AND start_utc <> '' AND end_utc <> '' AND start_utc < end_utc AND timezone <> '' AND start_date = '' AND end_date_exclusive = ''))
+        );
+        CREATE INDEX IF NOT EXISTS idx_task_sessions_task ON task_sessions(task_id, id);
+        CREATE INDEX IF NOT EXISTS idx_task_sessions_time ON task_sessions(is_all_day, start_date, start_utc, task_id);
+    """)
 
 
 def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
@@ -836,6 +861,7 @@ SCHEMA_MIGRATIONS = (
     ("20260719_19_calendar_management_history", create_calendar_history_table),
     ("20260719_20_event_recurrence", create_event_recurrence_tables),
     ("20260720_21_task_lists_and_tasks", lambda connection: (create_task_list_table(connection), create_task_table(connection))),
+    ("20260723_22_task_temporal_values", create_task_temporal_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

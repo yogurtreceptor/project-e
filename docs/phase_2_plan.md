@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. The first Phase 2B Task foundation is also complete: canonical Task and Task-list storage, validated lifecycle services, standard Relationships and Search integration, Calendar-originated undated Task capture, and a dedicated Task organisation view. Task temporal persistence and Calendar/Project projections remain the next Phase 2B milestone. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. Phase 2B now includes canonical Task/List storage and lifecycle, standard Relationships/Search integration, Calendar-originated capture, optional deadlines and planned sessions, and Calendar Task projections. Project coordination projections remain. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -263,8 +263,8 @@ The behaviour above is authoritative. The following sequence establishes impleme
 9. **Complete:** add Open/Completed/Archived Task lifecycle behaviour. Completion records a timestamp; completed Tasks are hidden from the default Task view and may be reopened. Task archive remains distinct from Recycle Bin deletion.
 10. **Complete:** integrate pair-aware Task Relationships with every current peer entity, including Events, Projects and other Tasks, through the standard Relationship lifecycle.
 11. **Complete:** add Calendar-originated undated Task creation and a dedicated Task organisation/read-only record view. This milestone intentionally does not add a generic Task CRUD route or a second capture path.
-12. Implement optional Task deadline persistence: a date-only deadline or a local date/time plus IANA timezone. Keep deadlines separate from Calendar occupancy; Calendar deadline rendering follows only with the projection milestone.
-13. Implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, then add distinct Task-session and deadline projections to Calendar Month/Week/Day views.
+12. **Complete:** implement optional Task deadline persistence: a date-only all-day deadline or a local date/time plus IANA timezone. Deadlines remain separate from Calendar occupancy.
+13. **Complete:** implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, with Calendar deadline/session projections. Completing a Task permanently removes its future sessions while retaining past session history; Task sessions remain neutral rather than Calendar-coloured.
 14. Add Task and Event projections to Project pages.
 
 ### Phase 2C — Reminder and attention foundation
@@ -363,7 +363,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
 - **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage, merging behaviour, identity changes and conflict resolution remain deferred to Phase 2C.
-- **Task temporal persistence and interaction.** Calendar-originated undated Task capture is implemented. The approved next model is an optional date-only or timed/timezone-aware deadline plus optional repeatable all-day or bounded timed planned sessions; exact form interaction, persistence shape and Calendar rendering remain the next authorised 2B design work.
+- **Task temporal interaction.** Calendar-originated undated Task capture, deadlines, sessions and Calendar projections are implemented. A later refinement may improve multi-session editing ergonomics.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.
 

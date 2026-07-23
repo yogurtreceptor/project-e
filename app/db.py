@@ -132,7 +132,8 @@ from app.task_service import (
     archive_task, archive_task_list, complete_task, create_task, create_task_list,
     get_task, get_task_list, list_task_lists, list_tasks, reopen_task,
     rename_task_list, set_default_task_list, unarchive_task, unarchive_task_list,
-    update_task, validate_stored_task,
+    update_task, validate_stored_task, TaskSessionInput, TaskSessionRecord,
+    add_task_session, delete_task_session, list_task_sessions,
 )
 
 __all__ = [
@@ -242,6 +243,8 @@ __all__ = [
     "list_tasks", "reopen_task", "rename_task_list", "set_default_task_list",
     "unarchive_task", "unarchive_task_list", "update_task",
     "validate_stored_task",
+    "TaskSessionInput", "TaskSessionRecord", "add_task_session",
+    "delete_task_session", "list_task_sessions",
     "parse_int",
     "sql_identifier",
     "sql_literal",

@@ -70,7 +70,8 @@ from app.event_service import EventInput, EventSchedule, EventUpdate, create_eve
 from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
     complete_task, create_task, create_task_list, get_task, get_task_list,
     list_task_lists, list_tasks, reopen_task, set_default_task_list,
-    unarchive_task, unarchive_task_list, update_task, rename_task_list)
+    unarchive_task, unarchive_task_list, update_task, rename_task_list,
+    TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
@@ -237,6 +238,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
+                tasks = list_tasks(connection, include_completed=True)
+                task_sessions = {task.id: list_task_sessions(connection, task.id) for task in tasks}
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
                 recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
                 created_id = self.parse_entity_id(query.get("created", ""))
@@ -247,7 +250,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             anchor_date = self.calendar_anchor_date(query.get("date", ""))
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions)
             self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
             return
         if len(parts) == 2 and parts[1] == "manage":
@@ -344,6 +347,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     values.get("title", ""),
                     int(values["task_list_id"]) if values.get("task_list_id", "").isdigit() else None,
                     values.get("notes", ""),
+                    values.get("deadline_date", ""), values.get("deadline_local", ""), values.get("deadline_timezone", "Australia/Brisbane"),
                 ))
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
@@ -385,6 +389,25 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if len(parts) == 2 and self.command == "GET":
             self.handle_task_projection(task_id, query)
             return
+        if len(parts) == 3 and parts[2] == "sessions" and self.command == "POST":
+            values = self.read_form()
+            try:
+                with connect(self.database_path) as connection:
+                    add_task_session(connection, task_id, TaskSessionInput(values.get("all_day") == "1", values.get("start_date", ""), values.get("end_date", ""), values.get("start_local", ""), values.get("end_local", ""), values.get("timezone", "Australia/Brisbane")))
+            except (ValueError, sqlite3.Error):
+                self.redirect(f"/tasks/{task_id}"); return
+            self.redirect(f"/tasks/{task_id}"); return
+        if len(parts) == 4 and parts[2] == "sessions" and self.command == "POST":
+            with connect(self.database_path) as connection:
+                delete_task_session(connection, task_id, self.parse_entity_id(parts[3]) or 0)
+            self.redirect(f"/tasks/{task_id}"); return
+        if len(parts) == 3 and parts[2] == "edit" and self.command == "POST":
+            values = self.read_form()
+            with connect(self.database_path) as connection:
+                current = get_task(connection, task_id, include_archived=True)
+                if current is None: self.respond_not_found(); return
+                update_task(connection, task_id, TaskInput(values.get("title", current.title), current.task_list_id, values.get("notes", current.notes), values.get("deadline_date", ""), values.get("deadline_local", ""), values.get("deadline_timezone", "Australia/Brisbane")))
+            self.redirect(f"/tasks/{task_id}?saved=1"); return
         if len(parts) == 3 and self.command == "POST":
             try:
                 with connect(self.database_path) as connection:
@@ -420,7 +443,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             relationships = list_relationships_for_entity(connection, task_id)
             history = list_entity_history(connection, task_id)
             audit_events = list_audit_events(connection, "entity", task_id)
-        self.respond_page(task.title, views.task_projection_page(task, task_list, relationships, history, audit_events), active_slug="tasks", show_save_toast=query.get("saved") == "1")
+            sessions = list_task_sessions(connection, task_id)
+        self.respond_page(task.title, views.task_projection_page(task, task_list, relationships, history, audit_events, sessions), active_slug="tasks", show_save_toast=query.get("saved") == "1")
 
     def handle_calendar_management_create(self) -> None:
         values = self.read_form()

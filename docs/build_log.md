@@ -2,6 +2,11 @@
 
 Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
 
+## 2026-07-23 — Phase 2B Task temporal values
+
+- Added optional all-day and timed/timezone-aware Task deadlines plus repeatable all-day or bounded timed planned sessions through the shared temporal contract.
+- Added Calendar Task deadline/session projections with neutral Task treatment; completion permanently removes future sessions while preserving past session history.
+
 ## 2026-07-20 — Phase 2B Task foundation
 
 - Added canonical Task and Task-list storage through a forward-only migration, including the seeded default Tasks list, active-list assignment checks, completion timestamps and independent archive state.
