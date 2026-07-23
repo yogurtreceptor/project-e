@@ -149,11 +149,20 @@ source fact → derived occurrence → applicable reminder default
 → optional record-level override → notification delivery
 ```
 
-Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**; for Events and Tasks it may remove, alter or add individual reminder timings without changing the applicable default policy. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions. Reminder storage and detailed resolution mechanics remain deferred to Phase 2C.
+Global policies define defaults for the initial derived source kinds: birthdays and Document expiries. Anniversaries are deferred. Calendars and Task lists provide approved context-specific defaults. Reminder resolution broadly proceeds from an occurrence override, to an Event override, to its Calendar policy, then to the applicable global policy. A record-level override supports **use default**, **enable with custom timing**, and **disable for this record**. Custom timings add to inherited timings rather than replacing them; coincident timings produce one delivery. Events support multiple reminder configurations. Initial Task reminders apply to deadlines only, not planned sessions.
+
+The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor:
+
+- Events: 1 hour and 10 minutes before.
+- Task deadlines: 3 days, 2 days, 1 day, 6 hours and 1 hour before.
+- Birthdays: 1 calendar month, 2 weeks, 1 week, 3 days, 1 day and 12 hours before.
+- Document expiries: 1 calendar month, 2 weeks, 1 week, 3 days and 1 day before.
+
+All all-day reminder sources use 09:00 in their relevant local timezone as their due-time anchor rather than midnight. Calendar-month offsets retain calendar semantics rather than being treated as a fixed number of days.
 
 Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy. Birthdays and Document expiries project as all-day derived occurrences, not canonical Event records. A 29 February birthday follows the established month-end backward-shift rule and occurs on 28 February in a non-leap year. Approximate dates do not generate reminders in this milestone; a later design may introduce narrowly defined, explainable circumstances for them.
 
-A reminder timing or policy change creates a new pending delivery identity. Disabling a reminder suppresses pending delivery; re-enabling it delivers only if it is due under the current policy. Notification re-due state and other material changes follow their documented identity contracts.
+A reminder timing or policy change creates a new pending delivery identity. Disabling a reminder suppresses pending delivery; re-enabling it delivers only if it is due under the current policy. A dismissed reminder remains dismissed as history, but a material Event reschedule or reminder-policy change creates a fresh pending delivery for the changed due time. An application refresh or other immaterial change never redelivers a dismissed item. Notification re-due state and other material changes follow their documented identity contracts.
 
 Initial delivery creates a durable actionable local Inbox item. While Project E is open, the same item may also appear as an in-app popup; this is presentation of the local notification, not a separate delivery channel. An Event reminder popup provides **Open Event**, **Dismiss/Acknowledge**, and **View in inbox**. Email, SMS, external push and operating-system notifications are excluded.
 
@@ -355,7 +364,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Storage and the merge rule for inherited and custom reminder timings remain deferred to Phase 2C. A timing or policy change creates a new pending delivery identity; snoozing reactivates the same Inbox item at its next-attention time.
+- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Custom timings add to inherited timings, with one delivery for coincident timings. Storage mechanics remain deferred to Phase 2C. A timing or policy change creates a new pending delivery identity; snoozing reactivates the same Inbox item at its next-attention time.
 - **Task temporal interaction.** Calendar-originated undated Task capture, deadlines, sessions and Calendar projections are implemented. A later refinement may improve multi-session editing ergonomics.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.

@@ -122,7 +122,7 @@ The inbox is an operational queue, not a social-notification feed.
 
 Possible actions include Open source, Review, Approve, Reject, Resolve, Acknowledge, Dismiss, Snooze and Convert to Task. Each item exposes only actions valid for its semantics. “Mark all read” is not a substitute for resolution.
 
-Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact.
+Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact. A dismissed reminder remains historical; only a material source reschedule or reminder-policy change may create a fresh pending delivery, while a refresh or other immaterial change cannot redeliver it.
 
 ## Severity and prioritisation
 
