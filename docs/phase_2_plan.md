@@ -253,7 +253,7 @@ Stabilisation integrates and verifies the preceding phases rather than adding an
 
 ## Implementation sequence
 
-The behaviour above is authoritative. The following sequence establishes implementation order without redefining it.
+The behaviour above is authoritative product direction. The following sequence is the delivery record and implementation order: its **Complete** markers report implemented work, do not redefine the approved behaviour, and must remain aligned with the current architecture and database documentation.
 
 ### Phase 2A — Temporal foundation
 
@@ -282,13 +282,15 @@ The behaviour above is authoritative. The following sequence establishes impleme
 
 ### Phase 2C — Reminder and attention foundation
 
-14. Define the approved reminder-policy contexts and preserve unresolved precedence explicitly.
-15. Add record-level reminder overrides and material-change identity handling.
-16. Add traceable derived occurrences for birthdays and expiries.
-17. Implement local notification persistence, manual delivery evaluation and acknowledgement history; Phase 2D adds scheduled delivery and startup recovery.
-18. Implement the actionable System Inbox and retention tiers.
-19. Add database-enforced reminder and Inbox-delivery deduplication, including material-change identities, lifecycle suppression, snooze reactivation and recovered-delivery matching.
-20. Defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
+14. **Complete:** define local Calendar, Task-list and global derived-source reminder-policy contexts, default timings, record and occurrence overrides, and the delivery identity/material-change contract.
+15. **Complete:** add record-level Event and Task-deadline overrides with additive custom timings, inherited-timing suppression and disable behaviour. Recurring Event edits use this-occurrence, this-and-following and all-occurrences scopes through the existing occurrence and series-split model.
+16. **Complete:** add traceable all-day birthday and Document-expiry reminder occurrences, including Brisbane anchors, calendar-month timing, February-29 backward shifting and approximate-date exclusion.
+17. **Complete:** implement durable local notification persistence, manual reminder evaluation and append-only Inbox delivery/action history. Phase 2D adds scheduled delivery and startup recovery.
+18. **Complete:** implement the actionable System Inbox: active attention, derived Upcoming preview, acknowledge/dismiss/snooze actions, urgency ordering, the 500-item paged Archive tier and distinct deep-history view.
+19. **Complete:** add database-enforced reminder and Inbox-delivery deduplication, timing-aware material-change reconciliation, lifecycle suppression and snooze reactivation. The recovery-matching identity contract is defined here; Phase 2D invokes it during startup recovery.
+20. **Complete:** defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
+
+**Complete:** Phase 2C now provides the local reminder and attention foundation. Its deterministic catch-up policy treats Events as transient occurrences, overdue Tasks and Document expiries as persistent conditions, and birthdays as next-occurrence-only recurring dates. Phase 2D is responsible for invoking this completed delivery boundary while Project E is running and during startup recovery.
 
 ### Phase 2D — Operational runtime
 
