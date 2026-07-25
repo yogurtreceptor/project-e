@@ -2,96 +2,116 @@
 
 > A local-first Personal Information Platform for turning private, connected information into a useful operational foundation.
 
-Project E keeps meaningful information about people, organisations, locations, projects, documents and assets in one relationship-rich system. Its embedded SQLite database is the canonical source of truth; the interface, deterministic tools and future intelligent capabilities are all views and operations over that same platform.
+Project E brings People, Organisations, Locations, Projects, Documents, Assets, Events and Tasks into one relationship-rich system. Its embedded SQLite database is the canonical source of truth, with private documents stored locally alongside it. Search, maps, timelines, Calendar, Tasks and Inbox are views and workflows over the same records—not competing data stores.
 
-The immediate aim is deliberately human: make the platform genuinely useful, trustworthy and pleasant for a private user. Automation and AI are important later capabilities, but they build on the information model, validation, provenance and user control—they are not the foundation.
+The immediate aim is deliberately human: make the platform useful, trustworthy and pleasant for one private user. Automation and AI are later capabilities built on validation, provenance and user control; they are not the foundation.
 
-## Current status
+## Current product
 
-Project E has completed **Phase 1 — Information Platform** as a development milestone. Pull request #1 is closed. The local application provides canonical entity and relationship records, search and structured filters, maps, document storage, journals, timelines, taxonomies, audit history, data-quality tools, duplicate merging, soft deletion and reviewed deterministic relationship inference.
+| Status | Capability |
+| --- | --- |
+| **Available now** | Canonical records and relationships; search and structured filters; maps; document storage; journals and timelines; taxonomies; audit history; data-quality tools; duplicate merging; soft deletion; reviewed family inference; Calendar and recurring Events; Tasks and Calendar/Project projections; reminder policies and a durable local Inbox; portable export, import and recovery. |
+| **In progress** | Scheduler-driven reminder delivery, startup recovery and the later deterministic-automation runtime in Phase 2. |
+| **Not current scope** | AI, user accounts, cloud-dependent core operation, and external email, SMS, push or operating-system notification channels. |
 
-The current product is designed for one private user and requires no account. Core records and workflows remain usable without WAN access; optional map tiles and address lookup may use replaceable network services. Phase 2 is **in progress**, not complete: temporal, Calendar-only grouping and canonical Event service foundations are implemented, while Calendar UI and integration, projections, recurrence, Tasks, reminders and attention management, a lightweight scheduler, and deterministic automation remain staged work. See the [Phase 2 plan](docs/phase_2_plan.md).
+Phase 1 — Information Platform is complete as a development milestone. Phase 2 is in progress: Calendar/Event and Task foundations are complete, while the operational runtime remains staged. The product requires no account. Core records and workflows work without WAN access; optional map tiles and address lookup use replaceable network services. See the [Phase 2 plan](docs/phase_2_plan.md).
 
-## Architecture at a glance
+## Product map
 
 ```mermaid
-flowchart TB
-    H["Human user"]
-    F["Future automation and AI"]
-    P["Shared platform capabilities<br/>UI · validation · search · relationships · audit"]
-    D[("Canonical local SQLite database")]
-    X["Private local documents"]
+flowchart LR
+    R["Canonical records<br/>People · Organisations · Locations · Projects<br/>Documents · Assets · Events · Tasks"]
+    G["Relationships"]
+    V["Views and workflows<br/>Search · Timeline · Map · Calendar<br/>Tasks · Inbox"]
+    D[("Local SQLite database")]
+    F["Private local documents"]
 
-    H --> P
-    F -. future .-> P
-    P <--> D
-    P <--> X
+    R <--> G
+    R --> V
+    G --> V
+    R <--> D
+    R <--> F
 ```
 
-Human users, deterministic automation and future AI should consume the same validated platform capabilities. No future layer should create a competing source of truth.
+Every view remains traceable to canonical local records. Optional map resources may use the network, but they are not required for core operation.
 
-## Philosophy
+## Principles
 
 - **Local-first and private:** useful without a cloud service or continuous connection.
-- **Entity- and relationship-first:** model real things once, then provide multiple views over them.
-- **Database-backed truth:** derived views and intelligent assistance remain traceable to canonical records.
-- **Human usefulness before intelligence:** earn value through strong everyday workflows before adding advanced AI.
-- **Safe evolution:** validation, audit history, provenance and explicit confirmation precede machine-written changes.
+- **Entity- and relationship-first:** model each real thing once, then provide multiple views over it.
+- **Human usefulness before intelligence:** earn value through dependable everyday workflows before adding advanced assistance.
+- **Safe evolution:** validation, audit history, provenance and explicit confirmation precede consequential machine-written changes.
 - **Simple, maintainable foundations:** prefer standard-library Python, SQLite and conservative dependencies.
-- **Clean evolution while unstable:** during active development, prefer a coherent current architecture over compatibility layers for obsolete models; migrations are useful, and a local database reset remains acceptable.
+- **Coherent active development:** prefer a clean current architecture over obsolete compatibility layers while the product remains unstable.
 
-See the [project goal](PROJECT_GOAL.md), [phased roadmap](ROADMAP.md) and [future platform direction](docs/future_direction.md) for the durable direction.
+For the durable direction, see the [project goal](PROJECT_GOAL.md), [roadmap](ROADMAP.md) and [future platform direction](docs/future_direction.md).
 
 ## Documentation
 
-| Document | Purpose |
-| --- | --- |
-| [Project goal](PROJECT_GOAL.md) | Product purpose and durable principles |
-| [Experience philosophy](docs/experience_philosophy.md) | Experience-level authority for how the interface should feel and behave |
-| [Design documentation](docs/design/README.md) | Design-system, navigation, page, form, presentation and operational-attention standards plus the current UI audit |
-| [Roadmap](ROADMAP.md) | Guidance from information platform to AI/agent platform |
-| [Future direction](docs/future_direction.md) | Long-term capability model and Odysseus relationship |
-| [Stage 1 specification](docs/stage_1_spec.md) | Current scope, behavior and acceptance criteria |
-| [Architecture](docs/architecture.md) | Current application structure and boundaries |
-| [Database design](docs/database_design.md) | Persistence, canonical data and migration rules |
-| [Ontology](docs/ontology.md) | Entity and relationship semantics |
-| [UI principles](docs/ui_principles.md) | Interaction and presentation conventions |
-| [Architecture decisions](ARCHITECTURE_DECISIONS.md) | Durable decisions and consequences |
-| [Glossary](docs/glossary.md) | Canonical terminology |
-| [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) | Closure decision, evidence and residual-risk record |
-| [Phase 2 plan](docs/phase_2_plan.md) | Planned operational time and automation foundation |
-| [Technical debt](docs/reviews/technical_debt_register.md) | Unresolved actionable engineering debt |
-| [Build history](docs/build_log.md) | Concise record of completed work |
+### Product and planning
 
-Contributor and agent workflow guidance lives in [AGENTS.md](AGENTS.md).
+- [Project goal](PROJECT_GOAL.md) — product purpose and durable principles
+- [Stage 1 specification](docs/stage_1_spec.md) — delivered Information Platform behaviour and acceptance criteria
+- [Phase 2 plan](docs/phase_2_plan.md) — operational time and deterministic-automation foundation
+- [Roadmap](ROADMAP.md) and [future direction](docs/future_direction.md) — phased and longer-term direction
+- [Build history](docs/build_log.md) and [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) — completed-work context
 
-Community participation is covered by the [contributing guide](CONTRIBUTING.md). Bug reports and focused feature proposals can be opened with the repository's issue templates.
+### Technical reference
 
-## Security and copyright
+- [Architecture](docs/architecture.md), [database design](docs/database_design.md) and [ontology](docs/ontology.md)
+- [Architecture decisions](ARCHITECTURE_DECISIONS.md), [glossary](docs/glossary.md) and [technical debt](docs/reviews/technical_debt_register.md)
 
-Report suspected vulnerabilities privately by following the [security policy](SECURITY.md). Do not include personal or sensitive runtime data in public issues.
+### Experience and design
 
-Project E is currently source-available but not open source. Copyright is retained by yogurtreceptor and no licence for reuse or redistribution is granted; see the [copyright notice](COPYRIGHT.md). This can be replaced with an explicit software licence later.
+- [Experience philosophy](docs/experience_philosophy.md), [design documentation](docs/design/README.md) and [UI principles](docs/ui_principles.md)
+
+### Contribute and report safely
+
+- [Contributor and agent workflow](AGENTS.md) and [contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md) and [copyright notice](COPYRIGHT.md)
+
+Project E is currently source-available, not open source. Copyright is retained by yogurtreceptor and no licence for reuse or redistribution is granted.
 
 ## Run locally
 
-Project E currently needs Python 3 and no third-party Python packages.
+Project E needs Python 3 and no third-party Python packages.
 
 ```bash
 python3 run.py
 ```
 
-Open `http://127.0.0.1:8000`. A fresh clone starts empty; the app creates its Git-ignored database and document storage under `instance/`.
+Open `http://127.0.0.1:8000`. A fresh clone starts empty and creates its Git-ignored SQLite database, document storage and recovery directories beneath `instance/`.
 
 ```bash
 python3 -m unittest discover -s tests
 python3 -m compileall app run.py tests
 ```
 
-## Screenshots
-Screenshot of the current home interface as at 19/07/2026
+## Screenshot gallery
 
-<img width="1895" height="1077" alt="image" src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
+### Home
+
+Project E Home, showing the persistent navigation shell and information entry points.
+
+<img width="1895" height="1077" alt="Project E Home page with the Browse sidebar, information-domain shortcuts, favourites and recent records." src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
+
+### Planned additions
+
+- **Calendar:** a Week or Month view showing Events and Task projections.
+- **Tasks and Inbox:** a focused work-management or local attention workflow.
+- **Relationships and Map:** an entity relationship view, Family Tree or geographic projection.
+
+### Add a screenshot
+
+Use this paste-ready pattern for a GitHub-hosted attachment. Replace all three placeholders; it deliberately renders no empty image while a slot is awaiting a screenshot.
+
+```html
+<img width="1895" alt="{ALT_TEXT}" src="{SCREENSHOT_URL}" />
+
+*{CAPTION}*
+```
+
+GitHub attachments are suitable for this gallery. Use fictional, scrubbed names, addresses, document filenames, dates and map coordinates; keep the original files locally; and refresh a screenshot when the workflow it depicts materially changes. If the gallery later needs repository-controlled URLs or release-stable images, move reviewed fictional assets into committed documentation assets.
 
 ## Portable export and recovery
 
