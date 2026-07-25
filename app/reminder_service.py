@@ -31,6 +31,12 @@ class InboxItem:
     next_attention_at: str; acted_at: str; action_note: str
 
 
+@dataclass(frozen=True)
+class UpcomingReminder:
+    source_kind: str; source_id: int; occurrence_key: str; title: str
+    due_at: str; attention_at: str; timing: str
+
+
 def set_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str, timings: list[str]) -> None:
     _validate_timings(timings)
     connection.execute("""INSERT INTO reminder_policies (context_kind, context_id, source_kind, timings_json, updated_at)
@@ -99,8 +105,41 @@ def evaluate_due_reminders(connection: sqlite3.Connection, *, now: datetime | No
 def list_inbox_items(connection: sqlite3.Connection, *, archived: bool = False, limit: int = 500, offset: int = 0) -> list[InboxItem]:
     where = "state <> 'active' AND state <> 'snoozed'" if archived else "(state = 'active' OR (state = 'snoozed' AND next_attention_at <= ?))"
     params: tuple[object, ...] = () if archived else (utc_now(),)
-    rows = connection.execute(f"SELECT * FROM inbox_items WHERE {where} ORDER BY due_at ASC, id ASC LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
+    if archived:
+        limit = max(0, min(limit, 500 - offset))
+    if limit == 0:
+        return []
+    order = "delivered_at DESC, id DESC" if archived else "CASE WHEN reason='overdue' THEN 0 ELSE 1 END, due_at ASC, delivered_at ASC, id ASC"
+    rows = connection.execute(f"SELECT * FROM inbox_items WHERE {where} ORDER BY {order} LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
     return [InboxItem(**dict(row)) for row in rows]
+
+
+def list_deep_archive_items(connection: sqlite3.Connection) -> list[InboxItem]:
+    rows = connection.execute(
+        "SELECT * FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed' "
+        "ORDER BY delivered_at DESC, id DESC LIMIT -1 OFFSET 500"
+    ).fetchall()
+    return [InboxItem(**dict(row)) for row in rows]
+
+
+def archived_inbox_count(connection: sqlite3.Connection) -> int:
+    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed'").fetchone()[0])
+
+
+def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | None = None, limit: int = 20) -> list[UpcomingReminder]:
+    """Preview future reminder attention without creating a delivery before it is due."""
+    now = (now or datetime.now(UTC)).astimezone(UTC)
+    results: list[UpcomingReminder] = []
+    for kind, source_id, occurrence, title, due, context in _sources(connection, now):
+        for timing in _resolved_timings(connection, kind, source_id, context, occurrence):
+            attention = _subtract(due, timing)
+            if attention <= now:
+                continue
+            key = _delivery_key(kind, source_id, occurrence, due, timing, "reminder")
+            row = connection.execute("SELECT 1 FROM inbox_items WHERE delivery_key=?", (key,)).fetchone()
+            if row is None:
+                results.append(UpcomingReminder(kind, source_id, occurrence, title, due.isoformat(timespec="seconds"), attention.isoformat(timespec="seconds"), timing))
+    return sorted(results, key=lambda item: (item.attention_at, item.due_at, item.source_kind, item.source_id))[:limit]
 
 
 def inbox_count(connection: sqlite3.Connection) -> int:
@@ -235,10 +274,14 @@ def _resolved_timings(connection, kind, source_id, context, occurrence):
 
 
 def _deliver(connection, kind, source_id, occurrence, title, due, timing, reason, now):
-    key = hashlib.sha256(f"{kind}|{source_id}|{occurrence}|{due.isoformat()}|{timing}|{reason}".encode()).hexdigest()
+    key = _delivery_key(kind, source_id, occurrence, due, timing, reason)
     cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, timing, title, due_at, delivered_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (key, kind, source_id, occurrence, reason, timing, title, due.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
     return cursor.rowcount
+
+
+def _delivery_key(kind, source_id, occurrence, due, timing, reason):
+    return hashlib.sha256(f"{kind}|{source_id}|{occurrence}|{due.isoformat()}|{timing}|{reason}".encode()).hexdigest()
 
 
 def _subtract(due, timing):

@@ -8,7 +8,8 @@ from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import EventInput, create_event
 from app.event_recurrence import RecurrenceRule, get_recurrence, set_recurrence, split_series
 from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
-    clear_policy, get_policy, list_inbox_items, set_override, set_policy)
+    clear_policy, get_policy, list_inbox_items, list_upcoming_reminders,
+    set_override, set_policy)
 from app.task_service import TaskInput, create_task
 
 
@@ -38,6 +39,13 @@ class ReminderFoundationTests(unittest.TestCase):
             start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
         self.assertEqual(1, evaluate_due_reminders(
             self.connection, now=datetime(2025, 12, 31, 23, 0, tzinfo=UTC)))
+
+    def test_upcoming_preview_does_not_create_a_delivery(self):
+        event_id = create_event(self.connection, EventInput("Future planning", False,
+            start_local="2026-01-10T10:00", end_local="2026-01-10T11:00"))
+        upcoming = list_upcoming_reminders(self.connection, now=datetime(2026, 1, 1, tzinfo=UTC))
+        self.assertEqual({"10m", "1h"}, {item.timing for item in upcoming if item.source_id == event_id})
+        self.assertEqual([], list_inbox_items(self.connection))
 
     def test_recurring_event_uses_derived_occurrence_identity(self):
         event_id = create_event(self.connection, EventInput("Daily stand-up", True,

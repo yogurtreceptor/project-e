@@ -21,6 +21,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added local Calendar, Task-list and global derived-source reminder-default controls, including explicit restoration to inherited defaults.
 - Recorded timing tokens on future Inbox deliveries so a policy edit resolves only superseded pending reminders; disabling a reminder resolves all of its pending attention.
 - Connected recurring Event reminder settings to the existing this-occurrence, prospective-series and whole-series scopes, including source-delivery resolution when an occurrence moves to a successor series.
+- Added a non-materialising Upcoming reminder preview, urgency-led active Inbox ordering, and the specified 500-item paged Archive with a separate deep-history view.
 
 ## 2026-07-20 — Phase 2B Task foundation
 
