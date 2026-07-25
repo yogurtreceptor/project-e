@@ -470,6 +470,23 @@ def add_inbox_delivery_timing(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE inbox_items ADD COLUMN timing TEXT NOT NULL DEFAULT ''")
 
 
+def create_inbox_action_history_table(connection: sqlite3.Connection) -> None:
+    """Retain every Inbox state transition separately from current item state."""
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS inbox_item_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            inbox_item_id INTEGER NOT NULL REFERENCES inbox_items(id) ON DELETE CASCADE,
+            action TEXT NOT NULL,
+            previous_state TEXT NOT NULL,
+            resulting_state TEXT NOT NULL,
+            next_attention_at TEXT NOT NULL DEFAULT '',
+            note TEXT NOT NULL DEFAULT '',
+            acted_at TEXT NOT NULL
+        )
+    """)
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_inbox_item_actions_item ON inbox_item_actions(inbox_item_id, id)")
+
+
 def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
     """Migrate category-bearing development databases to Calendar-only Events."""
     create_calendar_table(connection)
@@ -916,6 +933,7 @@ SCHEMA_MIGRATIONS = (
     ("20260723_22_task_temporal_values", create_task_temporal_tables),
     ("20260723_23_reminder_and_inbox_foundation", create_reminder_tables),
     ("20260725_24_inbox_delivery_timing", add_inbox_delivery_timing),
+    ("20260725_25_inbox_action_history", create_inbox_action_history_table),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

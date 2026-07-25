@@ -9,7 +9,7 @@ from app.event_service import EventInput, create_event
 from app.event_recurrence import RecurrenceRule, get_recurrence, set_recurrence, split_series
 from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
     clear_policy, get_policy, list_inbox_items, list_upcoming_reminders,
-    set_override, set_policy)
+    list_inbox_actions, set_override, set_policy)
 from app.task_service import TaskInput, create_task
 
 
@@ -110,6 +110,16 @@ class ReminderFoundationTests(unittest.TestCase):
             (task_id,),
         ).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
+
+    def test_inbox_action_history_retains_delivery_snooze_and_acknowledgement(self):
+        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-01"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        item = next(item for item in list_inbox_items(self.connection) if item.source_id == task_id and item.reason == "reminder")
+        act_on_inbox_item(self.connection, item.id, "snooze_30m")
+        act_on_inbox_item(self.connection, item.id, "acknowledge")
+        actions = list_inbox_actions(self.connection, item.id)
+        self.assertEqual(["delivered", "snooze_30m", "acknowledge"], [action.action for action in actions])
+        self.assertEqual("acknowledged", actions[-1].resulting_state)
 
     def test_recurring_series_split_resolves_moved_pending_delivery(self):
         event_id = create_event(self.connection, EventInput("Daily stand-up", True,

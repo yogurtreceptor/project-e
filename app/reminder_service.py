@@ -37,6 +37,12 @@ class UpcomingReminder:
     due_at: str; attention_at: str; timing: str
 
 
+@dataclass(frozen=True)
+class InboxAction:
+    action: str; previous_state: str; resulting_state: str; next_attention_at: str
+    note: str; acted_at: str
+
+
 def set_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str, timings: list[str]) -> None:
     _validate_timings(timings)
     connection.execute("""INSERT INTO reminder_policies (context_kind, context_id, source_kind, timings_json, updated_at)
@@ -153,28 +159,28 @@ def act_on_inbox_item(connection: sqlite3.Connection, item_id: int, action: str)
     now = datetime.now(UTC)
     if action.startswith("snooze"):
         next_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds") if action == "snooze_30m" else "9999-12-31T23:59:59+00:00"
-        connection.execute("UPDATE inbox_items SET state='snoozed', next_attention_at=?, acted_at=?, action_note=? WHERE id=?", (next_at, now.isoformat(timespec="seconds"), action, item_id))
+        _transition_item(connection, item_id, row["state"], "snoozed", action, next_at, action, now.isoformat(timespec="seconds"))
     else:
-        connection.execute("UPDATE inbox_items SET state=?, acted_at=?, action_note=? WHERE id=?", ("acknowledged" if action == "acknowledge" else "dismissed", now.isoformat(timespec="seconds"), action, item_id))
+        state = "acknowledged" if action == "acknowledge" else "dismissed"
+        _transition_item(connection, item_id, row["state"], state, action, "", action, now.isoformat(timespec="seconds"))
     connection.commit(); return True
 
 
 def reactivate_next_open_snoozes(connection: sqlite3.Connection) -> None:
-    connection.execute("UPDATE inbox_items SET state='active', next_attention_at='' WHERE state='snoozed' AND next_attention_at='9999-12-31T23:59:59+00:00'")
+    rows = connection.execute("SELECT id, state FROM inbox_items WHERE state='snoozed' AND next_attention_at='9999-12-31T23:59:59+00:00'").fetchall()
+    now = utc_now()
+    for row in rows:
+        _transition_item(connection, int(row["id"]), row["state"], "active", "next_open", "", "snooze ended on application open", now)
     connection.commit()
 
 
 def resolve_source_items(connection: sqlite3.Connection, source_kind: str, source_id: int) -> None:
-    connection.execute("UPDATE inbox_items SET state='resolved', acted_at=?, action_note='source no longer due' WHERE source_kind=? AND source_id=? AND state IN ('active', 'snoozed')", (utc_now(), source_kind, source_id))
+    _resolve_items(connection, "source no longer due", "source_lifecycle", "source_kind=? AND source_id=?", (source_kind, source_id))
 
 
 def resolve_source_items_after_occurrence(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str) -> None:
     """Resolve pending source deliveries moved to a successor recurring series."""
-    connection.execute(
-        "UPDATE inbox_items SET state='resolved', acted_at=?, action_note='recurring series superseded' "
-        "WHERE source_kind=? AND source_id=? AND occurrence_key>=? AND state IN ('active', 'snoozed')",
-        (utc_now(), source_kind, source_id, occurrence_key),
-    )
+    _resolve_items(connection, "recurring series superseded", "series_split", "source_kind=? AND source_id=? AND occurrence_key>=?", (source_kind, source_id, occurrence_key))
 
 
 def _reconcile_context_deliveries(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
@@ -199,7 +205,7 @@ def _reconcile_source_deliveries(connection: sqlite3.Connection, source_kind: st
     if occurrence_key:
         parameters.append(occurrence_key)
     rows = connection.execute(
-        "SELECT id, occurrence_key, timing FROM inbox_items WHERE source_kind=? AND source_id=? AND reason='reminder' "
+        "SELECT id, occurrence_key, timing, state FROM inbox_items WHERE source_kind=? AND source_id=? AND reason='reminder' "
         "AND state IN ('active', 'snoozed')" + clause,
         parameters,
     ).fetchall()
@@ -209,10 +215,7 @@ def _reconcile_source_deliveries(connection: sqlite3.Connection, source_kind: st
         # Legacy deliveries predate the explicit timing column. They remain intact
         # unless reminders are disabled, when all pending delivery is suppressed.
         if not timings or (row["timing"] and row["timing"] not in timings):
-            connection.execute(
-                "UPDATE inbox_items SET state='resolved', acted_at=?, action_note='reminder policy superseded' WHERE id=?",
-                (now, row["id"]),
-            )
+            _transition_item(connection, int(row["id"]), row["state"], "resolved", "policy_superseded", "", "reminder policy superseded", now)
 
 
 def _context_for_source(connection: sqlite3.Connection, source_kind: str, source_id: int) -> tuple[str, int] | None:
@@ -225,6 +228,27 @@ def _context_for_source(connection: sqlite3.Connection, source_kind: str, source
     if source_kind in {"birthday", "document_expiry"}:
         return ("global", 0)
     return None
+
+
+def list_inbox_actions(connection: sqlite3.Connection, item_id: int) -> list[InboxAction]:
+    rows = connection.execute("SELECT action, previous_state, resulting_state, next_attention_at, note, acted_at FROM inbox_item_actions WHERE inbox_item_id=? ORDER BY id", (item_id,)).fetchall()
+    return [InboxAction(**dict(row)) for row in rows]
+
+
+def _resolve_items(connection: sqlite3.Connection, note: str, action: str, clause: str, parameters: tuple[object, ...]) -> None:
+    rows = connection.execute("SELECT id, state FROM inbox_items WHERE " + clause + " AND state IN ('active', 'snoozed')", parameters).fetchall()
+    now = utc_now()
+    for row in rows:
+        _transition_item(connection, int(row["id"]), row["state"], "resolved", action, "", note, now)
+
+
+def _transition_item(connection: sqlite3.Connection, item_id: int, previous_state: str, resulting_state: str, action: str, next_attention_at: str, note: str, acted_at: str) -> None:
+    connection.execute("UPDATE inbox_items SET state=?, next_attention_at=?, acted_at=?, action_note=? WHERE id=?", (resulting_state, next_attention_at, acted_at, note, item_id))
+    _record_action(connection, item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at)
+
+
+def _record_action(connection: sqlite3.Connection, item_id: int, action: str, previous_state: str, resulting_state: str, next_attention_at: str, note: str, acted_at: str) -> None:
+    connection.execute("INSERT INTO inbox_item_actions (inbox_item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at) VALUES (?, ?, ?, ?, ?, ?, ?)", (item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at))
 
 
 def _sources(connection, now):
@@ -277,6 +301,8 @@ def _deliver(connection, kind, source_id, occurrence, title, due, timing, reason
     key = _delivery_key(kind, source_id, occurrence, due, timing, reason)
     cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, timing, title, due_at, delivered_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (key, kind, source_id, occurrence, reason, timing, title, due.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
+    if cursor.rowcount:
+        _record_action(connection, int(cursor.lastrowid), "delivered", "", "active", "", "local delivery created", now.isoformat(timespec="seconds"))
     return cursor.rowcount
 
 
