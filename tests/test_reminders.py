@@ -72,8 +72,12 @@ class ReminderFoundationTests(unittest.TestCase):
             "email": "", "phone": "", "notes": "", "summary": "",
         })
         evaluate_due_reminders(self.connection, now=datetime(2025, 2, 27, 22, 55, tzinfo=UTC))
-        items = [item for item in list_inbox_items(self.connection) if item.source_id == person_id]
+        event_id = self.connection.execute(
+            "SELECT event_id FROM birthday_event_links WHERE person_id = ?", (person_id,)
+        ).fetchone()["event_id"]
+        items = [item for item in list_inbox_items(self.connection) if item.source_id == event_id]
         self.assertTrue(items)
+        self.assertEqual({"event"}, {item.source_kind for item in items})
         self.assertEqual({"2025-02-28"}, {item.occurrence_key for item in items})
 
     def test_override_can_disable_and_snooze_keeps_same_delivery(self):

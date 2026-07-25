@@ -54,7 +54,7 @@ def _rule_from_row(row: sqlite3.Row) -> RecurrenceRule:
     )
 
 
-def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: RecurrenceRule) -> RecurrenceDefinition:
+def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: RecurrenceRule, *, commit: bool = True) -> RecurrenceDefinition:
     rule = _normalise_rule(rule, _anchor_date(event))
     current = get_recurrence(connection, event.id)
     now = utc_now()
@@ -76,7 +76,8 @@ def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: Rec
         connection, event.id, "recurrence_set", _definition_snapshot(current),
         _definition_snapshot(RecurrenceDefinition(event.id, rule, version)),
     )
-    connection.commit()
+    if commit:
+        connection.commit()
     return RecurrenceDefinition(event.id, rule, version)
 
 

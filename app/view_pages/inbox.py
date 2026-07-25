@@ -18,7 +18,7 @@ def inbox_page(items: list[InboxItem], *, archived: bool, action_history: dict[i
     )
     paging = _archive_paging(page_size, page, archived_count, deep_archive) if archived else ""
     upcoming_rows = "" if archived else _upcoming_section(upcoming or [])
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Operational attention</p><h1>Inbox</h1><p>Durable reminders and items requiring action.</p></div><div class="actions"><form method="post" action="/inbox/evaluate"><button class="button" type="submit">Evaluate reminders</button></form><a class="button secondary" href="/inbox/reminders">Reminder defaults</a><a class="button secondary" href="{archive_link}">{other}</a></div></section>{scan}<section class="panel"><h2>{'Deep archive' if deep_archive else view} items</h2><div class="task-list">{rows}</div>{paging}</section>{upcoming_rows}'''
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Operational attention</p><h1>Inbox</h1><p>Durable reminders and items requiring action.</p></div><div class="actions"><form method="post" action="/inbox/evaluate"><button class="button" type="submit">Evaluate reminders</button></form><a class="button secondary" href="{archive_link}">{other}</a></div></section>{scan}<section class="panel"><h2>{'Deep archive' if deep_archive else view} items</h2><div class="task-list">{rows}</div>{paging}</section>{upcoming_rows}'''
 
 
 def global_reminder_policies_page() -> str:

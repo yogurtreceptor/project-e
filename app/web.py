@@ -255,10 +255,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def route_inbox_request(self, parts: list[str], query: dict[str, str]) -> None:
         if parts[1:] == ["reminders"] and self.command == "GET":
-            self.respond_page("Global reminder defaults", views.global_reminder_policies_page(), active_slug="inbox")
+            self.redirect("/calendar/manage")
             return
         source_kind = {"birthdays": "birthday", "document-expiries": "document_expiry"}.get(parts[2]) if len(parts) == 3 and parts[1] == "reminders" else None
         if source_kind is not None:
+            if source_kind == "birthday":
+                with connect(self.database_path) as connection:
+                    calendar = connection.execute(
+                        "SELECT id FROM calendars WHERE kind = 'birthday'"
+                    ).fetchone()
+                self.redirect(f"/calendar/manage/{calendar['id']}/reminders" if calendar else "/calendar/manage")
+                return
             label = "Birthday" if source_kind == "birthday" else "Document-expiry"
             self.handle_reminder_policy("global", 0, source_kind, f"{label} reminder defaults", "/inbox/reminders", active_slug="inbox")
             return
@@ -319,8 +326,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 return
         policy_calendar_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" and parts[3] == "reminders" else None
         if policy_calendar_id is not None:
+            with connect(self.database_path) as connection:
+                policy_calendar = get_calendar(connection, policy_calendar_id, include_archived=True)
+            if policy_calendar is None:
+                self.respond_not_found(); return
             self.handle_reminder_policy(
-                "calendar", policy_calendar_id, "event", f"Calendar reminder defaults", f"/calendar/manage/{policy_calendar_id}/edit", active_slug="calendar"
+                "calendar", policy_calendar_id, "event", f"{policy_calendar.name} reminder defaults", f"/calendar/manage/{policy_calendar_id}/edit", active_slug="calendar"
             )
             return
         managed_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" else None
@@ -392,6 +403,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     self.redirect(f"/calendar/events/{reminder_id}/reminders"); return
                 self.redirect(f"/calendar/events/{reminder_id}/edit?saved=1"); return
         if delete_id is not None and self.command == "POST":
+            with connect(self.database_path) as connection:
+                from app.birthday_calendar import person_for_birthday_event
+                person_id = person_for_birthday_event(connection, delete_id)
+            if person_id is not None:
+                self.redirect(f"/people/{person_id}/edit")
+                return
             self.handle_calendar_event_delete(delete_id)
             return
         if editing_id is not None and self.command == "GET":
@@ -403,8 +420,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 calendar = get_calendar(connection, event.calendar_id, include_archived=True) if event else None
                 recurrence = get_recurrence(connection, event.id) if event else None
                 exceptions = occurrence_exceptions(connection, recurrence) if recurrence else {}
+                from app.birthday_calendar import person_for_birthday_event
+                person_id = person_for_birthday_event(connection, editing_id)
             if event is None or calendar is None:
                 self.respond_not_found(); return
+            if person_id is not None:
+                self.redirect(f"/people/{person_id}/edit")
+                return
             form_event = event
             if occurrence_date and recurrence:
                 try:
@@ -635,6 +657,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         values = self.read_form()
         try:
             with connect(self.database_path) as connection:
+                from app.birthday_calendar import person_for_birthday_event
+                person_id = person_for_birthday_event(connection, event_id)
+                if person_id is not None:
+                    self.redirect(f"/people/{person_id}/edit")
+                    return
                 event = get_event(connection, event_id, include_archived=True)
                 if event is None:
                     self.respond_not_found(); return
@@ -698,16 +725,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     @staticmethod
     def calendar_derived_occurrences(connection, year: int) -> list[dict[str, object]]:
         """Project date facts without converting them into canonical Events."""
-        from calendar import monthrange
         from datetime import date
 
         result: list[dict[str, object]] = []
-        for person in list_entities(connection, DEFINITIONS_BY_TYPE["person"]):
-            birthday = person.metadata.get("birthday", "")
-            if birthday:
-                born = date.fromisoformat(birthday)
-                day = min(born.day, monthrange(year, born.month)[1])
-                result.append({"label": "Birthday", "title": f"{person.title}'s birthday", "date": date(year, born.month, day), "url": f"/people/{person.id}"})
         for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
             expiry = document.metadata.get("expiry_date", "")
             if expiry:

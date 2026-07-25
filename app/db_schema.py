@@ -65,6 +65,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_journal_table(connection)
     create_entity_alias_table(connection)
     create_calendar_table(connection)
+    create_birthday_event_links_table(connection)
     create_calendar_history_table(connection)
     create_event_table(connection)
     create_event_recurrence_tables(connection)
@@ -204,14 +205,13 @@ def create_calendar_table(connection: sqlite3.Connection) -> None:
             default_event_duration_minutes INTEGER NOT NULL
                 CHECK (default_event_duration_minutes > 0),
             sort_order INTEGER NOT NULL DEFAULT 0,
+            kind TEXT NOT NULL DEFAULT 'event' CHECK (kind IN ('event', 'birthday')),
             is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             archived_at TEXT NOT NULL DEFAULT '',
             UNIQUE (name)
         );
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_calendars_one_default
-            ON calendars (is_default) WHERE is_default = 1;
         CREATE INDEX IF NOT EXISTS idx_calendars_active_order
             ON calendars (archived_at, sort_order, lower(name), id);
         """
@@ -223,6 +223,10 @@ def create_calendar_table(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE calendars ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"
         )
+    if "kind" not in columns:
+        connection.execute("ALTER TABLE calendars ADD COLUMN kind TEXT NOT NULL DEFAULT 'event'")
+    connection.execute("DROP INDEX IF EXISTS idx_calendars_one_default")
+    connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_calendars_one_default_per_kind ON calendars (kind) WHERE is_default = 1")
     connection.execute("DROP INDEX IF EXISTS idx_calendars_active_order")
     connection.execute(
         """
@@ -236,13 +240,15 @@ def create_calendar_table(connection: sqlite3.Connection) -> None:
             """
             INSERT INTO calendars (
                 name, colour, timezone, default_event_duration_minutes,
-                sort_order, is_default, created_at, updated_at
+                sort_order, kind, is_default, created_at, updated_at
             ) VALUES (
-                'General', '#2563EB', 'Australia/Brisbane', 60, 0, 1, ?, ?
+                'General', '#2563EB', 'Australia/Brisbane', 60, 0, 'event', 1, ?, ?
             )
             """,
             (now, now),
         )
+    if connection.execute("SELECT 1 FROM calendars WHERE kind = 'birthday'").fetchone() is None:
+        connection.execute("INSERT INTO calendars (name, colour, timezone, default_event_duration_minutes, sort_order, kind, is_default, created_at, updated_at) VALUES ('Birthdays', '#DB2777', 'Australia/Brisbane', 1440, 1, 'birthday', 1, ?, ?)", (now, now))
 
 
 def create_calendar_history_table(connection: sqlite3.Connection) -> None:
@@ -259,6 +265,36 @@ def create_calendar_history_table(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_calendar_edit_history_calendar
             ON calendar_edit_history (calendar_id, created_at, id);
         """
+    )
+
+
+def create_birthday_event_links_table(connection: sqlite3.Connection) -> None:
+    connection.execute("CREATE TABLE IF NOT EXISTS birthday_event_links (person_id INTEGER PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE, event_id INTEGER NOT NULL UNIQUE REFERENCES entities(id) ON DELETE CASCADE)")
+
+
+def migrate_birthday_reminder_policy(connection: sqlite3.Connection) -> None:
+    """Move the former derived-birthday default into the Birthdays calendar."""
+    birthday_calendar = connection.execute(
+        "SELECT id FROM calendars WHERE kind = 'birthday'"
+    ).fetchone()
+    if birthday_calendar is None:
+        return
+    legacy = connection.execute(
+        """SELECT timings_json FROM reminder_policies
+           WHERE context_kind = 'global' AND context_id = 0 AND source_kind = 'birthday'"""
+    ).fetchone()
+    if legacy is None:
+        return
+    connection.execute(
+        """INSERT INTO reminder_policies (
+               context_kind, context_id, source_kind, timings_json, updated_at
+           ) VALUES ('calendar', ?, 'event', ?, ?)
+           ON CONFLICT(context_kind, context_id, source_kind) DO NOTHING""",
+        (int(birthday_calendar["id"]), legacy["timings_json"], utc_now()),
+    )
+    connection.execute(
+        """DELETE FROM reminder_policies
+           WHERE context_kind = 'global' AND context_id = 0 AND source_kind = 'birthday'"""
     )
 
 
@@ -1029,6 +1065,7 @@ SCHEMA_MIGRATIONS = (
     ("20260725_25_inbox_action_history", create_inbox_action_history_table),
     ("20260725_26_operational_scheduler", create_scheduler_tables),
     ("20260725_27_deterministic_automation", create_automation_tables),
+    ("20260725_28_birthday_calendar", lambda connection: (create_calendar_table(connection), create_birthday_event_links_table(connection), migrate_birthday_reminder_policy(connection), __import__("app.birthday_calendar", fromlist=["sync_all_birthdays"]).sync_all_birthdays(connection))),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

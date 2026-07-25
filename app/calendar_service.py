@@ -20,12 +20,14 @@ class CalendarInput:
     timezone: str = "Australia/Brisbane"
     default_event_duration_minutes: int = 60
     sort_order: int = 0
+    kind: str = "event"
 
 
 @dataclass(frozen=True)
 class CalendarRecord:
     id: int
     name: str
+    kind: str
     colour: str
     timezone: str
     default_event_duration_minutes: int
@@ -63,14 +65,16 @@ def get_calendar(
 
 def create_calendar(connection: sqlite3.Connection, values: CalendarInput) -> int:
     normalised = _normalise(values)
+    if normalised.kind != "event":
+        raise ValueError("Only the built-in Birthdays calendar can use the birthday type.")
     now = utc_now()
     try:
         cursor = connection.execute(
             """
             INSERT INTO calendars (
                 name, colour, timezone, default_event_duration_minutes, sort_order,
-                is_default, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+                kind, is_default, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
             """,
             (*_stored_values(normalised), now, now),
         )
@@ -95,7 +99,7 @@ def rename_calendar(connection: sqlite3.Connection, calendar_id: int, name: str)
     return _update_calendar(connection, current, CalendarInput(
         name=name, colour=current.colour, timezone=current.timezone,
         default_event_duration_minutes=current.default_event_duration_minutes,
-        sort_order=current.sort_order,
+        sort_order=current.sort_order, kind=current.kind,
     ))
 
 
@@ -107,12 +111,14 @@ def update_calendar(
 
 def set_default_calendar(connection: sqlite3.Connection, calendar_id: int) -> bool:
     calendar = _require_calendar(connection, calendar_id)
+    if calendar.kind != "event":
+        raise ValueError("Birthdays are a built-in calendar and cannot be the Event default.")
     if calendar.is_default:
         return False
     before = {item.id: _snapshot(item) for item in list_calendars(connection, include_archived=True) if item.is_default}
     now = utc_now()
     try:
-        connection.execute("UPDATE calendars SET is_default = 0 WHERE is_default = 1")
+        connection.execute("UPDATE calendars SET is_default = 0 WHERE is_default = 1 AND kind = 'event'")
         connection.execute(
             "UPDATE calendars SET is_default = 1, updated_at = ? WHERE id = ?",
             (now, calendar_id),
@@ -133,6 +139,8 @@ def set_default_calendar(connection: sqlite3.Connection, calendar_id: int) -> bo
 
 def archive_calendar(connection: sqlite3.Connection, calendar_id: int) -> bool:
     calendar = _require_calendar(connection, calendar_id)
+    if calendar.kind == "birthday":
+        raise ValueError("The built-in Birthdays calendar cannot be archived.")
     if calendar.is_default:
         raise ValueError("Select another active Calendar as default before archiving this Calendar.")
     archived_at = utc_now()
@@ -212,7 +220,7 @@ def validate_stored_calendar(connection: sqlite3.Connection, calendar_id: int) -
         return ["Calendar record is missing."]
     errors: list[str] = []
     try:
-        _normalise(CalendarInput(row["name"], row["colour"], row["timezone"], row["default_event_duration_minutes"], row["sort_order"]))
+        _normalise(CalendarInput(row["name"], row["colour"], row["timezone"], row["default_event_duration_minutes"], row["sort_order"], row["kind"]))
     except ValueError as error:
         errors.append(str(error))
     if row["is_default"] not in (0, 1):
@@ -224,6 +232,8 @@ def validate_stored_calendar(connection: sqlite3.Connection, calendar_id: int) -
 
 def _update_calendar(connection: sqlite3.Connection, current: CalendarRecord, values: CalendarInput) -> bool:
     normalised = _normalise(values)
+    if normalised.kind != current.kind:
+        raise ValueError("A Calendar type cannot be changed.")
     before = _snapshot(current)
     after = dict(before)
     after.update(asdict(normalised))
@@ -233,7 +243,7 @@ def _update_calendar(connection: sqlite3.Connection, current: CalendarRecord, va
     try:
         connection.execute(
             """UPDATE calendars SET name = ?, colour = ?, timezone = ?,
-               default_event_duration_minutes = ?, sort_order = ?, updated_at = ?
+               default_event_duration_minutes = ?, sort_order = ?, kind = ?, updated_at = ?
                WHERE id = ?""",
             (*_stored_values(normalised), now, current.id),
         )
@@ -276,15 +286,17 @@ def _normalise(values: CalendarInput) -> CalendarInput:
         raise ValueError("Calendar default Event duration must be a positive number of minutes.")
     if isinstance(values.sort_order, bool) or not isinstance(values.sort_order, int):
         raise ValueError("Calendar ordering must be an integer.")
-    return CalendarInput(name, colour, timezone, values.default_event_duration_minutes, values.sort_order)
+    if values.kind not in {"event", "birthday"}:
+        raise ValueError("Calendar kind is invalid.")
+    return CalendarInput(name, colour, timezone, values.default_event_duration_minutes, values.sort_order, values.kind)
 
 
 def _stored_values(values: CalendarInput) -> tuple[object, ...]:
-    return (values.name, values.colour, values.timezone, values.default_event_duration_minutes, values.sort_order)
+    return (values.name, values.colour, values.timezone, values.default_event_duration_minutes, values.sort_order, values.kind)
 
 
 def _to_record(row: sqlite3.Row) -> CalendarRecord:
-    return CalendarRecord(int(row["id"]), row["name"], row["colour"], row["timezone"],
+    return CalendarRecord(int(row["id"]), row["name"], row["kind"], row["colour"], row["timezone"],
                           int(row["default_event_duration_minutes"]), int(row["sort_order"]),
                           bool(row["is_default"]), row["created_at"], row["updated_at"], row["archived_at"])
 

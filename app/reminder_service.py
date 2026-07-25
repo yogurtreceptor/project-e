@@ -234,7 +234,7 @@ def _context_for_source(connection: sqlite3.Connection, source_kind: str, source
     if source_kind == "task_deadline":
         row = connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (source_id,)).fetchone()
         return ("task_list", int(row["task_list_id"])) if row is not None else None
-    if source_kind in {"birthday", "document_expiry"}:
+    if source_kind == "document_expiry":
         return ("global", 0)
     return None
 
@@ -301,14 +301,6 @@ def _sources(connection, now):
         if not (task.deadline_date or task.deadline_utc): continue
         due = _parse_utc(task.deadline_utc) if task.deadline_utc else datetime.combine(date.fromisoformat(task.deadline_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
         yield "task_deadline", task.id, task.deadline_date or task.deadline_utc, task.title, due, ("task_list", task.task_list_id)
-    for person in list_entities(connection, DEFINITIONS_BY_TYPE["person"]):
-        birthday = person.metadata.get("birthday", "")
-        if not birthday: continue
-        born = date.fromisoformat(birthday); year = now.astimezone(zone).year
-        for occurrence_year in (year, year + 1):
-            day = _month_day(occurrence_year, born.month, born.day)
-            due = datetime.combine(day, datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-            yield "birthday", person.id, day.isoformat(), f"{person.title}'s birthday", due, ("global", 0)
     for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
         expiry = document.metadata.get("expiry_date", "")
         if expiry:

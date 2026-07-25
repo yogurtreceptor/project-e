@@ -139,6 +139,9 @@ def create_entity(
     record_audit_event(connection, "create", [("entity", entity_id)], after=values)
     for field, value in values.items():
         if value: set_provenance(connection, "entity", entity_id, field, "manual")
+    if definition.type == "person":
+        from app.birthday_calendar import sync_person_birthday
+        sync_person_birthday(connection, entity_id, values["display_name"], values.get("birthday", ""))
     if commit:
         connection.commit()
     return entity_id
@@ -172,7 +175,9 @@ def update_entity(
     if before is not None:
         from app.audit import record_audit_event
         record_audit_event(connection, "edit", [("entity", entity_id)], before=before.to_form_values(), after=values)
-    if definition.type == "person" and before is not None and before.metadata.get("birthday", "") != values.get("birthday", ""):
+    if definition.type == "person" and before is not None and (before.metadata.get("birthday", "") != values.get("birthday", "") or before.display_name != values["display_name"]):
+        from app.birthday_calendar import sync_person_birthday
+        sync_person_birthday(connection, entity_id, values["display_name"], values.get("birthday", ""))
         from app.reminder_service import resolve_source_items
         resolve_source_items(connection, "birthday", entity_id)
         from app.relationship_inference import recompute_inferences
@@ -199,6 +204,8 @@ def delete_entity(
         from app.reminder_service import resolve_source_items
         resolve_source_items(connection, reminder_sources[definition.type], entity_id)
     if definition.type == "person":
+        from app.birthday_calendar import sync_person_birthday
+        sync_person_birthday(connection, entity_id, before.display_name if before else "", "")
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_deleted", entity_id)
     else:
@@ -213,6 +220,8 @@ def restore_entity(connection: sqlite3.Connection, entity_id: int) -> bool:
     from app.audit import record_audit_event
     record_audit_event(connection, "restore", [("entity", entity_id)], before={"deleted_at": before.deleted_at}, after={"deleted_at": ""}, notes="Entity restored from Recycle Bin")
     if before.type == "person":
+        from app.birthday_calendar import sync_person_birthday
+        sync_person_birthday(connection, entity_id, before.display_name, before.metadata.get("birthday", ""))
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_restored", entity_id)
     else:

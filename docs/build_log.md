@@ -210,3 +210,8 @@ Standardised entity forms and controlled values. Redesigned relationship creatio
 ## 2026-06-21 — Initial local information platform
 
 Established the standard-library Python/SQLite application with reusable CRUD definitions, first-class relationships, entity profiles, discovery, favourites, recent records and geography. Added Projects, Documents and Assets through the shared architecture, local Document uploads, and optional Leaflet/OpenStreetMap/Nominatim map support. Early attachment and organisation-address concepts were superseded by first-class Documents and Location relationships.
+## 2026-07-25 — Birthdays Calendar and calendar-level defaults
+
+- Added the protected built-in Birthdays Calendar and migration-safe Person-to-Event links. A Person birthday now owns one canonical yearly all-day Event, synchronised through edits and Person archive/restore lifecycle.
+- Moved birthday reminder defaults from the Inbox/global-derived context into Birthdays Calendar settings, preserving existing configured timing values during migration.
+- Prevented ordinary Event creation and direct mutation of Person-synchronised birthday Events, while keeping Birthdays visible and configurable as a Calendar.

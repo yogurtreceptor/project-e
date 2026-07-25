@@ -323,6 +323,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 1. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local collapsed IANA combobox. It visibly defaults to `Australia/Brisbane`; opening or editing it reveals a searchable, scrollable list with current UTC offsets and country names from the installed timezone database. Searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
 
+2. **Complete (2026-07-25):** add the protected built-in `Birthdays` Calendar. A Person with a birthday owns one linked, canonical, yearly recurring all-day Event in that Calendar; changing the Person name or birthday synchronises that same Event, while deleting/restoring the Person archives/restores it. Birthdays remain a Calendar category rather than a derived event type. Its reminder defaults live in Birthdays Calendar settings; the former global birthday policy migrates there without discarding configured timings.
+
 ## Completion criteria
 
 Phase 2 completes only when an end-to-end review can demonstrate:
@@ -334,7 +336,7 @@ Create a Project
 → create preparation Tasks related to the Event and Project
 → display the Event, planned Task sessions and Task deadlines in Calendar views
 → create a recurring Event and trace its generated occurrence and exception to its series
-→ generate a derived birthday or expiry occurrence from existing canonical data
+→ synchronise a Person birthday to its canonical Birthdays-Calendar Event and project its recurrence, or generate a document-expiry occurrence
 → apply an applicable reminder default and a record-level override
 → deliver one useful actionable local notification
 → recover a missed due item without duplicate delivery

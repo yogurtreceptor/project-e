@@ -29,7 +29,7 @@ class CalendarServiceTests(unittest.TestCase):
         initialise_database(self.database_path)
         self.connection = connect(self.database_path)
         self.general_id = self.connection.execute(
-            "SELECT id FROM calendars WHERE is_default = 1"
+            "SELECT id FROM calendars WHERE is_default = 1 AND kind = 'event'"
         ).fetchone()[0]
 
     def tearDown(self) -> None:
@@ -41,7 +41,7 @@ class CalendarServiceTests(unittest.TestCase):
             self.connection,
             CalendarInput(" Work ", "#10B981", "Australia/Sydney", 45, 8),
         )
-        self.assertEqual(["General", "Work"], [item.name for item in list_calendars(self.connection)])
+        self.assertEqual(["General", "Birthdays", "Work"], [item.name for item in list_calendars(self.connection)])
         self.assertEqual("Work", get_calendar(self.connection, calendar_id).name)
         self.assertTrue(rename_calendar(self.connection, calendar_id, "Office"))
         self.assertTrue(update_calendar(
@@ -68,7 +68,7 @@ class CalendarServiceTests(unittest.TestCase):
         self.assertTrue(get_calendar(self.connection, self.general_id, include_archived=True).is_archived)
         self.assertTrue(unarchive_calendar(self.connection, self.general_id))
         self.assertFalse(unarchive_calendar(self.connection, self.general_id))
-        self.assertEqual(["General", "Work"], [item.name for item in list_calendars(self.connection)])
+        self.assertEqual(["General", "Work", "Birthdays"], [item.name for item in list_calendars(self.connection)])
 
     def test_archived_calendar_retains_events_but_cannot_be_newly_selected(self) -> None:
         work_id = create_calendar(self.connection, CalendarInput("Work"))

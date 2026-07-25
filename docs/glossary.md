@@ -282,7 +282,7 @@ A time-based display derived from a canonical record or derived occurrence. It i
 
 ## Calendar
 
-A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and eventually a default reminder policy; it is not an independent Event store. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
+A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; it is not an independent Event store. The protected Birthdays Calendar is a built-in category populated by linked canonical birthday Events from People. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
 
 ## Platform Timezone
 

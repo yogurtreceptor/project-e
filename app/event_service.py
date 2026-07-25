@@ -560,7 +560,7 @@ def _resolve_reference(
                 raise ValueError(f"{label} does not exist.")
             return row
         row = connection.execute(
-            f"SELECT * FROM {table} WHERE is_default = 1 AND archived_at = ''"
+            f"SELECT * FROM {table} WHERE is_default = 1 AND archived_at = '' AND kind = 'event'"
         ).fetchone()
         if row is None:
             raise ValueError(f"No active default {label.lower()} is configured.")
@@ -572,6 +572,8 @@ def _resolve_reference(
         raise ValueError(f"{label} does not exist.")
     if row["archived_at"] and int(row["id"]) != current_id:
         raise ValueError(f"Archived {label.lower()} cannot be selected.")
+    if table == "calendars" and row["kind"] != "event":
+        raise ValueError("Birthdays are a built-in calendar and cannot receive ordinary Events.")
     return row
 
 

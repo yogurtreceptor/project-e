@@ -53,7 +53,7 @@ def calendar_projection(
     selected = selected_calendar_ids or {calendar.id for calendar in active_calendars}
     visible_events = [event for event in events if event.calendar_id in selected]
     calendar_by_id = {calendar.id: calendar for calendar in calendars}
-    display_timezone = next(calendar.timezone for calendar in active_calendars if calendar.is_default)
+    display_timezone = next(calendar.timezone for calendar in active_calendars if calendar.is_default and calendar.kind == "event")
     parameters = [("view", view), ("date", anchor_date.isoformat())]
     parameters.extend(("calendars", str(calendar_id)) for calendar_id in sorted(selected))
     if view == "week":
@@ -235,7 +235,7 @@ def _recurrence_scope_fields(occurrence_date: str, compact: bool = False) -> str
 def calendar_management_page(calendars: list[CalendarRecord], errors: list[str] | None = None) -> str:
     errors = errors or []
     rows = "".join(_calendar_management_row(calendar) for calendar in calendars)
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone and default duration.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone, default duration and reminder defaults. Birthdays is a protected built-in calendar populated from People.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
 
 
 def calendar_management_edit_page(calendar: CalendarRecord, errors: list[str] | None = None) -> str:
@@ -244,12 +244,13 @@ def calendar_management_edit_page(calendar: CalendarRecord, errors: list[str] | 
 
 
 def _calendar_management_row(calendar: CalendarRecord) -> str:
-    state = "Default" if calendar.is_default else "Archived" if calendar.is_archived else "Active"
+    state = "Built-in birthdays" if calendar.kind == "birthday" else "Default" if calendar.is_default else "Archived" if calendar.is_archived else "Active"
     archive_action = "unarchive" if calendar.is_archived else "archive"
     archive_label = "Unarchive" if calendar.is_archived else "Archive"
-    default_action = "" if calendar.is_default or calendar.is_archived else f'<form method="post" action="/calendar/manage/{calendar.id}/default" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Make this the default Calendar for new Events."><button class="button secondary" type="submit">Make default</button></form>'
+    default_action = "" if calendar.kind != "event" or calendar.is_default or calendar.is_archived else f'<form method="post" action="/calendar/manage/{calendar.id}/default" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Make this the default Calendar for new Events."><button class="button secondary" type="submit">Make default</button></form>'
     delete_action = "" if calendar.is_default else f'<form method="post" action="/calendar/manage/{calendar.id}/delete" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Permanently delete this empty Calendar. Assigned Events prevent deletion."><button class="button danger" type="submit">Delete</button></form>'
-    return f'<article class="calendar-management-row"><div><h2><span class="calendar-colour" style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</h2><p>{escape(calendar.timezone)} · {calendar.default_event_duration_minutes} minutes · order {calendar.sort_order} · {state}</p></div><div class="actions"><a class="button secondary" href="/calendar/manage/{calendar.id}/edit">Edit</a>{default_action}<form method="post" action="/calendar/manage/{calendar.id}/{archive_action}" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="{archive_label} this Calendar. Existing Event assignments are retained."><button class="button secondary" type="submit">{archive_label}</button></form>{delete_action}</div></article>'
+    archive_control = "" if calendar.kind == "birthday" else f'<form method="post" action="/calendar/manage/{calendar.id}/{archive_action}" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="{archive_label} this Calendar. Existing Event assignments are retained."><button class="button secondary" type="submit">{archive_label}</button></form>'
+    return f'<article class="calendar-management-row"><div><h2><span class="calendar-colour" style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</h2><p>{escape(calendar.timezone)} · {calendar.default_event_duration_minutes} minutes · order {calendar.sort_order} · {state}</p></div><div class="actions"><a class="button secondary" href="/calendar/manage/{calendar.id}/edit">Edit</a>{default_action}{archive_control}{delete_action}</div></article>'
 
 
 def _calendar_url(parameters: list[tuple[str, str]]) -> str:
@@ -261,7 +262,7 @@ def _calendar_url_with_query(query: str) -> str:
 
 
 def default_event_values(calendars: list[CalendarRecord]) -> dict[str, str]:
-    default = next(calendar for calendar in calendars if calendar.is_default)
+    default = next(calendar for calendar in calendars if calendar.is_default and calendar.kind == "event")
     today = date.today().isoformat()
     start = datetime.combine(date.today(), datetime.min.time()).replace(hour=9)
     end = start + timedelta(minutes=default.default_event_duration_minutes)
@@ -295,7 +296,7 @@ def event_form_values(event: EventRecord, calendar: CalendarRecord) -> dict[str,
 def _calendar_options(calendars: list[CalendarRecord], selected_id: str) -> str:
     return "".join(
         f'<option value="{calendar.id}"{" selected" if str(calendar.id) == selected_id else ""}{" disabled" if calendar.is_archived and str(calendar.id) != selected_id else ""}>{escape(calendar.name)}{" (archived)" if calendar.is_archived else ""}</option>'
-        for calendar in calendars
+        for calendar in calendars if calendar.kind == "event"
     )
 
 
