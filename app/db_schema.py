@@ -72,6 +72,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_task_table(connection)
     create_task_temporal_tables(connection)
     create_reminder_tables(connection)
+    create_scheduler_tables(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -485,6 +486,48 @@ def create_inbox_action_history_table(connection: sqlite3.Connection) -> None:
         )
     """)
     connection.execute("CREATE INDEX IF NOT EXISTS idx_inbox_item_actions_item ON inbox_item_actions(inbox_item_id, id)")
+
+
+def create_scheduler_tables(connection: sqlite3.Connection) -> None:
+    """Persist registered local jobs, their execution attempts and recovery state."""
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS scheduled_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            handler_name TEXT NOT NULL,
+            interval_seconds INTEGER NOT NULL CHECK (interval_seconds > 0),
+            catch_up_policy TEXT NOT NULL CHECK (catch_up_policy IN ('coalesce', 'current_interval', 'one_off', 'historical')),
+            enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+            next_run_at TEXT NOT NULL,
+            last_run_at TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'running', 'failed', 'disabled')),
+            lease_token TEXT NOT NULL DEFAULT '',
+            lease_expires_at TEXT NOT NULL DEFAULT '',
+            failure_reason TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_due
+            ON scheduled_jobs (enabled, next_run_at, id);
+        CREATE TABLE IF NOT EXISTS job_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id INTEGER NOT NULL REFERENCES scheduled_jobs(id) ON DELETE RESTRICT,
+            scheduled_for TEXT NOT NULL,
+            trigger_kind TEXT NOT NULL CHECK (trigger_kind IN ('scheduled', 'startup_recovery', 'manual', 'rerun')),
+            started_at TEXT NOT NULL,
+            finished_at TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'expired')),
+            details TEXT NOT NULL DEFAULT '',
+            failure_reason TEXT NOT NULL DEFAULT '',
+            UNIQUE (job_id, scheduled_for, trigger_kind)
+        );
+        CREATE INDEX IF NOT EXISTS idx_job_runs_job ON job_runs (job_id, started_at DESC, id DESC);
+        CREATE TABLE IF NOT EXISTS scheduler_checkpoints (
+            checkpoint_key TEXT PRIMARY KEY,
+            checkpoint_at TEXT NOT NULL,
+            details TEXT NOT NULL DEFAULT ''
+        );
+    """)
 
 
 def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
@@ -934,6 +977,7 @@ SCHEMA_MIGRATIONS = (
     ("20260723_23_reminder_and_inbox_foundation", create_reminder_tables),
     ("20260725_24_inbox_delivery_timing", add_inbox_delivery_timing),
     ("20260725_25_inbox_action_history", create_inbox_action_history_table),
+    ("20260725_26_operational_scheduler", create_scheduler_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

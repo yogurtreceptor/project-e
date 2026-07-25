@@ -77,6 +77,8 @@ from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_i
     clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
     list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
     reactivate_next_open_snoozes, set_override, set_policy)
+from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
+    list_scheduled_jobs, run_job_now, set_job_enabled)
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -138,6 +140,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[:2] == ["system-tools", "audit"] and len(parts) == 2:
             self.handle_system_audit(query)
+            return
+
+        if parts[:2] == ["system-tools", "jobs"]:
+            self.route_scheduled_jobs(parts)
             return
 
         if parts[:2] == ["system-tools", "portability"]:
@@ -730,6 +736,30 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             with connect(self.database_path) as connection:
                 entries = {key: list_entries(connection, key, include_archived=True) for key in ("organisation_classification", "relationship_type")}
         self.respond_page("Taxonomies", views.taxonomies_page(entries, error), active_slug="system-tools")
+
+    def route_scheduled_jobs(self, parts: list[str]) -> None:
+        if len(parts) == 2 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                ensure_registered_jobs(connection)
+                jobs = list_scheduled_jobs(connection)
+                runs = {job.id: list_job_runs(connection, job.id) for job in jobs}
+            self.respond_page("Scheduled Jobs", views.scheduled_jobs_page(jobs, runs), active_slug="system-tools")
+            return
+        job_id = self.parse_entity_id(parts[2]) if len(parts) == 4 else None
+        if job_id is not None and self.command == "POST":
+            with connect(self.database_path) as connection:
+                if parts[3] == "run":
+                    run_job_now(connection, job_id)
+                elif parts[3] == "rerun":
+                    run_job_now(connection, job_id, rerun=True)
+                elif parts[3] in {"enable", "disable"}:
+                    set_job_enabled(connection, job_id, parts[3] == "enable")
+                else:
+                    self.respond_not_found()
+                    return
+            self.redirect("/system-tools/jobs")
+            return
+        self.respond_not_found()
 
     def route_recycle_bin_request(self, parts: list[str]) -> None:
         if len(parts) == 1 and self.command == "GET":
@@ -1634,6 +1664,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     initialise_local_storage()
     initialise_database(EddyRequestHandler.database_path)
+    scheduler = SchedulerRuntime(EddyRequestHandler.database_path)
+    scheduler.start()
     server = ThreadingHTTPServer((host, port), EddyRequestHandler)
     print(f"Project E running at http://{host}:{port}")
     try:
@@ -1642,3 +1674,4 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
         print("Project E stopped.")
     finally:
         server.server_close()
+        scheduler.stop()

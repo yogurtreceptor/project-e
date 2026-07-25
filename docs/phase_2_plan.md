@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A, 2B and 2C are complete. Phase 2C delivers local reminder policy resolution, traceable derived birthday and Document-expiry occurrences, durable manual Inbox delivery and acknowledgement history, lifecycle suppression, retention tiers and local attention workflows. Phase 2D remains the next milestone for scheduled delivery and startup recovery. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A, 2B and 2C are complete. Phase 2C delivers local reminder policy resolution, traceable derived birthday and Document-expiry occurrences, durable manual Inbox delivery and acknowledgement history, lifecycle suppression, retention tiers and local attention workflows. Phase 2D has begun with the local reminder-delivery scheduler, its durable runs and startup recovery; additional registered maintenance work and completion review remain. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -294,12 +294,12 @@ The behaviour above is authoritative product direction. The following sequence i
 
 ### Phase 2D — Operational runtime
 
-21. Implement registered background-job handlers.
-22. Implement database-backed schedules and per-job catch-up policies.
-23. Add transactional leases, execution records and Job Run history.
-24. Add checkpointed serial startup recovery and duplicate-run protection.
-25. Add manual execution, manual failure rerun and enable/disable controls.
-26. Record failures in Job Run history; persistent System Health and actionable escalation remain deferred pending separately authorised condition design.
+21. **Complete:** implement registered background-job handlers. The initial registered handler is the application-owned `reminder-delivery` scan; no database row can contain executable user-authored code.
+22. **Complete:** implement database-backed schedules and per-job catch-up policies. The initial enabled job runs once per minute and uses the approved coalesced catch-up policy; no speculative disabled jobs are seeded.
+23. **Complete:** add transactional leases, execution records and Job Run history. An expiring active lease is recorded as an expired Run, while ordinary handler failure is retained as a failed Run without automatic retry.
+24. **Complete:** add checkpointed serial startup recovery and duplicate-run protection. Startup reactivates next-open snoozes, runs one coalesced reminder scan when due, and records a durable startup checkpoint. The normal in-process loop continues only while Project E is open.
+25. **Complete:** add System Tools controls for manual execution, manual failure rerun and enable/disable. A manual or rerun attempt is a distinct auditable Job Run and does not move the regular schedule.
+26. **Complete:** record failures in Job Run history; persistent System Health and actionable escalation remain deferred pending separately authorised condition design.
 
 ### Phase 2E — Deterministic automation
 

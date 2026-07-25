@@ -139,6 +139,10 @@ from app.reminder_service import (
     InboxItem, act_on_inbox_item, evaluate_due_reminders, get_override, inbox_count,
     list_inbox_items, set_override, set_policy,
 )
+from app.scheduler_service import (
+    JobRun, ScheduledJob, ensure_registered_jobs, list_job_runs, list_scheduled_jobs,
+    recover_at_startup, run_due_jobs, run_job_now, set_job_enabled,
+)
 
 __all__ = [
     "utc_now",
@@ -250,6 +254,8 @@ __all__ = [
     "TaskSessionInput", "TaskSessionRecord", "add_task_session",
     "delete_task_session", "list_task_sessions",
     "InboxItem", "act_on_inbox_item", "evaluate_due_reminders", "get_override", "inbox_count",
+    "JobRun", "ScheduledJob", "ensure_registered_jobs", "list_job_runs", "list_scheduled_jobs",
+    "recover_at_startup", "run_due_jobs", "run_job_now", "set_job_enabled",
     "list_inbox_items", "set_override", "set_policy",
     "parse_int",
     "sql_identifier",

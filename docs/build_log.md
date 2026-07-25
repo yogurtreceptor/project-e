@@ -2,6 +2,12 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-25 — Phase 2D local scheduler foundation
+
+- Added SQLite-backed registered scheduled jobs, Job Runs, transactionally claimed leases and durable startup/clean-shutdown checkpoints through a replaceable in-process runtime boundary.
+- Registered the single initial `reminder-delivery` job on a one-minute coalesced schedule. Application startup reactivates next-open snoozes and performs one serial due scan, preserving the Phase 2C reminder catch-up and deduplication rules.
+- Added System Tools visibility and controls for job state, recent runs, manual execution, failed-run rerun and enable/disable. Manual executions are independently auditable and do not shift the normal schedule.
+
 ## 2026-07-25 — Agent guidance refresh
 
 - Updated repository guidance for the completed Phase 1 and active Phase 2 context, including the explicitly authorised local deterministic scheduling and automation boundary.
