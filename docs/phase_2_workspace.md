@@ -155,7 +155,7 @@ Reminder edits on a recurring Event use the established scopes **this event only
 
 **Recurring reminder contract.** A this-occurrence edit persists a reminder override against that generated occurrence's stable series/occurrence identity; it does not edit the canonical Event or another occurrence with the same date-like display value. A this-and-following edit first creates the normal traceable series split, then applies the amended reminder policy to the successor series. The predecessor retains its prior policy through its final occurrence, and the successor has its own future occurrence and delivery identities. An all-occurrences edit changes the policy of the current series definition, preserving the identities and delivery history of already occurred instances. In every scope, only pending deliveries for the affected future occurrence identities are recalculated; unaffected pending deliveries remain valid, while acknowledged, dismissed and resolved history is retained unchanged.
 
-The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor:
+The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor. Calendar and record settings use repeatable positive-integer and unit controls, never a comma-separated text field. A Calendar can configure at most ten default notifications, and an Event can resolve to at most ten effective notifications after Calendar defaults, additions and suppressions are combined:
 
 - Events: 1 hour and 10 minutes before.
 - Task deadlines: 3 days, 2 days, 1 day, 6 hours and 1 hour before.
@@ -326,6 +326,8 @@ The behaviour above is authoritative product direction. The following sequence i
 2. **Complete (2026-07-25):** add the protected built-in `Birthdays` Calendar. A Person with a birthday owns one linked, canonical, yearly recurring all-day Event in that Calendar; changing the Person name or birthday synchronises that same Event, while deleting/restoring the Person archives/restores it. Birthdays remain a Calendar category rather than a derived event type. Its reminder defaults live in Birthdays Calendar settings; the former global birthday policy migrates there without discarding configured timings.
 
 3. **Complete (2026-07-25):** refine Calendar management with compact circular colour controls and a Calendar-level local-notification switch. Calendar settings can inherit the Event defaults, use chosen lead times, or explicitly turn Event notifications off. The opt-out is local-only, suppresses future deliveries and resolves only active or snoozed reminder attention for Events in that Calendar; it never changes canonical Events or historical deliveries.
+
+4. **Complete (2026-07-25):** place Calendar default notifications on the Calendar edit form alongside colour and default Event duration. Replace comma-separated timing entry with repeatable integer-and-unit notification rows and a local Add notification control. Calendar defaults and effective Event reminder sets are capped at ten; persistence remains canonical validated timing-token JSON rather than free-form comma-separated text.
 
 ## Completion criteria
 

@@ -183,6 +183,11 @@ p {
 .calendar-management-row p { color: var(--muted); margin-bottom: 0; }
 .calendar-management-form { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .calendar-management-form .actions { align-self: end; }
+.reminder-policy, .reminder-timings { border: 1px solid var(--line); border-radius: var(--radius-control); display: grid; gap: var(--space-3); padding: var(--space-3); }
+.calendar-management-form .reminder-policy { grid-column: 1 / -1; }
+.reminder-timing-rows { display: grid; gap: var(--space-2); }
+.reminder-timing-row { align-items: end; display: grid; gap: var(--space-2); grid-template-columns: minmax(5rem, 8rem) minmax(8rem, 12rem) auto; }
+.reminder-timing-row label { margin: 0; }
 .calendar-colour-picker { appearance: none; background: transparent; border: 0; border-radius: 50%; cursor: pointer; height: 2rem; padding: 0; width: 2rem; }
 .calendar-colour-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .calendar-colour-picker::-webkit-color-swatch { border: 1px solid var(--line); border-radius: 50%; }

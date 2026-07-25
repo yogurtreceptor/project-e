@@ -47,7 +47,7 @@ from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINIT
 from app.temporal import TemporalValueError
 from app import views
 from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
-from app.reminder_service import get_policy
+from app.reminder_service import get_override, get_policy
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -398,13 +398,24 @@ class EventServiceTests(unittest.TestCase):
             self.assertEqual(303, client.getresponse().status)
             self.assertTrue(get_calendar(self.connection, work.id).is_default)
 
-            client.request("GET", f"/calendar/manage/{work.id}/reminders")
+            client.request("GET", f"/calendar/manage/{work.id}/edit")
             notification_page = client.getresponse().read().decode()
             self.assertIn("Turn notifications off for this Calendar", notification_page)
-            client.request("POST", f"/calendar/manage/{work.id}/reminders", "mode=disabled", {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertIn('data-add-reminder-timing', notification_page)
+            custom_settings = urlencode({"name": "Work", "colour": "#EF4444", "timezone": "Europe/London", "default_event_duration_minutes": "45", "sort_order": "2", "reminder_mode": "custom", "calendar_reminder_amount_0": "15", "calendar_reminder_unit_0": "m", "calendar_reminder_amount_1": "2", "calendar_reminder_unit_1": "h"})
+            client.request("POST", f"/calendar/manage/{work.id}/edit", custom_settings, {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(303, client.getresponse().status)
+            self.assertEqual(["15m", "2h"], get_policy(self.connection, "calendar", work.id, "event"))
+            settings = urlencode({"name": "Work", "colour": "#EF4444", "timezone": "Europe/London", "default_event_duration_minutes": "45", "sort_order": "2", "reminder_mode": "disabled"})
+            client.request("POST", f"/calendar/manage/{work.id}/edit", settings, {"Content-Type": "application/x-www-form-urlencoded"})
             response = client.getresponse()
             self.assertEqual(303, response.status)
             self.assertEqual([], get_policy(self.connection, "calendar", work.id, "event"))
+
+            event_id = create_event(self.connection, EventInput("Structured reminder", False, calendar_id=work.id, start_local="2026-10-01T10:00", end_local="2026-10-01T11:00"))
+            client.request("POST", f"/calendar/events/{event_id}/reminders", urlencode({"mode": "custom", "custom_reminder_amount_0": "30", "custom_reminder_unit_0": "m"}), {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(303, client.getresponse().status)
+            self.assertEqual(["30m"], get_override(self.connection, "event", event_id)["custom_timings"])
         finally:
             client.close()
             server.shutdown(); server.server_close(); thread.join()

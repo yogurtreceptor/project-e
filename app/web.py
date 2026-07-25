@@ -330,9 +330,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 policy_calendar = get_calendar(connection, policy_calendar_id, include_archived=True)
             if policy_calendar is None:
                 self.respond_not_found(); return
-            self.handle_reminder_policy(
-                "calendar", policy_calendar_id, "event", f"{policy_calendar.name} reminder defaults", f"/calendar/manage/{policy_calendar_id}/edit", active_slug="calendar"
-            )
+            self.redirect(f"/calendar/manage/{policy_calendar_id}/edit")
             return
         managed_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" else None
         managed_action = parts[3] if managed_id is not None else ""
@@ -340,9 +338,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "GET":
                 with connect(self.database_path) as connection:
                     calendar = get_calendar(connection, managed_id, include_archived=True)
+                    configured = get_policy(connection, "calendar", managed_id, "event")
                 if calendar is None:
                     self.respond_not_found(); return
-                self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar), active_slug="calendar")
+                self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, configured), active_slug="calendar")
                 return
             if self.command == "POST":
                 self.handle_calendar_management_edit(managed_id)
@@ -389,7 +388,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                             raise ValueError("Event does not exist.")
                         occurrence_date = values.get("occurrence_date", "")
                         scope = values.get("recurrence_scope", "all")
-                        settings = {"mode": values.get("mode", "default"), "custom_timings": self.reminder_timings(values.get("custom_timings", "")), "suppressed_timings": self.reminder_timings(values.get("suppressed_timings", ""))}
+                        settings = {"mode": values.get("mode", "default"), "custom_timings": self.reminder_timings(values, "custom_reminder"), "suppressed_timings": self.reminder_timings(values, "suppressed_reminder")}
                         definition = get_recurrence(connection, reminder_id)
                         if occurrence_date and definition and scope == "this":
                             set_override(connection, "event", reminder_id, occurrence_key=occurrence_date, **settings)
@@ -521,7 +520,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             values = self.read_form()
             try:
                 with connect(self.database_path) as connection:
-                    set_override(connection, "task_deadline", task_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values.get("custom_timings", "")), suppressed_timings=self.reminder_timings(values.get("suppressed_timings", "")))
+                    set_override(connection, "task_deadline", task_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values, "custom_reminder"), suppressed_timings=self.reminder_timings(values, "suppressed_reminder"))
             except ValueError:
                 self.redirect(f"/tasks/{task_id}/reminders"); return
             self.redirect(f"/tasks/{task_id}?saved=1"); return
@@ -597,14 +596,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_calendar_management_edit(self, calendar_id: int) -> None:
         values = self.read_form()
         try:
+            reminder_mode = values.get("reminder_mode", "inherit")
+            reminder_timings = self.reminder_timings(values, "calendar_reminder")
+            if reminder_mode not in {"inherit", "disabled", "custom"}:
+                raise ValueError("Reminder policy is invalid.")
+            if reminder_mode == "custom" and not reminder_timings:
+                raise ValueError("Add at least one notification time or turn notifications off.")
             with connect(self.database_path) as connection:
                 update_calendar(connection, calendar_id, self.calendar_input_from_form(values))
+                if reminder_mode == "inherit":
+                    clear_policy(connection, "calendar", calendar_id, "event")
+                elif reminder_mode == "disabled":
+                    disable_policy(connection, "calendar", calendar_id, "event")
+                elif reminder_mode == "custom":
+                    set_policy(connection, "calendar", calendar_id, "event", reminder_timings)
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendar = get_calendar(connection, calendar_id, include_archived=True)
+                configured = get_policy(connection, "calendar", calendar_id, "event")
             if calendar is None:
                 self.respond_not_found(); return
-            self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, configured, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
             return
         self.redirect("/calendar/manage")
 
@@ -641,7 +653,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     elif context_kind == "calendar" and values.get("mode") == "disabled":
                         disable_policy(connection, context_kind, context_id, source_kind)
                     else:
-                        set_policy(connection, context_kind, context_id, source_kind, self.reminder_timings(values.get("timings", "")))
+                        timings = self.reminder_timings(values, "policy_reminder")
+                        if not timings:
+                            raise ValueError("Add at least one notification time or restore inheritance.")
+                        set_policy(connection, context_kind, context_id, source_kind, timings)
             except ValueError:
                 if context_kind == "calendar":
                     retry_url = f"/calendar/manage/{context_id}/reminders"
@@ -1743,8 +1758,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return None
 
     @staticmethod
-    def reminder_timings(raw: str) -> list[str]:
-        return [item.strip() for item in raw.split(",") if item.strip()]
+    def reminder_timings(values: dict[str, str], prefix: str) -> list[str]:
+        timings = []
+        units = {"m", "h", "d", "w", "mo"}
+        amount_prefix = f"{prefix}_amount_"
+        unit_prefix = f"{prefix}_unit_"
+        for key in values:
+            if key.startswith(amount_prefix) or key.startswith(unit_prefix):
+                suffix = key.rsplit("_", 1)[-1]
+                if not suffix.isdigit() or int(suffix) >= 10:
+                    raise ValueError("No more than 10 reminder notifications are allowed.")
+        for index in range(10):
+            amount = values.get(f"{prefix}_amount_{index}", "")
+            unit = values.get(f"{prefix}_unit_{index}", "")
+            if not amount and not unit:
+                continue
+            if not amount.isdigit() or int(amount) <= 0 or unit not in units:
+                raise ValueError("Each reminder needs a positive whole number and a valid unit.")
+            timings.append(f"{int(amount)}{unit}")
+        if len(set(timings)) != len(timings):
+            raise ValueError("Each reminder notification must use a different time.")
+        return timings
 
 
 
