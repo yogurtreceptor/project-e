@@ -72,6 +72,15 @@ def clear_policy(connection: sqlite3.Connection, context_kind: str, context_id: 
     connection.commit()
 
 
+def disable_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
+    """Explicitly suppress every reminder from one policy context.
+
+    An empty timing list is distinct from a missing policy row: the former is an
+    intentional local opt-out, while the latter inherits the source default.
+    """
+    set_policy(connection, context_kind, context_id, source_kind, [])
+
+
 def set_override(connection: sqlite3.Connection, source_kind: str, source_id: int, *, mode: str = "default", custom_timings: list[str] | None = None, suppressed_timings: list[str] | None = None, occurrence_key: str = "") -> None:
     if mode not in {"default", "custom", "disabled"}: raise ValueError("Reminder override mode is invalid.")
     custom_timings, suppressed_timings = custom_timings or [], suppressed_timings or []

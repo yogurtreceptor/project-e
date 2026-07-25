@@ -7,7 +7,7 @@ from app.db import connect, create_entity, delete_entity, initialise_database
 from app.entities import DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.event_service import EventInput, create_event
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, set_recurrence, split_series
-from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
+from app.reminder_service import (act_on_inbox_item, disable_policy, evaluate_due_reminders,
     clear_policy, get_policy, list_inbox_items, list_upcoming_reminders,
     list_inbox_actions, set_override, set_policy)
 from app.task_service import TaskInput, create_task
@@ -173,3 +173,19 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual(1, evaluate_due_reminders(self.connection, now=datetime(2026, 1, 9, 22, 0, tzinfo=UTC)))
         clear_policy(self.connection, "task_list", task_list_id, "task_deadline")
         self.assertIsNone(get_policy(self.connection, "task_list", task_list_id, "task_deadline"))
+
+    def test_calendar_policy_can_disable_event_notifications_and_resolve_pending_items(self):
+        event_id = create_event(self.connection, EventInput("Quiet planning", False,
+            start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
+        calendar_id = self.connection.execute("SELECT calendar_id FROM events WHERE entity_id=?", (event_id,)).fetchone()[0]
+        evaluate_due_reminders(self.connection, now=datetime(2025, 12, 31, 23, 55, tzinfo=UTC))
+
+        disable_policy(self.connection, "calendar", calendar_id, "event")
+
+        self.assertEqual([], get_policy(self.connection, "calendar", calendar_id, "event"))
+        rows = self.connection.execute(
+            "SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=? AND reason='reminder'",
+            (event_id,),
+        ).fetchall()
+        self.assertEqual(["resolved"], [row["state"] for row in rows])
+        self.assertEqual(0, evaluate_due_reminders(self.connection, now=datetime(2025, 12, 31, 23, 55, tzinfo=UTC)))

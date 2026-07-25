@@ -74,7 +74,7 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
-    clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
+    clear_policy, disable_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
     list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
     reactivate_next_open_snoozes, set_override, set_policy)
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
@@ -630,7 +630,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if self.command == "GET":
             with connect(self.database_path) as connection:
                 configured = get_policy(connection, context_kind, context_id, source_kind)
-            self.respond_page(title, views.reminder_policy_page(title, back_url, configured_timings=configured, inherited_timings=DEFAULT_TIMINGS[source_kind]), active_slug=active_slug)
+            self.respond_page(title, views.reminder_policy_page(title, back_url, configured_timings=configured, inherited_timings=DEFAULT_TIMINGS[source_kind], allow_disable=context_kind == "calendar"), active_slug=active_slug)
             return
         if self.command == "POST":
             values = self.read_form()
@@ -638,6 +638,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 with connect(self.database_path) as connection:
                     if values.get("mode") == "inherit":
                         clear_policy(connection, context_kind, context_id, source_kind)
+                    elif context_kind == "calendar" and values.get("mode") == "disabled":
+                        disable_policy(connection, context_kind, context_id, source_kind)
                     else:
                         set_policy(connection, context_kind, context_id, source_kind, self.reminder_timings(values.get("timings", "")))
             except ValueError:
