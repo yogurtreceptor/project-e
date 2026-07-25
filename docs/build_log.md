@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar creation menu
+
+Replaced the Calendar page's separate Add Event and Add Task buttons with one native Create menu that links to the existing Event and Task creation forms.
+
 ## 2026-07-25 — Phase 2 timezone selector and workspace expansion
 
 - Moved Calendar Event-notification defaults onto the Calendar edit form. Replaced every comma-separated reminder entry form with repeatable integer-and-unit controls, including client-side add/remove rows and server-side ten-notification limits for Calendar defaults and effective Event reminders. Removed Calendar/Event policy-state pickers so empty Event-specific rows inherit the linked Calendar; registered the row-control script with the local static handler.
