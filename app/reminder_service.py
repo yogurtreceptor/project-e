@@ -27,7 +27,7 @@ DEFAULT_TIMINGS = {
 @dataclass(frozen=True)
 class InboxItem:
     id: int; delivery_key: str; source_kind: str; source_id: int; occurrence_key: str
-    reason: str; title: str; due_at: str; delivered_at: str; state: str
+    reason: str; timing: str; title: str; due_at: str; delivered_at: str; state: str
     next_attention_at: str; acted_at: str; action_note: str
 
 
@@ -37,6 +37,7 @@ def set_policy(connection: sqlite3.Connection, context_kind: str, context_id: in
         VALUES (?, ?, ?, ?, ?) ON CONFLICT(context_kind, context_id, source_kind)
         DO UPDATE SET timings_json=excluded.timings_json, updated_at=excluded.updated_at""",
         (context_kind, context_id, source_kind, json.dumps(timings), utc_now()))
+    _reconcile_context_deliveries(connection, context_kind, context_id, source_kind)
     connection.commit()
 
 
@@ -55,6 +56,7 @@ def clear_policy(connection: sqlite3.Connection, context_kind: str, context_id: 
         "DELETE FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?",
         (context_kind, context_id, source_kind),
     )
+    _reconcile_context_deliveries(connection, context_kind, context_id, source_kind)
     connection.commit()
 
 
@@ -67,6 +69,7 @@ def set_override(connection: sqlite3.Connection, source_kind: str, source_id: in
         DO UPDATE SET mode=excluded.mode, custom_timings_json=excluded.custom_timings_json,
         suppressed_timings_json=excluded.suppressed_timings_json, updated_at=excluded.updated_at""",
         (source_kind, source_id, occurrence_key, mode, json.dumps(custom_timings), json.dumps(suppressed_timings), utc_now()))
+    _reconcile_source_deliveries(connection, source_kind, source_id, occurrence_key=occurrence_key)
     connection.commit()
 
 
@@ -126,6 +129,56 @@ def resolve_source_items(connection: sqlite3.Connection, source_kind: str, sourc
     connection.execute("UPDATE inbox_items SET state='resolved', acted_at=?, action_note='source no longer due' WHERE source_kind=? AND source_id=? AND state IN ('active', 'snoozed')", (utc_now(), source_kind, source_id))
 
 
+def _reconcile_context_deliveries(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
+    """Resolve active deliveries whose timing was removed by a context policy edit."""
+    source_ids = connection.execute(
+        "SELECT DISTINCT source_id FROM inbox_items WHERE source_kind=? AND reason='reminder' AND state IN ('active', 'snoozed')",
+        (source_kind,),
+    ).fetchall()
+    for row in source_ids:
+        if _context_for_source(connection, source_kind, int(row["source_id"])) == (context_kind, context_id):
+            _reconcile_source_deliveries(connection, source_kind, int(row["source_id"]))
+
+
+def _reconcile_source_deliveries(connection: sqlite3.Connection, source_kind: str, source_id: int, *, occurrence_key: str | None = None) -> None:
+    """Resolve only active reminders no longer enabled by the current policy."""
+    context = _context_for_source(connection, source_kind, source_id)
+    if context is None:
+        resolve_source_items(connection, source_kind, source_id)
+        return
+    clause = " AND occurrence_key=?" if occurrence_key else ""
+    parameters: list[object] = [source_kind, source_id]
+    if occurrence_key:
+        parameters.append(occurrence_key)
+    rows = connection.execute(
+        "SELECT id, occurrence_key, timing FROM inbox_items WHERE source_kind=? AND source_id=? AND reason='reminder' "
+        "AND state IN ('active', 'snoozed')" + clause,
+        parameters,
+    ).fetchall()
+    now = utc_now()
+    for row in rows:
+        timings = _resolved_timings(connection, source_kind, source_id, context, row["occurrence_key"])
+        # Legacy deliveries predate the explicit timing column. They remain intact
+        # unless reminders are disabled, when all pending delivery is suppressed.
+        if not timings or (row["timing"] and row["timing"] not in timings):
+            connection.execute(
+                "UPDATE inbox_items SET state='resolved', acted_at=?, action_note='reminder policy superseded' WHERE id=?",
+                (now, row["id"]),
+            )
+
+
+def _context_for_source(connection: sqlite3.Connection, source_kind: str, source_id: int) -> tuple[str, int] | None:
+    if source_kind == "event":
+        row = connection.execute("SELECT calendar_id FROM events WHERE entity_id=?", (source_id,)).fetchone()
+        return ("calendar", int(row["calendar_id"])) if row is not None else None
+    if source_kind == "task_deadline":
+        row = connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (source_id,)).fetchone()
+        return ("task_list", int(row["task_list_id"])) if row is not None else None
+    if source_kind in {"birthday", "document_expiry"}:
+        return ("global", 0)
+    return None
+
+
 def _sources(connection, now):
     zone = ZoneInfo(PLATFORM_TIMEZONE)
     for event in list_events(connection):
@@ -174,8 +227,8 @@ def _resolved_timings(connection, kind, source_id, context, occurrence):
 
 def _deliver(connection, kind, source_id, occurrence, title, due, timing, reason, now):
     key = hashlib.sha256(f"{kind}|{source_id}|{occurrence}|{due.isoformat()}|{timing}|{reason}".encode()).hexdigest()
-    cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, title, due_at, delivered_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", (key, kind, source_id, occurrence, reason, title, due.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
+    cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, timing, title, due_at, delivered_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (key, kind, source_id, occurrence, reason, timing, title, due.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
     return cursor.rowcount
 
 

@@ -19,6 +19,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added the Inbox navigation surface; scheduler-driven delivery and startup recovery remain deferred to Phase 2D.
 - Extended manual evaluation to materialise current derived recurring Event occurrences and forthcoming birthday lead times; Event and Task record pages now expose default/custom/disabled reminder settings with additive and suppressive timings.
 - Added local Calendar, Task-list and global derived-source reminder-default controls, including explicit restoration to inherited defaults.
+- Recorded timing tokens on future Inbox deliveries so a policy edit resolves only superseded pending reminders; disabling a reminder resolves all of its pending attention.
 
 ## 2026-07-20 — Phase 2B Task foundation
 

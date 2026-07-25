@@ -449,6 +449,7 @@ def create_reminder_tables(connection: sqlite3.Connection) -> None:
             source_id INTEGER NOT NULL,
             occurrence_key TEXT NOT NULL DEFAULT '',
             reason TEXT NOT NULL,
+            timing TEXT NOT NULL DEFAULT '',
             title TEXT NOT NULL,
             due_at TEXT NOT NULL,
             delivered_at TEXT NOT NULL,
@@ -460,6 +461,13 @@ def create_reminder_tables(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_inbox_active_attention ON inbox_items(state, next_attention_at, due_at, id);
         CREATE INDEX IF NOT EXISTS idx_inbox_source_active ON inbox_items(source_kind, source_id, state);
     """)
+
+
+def add_inbox_delivery_timing(connection: sqlite3.Connection) -> None:
+    """Add explicit timing to existing deliveries for policy reconciliation."""
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(inbox_items)")}
+    if "timing" not in columns:
+        connection.execute("ALTER TABLE inbox_items ADD COLUMN timing TEXT NOT NULL DEFAULT ''")
 
 
 def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
@@ -907,6 +915,7 @@ SCHEMA_MIGRATIONS = (
     ("20260720_21_task_lists_and_tasks", lambda connection: (create_task_list_table(connection), create_task_table(connection))),
     ("20260723_22_task_temporal_values", create_task_temporal_tables),
     ("20260723_23_reminder_and_inbox_foundation", create_reminder_tables),
+    ("20260725_24_inbox_delivery_timing", add_inbox_delivery_timing),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

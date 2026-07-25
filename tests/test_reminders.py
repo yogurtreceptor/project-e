@@ -82,6 +82,27 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual(item.delivery_key, row["delivery_key"])
         self.assertEqual(item.due_at, row["due_at"])
 
+    def test_policy_change_resolves_only_removed_pending_timing(self):
+        event_id = create_event(self.connection, EventInput("Planning", False,
+            start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 1, 0, tzinfo=UTC))
+        set_override(self.connection, "event", event_id, suppressed_timings=["10m"])
+        rows = self.connection.execute(
+            "SELECT timing, state FROM inbox_items WHERE source_kind='event' AND source_id=? AND reason='reminder' ORDER BY timing",
+            (event_id,),
+        ).fetchall()
+        self.assertEqual([("10m", "resolved"), ("1h", "active")], [(row["timing"], row["state"]) for row in rows])
+
+    def test_disabling_reminders_resolves_existing_pending_delivery(self):
+        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-01"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        set_override(self.connection, "task_deadline", task_id, mode="disabled")
+        states = self.connection.execute(
+            "SELECT DISTINCT state FROM inbox_items WHERE source_kind='task_deadline' AND source_id=? AND reason='reminder'",
+            (task_id,),
+        ).fetchall()
+        self.assertEqual(["resolved"], [row["state"] for row in states])
+
     def test_context_policy_can_be_configured_and_restored_to_inheritance(self):
         task_id = create_task(self.connection, TaskInput("Submit report", deadline_date="2026-01-10"))
         task_list_id = self.connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (task_id,)).fetchone()[0]
