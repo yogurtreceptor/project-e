@@ -183,6 +183,10 @@ p {
 .calendar-management-row p { color: var(--muted); margin-bottom: 0; }
 .calendar-management-form { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .calendar-management-form .actions { align-self: end; }
+.timezone-picker { display: grid; gap: .4rem; min-width: 0; }
+.timezone-picker input[type="search"] { min-width: 0; }
+.timezone-picker select { min-height: 11rem; }
+.timezone-picker .help-text { margin: 0; }
 .recurrence-scope { display: grid; gap: var(--space-1); max-width: 22rem; }
 .calendar-form-grid label:last-of-type { grid-column: 1 / -1; }
 .calendar-form-grid [data-all-day-fields], .calendar-form-grid [data-timed-fields] { display: contents; }

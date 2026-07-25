@@ -4,7 +4,7 @@ Thanks for helping improve Project E. The project is in active development, so f
 
 ## Before starting
 
-- Read [the project goal](PROJECT_GOAL.md), the current phase documentation and [the contributor instructions](AGENTS.md). Phase 1 behaviour is recorded in the [Phase 1 specification](docs/phase_1_spec.md); current Phase 2 scope and exclusions are recorded in the [Phase 2 plan](docs/phase_2_plan.md).
+- Read [the project goal](PROJECT_GOAL.md), the current phase documentation and [the contributor instructions](AGENTS.md). Phase 1 behaviour is recorded in the [Phase 1 specification](docs/phase_1_spec.md); current Phase 2 scope and exclusions are recorded in the [Phase 2 workspace](docs/phase_2_workspace.md).
 - For a substantial feature or architectural change, open an issue before investing in implementation.
 - Treat roadmap items as context, not as automatically approved work.
 - Never include personal information, local databases, uploaded documents, logs, exports, backups or other runtime data in an issue, test fixture or commit.

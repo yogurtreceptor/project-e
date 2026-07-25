@@ -1,10 +1,10 @@
-# Phase 2 Plan: Operational Time and Deterministic Automation
+# Phase 2 Workspace: Operational Time and Deterministic Automation
 
 ## Status, purpose and authority
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — Complete.** Phases 2A–2F now form one locally verified operational system: canonical Events and Tasks, Calendar projections, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, approval-gated canonical mutations, portability and data-quality coverage. Persistent System Health remains deferred; completion does not authorise it.
+**Phase 2 — expanded and active.** The original Phases 2A–2F form one locally verified operational system: canonical Events and Tasks, Calendar projections, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, approval-gated canonical mutations, portability and data-quality coverage. This workspace remains the living record for Phase 2 refinements and hardening until Phase 3 is deliberately defined. Persistent System Health remains deferred; neither the original closeout nor this workspace authorises it.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -14,7 +14,7 @@ structured information → relationships → temporal information → Events
 → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The phase remains human-first, database-first, local-first and AI-independent. This document is the canonical Phase 2 scope, architectural direction, implementation sequence, completion standard and exclusion list. It does not itself authorise implementation.
+The phase remains human-first, database-first, local-first and AI-independent. This document is the canonical Phase 2 scope, architectural direction, implementation sequence, completion standard and exclusion list. The expansion section records delivered refinement work; implementation still requires an explicit user prompt.
 
 ## Enduring architectural principles
 
@@ -318,6 +318,10 @@ The behaviour above is authoritative product direction. The following sequence i
 36. **Complete:** review system noise and logical idempotency. Overdue Task attention and reminder delivery use separate stable identities; routine successful Job/automation work remains historical. No concrete persistent-issue producer or escalation action was authorised, so System Health remains deferred.
 37. **Complete:** update architecture, database, ontology, glossary, product, roadmap and development documentation.
 38. **Complete:** conduct and record the Phase 2 completion review.
+
+### Phase 2 expansion workspace
+
+1. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local searchable, scrollable IANA selector. It presents current UTC offsets and country names from the installed timezone database; searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
 
 ## Completion criteria
 

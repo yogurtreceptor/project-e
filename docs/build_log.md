@@ -2,6 +2,12 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-25 — Phase 2 timezone selector and workspace expansion
+
+- Replaced free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a shared local searchable, scrollable IANA selector, including current UTC-offset and country search labels.
+- Preserved stored IANA identifiers and UTC instants; the selector derives its local labels from the installed timezone database without a network or schema dependency.
+- Renamed the Phase 2 plan to `phase_2_workspace.md` and established it as the living Phase 2 refinement record until Phase 3 is defined.
+
 ## 2026-07-25 — Phase 2E/2F deterministic automation and closeout
 
 - Added a migration-safe, registry-only trigger-condition-action layer with durable idempotent Automation Runs, audit/provenance and System Tools rule controls.

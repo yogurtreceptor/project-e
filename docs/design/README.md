@@ -7,7 +7,7 @@ This directory is the implementation-facing design layer for Project E. It trans
 When guidance appears to conflict, use this order and record the conflict rather than silently choosing whichever implementation is easiest:
 
 1. [`experience_philosophy.md`](../experience_philosophy.md) — why the interface should feel and behave as it does.
-2. Current product and domain authorities — `PROJECT_GOAL.md`, the Phase 1 specification, the Phase 2 plan, architecture decisions, ontology and glossary.
+2. Current product and domain authorities — `PROJECT_GOAL.md`, the Phase 1 specification, the Phase 2 workspace, architecture decisions, ontology and glossary.
 3. Documents in this directory — how experience principles are applied consistently.
 4. [`ui_principles.md`](../ui_principles.md) — delivered workflow details and current interaction conventions.
 5. Current UI implementation — evidence of working patterns, not automatic design authority.

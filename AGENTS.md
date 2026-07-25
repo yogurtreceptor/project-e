@@ -28,7 +28,7 @@ Design Principles
 Current Phase Boundaries
 ------------------------
 - Implementation prompts define the authorised task. Plans and roadmap items provide context and boundaries, not permission to implement them.
-- Phase 2 may include explicitly authorised, local and deterministic reminders, scheduling, registered background jobs and trigger-condition-action automation as defined in `docs/phase_2_plan.md`.
+- Phase 2 may include explicitly authorised, local and deterministic reminders, scheduling, registered background jobs and trigger-condition-action automation as defined in `docs/phase_2_workspace.md`.
 - Deterministic maintenance may recalculate derived state and create operational or audit records within the documented contracts. Creating, editing, completing, archiving or deleting a canonical Event or Task requires explicit user approval.
 - Do not introduce AI or agent workflows, chat, AI decision support, AI-generated autonomous actions, autonomous external side effects, arbitrary executable code, external notification or calendar channels, distributed workers or queues, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies unless the user explicitly authorises a change in direction.
 
@@ -50,7 +50,7 @@ Documentation is part of implementation. Proactively update every existing docum
 Repository documents have distinct responsibilities:
 - `PROJECT_GOAL.md`: durable product purpose, scope and principles.
 - `docs/phase_1_spec.md`: delivered Phase 1 behaviour and acceptance criteria.
-- `docs/phase_2_plan.md`: current Phase 2 scope, sequence, completion criteria and exclusions; not implementation authority.
+- `docs/phase_2_workspace.md`: living Phase 2 scope, delivery record, completion criteria and exclusions; not implementation authority.
 - `ROADMAP.md`: phased capability direction and priorities; not implementation authority.
 - `docs/future_direction.md`: long-term platform, AI and Odysseus direction; not current architecture.
 - `docs/architecture.md`: current application structure and boundaries.

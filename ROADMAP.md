@@ -1,12 +1,12 @@
 # Roadmap
 
-This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); detailed Phase 2 status, scope and sequence belong in [the Phase 2 plan](docs/phase_2_plan.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
+This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); detailed Phase 2 status, scope and sequence belong in [the Phase 2 workspace](docs/phase_2_workspace.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
 ## Phase 1 — Information Platform
 
 Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local SQLite persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
 
-### Status: Complete
+### Status: Original foundation complete; expansion active
 
 Pull request #1 is closed and Phase 1 is complete enough to close as a development milestone. Its closure is based on representative verification, not exhaustive manual testing of every capability. Residual defects may still be found and are handled through normal maintenance without reopening Phase 1 as a whole. The closure record is the [Phase 1 review](docs/reviews/phase_1_exit_review.md).
 
@@ -20,7 +20,7 @@ Phase 2 establishes the platform's operational time and automation foundation. T
 structured information → relationships → temporal information → events → calendar projections → tasks → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, Task, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, Task, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Focused Phase 2 refinements continue in a living workspace until Phase 3 is deliberately defined. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 workspace](docs/phase_2_workspace.md).
 
 ## Phase 3 — AI-assisted Platform
 

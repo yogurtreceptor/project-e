@@ -288,6 +288,10 @@ A first-class local Event grouping and configuration record, comparable to a Goo
 
 The initial single-user time interpretation and display zone, `Australia/Brisbane`. Calendars default to this IANA zone, while individual timed Events may select another IANA timezone. Precise instants are stored in UTC and displayed through the selected timezone.
 
+## IANA Timezone
+
+A named timezone from the installed IANA timezone database, such as `Australia/Brisbane` or `America/New_York`. Calendar, Event and timed Task controls select and store this identifier; the local selector can be searched by current UTC offset, country, place or identifier. It never stores a display label or a fixed offset in place of the identifier.
+
 ## Derived Occurrence
 
 A deterministic, traceable temporal instance produced from a canonical record and definition, such as a yearly birthday from a Person birth date.

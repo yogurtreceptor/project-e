@@ -14,7 +14,7 @@ The immediate aim is deliberately human: make the platform useful, trustworthy a
 | **In progress** | Scheduler-driven reminder delivery, startup recovery and the later deterministic-automation runtime in Phase 2. |
 | **Not current scope** | AI, user accounts, cloud-dependent core operation, and external email, SMS, push or operating-system notification channels. |
 
-Phase 1 — Information Platform is complete as a development milestone. Phase 2 is in progress: Calendar/Event and Task foundations are complete, while the operational runtime remains staged. The product requires no account. Core records and workflows work without WAN access; optional map tiles and address lookup use replaceable network services. See the [Phase 2 plan](docs/phase_2_plan.md).
+Phase 1 — Information Platform is complete as a development milestone. Phase 2's original operational foundation is complete and its expanded workspace is active for focused refinements; Phase 3 has not been defined. The product requires no account. Core records and workflows work without WAN access; optional map tiles and address lookup use replaceable network services. See the [Phase 2 workspace](docs/phase_2_workspace.md).
 
 ## Product map
 
@@ -52,7 +52,7 @@ For the durable direction, see the [project goal](PROJECT_GOAL.md), [roadmap](RO
 
 - [Project goal](PROJECT_GOAL.md) — product purpose and durable principles
 - [Phase 1 specification](docs/phase_1_spec.md) — delivered Information Platform behaviour and acceptance criteria
-- [Phase 2 plan](docs/phase_2_plan.md) — operational time and deterministic-automation foundation
+- [Phase 2 workspace](docs/phase_2_workspace.md) — living operational-time and deterministic-automation workspace
 - [Roadmap](ROADMAP.md) and [future direction](docs/future_direction.md) — phased and longer-term direction
 - [Build history](docs/build_log.md) and [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) — completed-work context
 

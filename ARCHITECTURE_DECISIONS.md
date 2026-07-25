@@ -294,7 +294,7 @@ Reason:
 Isolated tables and pages do not prove an operational platform.
 
 Consequences:
-The implementation sequence and completion scenario in `docs/phase_2_plan.md` govern closure review; starting Phase 2 does not imply completion.
+The implementation sequence and completion scenario in `docs/phase_2_workspace.md` govern closure review; starting Phase 2 does not imply completion.
 
 ## ADR-018: Use a Brisbane platform timezone and deterministic calendar-grade recurrence
 
