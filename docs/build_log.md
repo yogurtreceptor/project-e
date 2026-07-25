@@ -2,6 +2,11 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar quick-create refinement
+
+- Replaced modal quick-create dialogs with non-modal, draggable Event and Task panels that can dock into the sidebar without obscuring the Calendar.
+- Added provisional Calendar rendering for the unsaved Event schedule and replaced Event/Task Notes form controls with progressive, autosizing Description fields while retaining canonical notes storage.
+
 ## 2026-07-26 — Calendar quick creation
 
 - Added in-calendar Event and Task quick-create popups with close controls, direct save actions and a More options handoff that preserves entered values in the existing complete forms.

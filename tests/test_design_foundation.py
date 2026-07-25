@@ -78,7 +78,26 @@ class DesignFoundationTests(unittest.TestCase):
             ) as response:
                 self.assertEqual(response.status, 200)
                 self.assertEqual(response.headers.get_content_type(), "text/javascript")
-                self.assertIn(b"data-quick-create-dialog", response.read())
+                script = response.read()
+                self.assertIn(b"data-quick-create-dialog", script)
+                self.assertIn(b"enableDrag", script)
+                self.assertIn(b"data-quick-preview", script)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_description_field_script_is_allowed_by_static_handler(self) -> None:
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            with urlopen(
+                f"http://127.0.0.1:{server.server_port}/static/description-field.js",
+                timeout=5,
+            ) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn(b"data-description-field", response.read())
         finally:
             server.shutdown()
             server.server_close()

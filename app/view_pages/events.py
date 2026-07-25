@@ -48,7 +48,7 @@ def event_projection_page(
                 {event_time_details(event)}
             </dl></section>
             <section class="panel profile-section" id="relationships"><h2>Relationships</h2>{related}</section>
-            <section class="panel profile-section"><h2>Notes</h2><p class="notes">{escape(event.notes) if event.notes else 'No notes yet.'}</p></section>
+            <section class="panel profile-section"><h2>Description</h2><p class="notes">{escape(event.notes) if event.notes else 'No description yet.'}</p></section>
         </div><aside class="profile-side">{audit_history_section(history, audit_events)}</aside></div>
     </article>
     """

@@ -21,6 +21,19 @@ def error_block(errors: list[str], error_fields: list[str | None] | None = None)
     )
 
 
+def description_field(value: str = "", *, field_id: str = "notes") -> str:
+    """Render the Event/Task description control without changing stored notes data."""
+    escaped_value = escape(value)
+    expanded = bool(value)
+    return (
+        f'<div class="description-field{" expanded" if expanded else ""}" data-description-field>'
+        f'<button class="description-trigger" type="button" data-description-trigger'
+        f' aria-expanded="{"true" if expanded else "false"}">Description</button>'
+        f'<textarea id="{escape(field_id)}" name="notes" rows="1" aria-label="Description"'
+        f' data-description-input{"" if expanded else " hidden"}>{escaped_value}</textarea></div>'
+    )
+
+
 def associate_field_errors(html: str, errors: list[str], error_fields: list[str | None]) -> str:
     grouped: dict[str, list[str]] = {}
     for message, field in zip(errors, error_fields):

@@ -119,6 +119,9 @@ a:hover {
 .sidebar-collapsed .nav-children a { padding-left: var(--space-1); }
 .sidebar-collapsed .icon { height: 24px; width: 24px; }
 .sidebar-collapsed .browse-nav a.active::after { display: none; }
+.sidebar.quick-create-docked { padding: var(--space-3); }
+.sidebar.quick-create-docked > :not(.calendar-quick-create) { display: none; }
+.sidebar.quick-create-docked .calendar-quick-create { box-shadow: none; max-width: none; position: static; width: 100%; }
 .skip-link { background: var(--color-surface-panel); left: var(--space-3); padding: var(--space-3); position: fixed; top: -5rem; z-index: 1100; }
 .skip-link:focus { top: var(--space-3); }
 main { margin: 0 auto; max-width: 1040px; padding: 32px 24px 56px; width: 100%; }
@@ -231,6 +234,7 @@ p {
 .calendar-event:hover { background: color-mix(in srgb, var(--calendar-colour) 28%, transparent); text-decoration: none; }
 .calendar-event span { color: var(--muted); }
 .calendar-event.cancelled { opacity: .58; text-decoration: line-through; }
+.calendar-event.provisional, .calendar-timed-event.provisional { border-style: dashed; opacity: .7; pointer-events: none; }
 .calendar-day-name { color: var(--text); font-weight: 700; }
 .calendar-time-grid-scroll { overflow-x: auto; }
 .calendar-time-grid { display: grid; grid-template-columns: 4rem repeat(var(--calendar-day-count), minmax(8rem, 1fr)); min-width: 48rem; }
@@ -1553,12 +1557,15 @@ dd {
 .calendar-create-menu .menu-panel { left: 0; right: auto; }
 .menu-chevron { margin-left: var(--space-2); }
 .action-menu[open] .menu-chevron { transform: rotate(180deg); }
-.calendar-quick-create { background: var(--color-surface-panel); border: 1px solid var(--color-border-default); border-radius: var(--radius-panel); box-shadow: var(--elevation-floating); color: var(--color-text-primary); max-width: 30rem; padding: var(--space-5); width: calc(100% - var(--space-8)); }
-.calendar-quick-create::backdrop { background: var(--color-surface-overlay); }
+.calendar-quick-create { background: var(--color-surface-panel); border: 1px solid var(--color-border-default); border-radius: var(--radius-panel); box-shadow: var(--elevation-floating); color: var(--color-text-primary); max-width: 30rem; padding: var(--space-5); position: fixed; right: var(--space-6); top: 5rem; width: min(30rem, calc(100% - var(--space-8))); z-index: 50; }
 .calendar-quick-create form { display: grid; gap: var(--space-4); }
 .quick-create-heading, .quick-create-actions { align-items: center; display: flex; gap: var(--space-2); justify-content: space-between; }
 .quick-create-heading h2 { margin: 0; }
+.quick-create-heading [data-quick-create-drag] { cursor: move; flex: 1; user-select: none; }
 .quick-create-actions { justify-content: flex-end; }
+.description-field { display: grid; gap: var(--space-2); }
+.description-trigger { background: transparent; border: 0; color: var(--color-text-link); cursor: text; font: inherit; justify-self: start; padding: 0; }
+.description-field textarea { min-height: calc(var(--control-height-default) - var(--space-3)); overflow: hidden; resize: none; }
 .menu-panel strong { color: var(--color-text-secondary); display: block; font-size: var(--font-size-label); padding: var(--space-2); }
 .menu-panel ul { list-style: none; margin: 0; padding: 0; }
 .menu-panel a, .menu-panel form button { display: block; padding: var(--space-2); width: 100%; }

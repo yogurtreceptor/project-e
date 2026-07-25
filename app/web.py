@@ -1613,6 +1613,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def serve_static(self, relative_path: str) -> None:
         content_types = {
             "confirmation.js": "text/javascript; charset=utf-8",
+            "description-field.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",
             "event-form.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
