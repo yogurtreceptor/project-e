@@ -384,6 +384,11 @@ class EventServiceTests(unittest.TestCase):
         thread.start()
         client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
         try:
+            client.request("GET", "/static/reminder-timings.js")
+            script_response = client.getresponse()
+            self.assertEqual(200, script_response.status)
+            self.assertIn("data-add-reminder-timing", script_response.read().decode())
+
             client.request("GET", "/calendar/manage")
             page = client.getresponse().read().decode()
             self.assertIn("Manage Calendars", page)

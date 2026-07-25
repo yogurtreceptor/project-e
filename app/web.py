@@ -1612,6 +1612,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "dirty-form.js": "text/javascript; charset=utf-8",
             "event-form.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
+            "reminder-timings.js": "text/javascript; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",
             "super-key.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
