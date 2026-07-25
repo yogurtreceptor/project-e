@@ -73,6 +73,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_task_temporal_tables(connection)
     create_reminder_tables(connection)
     create_scheduler_tables(connection)
+    create_automation_tables(connection)
     create_reference_data_tables(connection)
     create_unit_tables(connection)
     from app.taxonomy import create_taxonomy_tables, load_relationship_catalog
@@ -530,6 +531,55 @@ def create_scheduler_tables(connection: sqlite3.Connection) -> None:
     """)
 
 
+def create_automation_tables(connection: sqlite3.Connection) -> None:
+    """Persist registered deterministic automation and approval-bound proposals."""
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS automation_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rule_key TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            trigger_name TEXT NOT NULL,
+            action_name TEXT NOT NULL,
+            conditions_json TEXT NOT NULL DEFAULT '{}',
+            enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS automation_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rule_id INTEGER NOT NULL REFERENCES automation_rules(id) ON DELETE RESTRICT,
+            trigger_key TEXT NOT NULL,
+            trigger_name TEXT NOT NULL,
+            source_kind TEXT NOT NULL DEFAULT '',
+            source_id INTEGER NOT NULL DEFAULT 0,
+            input_json TEXT NOT NULL DEFAULT '{}',
+            outcome_json TEXT NOT NULL DEFAULT '{}',
+            status TEXT NOT NULL CHECK (status IN ('completed', 'skipped', 'failed')),
+            failure_reason TEXT NOT NULL DEFAULT '',
+            occurred_at TEXT NOT NULL,
+            UNIQUE (rule_id, trigger_key)
+        );
+        CREATE INDEX IF NOT EXISTS idx_automation_runs_rule ON automation_runs(rule_id, occurred_at DESC, id DESC);
+        CREATE TABLE IF NOT EXISTS automation_review_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proposal_key TEXT NOT NULL UNIQUE,
+            rule_id INTEGER NOT NULL REFERENCES automation_rules(id) ON DELETE RESTRICT,
+            automation_run_id INTEGER NOT NULL REFERENCES automation_runs(id) ON DELETE RESTRICT,
+            source_kind TEXT NOT NULL,
+            source_id INTEGER NOT NULL,
+            mutation_kind TEXT NOT NULL CHECK (mutation_kind IN ('create_task')),
+            proposed_json TEXT NOT NULL,
+            evidence_json TEXT NOT NULL DEFAULT '{}',
+            state TEXT NOT NULL CHECK (state IN ('pending', 'approved', 'rejected')),
+            created_at TEXT NOT NULL,
+            decided_at TEXT NOT NULL DEFAULT '',
+            decision_note TEXT NOT NULL DEFAULT '',
+            resulting_entity_id INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_automation_review_state ON automation_review_items(state, created_at, id);
+    """)
+
+
 def correct_event_grouping_model(connection: sqlite3.Connection) -> None:
     """Migrate category-bearing development databases to Calendar-only Events."""
     create_calendar_table(connection)
@@ -978,6 +1028,7 @@ SCHEMA_MIGRATIONS = (
     ("20260725_24_inbox_delivery_timing", add_inbox_delivery_timing),
     ("20260725_25_inbox_action_history", create_inbox_action_history_table),
     ("20260725_26_operational_scheduler", create_scheduler_tables),
+    ("20260725_27_deterministic_automation", create_automation_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

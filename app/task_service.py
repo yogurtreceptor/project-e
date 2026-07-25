@@ -174,7 +174,7 @@ def set_default_task_list(connection: sqlite3.Connection, task_list_id: int) -> 
         raise
 
 
-def create_task(connection: sqlite3.Connection, task: TaskInput) -> int:
+def create_task(connection: sqlite3.Connection, task: TaskInput, *, provenance: str = "manual", commit: bool = True) -> int:
     values = _normalise_task(connection, task)
     now = utc_now()
     try:
@@ -182,11 +182,12 @@ def create_task(connection: sqlite3.Connection, task: TaskInput) -> int:
         task_id = int(cursor.lastrowid)
         connection.execute("INSERT INTO tasks (entity_id, task_list_id) VALUES (?, ?)", (task_id, values["task_list_id"]))
         _save_deadline(connection, task_id, values)
-        record_audit_event(connection, "create", [("entity", task_id)], after=values, notes="Task created")
+        record_audit_event(connection, "create", [("entity", task_id)], after=values, notes="Task created", provenance=provenance)
         for field_name, value in values.items():
             if value not in ("", None):
-                set_provenance(connection, "entity", task_id, field_name, "manual")
-        connection.commit()
+                set_provenance(connection, "entity", task_id, field_name, provenance)
+        if commit:
+            connection.commit()
         return task_id
     except Exception:
         connection.rollback()

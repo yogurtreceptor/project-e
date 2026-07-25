@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A, 2B and 2C are complete. Phase 2C delivers local reminder policy resolution, traceable derived birthday and Document-expiry occurrences, durable manual Inbox delivery and acknowledgement history, lifecycle suppression, retention tiers and local attention workflows. Phase 2D has begun with the local reminder-delivery scheduler, its durable runs and startup recovery; additional registered maintenance work and completion review remain. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — Complete.** Phases 2A–2F now form one locally verified operational system: canonical Events and Tasks, Calendar projections, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, approval-gated canonical mutations, portability and data-quality coverage. Persistent System Health remains deferred; completion does not authorise it.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -303,21 +303,21 @@ The behaviour above is authoritative product direction. The following sequence i
 
 ### Phase 2E — Deterministic automation
 
-27. Implement the trigger-condition-action framework.
-28. Add a deliberately small set of built-in triggers and registered actions.
-29. Route every action through normal platform services.
-30. Add audit and provenance for inputs, decisions and outputs.
-31. Add review and approval states for proposed canonical Event or Task mutations.
+27. **Complete:** implement the database-backed trigger-condition-action framework with registered names only and durable idempotent logical runs.
+28. **Complete:** add the small built-in `reminder_scan` trigger with due-reminder delivery, overdue-Task attention, and an opt-in Document-expiry Task-proposal action.
+29. **Complete:** route actions through the existing reminder and Task application services; no rule contains executable user-authored code.
+30. **Complete:** record rule inputs, outcomes, source evidence, audit records and automation provenance.
+31. **Complete:** add pending/approved/rejected review proposals. Approving a proposed Task invokes the standard validated Task service; rejection is durable and cannot later be approved.
 
 ### Phase 2F — Stabilisation
 
-32. Add approved cross-domain Calendar projections.
-33. Verify recurrence, timezone and temporal-boundary behaviour.
-34. Add data-quality rules for Events, Tasks, schedules and reminder policies.
-35. Add migration, recovery, portability and end-to-end tests.
-36. Review system noise, logical idempotency and Inbox deduplication; reconsider persistent System Health only if concrete condition producers and actions have been authorised.
-37. Update architecture, database, ontology, glossary, product and development documentation.
-38. Conduct the Phase 2 completion review.
+32. **Complete:** add Calendar projections for Task deadlines/sessions, birthdays, Document expiries and Project target dates without converting any source into an Event.
+33. **Complete:** retain focused recurrence, timezone, all-day-boundary and leap-day tests across the integrated Calendar/reminder workflow.
+34. **Complete:** add data-quality checks for stored Event and Task temporal contracts, reminder-policy timing payloads, and registered schedule configuration.
+35. **Complete:** cover the forward migration, scheduler recovery, operational export/import validation and end-to-end service boundaries with tests.
+36. **Complete:** review system noise and logical idempotency. Overdue Task attention and reminder delivery use separate stable identities; routine successful Job/automation work remains historical. No concrete persistent-issue producer or escalation action was authorised, so System Health remains deferred.
+37. **Complete:** update architecture, database, ontology, glossary, product, roadmap and development documentation.
+38. **Complete:** conduct and record the Phase 2 completion review.
 
 ## Completion criteria
 

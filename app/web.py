@@ -64,7 +64,7 @@ from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
-from app.entities import DEFINITIONS_BY_SLUG, EVENT_DEFINITION, EntityDefinition
+from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION, EntityDefinition
 from app.calendar_service import CalendarInput, archive_calendar, create_calendar, delete_calendar, get_calendar, list_calendars, set_default_calendar, unarchive_calendar, update_calendar
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
@@ -79,6 +79,8 @@ from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_i
     reactivate_next_open_snoozes, set_override, set_policy)
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
     list_scheduled_jobs, run_job_now, set_job_enabled)
+from app.automation_service import (approve_review_item, ensure_registered_rules, list_review_items,
+    list_rules, list_runs, reject_review_item, set_rule_enabled)
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -144,6 +146,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[:2] == ["system-tools", "jobs"]:
             self.route_scheduled_jobs(parts)
+            return
+
+        if parts[:2] == ["system-tools", "automation"]:
+            self.route_automation(parts)
             return
 
         if parts[:2] == ["system-tools", "portability"]:
@@ -283,11 +289,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def route_calendar_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":
+            anchor_date = self.calendar_anchor_date(query.get("date", ""))
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
                 tasks = list_tasks(connection, include_completed=True)
                 task_sessions = {task.id: list_task_sessions(connection, task.id) for task in tasks}
+                derived_occurrences = self.calendar_derived_occurrences(connection, anchor_date.year)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
                 recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
                 created_id = self.parse_entity_id(query.get("created", ""))
@@ -295,10 +303,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 preview_id = self.parse_entity_id(query.get("preview", ""))
                 preview_event = get_event(connection, preview_id) if preview_id else None
                 preview_occurrence = query.get("occurrence", "")
-            anchor_date = self.calendar_anchor_date(query.get("date", ""))
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions)
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions, derived_occurrences=derived_occurrences)
             self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
             return
         if len(parts) == 2 and parts[1] == "manage":
@@ -689,6 +696,29 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return date.today()
 
     @staticmethod
+    def calendar_derived_occurrences(connection, year: int) -> list[dict[str, object]]:
+        """Project date facts without converting them into canonical Events."""
+        from calendar import monthrange
+        from datetime import date
+
+        result: list[dict[str, object]] = []
+        for person in list_entities(connection, DEFINITIONS_BY_TYPE["person"]):
+            birthday = person.metadata.get("birthday", "")
+            if birthday:
+                born = date.fromisoformat(birthday)
+                day = min(born.day, monthrange(year, born.month)[1])
+                result.append({"label": "Birthday", "title": f"{person.title}'s birthday", "date": date(year, born.month, day), "url": f"/people/{person.id}"})
+        for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
+            expiry = document.metadata.get("expiry_date", "")
+            if expiry:
+                result.append({"label": "Document expiry", "title": document.title, "date": date.fromisoformat(expiry), "url": f"/documents/{document.id}"})
+        for project in list_entities(connection, DEFINITIONS_BY_TYPE["project"]):
+            target = project.metadata.get("target_date", "")
+            if target:
+                result.append({"label": "Project target", "title": project.title, "date": date.fromisoformat(target), "url": f"/projects/{project.id}"})
+        return result
+
+    @staticmethod
     def event_input_from_form(values: dict[str, str]) -> EventInput:
         calendar_id = int(values["calendar_id"]) if values.get("calendar_id", "").isdigit() else None
         return EventInput(values.get("title", ""), values.get("all_day") == "1", calendar_id, values.get("notes", ""), values.get("timezone", ""), values.get("start_local", ""), values.get("end_local", ""), start_date=values.get("start_date", ""), end_date=values.get("end_date", ""))
@@ -758,6 +788,40 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     self.respond_not_found()
                     return
             self.redirect("/system-tools/jobs")
+            return
+        self.respond_not_found()
+
+    def route_automation(self, parts: list[str]) -> None:
+        if len(parts) == 3 and parts[2] == "reviews" and self.command == "GET":
+            with connect(self.database_path) as connection:
+                items = list_review_items(connection)
+            self.respond_page("Automation review proposals", views.automation_reviews_page(items), active_slug="system-tools")
+            return
+        if len(parts) == 5 and parts[2] == "reviews" and self.command == "POST":
+            item_id = self.parse_entity_id(parts[3])
+            if item_id is None or parts[4] not in {"approve", "reject"}:
+                self.respond_not_found(); return
+            with connect(self.database_path) as connection:
+                if parts[4] == "approve":
+                    approve_review_item(connection, item_id)
+                else:
+                    reject_review_item(connection, item_id, self.read_form().get("note", ""))
+            self.redirect("/system-tools/automation/reviews")
+            return
+        if len(parts) == 4 and self.command == "POST" and parts[3] in {"enable", "disable"}:
+            rule_id = self.parse_entity_id(parts[2])
+            if rule_id is None:
+                self.respond_not_found(); return
+            with connect(self.database_path) as connection:
+                set_rule_enabled(connection, rule_id, parts[3] == "enable")
+            self.redirect("/system-tools/automation")
+            return
+        if len(parts) == 2 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                ensure_registered_rules(connection)
+                rules = list_rules(connection)
+                runs = {rule.id: list_runs(connection, rule.id) for rule in rules}
+            self.respond_page("Deterministic automation", views.automation_page(rules, runs), active_slug="system-tools")
             return
         self.respond_not_found()
 

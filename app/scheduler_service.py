@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+import json
 from pathlib import Path
 import sqlite3
 import threading
@@ -217,7 +218,7 @@ def _claim_due_job(connection: sqlite3.Connection, now: datetime, trigger_kind: 
 def _execute_claim(connection: sqlite3.Connection, claim: _Claim, now: datetime, *, manual: bool = False) -> None:
     timestamp = _stamp(now)
     try:
-        details = _run_handler(connection, claim.job.handler_name, now)
+        details = _run_handler(connection, claim.job.handler_name, now, f"job-run:{claim.run_id}")
     except Exception as exc:
         connection.execute(
             "UPDATE job_runs SET status='failed', finished_at=?, failure_reason=? WHERE id=?",
@@ -242,9 +243,15 @@ def _release_after_run(connection: sqlite3.Connection, job: ScheduledJob, token:
     )
 
 
-def _run_handler(connection: sqlite3.Connection, handler_name: str, now: datetime) -> str:
+def _run_handler(connection: sqlite3.Connection, handler_name: str, now: datetime, trigger_key: str) -> str:
     if handler_name == REMINDER_DELIVERY_JOB:
-        return f"created_deliveries={evaluate_due_reminders(connection, now=now)}"
+        from app.automation_service import dispatch
+        completed = dispatch(connection, "reminder_scan", trigger_key, now=now)
+        row = connection.execute("""SELECT run.outcome_json FROM automation_runs AS run
+            JOIN automation_rules AS rule ON rule.id=run.rule_id
+            WHERE run.trigger_key=? AND rule.action_name='deliver_due_reminders'""", (trigger_key,)).fetchone()
+        deliveries = json.loads(row["outcome_json"]).get("created_deliveries", 0) if row else 0
+        return f"created_deliveries={deliveries}; automation_rules={completed}"
     raise ValueError(f"Unregistered scheduler handler: {handler_name}")
 
 

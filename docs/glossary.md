@@ -316,6 +316,18 @@ Database-backed executable background work using a registered application handle
 
 One execution attempt of a Scheduled Job and its result.
 
+## Automation Rule
+
+A database-backed, explicit trigger-condition-action configuration that references only a registered local trigger and action. It is not executable user-authored code, a Scheduled Job, Event or Task.
+
+## Automation Run
+
+One idempotent execution of an Automation Rule for a stable logical trigger identity. It records inputs, outcome and failure state separately from a Job Run.
+
+## Review Proposal
+
+An actionable operational record that describes a proposed consequential canonical Event or Task mutation, with evidence and approval state. It is not the mutation itself; explicit approval invokes the normal validated service.
+
 ## Odysseus
 
 The leading candidate for Project E's future AI/agent layer and a possible integration or fork target. It is not part of the current architecture; future work should adapt Odysseus to a mature Project E platform rather than restructure Project E around it.

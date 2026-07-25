@@ -45,6 +45,7 @@ def calendar_projection(
     anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None, preview_occurrence: str = "",
     recurrences: dict[int, RecurrenceDefinition] | None = None,
     recurrence_exceptions: dict[int, object] | None = None, tasks=None, task_sessions=None,
+    derived_occurrences=None,
 ) -> str:
     """Build Month, Week or Day read projections from canonical Event intervals."""
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
@@ -89,11 +90,12 @@ def calendar_projection(
     )
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
     task_projection = _task_projection(tasks or [], task_sessions or {}, period_start, period_end, display_timezone)
+    derived_projection = _derived_projection(derived_occurrences or [], period_start, period_end)
     return f"""
     <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Calendars</a><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button{' secondary' if view != 'day' else ''}" href="{day_url}">Day</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
         <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
         {preview}
-        {grid}{task_projection}
+        {grid}{task_projection}{derived_projection}
     </section>
     """
 
@@ -113,6 +115,14 @@ def _task_projection(tasks, sessions, start: date, end: date, display_timezone: 
                 label = "All day session" if session.is_all_day else "Planned session"
                 entries.append(f'<li class="calendar-task-session"><a href="/tasks/{task.id}">{label} · {escape(task.title)}</a> · {escape(session_day.isoformat())}</li>')
     return f'<section class="calendar-task-projections"><h3>Task deadlines and planned sessions</h3><ul>{"".join(entries) or "<li>No Task deadlines or sessions in this period.</li>"}</ul></section>'
+
+
+def _derived_projection(occurrences, start: date, end: date) -> str:
+    entries = [
+        f'<li><a href="{escape(item["url"])}">{escape(item["label"])} · {escape(item["title"])}</a> · {escape(item["date"].isoformat())}</li>'
+        for item in occurrences if start <= item["date"] <= end
+    ]
+    return f'<section class="calendar-task-projections"><h3>Derived and related dates</h3><ul>{"".join(entries) or "<li>No derived birthdays, expiry dates or Project targets in this period.</li>"}</ul></section>'
 
 
 def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], month: date, display_timezone: str, context_query: str) -> str:

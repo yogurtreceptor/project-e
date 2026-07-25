@@ -12,7 +12,7 @@ Pull request #1 is closed and Phase 1 is complete enough to close as a developme
 
 ## Phase 2 — Operational Time and Deterministic Automation
 
-### Status: In progress
+### Status: Complete
 
 Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 
@@ -20,7 +20,7 @@ Phase 2 establishes the platform's operational time and automation foundation. T
 structured information → relationships → temporal information → events → calendar projections → tasks → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A, 2B and 2C are complete; Phase 2D operational runtime work is next. Phase 2 is complete only after its agreed capabilities work together coherently and pass the end-to-end completion review. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, Task, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
 
 ## Phase 3 — AI-assisted Platform
 

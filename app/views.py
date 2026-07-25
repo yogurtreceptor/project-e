@@ -88,6 +88,7 @@ from app.view_pages.recycle_bin import recycle_bin_page, permanent_delete_confir
 from app.view_pages.timeline import universal_timeline_page
 from app.view_pages.taxonomies import taxonomies_page
 from app.view_pages.system_tools import system_tools_page, scheduled_jobs_page
+from app.view_pages.automation import automation_page, automation_reviews_page
 from app.view_pages.audit import system_audit_page
 from app.view_pages.portability import portability_page, import_preview_page
 from app.view_pages.inbox import global_reminder_policies_page, inbox_page
@@ -161,6 +162,8 @@ __all__ = [
     "taxonomies_page",
     "system_tools_page",
     "scheduled_jobs_page",
+    "automation_page",
+    "automation_reviews_page",
     "system_audit_page",
     "portability_page",
     "inbox_page",

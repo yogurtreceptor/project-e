@@ -8,11 +8,11 @@ EVENT_TYPES = {
     "create", "edit", "archive", "unarchive", "delete", "restore",
     "permanent_delete", "cancel", "reinstate", "reschedule", "complete", "reopen",
     "relationship_change", "inference", "validation", "merge", "import",
-    "manual_override",
+    "manual_override", "automation", "review_proposal", "approve", "reject",
 }
 PROVENANCE_TYPES = {
     "manual", "inferred", "imported", "document", "contact_import",
-    "user_confirmed", "unknown",
+    "user_confirmed", "unknown", "automation",
 }
 
 

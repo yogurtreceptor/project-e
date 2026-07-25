@@ -2,6 +2,13 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-25 — Phase 2E/2F deterministic automation and closeout
+
+- Added a migration-safe, registry-only trigger-condition-action layer with durable idempotent Automation Runs, audit/provenance and System Tools rule controls.
+- The built-in reminder scan now delivers due reminders and identifies overdue Tasks; an opt-in Document-expiry action creates approval-gated Task proposals. Approval calls the normal Task service and rejection is retained.
+- Added non-Event Calendar projections for Task temporal facts, birthdays, Document expiries and Project targets, plus operational data-quality checks.
+- Completed Phase 2 integration verification for scheduler recovery, automation approvals, recurrence/temporal behaviour, portability and local workflows. Persistent System Health and escalation remain deferred.
+
 ## 2026-07-25 — Phase 2D local scheduler foundation
 
 - Added SQLite-backed registered scheduled jobs, Job Runs, transactionally claimed leases and durable startup/clean-shutdown checkpoints through a replaceable in-process runtime boundary.

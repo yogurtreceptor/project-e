@@ -11,6 +11,7 @@ def system_tools_page() -> str:
         ("/recycle-bin", "Recycle Bin", "Restore deleted records or permanently remove entities after confirmation."),
         ("/system-tools/audit", "Audit", "Review and filter platform-wide operational events."),
         ("/system-tools/jobs", "Scheduled Jobs", "Inspect and control registered local maintenance and delivery work."),
+        ("/system-tools/automation", "Deterministic Automation", "Inspect registered local rules and approve consequential proposals."),
         ("/system-tools/portability", "Import and Export", "Create portable exports and preview validated imports with recovery backups."),
     )
     cards = "".join(
