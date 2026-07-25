@@ -82,6 +82,8 @@ class DesignFoundationTests(unittest.TestCase):
                 self.assertIn(b"data-quick-create-dialog", script)
                 self.assertIn(b"enableDrag", script)
                 self.assertIn(b"data-quick-preview", script)
+                self.assertIn(b"durationMinutes", script)
+                self.assertIn(b"previewMarkup", script)
         finally:
             server.shutdown()
             server.server_close()

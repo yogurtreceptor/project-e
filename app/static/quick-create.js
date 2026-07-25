@@ -86,22 +86,41 @@
     const values = new FormData(form);
     const title = values.get("title") || "Untitled event";
     const allDay = values.get("all_day") === "1";
-    const start = allDay ? values.get("start_date") : String(values.get("start_local") || "").slice(0, 10);
-    const end = allDay ? values.get("end_date") : String(values.get("end_local") || "").slice(0, 10);
+    const startValue = allDay ? String(values.get("start_date") || "") : String(values.get("start_local") || "");
+    const endValue = allDay ? String(values.get("end_date") || "") : String(values.get("end_local") || "");
+    const start = startValue.slice(0, 10);
+    const end = endValue.slice(0, 10);
     if (!start) return;
     const label = allDay ? "All day · " : `${String(values.get("start_local") || "").slice(11) || "Time"} · `;
+    const startMoment = new Date(startValue);
+    const endMoment = new Date(endValue || startValue);
     document.querySelectorAll(".calendar-day").forEach(day => {
       const dayValue = day.querySelector("header time")?.dateTime;
-      if (dayValue && dayValue >= start && dayValue <= (end || start)) day.insertAdjacentHTML("beforeend", `<div class="calendar-event provisional" data-quick-preview style="--calendar-colour:var(--accent)"><span>${label}</span>${escapeHtml(title)}</div>`);
+      const dayStart = new Date(`${dayValue}T00:00`);
+      const dayEnd = new Date(`${dayValue}T23:59:59.999`);
+      if (dayValue && (allDay ? dayValue >= start && dayValue <= (end || start) : dayStart <= endMoment && dayEnd >= startMoment)) {
+        day.insertAdjacentHTML("beforeend", previewMarkup("calendar-event provisional", label, title));
+      }
     });
     if (!allDay) {
-      const time = String(values.get("start_local") || "").slice(11);
-      const [hour, minute] = time.split(":").map(Number);
-      const top = (hour * 60 + minute) * .8;
       document.querySelectorAll(".calendar-time-day").forEach(day => {
-        if (day.getAttribute("aria-label") === start) day.insertAdjacentHTML("beforeend", `<div class="calendar-timed-event provisional" data-quick-preview style="--calendar-colour:var(--accent);top:${top}px;height:32px"><span>${time} · </span>${escapeHtml(title)}</div>`);
+        const dayValue = day.getAttribute("aria-label");
+        const dayStart = new Date(`${dayValue}T00:00`);
+        const dayEnd = new Date(`${dayValue}T23:59:59.999`);
+        if (dayStart > endMoment || dayEnd < startMoment) return;
+        const segmentStart = Math.max(startMoment.getTime(), dayStart.getTime());
+        const segmentEnd = Math.min(endMoment.getTime(), dayStart.getTime() + 24 * 60 * 60 * 1000);
+        if (segmentEnd <= segmentStart) return;
+        const startMinutes = (segmentStart - dayStart.getTime()) / 60000;
+        const durationMinutes = (segmentEnd - segmentStart) / 60000;
+        const segmentLabel = segmentStart === startMoment.getTime() ? `${startValue.slice(11)} · ` : "Continues · ";
+        day.insertAdjacentHTML("beforeend", previewMarkup("calendar-timed-event provisional", segmentLabel, title, `top:${startMinutes * .8}px;height:${Math.max(durationMinutes * .8, 24)}px`));
       });
     }
+  }
+
+  function previewMarkup(className, label, title, positioning = "") {
+    return `<div class="${className}" data-quick-preview title="${escapeHtml(title)}" style="--calendar-colour:var(--accent);${positioning}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(title)}</strong></div>`;
   }
 
   function escapeHtml(value) {

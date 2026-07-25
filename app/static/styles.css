@@ -121,7 +121,10 @@ a:hover {
 .sidebar-collapsed .browse-nav a.active::after { display: none; }
 .sidebar.quick-create-docked { padding: var(--space-3); }
 .sidebar.quick-create-docked > :not(.calendar-quick-create) { display: none; }
-.sidebar.quick-create-docked .calendar-quick-create { box-shadow: none; max-width: none; position: static; width: 100%; }
+.sidebar.quick-create-docked .calendar-quick-create { box-shadow: none; max-width: none; min-width: 0; padding: var(--space-3); position: static; width: 100%; }
+.sidebar.quick-create-docked .calendar-quick-create input, .sidebar.quick-create-docked .calendar-quick-create textarea { min-width: 0; width: 100%; }
+.sidebar.quick-create-docked .quick-create-heading { min-width: 0; }
+.sidebar.quick-create-docked .quick-create-heading h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .skip-link { background: var(--color-surface-panel); left: var(--space-3); padding: var(--space-3); position: fixed; top: -5rem; z-index: 1100; }
 .skip-link:focus { top: var(--space-3); }
 main { margin: 0 auto; max-width: 1040px; padding: 32px 24px 56px; width: 100%; }
@@ -233,6 +236,7 @@ p {
 .calendar-event { background: color-mix(in srgb, var(--calendar-colour) 18%, transparent); border-left: 3px solid var(--calendar-colour); color: var(--text); display: block; font-size: var(--font-size-label); margin: 0 0 var(--space-1); overflow: hidden; padding: .15rem .25rem; text-overflow: ellipsis; white-space: nowrap; }
 .calendar-event:hover { background: color-mix(in srgb, var(--calendar-colour) 28%, transparent); text-decoration: none; }
 .calendar-event span { color: var(--muted); }
+.calendar-event strong, .calendar-timed-event strong { font-weight: inherit; }
 .calendar-event.cancelled { opacity: .58; text-decoration: line-through; }
 .calendar-event.provisional, .calendar-timed-event.provisional { border-style: dashed; opacity: .7; pointer-events: none; }
 .calendar-day-name { color: var(--text); font-weight: 700; }
