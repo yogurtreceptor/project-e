@@ -192,9 +192,12 @@ def delete_entity(
     from app.audit import record_audit_event
     if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
     connection.execute("UPDATE entities SET deleted_at = ?, updated_at = ? WHERE id = ? AND type = ? AND deleted_at = ''", (utc_now(), utc_now(), entity_id, definition.type))
-    if definition.type in {"person", "document"}:
+    reminder_sources = {
+        "person": "birthday", "document": "document_expiry", "event": "event", "task": "task_deadline",
+    }
+    if definition.type in reminder_sources:
         from app.reminder_service import resolve_source_items
-        resolve_source_items(connection, "birthday" if definition.type == "person" else "document_expiry", entity_id)
+        resolve_source_items(connection, reminder_sources[definition.type], entity_id)
     if definition.type == "person":
         from app.relationship_inference import recompute_inferences
         recompute_inferences(connection, "person_deleted", entity_id)

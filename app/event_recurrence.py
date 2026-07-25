@@ -104,6 +104,8 @@ def cancel_occurrence(connection: sqlite3.Connection, definition: RecurrenceDefi
         connection, definition.event_id, "occurrence_cancelled", {},
         {"occurrence_date": occurrence_date, "recurrence_version": definition.version, "scope": "this"},
     )
+    from app.reminder_service import resolve_source_items_for_occurrence
+    resolve_source_items_for_occurrence(connection, "event", definition.event_id, occurrence_date, note="recurring occurrence cancelled")
     connection.commit()
 
 
@@ -146,6 +148,8 @@ def override_occurrence(connection: sqlite3.Connection, event: EventRecord, defi
         connection, event.id, "occurrence_overridden", {},
         {"occurrence_date": occurrence_date, "recurrence_version": definition.version, "scope": "this", "override": payload},
     )
+    from app.reminder_service import resolve_source_items_for_occurrence
+    resolve_source_items_for_occurrence(connection, "event", event.id, occurrence_date, note="recurring occurrence rescheduled")
     connection.commit()
 
 
@@ -195,10 +199,14 @@ def truncate_series(connection: sqlite3.Connection, event: EventRecord, definiti
         raise ValueError("Occurrence is not part of this Event series.")
     if split_day == _anchor_date(event):
         remove_recurrence(connection, event.id)
+        from app.reminder_service import resolve_source_items_after_occurrence
+        resolve_source_items_after_occurrence(connection, "event", event.id, occurrence_date)
         return
     prior_day = generated[-2]
     set_recurrence(connection, event, RecurrenceRule(**{**definition.rule.__dict__, "until_date": prior_day}))
     _record_recurrence_change(connection, event.id, "series_truncated", {}, {"occurrence_date": occurrence_date, "scope": "this_and_following"})
+    from app.reminder_service import resolve_source_items_after_occurrence
+    resolve_source_items_after_occurrence(connection, "event", event.id, occurrence_date)
     connection.commit()
 
 

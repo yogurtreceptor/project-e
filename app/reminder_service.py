@@ -183,6 +183,11 @@ def resolve_source_items_after_occurrence(connection: sqlite3.Connection, source
     _resolve_items(connection, "recurring series superseded", "series_split", "source_kind=? AND source_id=? AND occurrence_key>=?", (source_kind, source_id, occurrence_key))
 
 
+def resolve_source_items_for_occurrence(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str, *, note: str = "occurrence no longer due") -> None:
+    """Resolve pending attention for one cancelled or rescheduled derived occurrence."""
+    _resolve_items(connection, note, "occurrence_changed", "source_kind=? AND source_id=? AND occurrence_key=?", (source_kind, source_id, occurrence_key))
+
+
 def _reconcile_context_deliveries(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
     """Resolve active deliveries whose timing was removed by a context policy edit."""
     source_ids = connection.execute(

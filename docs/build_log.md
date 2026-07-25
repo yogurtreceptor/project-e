@@ -24,6 +24,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Added a non-materialising Upcoming reminder preview, urgency-led active Inbox ordering, and the specified 500-item paged Archive with a separate deep-history view.
 - Added append-only Inbox delivery-transition history for local delivery, user attention actions, source lifecycle resolution, policy reconciliation and recurring-series changes.
 - Exposed each archived Inbox item's delivery-transition history for local inspection.
+- Completed reminder lifecycle suppression for recycled Events and changed recurring Event occurrences.
 
 ## 2026-07-20 — Phase 2B Task foundation
 
