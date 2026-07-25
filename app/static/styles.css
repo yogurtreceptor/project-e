@@ -1553,6 +1553,12 @@ dd {
 .calendar-create-menu .menu-panel { left: 0; right: auto; }
 .menu-chevron { margin-left: var(--space-2); }
 .action-menu[open] .menu-chevron { transform: rotate(180deg); }
+.calendar-quick-create { background: var(--color-surface-panel); border: 1px solid var(--color-border-default); border-radius: var(--radius-panel); box-shadow: var(--elevation-floating); color: var(--color-text-primary); max-width: 30rem; padding: var(--space-5); width: calc(100% - var(--space-8)); }
+.calendar-quick-create::backdrop { background: var(--color-surface-overlay); }
+.calendar-quick-create form { display: grid; gap: var(--space-4); }
+.quick-create-heading, .quick-create-actions { align-items: center; display: flex; gap: var(--space-2); justify-content: space-between; }
+.quick-create-heading h2 { margin: 0; }
+.quick-create-actions { justify-content: flex-end; }
 .menu-panel strong { color: var(--color-text-secondary); display: block; font-size: var(--font-size-label); padding: var(--space-2); }
 .menu-panel ul { list-style: none; margin: 0; padding: 0; }
 .menu-panel a, .menu-panel form button { display: block; padding: var(--space-2); width: 100%; }

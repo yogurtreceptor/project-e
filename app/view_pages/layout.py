@@ -102,6 +102,7 @@ def layout(
     <script src="/static/confirmation.js"></script>
     <script src="/static/dirty-form.js"></script>
     <script src="/static/event-form.js"></script>
+    <script src="/static/quick-create.js"></script>
     <script src="/static/reminder-timings.js"></script>
     <script src="/static/timezone-picker.js"></script>
     {save_cleanup}

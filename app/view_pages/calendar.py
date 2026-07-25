@@ -17,7 +17,9 @@ from app.view_pages.timezones import timezone_picker
 def calendar_page(
     calendars: list[CalendarRecord],
     events: list[EventRecord],
+    task_lists: list,
     created_event: EventRecord | None = None,
+    created_task: bool = False,
     projection: str = "",
 ) -> str:
     """Render Calendar projections only; Event mutation has dedicated routes."""
@@ -28,7 +30,15 @@ def calendar_page(
         <a href="/relationships/new?context_entity_id={created_event.id}">Add relationships</a>
         or <a href="/events/{created_event.id}">open the Event record</a>.</section>
         """
-    return f'''<div class="calendar-page"><div class="actions"><details class="action-menu calendar-create-menu"><summary class="button">Create<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul><li><a href="/calendar/events/new">Event</a></li><li><a href="/calendar/tasks/new">Task</a></li></ul></div></details></div>{projection}{created_notice}</div>'''
+    task_notice = '<section class="notice success" role="status"><strong>Task created.</strong></section>' if created_task else ""
+    return f'''<div class="calendar-page"><div class="actions"><details class="action-menu calendar-create-menu"><summary class="button">Create<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul><li><a href="/calendar/events/new" data-quick-create="event">Event</a></li><li><a href="/calendar/tasks/new" data-quick-create="task">Task</a></li></ul></div></details></div>{_quick_create_dialogs(calendars, task_lists)}{projection}{created_notice}{task_notice}</div>'''
+
+
+def _quick_create_dialogs(calendars: list[CalendarRecord], task_lists: list) -> str:
+    event = default_event_values(calendars)
+    default_task_list = next((item for item in task_lists if item.is_default), None)
+    task_list_id = str(default_task_list.id) if default_task_list else ""
+    return f'''<dialog class="calendar-quick-create" data-quick-create-dialog="event" aria-labelledby="quick-event-title"><form method="post" action="/calendar/events/new" data-quick-event-form><input type="hidden" name="calendar_id" value="{escape(event["calendar_id"])}"><input type="hidden" name="timezone" value="{escape(event["timezone"])}"><input type="hidden" name="quick_create" value="1"><header class="quick-create-heading"><h2 id="quick-event-title">Add Event</h2><button class="button quiet icon-button" type="button" data-quick-create-close aria-label="Close Add Event" title="Close">×</button></header><label><span>Title</span><input name="title" required value=""></label><label class="inline-check"><input name="all_day" type="checkbox" value="1" data-event-all-day> All day</label><div data-all-day-fields hidden><label><span>Start date</span><input name="start_date" type="date" value="{escape(event["start_date"])}"></label><label><span>End date</span><input name="end_date" type="date" value="{escape(event["end_date"])}"></label></div><div data-timed-fields><label><span>Starts</span><input name="start_local" type="datetime-local" value="{escape(event["start_local"])}" required></label><label><span>Ends</span><input name="end_local" type="datetime-local" value="{escape(event["end_local"])}" required></label></div><footer class="quick-create-actions"><button class="button secondary" type="button" data-quick-create-more data-quick-create-url="/calendar/events/new">More options</button><button class="button" type="submit">Add Event</button></footer></form></dialog><dialog class="calendar-quick-create" data-quick-create-dialog="task" aria-labelledby="quick-task-title"><form method="post" action="/calendar/tasks/new"><input type="hidden" name="task_list_id" value="{task_list_id}"><input type="hidden" name="deadline_timezone" value="Australia/Brisbane"><input type="hidden" name="quick_create" value="1"><header class="quick-create-heading"><h2 id="quick-task-title">Add Task</h2><button class="button quiet icon-button" type="button" data-quick-create-close aria-label="Close Add Task" title="Close">×</button></header><label><span>Title</span><input name="title" required value=""></label><label><span>Deadline <em>(optional)</em></span><input name="deadline_date" type="date"></label><footer class="quick-create-actions"><button class="button secondary" type="button" data-quick-create-more data-quick-create-url="/calendar/tasks/new">More options</button><button class="button" type="submit">Add Task</button></footer></form></dialog>'''
 
 
 def event_form_page(calendars, values, *, editing_event=None, recurrence=None, occurrence_date="", errors=None) -> str:

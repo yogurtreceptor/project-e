@@ -2,6 +2,11 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar quick creation
+
+- Added in-calendar Event and Task quick-create popups with close controls, direct save actions and a More options handoff that preserves entered values in the existing complete forms.
+- Kept Event and Task creation local and canonical: quick save uses the existing services and returns to Calendar with a confirmation.
+
 ## 2026-07-26 — Calendar creation menu
 
 Replaced the Calendar page's separate Add Event and Add Task buttons with one native Create menu that links to the existing Event and Task creation forms.

@@ -301,6 +301,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
                 tasks = list_tasks(connection, include_completed=True)
+                task_lists = list_task_lists(connection)
                 task_sessions = {task.id: list_task_sessions(connection, task.id) for task in tasks}
                 derived_occurrences = self.calendar_derived_occurrences(connection, anchor_date.year)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
@@ -313,7 +314,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions, derived_occurrences=derived_occurrences)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None)
+            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1")
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":
@@ -353,7 +354,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "GET":
                 with connect(self.database_path) as connection:
                     calendars = list_calendars(connection, include_archived=True)
-                self.respond_page("Add Event", views.event_form_page(calendars, views.default_event_values(calendars)), active_slug="calendar")
+                values = {**views.default_event_values(calendars), **{key: value for key, value in query.items() if key in {"title", "calendar_id", "all_day", "start_date", "end_date", "start_local", "end_local", "timezone", "notes"}}}
+                self.respond_page("Add Event", views.event_form_page(calendars, values), active_slug="calendar")
                 return
             if self.command == "POST":
                 self.handle_calendar_event_create()
@@ -362,7 +364,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "GET":
                 with connect(self.database_path) as connection:
                     task_lists = list_task_lists(connection)
-                self.respond_page("Add Task", views.task_form_page(task_lists, {"title": "", "notes": "", "task_list_id": _default_task_list_value(task_lists)}), active_slug="calendar")
+                values = {"title": "", "notes": "", "task_list_id": _default_task_list_value(task_lists), "deadline_date": "", "deadline_local": "", "deadline_timezone": "Australia/Brisbane"}
+                values.update({key: value for key, value in query.items() if key in {"title", "task_list_id", "notes", "deadline_date", "deadline_local", "deadline_timezone"}})
+                self.respond_page("Add Task", views.task_form_page(task_lists, values), active_slug="calendar")
                 return
             if self.command == "POST":
                 self.handle_calendar_task_create()
@@ -470,7 +474,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 task_lists = list_task_lists(connection)
             self.respond_page("Add Task", views.task_form_page(task_lists, values, errors=[str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
             return
-        self.redirect(f"/tasks/{task_id}?saved=1")
+        self.redirect("/calendar?created_task=1" if values.get("quick_create") == "1" else f"/tasks/{task_id}?saved=1")
 
     def route_task_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":
@@ -1613,6 +1617,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "event-form.js": "text/javascript; charset=utf-8",
             "foundation.css": "text/css; charset=utf-8",
             "reminder-timings.js": "text/javascript; charset=utf-8",
+            "quick-create.js": "text/javascript; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",
             "super-key.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",

@@ -177,10 +177,11 @@ class EventServiceTests(unittest.TestCase):
             page = client.getresponse().read().decode()
             self.assertIn('class="action-menu calendar-create-menu"', page)
             self.assertIn('class="menu-chevron" aria-hidden="true">▾</span>', page)
+            self.assertIn('data-quick-create-dialog="event"', page)
+            self.assertIn('data-quick-create-dialog="task"', page)
+            self.assertIn('data-quick-create-more data-quick-create-url="/calendar/events/new"', page)
             self.assertIn('href="/calendar/events/new"', page)
             self.assertIn('href="/calendar/tasks/new"', page)
-            self.assertNotIn(">Add Event<", page)
-            self.assertNotIn(">Add Task<", page)
             self.assertNotIn("Current Events", page)
             self.assertIn('class="calendar-page"', page)
             self.assertNotIn("Operational time", page)
@@ -188,6 +189,10 @@ class EventServiceTests(unittest.TestCase):
             form_page = client.getresponse().read().decode()
             self.assertIn('action="/calendar/events/new"', form_page)
             self.assertIn("data-event-all-day", form_page)
+            client.request("GET", "/calendar/events/new?title=Quick+Event&start_local=2026-09-10T08%3A00&end_local=2026-09-10T09%3A00")
+            handoff_page = client.getresponse().read().decode()
+            self.assertIn('value="Quick Event"', handoff_page)
+            self.assertIn('value="2026-09-10T08:00"', handoff_page)
 
             create_body = urlencode({
                 "title": "Calendar-created Event", "calendar_id": "1",
