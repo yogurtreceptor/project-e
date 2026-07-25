@@ -329,6 +329,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 4. **Complete (2026-07-25):** place Calendar default notifications on the Calendar edit form alongside colour and default Event duration. Replace comma-separated timing entry and policy-state pickers with repeatable integer-and-unit notification rows and a local Add notification control. Empty Event-specific rows inherit the linked Calendar defaults. Calendar defaults and effective Event reminder sets are capped at ten; persistence remains canonical validated timing-token JSON rather than free-form comma-separated text.
 
+5. **Weak-conviction closeout requirement:** before Phase 2 is declared complete, record a decision on a local-first journey-planning proof slice. The preferred direction is to plan travel between canonical Locations, optionally against an arrival Event, using locally held OSM and static public-transport data; a user-approved travel Event then uses the existing Calendar reminder workflow. Live transit and traffic data are optional replaceable enrichment, never required for core operation. This note authorises no implementation and does not decide whether an optional local routing runtime is acceptable within Phase 2.
+
 ## Completion criteria
 
 Phase 2 completes only when an end-to-end review can demonstrate:
@@ -350,7 +352,7 @@ Create a Project
 → export and validate the integrated Phase 2 records through whole-platform portability
 ```
 
-The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. Persistent System Health remains a separately authorised future capability.
+The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. It must also record the decision required by the journey-planning closeout note above, whether that proof slice is accepted for Phase 2, deferred, or deliberately excluded. Persistent System Health remains a separately authorised future capability.
 
 An Event table, rendered Calendar, creatable Tasks, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The capabilities must work together as one operational system.
 
