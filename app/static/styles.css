@@ -183,6 +183,11 @@ p {
 .calendar-management-row p { color: var(--muted); margin-bottom: 0; }
 .calendar-management-form { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .calendar-management-form .actions { align-self: end; }
+.calendar-colour-picker { appearance: none; background: transparent; border: 0; border-radius: 50%; cursor: pointer; height: 2rem; padding: 0; width: 2rem; }
+.calendar-colour-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.calendar-colour-picker::-webkit-color-swatch { border: 1px solid var(--line); border-radius: 50%; }
+.calendar-colour-picker::-moz-color-swatch { border: 1px solid var(--line); border-radius: 50%; }
+.calendar-colour-picker:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 .timezone-picker { display: grid; gap: .4rem; min-width: 0; }
 .timezone-combobox { position: relative; }
 .timezone-combobox > input { min-width: 0; padding-right: 2.5rem; width: 100%; }

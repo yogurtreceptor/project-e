@@ -4,6 +4,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-25 — Phase 2 timezone selector and workspace expansion
 
+- Refined Calendar management with compact circular colour controls and Calendar-level local Event-notification controls. A Calendar can inherit defaults, set lead times or suppress its future Event reminders while retaining canonical Events and historical delivery records.
 - Replaced free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a shared local searchable, scrollable IANA selector, including current UTC-offset and country search labels.
 - Preserved stored IANA identifiers and UTC instants; the selector derives its local labels from the installed timezone database without a network or schema dependency.
 - Renamed the Phase 2 plan to `phase_2_workspace.md` and established it as the living Phase 2 refinement record until Phase 3 is defined.

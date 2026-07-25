@@ -47,6 +47,7 @@ from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINIT
 from app.temporal import TemporalValueError
 from app import views
 from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
+from app.reminder_service import get_policy
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -386,6 +387,7 @@ class EventServiceTests(unittest.TestCase):
             client.request("GET", "/calendar/manage")
             page = client.getresponse().read().decode()
             self.assertIn("Manage Calendars", page)
+            self.assertIn('class="calendar-colour-picker"', page)
             body = urlencode({"name": "Work", "colour": "#EF4444", "timezone": "Europe/London", "default_event_duration_minutes": "45", "sort_order": "2"})
             client.request("POST", "/calendar/manage", body, {"Content-Type": "application/x-www-form-urlencoded"})
             response = client.getresponse()
@@ -395,6 +397,14 @@ class EventServiceTests(unittest.TestCase):
             client.request("POST", f"/calendar/manage/{work.id}/default", "", {"Content-Type": "application/x-www-form-urlencoded"})
             self.assertEqual(303, client.getresponse().status)
             self.assertTrue(get_calendar(self.connection, work.id).is_default)
+
+            client.request("GET", f"/calendar/manage/{work.id}/reminders")
+            notification_page = client.getresponse().read().decode()
+            self.assertIn("Turn notifications off for this Calendar", notification_page)
+            client.request("POST", f"/calendar/manage/{work.id}/reminders", "mode=disabled", {"Content-Type": "application/x-www-form-urlencoded"})
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual([], get_policy(self.connection, "calendar", work.id, "event"))
         finally:
             client.close()
             server.shutdown(); server.server_close(); thread.join()
