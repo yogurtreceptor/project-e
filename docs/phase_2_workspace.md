@@ -325,9 +325,9 @@ The behaviour above is authoritative product direction. The following sequence i
 
 2. **Complete (2026-07-25):** add the protected built-in `Birthdays` Calendar. A Person with a birthday owns one linked, canonical, yearly recurring all-day Event in that Calendar; changing the Person name or birthday synchronises that same Event, while deleting/restoring the Person archives/restores it. Birthdays remain a Calendar category rather than a derived event type. Its reminder defaults live in Birthdays Calendar settings; the former global birthday policy migrates there without discarding configured timings.
 
-3. **Complete (2026-07-25):** refine Calendar management with compact circular colour controls and a Calendar-level local-notification switch. Calendar settings can inherit the Event defaults, use chosen lead times, or explicitly turn Event notifications off. The opt-out is local-only, suppresses future deliveries and resolves only active or snoozed reminder attention for Events in that Calendar; it never changes canonical Events or historical deliveries.
+3. **Complete (2026-07-25):** refine Calendar management with compact circular colour controls and Calendar-level local notification defaults.
 
-4. **Complete (2026-07-25):** place Calendar default notifications on the Calendar edit form alongside colour and default Event duration. Replace comma-separated timing entry with repeatable integer-and-unit notification rows and a local Add notification control. Calendar defaults and effective Event reminder sets are capped at ten; persistence remains canonical validated timing-token JSON rather than free-form comma-separated text.
+4. **Complete (2026-07-25):** place Calendar default notifications on the Calendar edit form alongside colour and default Event duration. Replace comma-separated timing entry and policy-state pickers with repeatable integer-and-unit notification rows and a local Add notification control. Empty Event-specific rows inherit the linked Calendar defaults. Calendar defaults and effective Event reminder sets are capped at ten; persistence remains canonical validated timing-token JSON rather than free-form comma-separated text.
 
 ## Completion criteria
 

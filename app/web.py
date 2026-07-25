@@ -74,7 +74,7 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
-    clear_policy, disable_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
+    clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
     list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
     reactivate_next_open_snoozes, set_override, set_policy)
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
@@ -388,7 +388,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                             raise ValueError("Event does not exist.")
                         occurrence_date = values.get("occurrence_date", "")
                         scope = values.get("recurrence_scope", "all")
-                        settings = {"mode": values.get("mode", "default"), "custom_timings": self.reminder_timings(values, "custom_reminder"), "suppressed_timings": self.reminder_timings(values, "suppressed_reminder")}
+                        custom_timings = self.reminder_timings(values, "custom_reminder")
+                        suppressed_timings = self.reminder_timings(values, "suppressed_reminder")
+                        settings = {"mode": "custom" if custom_timings or suppressed_timings else "default", "custom_timings": custom_timings, "suppressed_timings": suppressed_timings}
                         definition = get_recurrence(connection, reminder_id)
                         if occurrence_date and definition and scope == "this":
                             set_override(connection, "event", reminder_id, occurrence_key=occurrence_date, **settings)
@@ -596,19 +598,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_calendar_management_edit(self, calendar_id: int) -> None:
         values = self.read_form()
         try:
-            reminder_mode = values.get("reminder_mode", "inherit")
             reminder_timings = self.reminder_timings(values, "calendar_reminder")
-            if reminder_mode not in {"inherit", "disabled", "custom"}:
-                raise ValueError("Reminder policy is invalid.")
-            if reminder_mode == "custom" and not reminder_timings:
-                raise ValueError("Add at least one notification time or turn notifications off.")
             with connect(self.database_path) as connection:
                 update_calendar(connection, calendar_id, self.calendar_input_from_form(values))
-                if reminder_mode == "inherit":
+                if not reminder_timings:
                     clear_policy(connection, "calendar", calendar_id, "event")
-                elif reminder_mode == "disabled":
-                    disable_policy(connection, "calendar", calendar_id, "event")
-                elif reminder_mode == "custom":
+                else:
                     set_policy(connection, "calendar", calendar_id, "event", reminder_timings)
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
@@ -642,7 +637,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if self.command == "GET":
             with connect(self.database_path) as connection:
                 configured = get_policy(connection, context_kind, context_id, source_kind)
-            self.respond_page(title, views.reminder_policy_page(title, back_url, configured_timings=configured, inherited_timings=DEFAULT_TIMINGS[source_kind], allow_disable=context_kind == "calendar"), active_slug=active_slug)
+            self.respond_page(title, views.reminder_policy_page(title, back_url, configured_timings=configured, inherited_timings=DEFAULT_TIMINGS[source_kind]), active_slug=active_slug)
             return
         if self.command == "POST":
             values = self.read_form()
@@ -650,8 +645,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 with connect(self.database_path) as connection:
                     if values.get("mode") == "inherit":
                         clear_policy(connection, context_kind, context_id, source_kind)
-                    elif context_kind == "calendar" and values.get("mode") == "disabled":
-                        disable_policy(connection, context_kind, context_id, source_kind)
                     else:
                         timings = self.reminder_timings(values, "policy_reminder")
                         if not timings:
