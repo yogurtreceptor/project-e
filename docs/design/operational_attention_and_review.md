@@ -1,10 +1,10 @@
 # Operational Attention and Review
 
-Status: Target standard for increasingly important operational workflows. Phase 1 supplies review precedents, but the inbox, persistent system-health surface, scheduler and general approval infrastructure described here are planned Phase 2 behaviour, not delivered features.
+Status: Current Inbox/reminder guidance and target standard for deferred operational workflows. Phase 1 supplies review precedents; the Inbox and reminder foundation are delivered in Phase 2C, while persistent System Health, scheduler and general approval infrastructure remain deferred.
 
 ## Purpose and authority
 
-Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019. The Inbox and reminder foundation remain planned Phase 2 work; Persistent System Health and escalation are deferred until concrete condition producers and user actions are separately authorised.
+Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019. Phase 2C delivers the Inbox and reminder foundation; Persistent System Health and escalation remain deferred until concrete condition producers and user actions are separately authorised.
 
 The central rule is semantic separation:
 
@@ -29,7 +29,7 @@ Established Phase 1 patterns provide evidence for the target design:
 - Audit and real-world Timeline are kept separate.
 - Recycle Bin and permanent delete distinguish reversible from irreversible consequences.
 
-The delivered Phase 1 shell now has shared success, notice, warning and error presentation, including a passive save toast and quiet record warnings. It still has no system inbox, persistent-issue surface, cross-tool severity vocabulary or global attention placement. Those remaining capabilities belong to the Phase 2 attention foundation, not to scattered notification cards in current pages.
+The delivered shell has shared success, notice, warning and error presentation, including a passive save toast and quiet record warnings. Phase 2C adds a system Inbox for durable reminder attention, including active attention, Upcoming, archive and deep history. Persistent issues, a cross-tool severity vocabulary and general global attention placement remain deferred; they must not be approximated by scattered notification cards in current pages.
 
 ## Attention model
 
@@ -106,8 +106,8 @@ The inbox is an operational queue, not a social-notification feed.
 
 ### Placement
 
-- Reachable from a restrained global header indicator and the operational navigation group once implemented.
-- Home may show a restrained Inbox link with a small count/ticker for all active, not-dismissed items; the Inbox remains the canonical attention destination. Dismissal, resolution and conversion to a task are deliberate state changes, not merely hiding the count.
+- Reachable through the delivered Inbox navigation destination. A restrained global header indicator remains a future enhancement.
+- Home may later show a restrained Inbox link with a small count/ticker for all active, not-dismissed items; the Inbox remains the canonical attention destination. Dismissal and resolution are deliberate state changes, not merely hiding the count.
 - Entity pages may show related attention in context, but the canonical item remains in the inbox model.
 
 ### Organisation

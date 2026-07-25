@@ -181,7 +181,7 @@ Home is a restrained jumping-off point, not a content-heavy command centre or re
 
 ## Constrained-width behaviour
 
-Stage 1 is desktop-only. The ordinary shell must be designed and verified at 1440 × 900 and 1920 × 1080. A future constrained-width path may use the following direction without constituting a current support commitment:
+Phase 1 is desktop-only. The ordinary shell must be designed and verified at 1440 × 900 and 1920 × 1080. A future constrained-width path may use the following direction without constituting a current support commitment:
 
 - The sidebar becomes an off-canvas or temporary labelled navigation panel; it is never reduced to an unexplained row of icons.
 - Project E identity, current page/entity identity, one primary action and a navigation escape remain visible.

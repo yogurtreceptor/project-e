@@ -1,6 +1,6 @@
 # Database Design
 
-Project E uses SQLite as the embedded local database and canonical source of truth for Stage 1. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
+Project E uses SQLite as the embedded local database and canonical source of truth for Phase 1 and subsequent phases. `app/db.py` remains the public facade, with schema/migration, entity, relationship and discovery operations separated into focused modules.
 
 ## Schema Versioning
 
@@ -77,7 +77,7 @@ Migration `20260705_13_entity_aliases` adds normalized aliases with case-insensi
 
 ## Controlled Field Storage
 
-Controlled dropdown values are stored as text in the relevant typed table column. Preset-backed custom values use the same column rather than a separate lookup table in Stage 1.
+Controlled dropdown values are stored as text in the relevant typed table column. Preset-backed custom values use the same column rather than a separate lookup table in Phase 1.
 
 This text-backed rule applies to small domain controls such as statuses and types. Reusable cross-domain facts use the reference-data catalogue instead. Person Languages and Nationalities therefore store foreign-key links rather than copied labels. Person Height and Weight store canonical measurements (metres and kilograms respectively) while retaining the user's selected display unit.
 
@@ -85,7 +85,7 @@ The tracked language and country catalogue is generated from the IANA Language S
 
 The tracked ethnicity catalogue is generated from ABS ASCCEG 2025 Table 1.3 by `tools/update_ethnicity_catalogue.py`. Its stable four-digit ASCCEG codes become reference item keys. Person Ethnicities are ordered, multi-value links in `entity_reference_values`; no ethnicity is inferred or stored as duplicated text.
 
-Structured dates, coordinates and whole-number asset values also remain text-backed in Stage 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
+Structured dates, coordinates and whole-number asset values also remain text-backed in Phase 1. `FieldDefinition.value_kind` drives normalization and validation before form saves: dates must be real ISO calendar dates, coordinates must be numeric and within geographic bounds, and asset values must be non-negative whole-number text. Blank optional values remain valid.
 
 ## Phase 2 persistence boundaries
 

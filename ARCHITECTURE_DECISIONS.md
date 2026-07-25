@@ -11,7 +11,7 @@ Examples of decisions worth recording:
 * changing the entity model
 * changing the relationship model
 * adding a new major domain
-* changing the Stage 1 scope
+* changing the Phase 1 scope
 * introducing authentication
 * introducing external integrations
 * postponing AI, automation or decision support
@@ -66,7 +66,7 @@ Decision:
 Project E will keep OpenStreetMap Nominatim as the current lightweight address lookup fallback and treat Australia's Geocoded National Address File (G-NAF) as an optional future local address index for higher-accuracy Australian house-level geocoding.
 
 Reason:
-Most expected addresses are Australian, and G-NAF is the strongest fit for house-level Australian address coordinates. However, the dataset is large and should not become a mandatory Stage 1 dependency or be imported directly into the main application database before the address-index workflow is deliberately designed.
+Most expected addresses are Australian, and G-NAF is the strongest fit for house-level Australian address coordinates. However, the dataset is large and should not become a mandatory Phase 1 dependency or be imported directly into the main application database before the address-index workflow is deliberately designed.
 
 Consequences:
 Location creation can continue with Nominatim, manual coordinate editing and external lookup when needed. Future G-NAF support should be implemented as a separate local data pack or plugin-style index, with written setup instructions and a compact derived SQLite search database. The main entity database should store only selected Location entity data, not the full G-NAF dataset. The address lookup UI may later offer a fallback action such as "Can't find what you're looking for? Search with OpenStreetMap" when a local G-NAF index is installed but does not find a match.
@@ -125,13 +125,13 @@ Status: Accepted
 Date: 2026-06-28
 
 Decision:
-Stage 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. A capability is inside the Stage 1 boundary when its behaviour is rule-based and auditable, requires explicit confirmation before a consequential mutation, performs no scheduled or autonomous goal-directed workflow, creates no autonomous external side effect, and does not require WAN access for core operation. Capabilities that cross these tests require explicit scope approval.
+Phase 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. A capability is inside the Phase 1 boundary when its behaviour is rule-based and auditable, requires explicit confirmation before a consequential mutation, performs no scheduled or autonomous goal-directed workflow, creates no autonomous external side effect, and does not require WAN access for core operation. Capabilities that cross these tests require explicit scope approval.
 
 Reason:
 Useful information-management behaviour often performs work automatically without becoming autonomous automation. Treating every derived value, warning or housekeeping action as prohibited would conflict with the implemented platform and obscure the actual safety boundary: whether the system acts consequentially or externally without the user's informed control.
 
 Consequences:
-Deterministic relationship inference, duplicate warnings, derived views, automatic display-name maintenance and review-batch archival remain valid Stage 1 behaviour. Inference may recompute candidates automatically, but a candidate cannot become a canonical relationship until the user confirms it. AI, decision support, scheduling, autonomous goal-directed workflows, unreviewed consequential actions and autonomous external side effects remain outside Stage 1. Optional network aids remain acceptable only when core records and workflows work without them.
+Deterministic relationship inference, duplicate warnings, derived views, automatic display-name maintenance and review-batch archival remain valid Phase 1 behaviour. Inference may recompute candidates automatically, but a candidate cannot become a canonical relationship until the user confirms it. AI, decision support, scheduling, autonomous goal-directed workflows, unreviewed consequential actions and autonomous external side effects remain outside Phase 1. Optional network aids remain acceptable only when core records and workflows work without them.
 
 ## ADR-007: Separate taxonomy hierarchy from domain behavior
 
@@ -146,7 +146,7 @@ Reason:
 Organisation and relationship classifications need the same path, search, reuse and archive behavior, while only relationships require directional semantics. Separating these concerns keeps the taxonomy reusable and the relationship model explicit.
 
 Consequences:
-Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Stage 1 type systems are unchanged until separately authorised.
+Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Phase 1 type systems are unchanged until separately authorised.
 
 ## ADR-008: Keep document semantics relational and separate records from things
 
@@ -176,20 +176,20 @@ Consequences:
 Legacy `relationship_change` rows remain readable through a small presentation normalization layer. Deleted relationships retain their canonical row and audit references, disappear from active timeline derivation, and reappear with their original real-world dates after restoration. Future operational capabilities extend the audit vocabulary and record references rather than redesigning the page.
 
 
-## ADR-010: Use validated snapshot bundles for Stage 1 portability and recovery
+## ADR-010: Use validated snapshot bundles for Phase 1 portability and recovery
 
 Status: Accepted
 
 Date: 2026-07-05
 
 Decision:
-Use a versioned, checksummed ZIP containing a consistent SQLite backup plus referenced uploaded documents as the Stage 1 export and recovery format. Validate the manifest, every member checksum, current schema/migrations, SQLite integrity, foreign keys, canonical entity/relationship structure and document membership before preview or apply. Normal import applies only to an empty target after explicit confirmation; recovery replacement remains a separately confirmed maintenance command.
+Use a versioned, checksummed ZIP containing a consistent SQLite backup plus referenced uploaded documents as the Phase 1 export and recovery format. Validate the manifest, every member checksum, current schema/migrations, SQLite integrity, foreign keys, canonical entity/relationship structure and document membership before preview or apply. Normal import applies only to an empty target after explicit confirmation; recovery replacement remains a separately confirmed maintenance command.
 
 Reason:
 The SQLite database already contains the canonical graph, custom taxonomies, normalized measurements/references, provenance and append-only audit history. Re-serializing a subset into a parallel interchange model would risk semantic loss and duplicate sources of truth. SQLite's standard-library backup API provides a consistent local snapshot without a new dependency.
 
 Consequences:
-Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Stage 1 scope.
+Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Phase 1 scope.
 
 ## ADR-011: Treat Events and Tasks as first-class peer entities
 

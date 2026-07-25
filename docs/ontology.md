@@ -49,9 +49,9 @@ Field semantics and presentation rules are:
 - Ethnicity is self-identified and must never be inferred from other Person data.
 - Short observations are separate timestamped journal entries linked to the Person. The legacy shared Notes field remains in storage but is not the Person detail-page observation stream.
 - A Person's internal display name is generated from given name plus family name. Middle name, alias and nickname are stored but are not part of the normal display name.
-- Preferred name is not modelled in Stage 1.
+- Preferred name is not modelled in Phase 1.
 - Sex is optional and used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling.
-- Email and phone remain direct Person fields for Stage 1 simplicity. Contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
+- Email and phone remain direct Person fields for Phase 1 simplicity. Contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
 
 ## Organisations
 
@@ -71,7 +71,7 @@ Classification is one reusable path of up to three levels rather than unrelated 
 
 Other names are normalized rows, one value per alias. They cover alternate, former, trading and abbreviated names and participate in search and duplicate review.
 
-Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
+Website, phone and email remain direct Organisation fields for Phase 1 simplicity; they may later become contact-method or communication-related records.
 
 ## Locations
 
@@ -100,7 +100,7 @@ Maps are a derived view over Location data, not the foundation of the Location m
 A Project represents ongoing work or an area of responsibility.
 
 - Projects coordinate information and relationships; they do not own related records. Their overview projects related upcoming Events and open Tasks through normal Relationships.
-- Projects are not task-management records in Phase 1. Planned Phase 2 Tasks remain independent peer entities, linked through relationships rather than nested ownership.
+- Projects are not task-management records in Phase 1. Phase 2 Tasks are independent peer entities, linked through relationships rather than nested ownership.
 
 Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
 
@@ -286,10 +286,10 @@ Legacy relationship keys are handled as follows:
 
 Contact information follows these boundaries:
 
-- Phone numbers, emails and websites remain simple direct fields in Stage 1.
+- Phone numbers, emails and websites remain simple direct fields in Phase 1.
 - The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes.
 - That model should be introduced only when multiple contact points or richer communication history justify it.
-- It should not become a Communications domain during Stage 1.
+- It should not become a Communications domain during Phase 1.
 
 ## Deterministic Family Inference
 
@@ -329,9 +329,9 @@ Evidence requirements are:
 
 Relationship dates support exact calendar dates plus certainty metadata.
 
-## Planned Phase 2 temporal entities and projections
+## Phase 2 temporal entities and projections
 
-Phase 2 is in progress. Its Phase 2A temporal normalization, Calendar foundation and management, canonical Event persistence lifecycle, standard Event relationship catalogue integration, Search/related-record Event projections, Calendar-originated Event creation/editing, Month/Week/Day Calendar projections, and scoped recurrence mutations are implemented; Task entities are the next delivery. An Event represents something that occurs, occurred or is expected to occur at an interval; the initial timed model requires bounded start and end instants. A Task represents work that should be performed. Neither requires a Project, and neither is a reminder. Both use standard relationships to connect to any appropriate entity type, including each other.
+Phase 2 is in progress. Its Calendar/Event, Task, reminder and local Inbox foundations are implemented; scheduled delivery and startup recovery remain Phase 2D work. An Event represents something that occurs, occurred or is expected to occur at an interval; the initial timed model requires bounded start and end instants. A Task represents work to be performed. Neither requires a Project, and neither is a reminder. Both use standard relationships to connect to any appropriate entity type, including each other. The [Phase 2 plan](phase_2_plan.md) owns detailed milestone status and delivery sequence.
 
 An Event has one stable canonical entity identity and belongs to exactly one Calendar. Calendars alone group, colour, order, filter and configure Events. An Event's planned time is either a precise timed interval or an all-day date interval, never both. Cancellation records that the Event will not occur, archival removes it from ordinary views, and Recycle Bin deletion identifies an erroneous record; these states are semantically distinct. Restoring a deleted Event preserves its archive and cancellation state.
 

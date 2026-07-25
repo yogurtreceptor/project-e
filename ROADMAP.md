@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap is directional guidance, not implementation authority or a rigid release checklist. Current behaviour belongs in the [Stage 1 specification](docs/stage_1_spec.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
+This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); detailed Phase 2 status, scope and sequence belong in [the Phase 2 plan](docs/phase_2_plan.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
 ## Phase 1 — Information Platform
 
@@ -20,7 +20,7 @@ Phase 2 establishes the platform's operational time and automation foundation. T
 structured information → relationships → temporal information → events → calendar projections → tasks → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The work is human-first, database-first, local-first and AI-independent. AI is explicitly excluded from initial Phase 2 implementation. Authorised Phase 2A build work is now in progress; Phase 2 is complete only after its agreed capabilities work together coherently and pass the end-to-end completion review. The canonical scope, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A, 2B and 2C are complete; Phase 2D operational runtime work is next. Phase 2 is complete only after its agreed capabilities work together coherently and pass the end-to-end completion review. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 plan](docs/phase_2_plan.md).
 
 ## Phase 3 — AI-assisted Platform
 

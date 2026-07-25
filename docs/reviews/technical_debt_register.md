@@ -37,7 +37,7 @@ Direction: provide a labelled nested-destination flyout or temporary expansion o
 
 Severity: medium
 
-Entity and relationship search loads local records and filters in Python. This is appropriate for the current small-data Stage 1 application but may become slow after large imports.
+Entity and relationship search loads local records and filters in Python. This is appropriate for the current small-data Phase 1 application but may become slow after large imports.
 
 Trigger: representative data shows noticeable latency or memory use, or a large import is planned.
 
@@ -81,7 +81,7 @@ Person and Organisation phone, email and website values are direct fields. This 
 
 Trigger: a real workflow requires multiple contact points or lifecycle metadata.
 
-Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain in Stage 1.
+Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain merely to extend the Phase 1 direct-field model.
 
 ## Soft-deletable record consistency review
 

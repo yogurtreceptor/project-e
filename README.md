@@ -51,7 +51,7 @@ For the durable direction, see the [project goal](PROJECT_GOAL.md), [roadmap](RO
 ### Product and planning
 
 - [Project goal](PROJECT_GOAL.md) — product purpose and durable principles
-- [Stage 1 specification](docs/stage_1_spec.md) — delivered Information Platform behaviour and acceptance criteria
+- [Phase 1 specification](docs/phase_1_spec.md) — delivered Information Platform behaviour and acceptance criteria
 - [Phase 2 plan](docs/phase_2_plan.md) — operational time and deterministic-automation foundation
 - [Roadmap](ROADMAP.md) and [future direction](docs/future_direction.md) — phased and longer-term direction
 - [Build history](docs/build_log.md) and [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) — completed-work context
@@ -95,11 +95,9 @@ Project E Home, showing the persistent navigation shell and information entry po
 
 <img width="1895" height="1077" alt="Project E Home page with the Browse sidebar, information-domain shortcuts, favourites and recent records." src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
 
-### Planned additions
+### Further screenshots
 
-- **Calendar:** a Week or Month view showing Events and Task projections.
-- **Tasks and Inbox:** a focused work-management or local attention workflow.
-- **Relationships and Map:** an entity relationship view, Family Tree or geographic projection.
+Calendar, Tasks, Inbox, Relationships and Map are implemented. Add representative, fictional screenshots of these workflows as they receive visual refreshes.
 
 ### Add a screenshot
 

@@ -96,7 +96,7 @@ Audit, data-quality, AI-review and developer concerns may be exposed as speciali
 
 The home page is a restrained jumping-off point for Project E. It is broad rather than entity-focused and should quickly direct the user to the information or tool they need.
 
-The home page may include universal search, favourites, recent or changed entities and quick actions. Once Inbox exists, it may show a link and small notification count/ticker. These are curated sections, not a fully customisable canvas at the current stage.
+The home page may include universal search, favourites, recent or changed entities and quick actions. The delivered Inbox remains the canonical attention destination; Home may later show a link and small notification count/ticker. These are curated sections, not a fully customisable canvas at the current phase.
 
 ### Not a resume screen
 

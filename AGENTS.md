@@ -49,7 +49,7 @@ Documentation is part of implementation. Proactively update every existing docum
 
 Repository documents have distinct responsibilities:
 - `PROJECT_GOAL.md`: durable product purpose, scope and principles.
-- `docs/stage_1_spec.md`: delivered Phase 1 behaviour and acceptance criteria.
+- `docs/phase_1_spec.md`: delivered Phase 1 behaviour and acceptance criteria.
 - `docs/phase_2_plan.md`: current Phase 2 scope, sequence, completion criteria and exclusions; not implementation authority.
 - `ROADMAP.md`: phased capability direction and priorities; not implementation authority.
 - `docs/future_direction.md`: long-term platform, AI and Odysseus direction; not current architecture.

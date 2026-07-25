@@ -7,7 +7,7 @@ This directory is the implementation-facing design layer for Project E. It trans
 When guidance appears to conflict, use this order and record the conflict rather than silently choosing whichever implementation is easiest:
 
 1. [`experience_philosophy.md`](../experience_philosophy.md) — why the interface should feel and behave as it does.
-2. Current product and domain authorities — `PROJECT_GOAL.md`, the Stage 1 specification, the Phase 2 plan, architecture decisions, ontology and glossary.
+2. Current product and domain authorities — `PROJECT_GOAL.md`, the Phase 1 specification, the Phase 2 plan, architecture decisions, ontology and glossary.
 3. Documents in this directory — how experience principles are applied consistently.
 4. [`ui_principles.md`](../ui_principles.md) — delivered workflow details and current interaction conventions.
 5. Current UI implementation — evidence of working patterns, not automatic design authority.
@@ -23,7 +23,7 @@ The embedded SQLite database remains the source of canonical information. Design
 | [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Implemented working standard; desktop shell, Super Key and entity-view access are in use |
 | [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Implemented working standard; representative Person, Document and Project compositions are in use |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
-| [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Target standard aligned to planned Phase 2; not a claim of delivered behaviour |
+| [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Delivered Inbox/reminder guidance plus target standards for deferred System Health, scheduler and approvals |
 | [Page and view catalogue](page_and_view_catalogue.md) | Current routes, purposes, shared renderers, recurring patterns, inconsistencies and intended direction | Audited baseline for the current post-prototype UI |
 | [Implementation readiness](implementation_readiness.md) | Prototype evidence and design-foundation close-out record | Implementation evidence recorded; external Windows visual matrix remains |
 | [Design catch-up implementation plan](design_catchup_plan.md) | Authorised beginning-to-end, step-sized implementation work plan | Primary hand-off document for design catch-up work |
@@ -128,7 +128,7 @@ These decisions are sufficiently grounded to guide implementation now:
 - **D-04 — Icons:** maintain a coherent local SVG set instead of adding an icon-library dependency. Use a 24px view box, 20px ordinary rendering, 24px collapsed-sidebar rendering and rounded stroke endings.
 - **D-05 — Super Key:** place it beneath the Project E identity at the left of the shell. Unique short terms navigate directly: within an entity, `tree` opens that record's Family Tree; outside an entity, aliases such as `map` and `bin` open global destinations. It is not global full-text Search.
 - **D-06 — Entity views:** make the Overview the direct base-data view. Reach specialised representations, such as Family Tree, Timeline and Map, through a labelled secondary **Views** control rather than persistent tabs or a local rail. The control may be keyboard-operated.
-- **D-08 — Viewport scope:** Stage 1 is desktop-only. Design and verify the ordinary experience at 1440 × 900 and 1920 × 1080; no narrower-width continuity commitment exists yet.
+- **D-08 — Viewport scope:** Phase 1 is desktop-only. Design and verify the ordinary experience at 1440 × 900 and 1920 × 1080; no narrower-width continuity commitment exists yet.
 - **D-09 — Home:** use Home as a restrained jumping-off point, not a content-heavy command centre. When Inbox exists, show a link and a small count/ticker for notifications rather than embedding the inbox on Home.
 - **Sidebar state:** start each session with the desktop sidebar expanded. Users may collapse it for the current session only; do not persist that preference between sessions.
 - **Density:** limit compact density to administrative/high-volume views, with an explicit exception for data views where comparison benefits from it.

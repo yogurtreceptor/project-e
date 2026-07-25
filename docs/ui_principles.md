@@ -1,6 +1,6 @@
 # UI Principles
 
-Project E's Stage 1 UI should stay quiet, structured and useful for repeated information work. This document records delivered workflow rules and current interaction conventions. The [Experience Philosophy](experience_philosophy.md) is the experience-level authority, and the [design documentation](design/README.md) defines how future interface work applies it consistently. The [page and view catalogue](design/page_and_view_catalogue.md) records current conflicts rather than treating every prototype pattern below as a permanent standard.
+Project E's interface should stay quiet, structured and useful for repeated information work. This document records delivered workflow rules and current interaction conventions. The [Experience Philosophy](experience_philosophy.md) is the experience-level authority, and the [design documentation](design/README.md) defines how future interface work applies it consistently. The [page and view catalogue](design/page_and_view_catalogue.md) records current conflicts rather than treating every prototype pattern below as a permanent standard.
 
 ## Navigation
 
@@ -47,7 +47,7 @@ Controlled fields use dropdowns for known statuses, preset-backed custom inputs 
 
 Possible duplicate entities should appear as a warning with links to existing records and an explicit Save anyway action. Warnings must not silently block legitimate records or become database uniqueness constraints.
 
-People and Organisations keep phone/email as simple direct fields for now. People may record optional Sex for relationship label display, but it must never be required. Sex uses controlled values: Male, Female, Other and Unknown. Contact methods may later become first-class related records, but Stage 1 should not introduce a complex Communications domain.
+People and Organisations keep phone/email as simple direct fields for now. People may record optional Sex for relationship label display, but it must never be required. Sex uses controlled values: Male, Female, Other and Unknown. Contact methods may later become first-class related records, but Phase 1 did not introduce a complex Communications domain.
 
 Sensitive identity fields such as Ethnicities are optional and self-assessed. The interface may provide a searchable classification and allow multiple selections, but it must not infer ethnicity from nationality, language, family relationships or other stored data.
 
@@ -98,4 +98,4 @@ The app should remain useful when map tiles or address lookup are unavailable.
 Projects and Documents should not be shown as map layers or markers.
 
 
-Import is a two-step consequential workflow. The first submission validates the complete bundle and displays export time plus active/recycled record and document counts. Apply requires a separate confirmation, an empty target and a recovery backup. Export remains a direct read-only download. Recovery replacement is deliberately command-line-only in Stage 1 so it cannot be mistaken for ordinary import.
+Import is a two-step consequential workflow. The first submission validates the complete bundle and displays export time plus active/recycled record and document counts. Apply requires a separate confirmation, an empty target and a recovery backup. Export remains a direct read-only download. Recovery replacement is deliberately command-line-only so it cannot be mistaken for ordinary import.

@@ -253,7 +253,7 @@ Stabilisation integrates and verifies the preceding phases rather than adding an
 
 ## Implementation sequence
 
-The behaviour above is authoritative product direction. The following sequence is the delivery record and implementation order: its **Complete** markers report implemented work, do not redefine the approved behaviour, and must remain aligned with the current architecture and database documentation.
+The behaviour above is authoritative product direction. The following sequence is the delivery record and implementation order: its **Complete** markers report implemented work, do not redefine the approved behaviour, and must remain aligned with the current architecture and database documentation. Numbering restarts within each Phase 2 subphase.
 
 ### Phase 2A — Temporal foundation
 
@@ -272,23 +272,23 @@ The behaviour above is authoritative product direction. The following sequence i
 
 ### Phase 2B — Work management
 
-8. **Complete:** implement canonical Tasks and Task lists with migration-safe storage, a seeded default Tasks list, active-list assignment validation, list creation/rename/archive/default selection, standard Entity identity, Search, Recycle Bin, audit and provenance integration.
-9. **Complete:** add Open/Completed/Archived Task lifecycle behaviour. Completion records a timestamp; completed Tasks are hidden from the default Task view and may be reopened. Task archive remains distinct from Recycle Bin deletion.
-10. **Complete:** integrate pair-aware Task Relationships with every current peer entity, including Events, Projects and other Tasks, through the standard Relationship lifecycle.
-11. **Complete:** add Calendar-originated undated Task creation and a dedicated Task organisation/read-only record view. This milestone intentionally does not add a generic Task CRUD route or a second capture path.
-12. **Complete:** implement optional Task deadline persistence: a date-only all-day deadline or a local date/time plus IANA timezone. Deadlines remain separate from Calendar occupancy.
-13. **Complete:** implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, with Calendar deadline/session projections. Completing a Task permanently removes its future sessions while retaining past session history; Task sessions remain neutral rather than Calendar-coloured.
-14. **Complete:** add read-only Project-page projections for related upcoming Events and open Tasks. Projects coordinate peer records through normal Relationships and do not own them.
+1. **Complete:** implement canonical Tasks and Task lists with migration-safe storage, a seeded default Tasks list, active-list assignment validation, list creation/rename/archive/default selection, standard Entity identity, Search, Recycle Bin, audit and provenance integration.
+2. **Complete:** add Open/Completed/Archived Task lifecycle behaviour. Completion records a timestamp; completed Tasks are hidden from the default Task view and may be reopened. Task archive remains distinct from Recycle Bin deletion.
+3. **Complete:** integrate pair-aware Task Relationships with every current peer entity, including Events, Projects and other Tasks, through the standard Relationship lifecycle.
+4. **Complete:** add Calendar-originated undated Task creation and a dedicated Task organisation/read-only record view. This milestone intentionally does not add a generic Task CRUD route or a second capture path.
+5. **Complete:** implement optional Task deadline persistence: a date-only all-day deadline or a local date/time plus IANA timezone. Deadlines remain separate from Calendar occupancy.
+6. **Complete:** implement repeatable optional planned sessions, each all-day or a bounded timed interval using the shared temporal contract, with Calendar deadline/session projections. Completing a Task permanently removes its future sessions while retaining past session history; Task sessions remain neutral rather than Calendar-coloured.
+7. **Complete:** add read-only Project-page projections for related upcoming Events and open Tasks. Projects coordinate peer records through normal Relationships and do not own them.
 
 ### Phase 2C — Reminder and attention foundation
 
-14. **Complete:** define local Calendar, Task-list and global derived-source reminder-policy contexts, default timings, record and occurrence overrides, and the delivery identity/material-change contract.
-15. **Complete:** add record-level Event and Task-deadline overrides with additive custom timings, inherited-timing suppression and disable behaviour. Recurring Event edits use this-occurrence, this-and-following and all-occurrences scopes through the existing occurrence and series-split model.
-16. **Complete:** add traceable all-day birthday and Document-expiry reminder occurrences, including Brisbane anchors, calendar-month timing, February-29 backward shifting and approximate-date exclusion.
-17. **Complete:** implement durable local notification persistence, manual reminder evaluation and append-only Inbox delivery/action history. Phase 2D adds scheduled delivery and startup recovery.
-18. **Complete:** implement the actionable System Inbox: active attention, derived Upcoming preview, acknowledge/dismiss/snooze actions, urgency ordering, the 500-item paged Archive tier and distinct deep-history view.
-19. **Complete:** add database-enforced reminder and Inbox-delivery deduplication, timing-aware material-change reconciliation, lifecycle suppression and snooze reactivation. The recovery-matching identity contract is defined here; Phase 2D invokes it during startup recovery.
-20. **Complete:** defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
+1. **Complete:** define local Calendar, Task-list and global derived-source reminder-policy contexts, default timings, record and occurrence overrides, and the delivery identity/material-change contract.
+2. **Complete:** add record-level Event and Task-deadline overrides with additive custom timings, inherited-timing suppression and disable behaviour. Recurring Event edits use this-occurrence, this-and-following and all-occurrences scopes through the existing occurrence and series-split model.
+3. **Complete:** add traceable all-day birthday and Document-expiry reminder occurrences, including Brisbane anchors, calendar-month timing, February-29 backward shifting and approximate-date exclusion.
+4. **Complete:** implement durable local notification persistence, manual reminder evaluation and append-only Inbox delivery/action history. Phase 2D adds scheduled delivery and startup recovery.
+5. **Complete:** implement the actionable System Inbox: active attention, derived Upcoming preview, acknowledge/dismiss/snooze actions, urgency ordering, the 500-item paged Archive tier and distinct deep-history view.
+6. **Complete:** add database-enforced reminder and Inbox-delivery deduplication, timing-aware material-change reconciliation, lifecycle suppression and snooze reactivation. The recovery-matching identity contract is defined here; Phase 2D invokes it during startup recovery.
+7. **Complete:** defer persistent System Health, issue suppression and escalation until concrete condition producers and actions are authorised.
 
 **Complete:** Phase 2C now provides the local reminder and attention foundation. Its deterministic catch-up policy treats Events as transient occurrences, overdue Tasks and Document expiries as persistent conditions, and birthdays as next-occurrence-only recurring dates. Phase 2D is responsible for invoking this completed delivery boundary while Project E is running and during startup recovery.
 
@@ -374,7 +374,6 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Detailed reminder resolution.** The broad precedence is occurrence override, Event override, Calendar policy, then global policy. Custom timings add to inherited timings, with one delivery for coincident timings. Storage mechanics remain deferred to Phase 2C. A timing or policy change creates a new pending delivery identity; snoozing reactivates the same Inbox item at its next-attention time.
 - **Task temporal interaction.** Calendar-originated undated Task capture, deadlines, sessions and Calendar projections are implemented. A later refinement may improve multi-session editing ergonomics.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.

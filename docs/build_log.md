@@ -8,6 +8,16 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Added concise run, verification and code-routing guidance while preserving the existing repository-first, documentation, privacy and confirmation rules.
 - Aligned the contributor workflow with the current phase documentation and added explicit routing to the Phase 2 plan and security policy.
 
+## 2026-07-25 — Documentation consolidation
+
+- Standardised current documentation on Phase terminology and renamed the delivered Information Platform reference to `phase_1_spec.md`.
+- Made the Phase 2 plan the detailed status authority; aligned product, architecture, ontology and design documentation with completed Phases 2A–2C and the next Phase 2D runtime work.
+- Reclassified completed design/form plans as historical records, corrected Phase 2 subphase numbering, and restored reverse-chronological build-history order.
+
+## 2026-07-25 — Phase 2C closeout
+
+- Closed Phase 2C with durable local reminder delivery, Inbox actions/history, contextual policies, recurring scopes, lifecycle suppression, retention tiers and fixed catch-up rules; scheduling and startup recovery remain Phase 2D.
+
 ## 2026-07-23 — Phase 2B closeout
 
 - Added read-only Project overview projections for related upcoming Events and open Tasks through the standard Relationship graph.
@@ -17,10 +27,6 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 - Added optional all-day and timed/timezone-aware Task deadlines plus repeatable all-day or bounded timed planned sessions through the shared temporal contract.
 - Added Calendar Task deadline/session projections with neutral Task treatment; completion permanently removes future sessions while preserving past session history.
-
-## 2026-07-25 — Phase 2C closeout
-
-- Closed Phase 2C with durable local reminder delivery, Inbox actions/history, contextual policies, recurring scopes, lifecycle suppression, retention tiers and fixed catch-up rules; scheduling and startup recovery remain Phase 2D.
 
 ## 2026-07-23 — Phase 2C reminder and Inbox foundation
 
@@ -47,6 +53,12 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Added Calendar management for creating, editing, ordering, selecting the default, archiving, restoring and safely deleting Calendars through the existing audited services.
 - Added occurrence-aware Event editing and deletion scopes: this occurrence persists an override or cancellation exception, this-and-following creates or truncates a traceable series boundary, and all occurrences retains canonical Event mutation.
 - Recorded recurrence definition, exception and series operations in Event history, audit and provenance; Phase 2A functional requirements are complete.
+
+## 2026-07-19 — Calendar management services
+
+- Added validated Calendar listing, retrieval, creation, rename/configuration, ordering, active-default selection, archive/unarchive and empty-only deletion services with audit, provenance and append-only Calendar history.
+- Defined archive safety: Events retain their archived-Calendar assignment, archived Calendars cannot receive new assignments, and no automatic or bulk Event reassignment occurs.
+- Added a forward-only Calendar-history migration plus fresh and upgrade schema coverage.
 
 ## 2026-07-19 — Timed Calendar grids
 
@@ -123,7 +135,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-12 — Design-system route conversion and verification
 
-Completed the authorised design catch-up across the implemented Stage 1 interface.
+Completed the authorised design catch-up across the implemented Phase 1 interface.
 
 - Delivered a shared entity frame: breadcrumbs, clear identity and action hierarchy, grouped Views, restrained overflow actions, quiet integrity warnings, and accessible icon-only relationship creation.
 - Added deliberate form safeguards: entity edit Cancel returns to the canonical record, dirty entity/relationship/journal forms warn before discard, validation summaries link to invalid described controls, and successful saves show a non-disruptive **Changes saved** toast.
@@ -177,8 +189,3 @@ Standardised entity forms and controlled values. Redesigned relationship creatio
 ## 2026-06-21 — Initial local information platform
 
 Established the standard-library Python/SQLite application with reusable CRUD definitions, first-class relationships, entity profiles, discovery, favourites, recent records and geography. Added Projects, Documents and Assets through the shared architecture, local Document uploads, and optional Leaflet/OpenStreetMap/Nominatim map support. Early attachment and organisation-address concepts were superseded by first-class Documents and Location relationships.
-## 2026-07-19 — Calendar management services
-
-- Added validated Calendar listing, retrieval, creation, rename/configuration, ordering, active-default selection, archive/unarchive and empty-only deletion services with audit, provenance and append-only Calendar history.
-- Defined archive safety: Events retain their archived-Calendar assignment, archived Calendars cannot receive new assignments, and no automatic or bulk Event reassignment occurs.
-- Added a forward-only Calendar-history migration plus fresh and upgrade schema coverage.

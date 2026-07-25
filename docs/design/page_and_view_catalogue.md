@@ -102,7 +102,7 @@ The following route family exists for People, Organisations, Locations, Projects
 
 **Do not formalise:** horizontal all-destination header, Operation Eddy identity, one responsive stack for every width and no nested navigation.
 
-**Established:** 240px expanded and 56px collapsed desktop sidebar candidates, session-only state, labelled global Search, and the local SVG set. Narrow-screen mechanics remain non-committal because Stage 1 is desktop-only; Super Key uses exact `map` and `bin` aliases plus Person-context `tree`.
+**Established:** 240px expanded and 56px collapsed desktop sidebar candidates, session-only state, labelled global Search, and the local SVG set. Narrow-screen mechanics remain non-committal because Phase 1 is desktop-only; Super Key uses exact `map` and `bin` aliases plus Person-context `tree`.
 
 ### Persistent header and sidebar
 
@@ -203,7 +203,7 @@ Active route families consume shared semantic colour roles; `styles.css` contain
 | Persistent header/sidebar vs horizontal header | Philosophy; current `layout.py` | Implement shell/sidebar foundation while preserving route reachability. |
 | Domain-specific pages vs generic shared profile | Philosophy; `entity_detail_page()`; architecture's inherited shared sections | Keep shared grammar/facade, replace uniform composition with domain-specific render strategies. Update architecture when implemented. |
 | Administrative lens vs default Metadata/Change History | Philosophy; current entity sidebar; `ui_principles.md` lists Metadata | Move full admin content to specialised Audit; keep only interpretively relevant provenance/warnings near facts. |
-| Home jumping-off point vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary discovery. Once Inbox exists, provide a restrained Inbox link and small notification count/ticker rather than embedding attention content on Home. |
+| Home jumping-off point vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary discovery. Inbox is the canonical attention destination; Home may provide a restrained link and small notification count/ticker rather than embedding attention content. |
 | Browse/Go/Search separation vs Search-only shell | Philosophy; current header/home/search page | Preserve Search and design distinct Super Key Go control. |
 | Minimal motion vs hover translation | Philosophy; `.system-tool-card:hover` | Use border/colour feedback unless motion materially aids comprehension. |
 

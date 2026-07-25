@@ -1,6 +1,6 @@
-# Stage 1 Specification
+# Phase 1 Specification
 
-Stage 1 establishes Project E as a local-first structured information platform.
+Phase 1 establishes Project E as a local-first structured information platform.
 
 ## Goals
 
@@ -13,7 +13,7 @@ Stage 1 establishes Project E as a local-first structured information platform.
 
 ## Non-Goals
 
-Stage 1 does not include:
+Phase 1 does not include:
 
 - AI
 - chat interfaces
@@ -67,9 +67,9 @@ The current product serves one private user without authentication. This is a pr
 - System Tools can export a versioned, checksummed bundle containing the canonical SQLite store and referenced uploaded files. Import validates schema, integrity, relationships, checksums and document membership, previews counts, requires an empty target and explicit confirmation, creates a recovery backup, and records the import in audit history.
 - Confirmed entity merges, permanent entity deletion and import create recovery bundles under local Git-ignored storage. The bundled recovery command validates first and replaces current storage only with an explicit flag.
 - The platform remains usable without WAN access; geocoding and remote map resources may fail without preventing local entity, relationship or coordinate-backed map use.
-- Stage 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
+- Phase 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
 
-Relationship creation and navigation are implemented as reusable Stage 1 platform features.
+Relationship creation and navigation are implemented as reusable Phase 1 platform features.
 
 Organisation classification and Relationship types are database-backed taxonomy paths containing Type, optional Subtype and optional Specific subtype. The local Taxonomies page creates and archives reusable entries. Archived branches remain visible on existing records but unavailable for new selection; archiving never rewrites canonical records. Relationship definitions retain one canonical stored direction and derive inverse display from metadata attached to their taxonomy entry.
 
@@ -79,7 +79,7 @@ People browse pages show name and date of birth. Person journals are intentional
 
 ## Maps Acceptance
 
-The Maps milestone adds a geographic view without changing the Stage 1 boundaries.
+The Maps milestone adds a geographic view without changing the Phase 1 boundaries.
 
 Implemented scope:
 
@@ -98,9 +98,9 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 is in progress under [the Phase 2 plan](phase_2_plan.md); temporal and canonical Event service foundations are delivered, while human-facing Event workflows remain pending.
+The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 is in progress; its detailed delivery status and remaining scope belong in [the Phase 2 plan](phase_2_plan.md).
 
-Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
+Phase 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 
 ### Family graph view
 

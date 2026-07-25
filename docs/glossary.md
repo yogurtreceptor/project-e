@@ -34,9 +34,9 @@ See also: Repository Source of Truth.
 
 ## Artificial Intelligence
 
-Future-stage capability where models may consume, interpret or propose changes to platform data through shared, governed capabilities. AI is not part of Stage 1 and is not the platform's foundation.
+Future-phase capability where models may consume, interpret or propose changes to platform data through shared, governed capabilities. AI is not part of Phase 1 and is not the platform's foundation.
 
-See also: Stage 1, Decision Support, Automation, Odysseus.
+See also: Phase 1, Decision Support, Automation, Odysseus.
 
 ## Asset
 
@@ -50,9 +50,9 @@ A repeatable alternate name for a canonical entity. Organisation aliases include
 
 ## Automation
 
-Autonomous, goal-directed execution that can schedule work, perform consequential actions without review or create external side effects. This form of automation is not part of Stage 1. Ordinary deterministic application behaviour and reviewed assistance are not automation in this sense.
+Autonomous, goal-directed execution that can schedule work, perform consequential actions without review or create external side effects. This form of automation is not part of Phase 1. Ordinary deterministic application behaviour and reviewed assistance are not automation in this sense.
 
-See also: Deterministic Assistance, Stage 1, Decision Support, Artificial Intelligence.
+See also: Deterministic Assistance, Phase 1, Decision Support, Artificial Intelligence.
 
 ## Canonical Record
 
@@ -86,15 +86,15 @@ See also: Entity Page, Map Layer.
 
 ## Decision Support
 
-Future-stage capability that helps interpret information or support decisions. It is separate from Stage 1 storage, navigation and relationship modelling.
+Future-phase capability that helps interpret information or support decisions. It is separate from Phase 1 storage, navigation and relationship modelling.
 
-See also: Stage 1, Artificial Intelligence, Automation.
+See also: Phase 1, Artificial Intelligence, Automation.
 
 ## Deterministic Assistance
 
-Local, rule-based and explainable behaviour that preserves user control. It may calculate suggestions, warnings, derived views or internal maintenance state, but a consequential mutation requires explicit user confirmation. Deterministic assistance is permitted in Stage 1 and is distinct from autonomous automation.
+Local, rule-based and explainable behaviour that preserves user control. It may calculate suggestions, warnings, derived views or internal maintenance state, but a consequential mutation requires explicit user confirmation. Deterministic assistance is permitted in Phase 1 and is distinct from autonomous automation.
 
-See also: Automation, Inference Review Queue, Stage 1.
+See also: Automation, Inference Review Queue, Phase 1.
 
 ## Detail Page
 
@@ -112,7 +112,7 @@ See also: Entity, Relationship, Asset.
 
 A meaningful area of records in the platform, usually represented by an entity type such as People, Organisations, Locations, Projects, Documents or Assets.
 
-See also: Entity, Stage 1.
+See also: Entity, Phase 1.
 
 ## Entity
 
@@ -154,7 +154,7 @@ See also: Export, Canonical Record.
 
 The principle that the user's local database and files are the primary source of truth, and the platform remains useful without WAN or cloud services.
 
-See also: Repository Source of Truth, Stage 1.
+See also: Repository Source of Truth, Phase 1.
 
 ## Location
 
@@ -212,7 +212,7 @@ See also: Entity, Organisation, Relationship.
 
 ## Project
 
-An entity representing ongoing work, an area of responsibility or an organising context. A Project is not a task-management record in Stage 1.
+An entity representing ongoing work, an area of responsibility or an organising context. A Project is not a task-management record in Phase 1.
 
 See also: Entity, Relationship.
 
@@ -248,7 +248,7 @@ The current repository docs and code that future contributors should rely on whe
 
 See also: Architecture Decision Record (ADR), Local-first.
 
-## Stage 1
+## Phase 1
 
 The completed foundational phase of Project E: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. It permitted deterministic assistance that preserves user control, but excluded AI, chat, dispatcher architecture, decision support, autonomous automation and scheduling.
 
@@ -320,7 +320,7 @@ One execution attempt of a Scheduled Job and its result.
 
 The leading candidate for Project E's future AI/agent layer and a possible integration or fork target. It is not part of the current architecture; future work should adapt Odysseus to a mature Project E platform rather than restructure Project E around it.
 
-See also: Artificial Intelligence, Stage 1.
+See also: Artificial Intelligence, Phase 1.
 
 ## Structured Data
 

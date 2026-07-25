@@ -1,8 +1,8 @@
 # Design Catch-up Implementation Plan
 
-Status: Authorised implementation plan. An agent may implement this plan in order after reading `AGENTS.md`. This plan applies the existing design documentation; it does not authorise unrelated product features, schema changes, new dependencies, mobile support, user settings, workspaces or Phase 2 capabilities.
+Status: Completed historical implementation plan. The authorised design catch-up work is complete; current verification follow-up lives in [Implementation readiness](implementation_readiness.md), and completed work is recorded in the build history. This document does not authorise new implementation work.
 
-## Entry instruction for an implementation agent
+## Historical entry instruction
 
 Read, in this order:
 

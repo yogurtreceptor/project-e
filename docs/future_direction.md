@@ -1,6 +1,6 @@
 # Future Platform Direction
 
-This document describes Project E's intended long-term evolution. It complements the current [architecture](architecture.md) and [Stage 1 specification](stage_1_spec.md); it does not authorise implementation or claim that future capabilities exist today.
+This document describes Project E's intended long-term evolution. It complements the current [architecture](architecture.md) and [Phase 1 specification](phase_1_spec.md); it does not authorise implementation or claim that future capabilities exist today.
 
 ## Platform before intelligence
 
