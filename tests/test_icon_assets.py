@@ -70,6 +70,9 @@ class IconAssetTests(unittest.TestCase):
             with urlopen(f"{base}/super-key.js", timeout=5) as response:
                 self.assertEqual(response.headers.get_content_type(), "text/javascript")
                 self.assertIn(b"contextualAliases", response.read())
+            with urlopen(f"{base}/timezone-picker.js", timeout=5) as response:
+                self.assertEqual(response.headers.get_content_type(), "text/javascript")
+                self.assertIn(b"data-timezone-picker", response.read())
             with self.assertRaises(HTTPError) as invalid:
                 urlopen(f"{base}/icons/../styles.svg", timeout=5)
             self.assertEqual(invalid.exception.code, 404)

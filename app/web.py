@@ -1586,6 +1586,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "super-key.js": "text/javascript; charset=utf-8",
             "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
+            "timezone-picker.js": "text/javascript; charset=utf-8",
         }
         if relative_path.startswith("icons/") and relative_path.endswith(".svg"):
             icon_name = relative_path.removeprefix("icons/").removesuffix(".svg")

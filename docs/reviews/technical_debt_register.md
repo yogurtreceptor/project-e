@@ -53,6 +53,16 @@ Trigger: the map becomes a core offline workflow.
 
 Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
 
+## Local static-asset cache policy
+
+Severity: low
+
+Application icons, stylesheets and scripts are same-origin local HTTP resources; they are not WAN/HTTPS traffic. The local static handler currently sends no explicit browser cache policy, so repeated page loads may request each small asset again. This is acceptable for the current small asset set and makes local development immediately reflect changes.
+
+Trigger: the local asset set becomes materially larger, page-load traces show avoidable repeat transfers, or packaging the application for routine use needs a predictable offline performance policy.
+
+Direction: add conservative cache headers for versioned or fingerprinted static assets, with a deliberate invalidation strategy on application update. Do not implement session-only cache clearing: normal browser cache management and asset versioning are safer and avoid stale UI after an update.
+
 ## Timeline is derived and limited
 
 Severity: low
