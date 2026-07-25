@@ -282,7 +282,7 @@ A time-based display derived from a canonical record or derived occurrence. It i
 
 ## Calendar
 
-A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; it is not an independent Event store. The protected Birthdays Calendar is a built-in category populated by linked canonical birthday Events from People. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
+A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; its edit form keeps the compact colour control and repeatable reminder rows beside those defaults. A Calendar has at most ten notification timings. It is not an independent Event store. The protected Birthdays Calendar is a built-in category populated by linked canonical birthday Events from People. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
 
 ## Platform Timezone
 
@@ -302,7 +302,7 @@ A closest known calendar date marked as approximate. It does not represent a dat
 
 ## Reminder
 
-A notification or attention policy attached to a record or derived occurrence. Its source context and any record-level override are defined by the approved Phase 2 reminder rules; delivery history is a notification record, not the reminder's canonical definition.
+A notification or attention policy attached to a record or derived occurrence. Calendar and record controls use repeatable positive-integer/unit rows, rather than comma-separated text or a policy-state picker. An Event without specific rows inherits its linked Calendar timings; an Event can resolve to at most ten effective reminders. Delivery history is a notification record, not the reminder's canonical definition.
 
 ## Notification
 

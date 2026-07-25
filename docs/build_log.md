@@ -4,7 +4,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-25 — Phase 2 timezone selector and workspace expansion
 
-- Moved Calendar Event-notification defaults onto the Calendar edit form. Replaced every comma-separated reminder entry form with repeatable integer-and-unit controls, including client-side add/remove rows and server-side ten-notification limits for Calendar defaults and effective Event reminders.
+- Moved Calendar Event-notification defaults onto the Calendar edit form. Replaced every comma-separated reminder entry form with repeatable integer-and-unit controls, including client-side add/remove rows and server-side ten-notification limits for Calendar defaults and effective Event reminders. Removed Calendar/Event policy-state pickers so empty Event-specific rows inherit the linked Calendar; registered the row-control script with the local static handler.
 - Refined Calendar management with compact circular colour controls and Calendar-level local Event-notification controls.
 - Replaced free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a shared local searchable, scrollable IANA selector, including current UTC-offset and country search labels.
 - Preserved stored IANA identifiers and UTC instants; the selector derives its local labels from the installed timezone database without a network or schema dependency.
