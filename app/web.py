@@ -73,7 +73,9 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     unarchive_task, unarchive_task_list, update_task, rename_task_list,
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
-from app.reminder_service import act_on_inbox_item, evaluate_due_reminders, get_override, list_inbox_items, reactivate_next_open_snoozes, set_override
+from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, clear_policy,
+    evaluate_due_reminders, get_override, get_policy, list_inbox_items,
+    reactivate_next_open_snoozes, set_override, set_policy)
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -239,6 +241,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_not_found()
 
     def route_inbox_request(self, parts: list[str], query: dict[str, str]) -> None:
+        if parts[1:] == ["reminders"] and self.command == "GET":
+            self.respond_page("Global reminder defaults", views.global_reminder_policies_page(), active_slug="inbox")
+            return
+        source_kind = {"birthdays": "birthday", "document-expiries": "document_expiry"}.get(parts[2]) if len(parts) == 3 and parts[1] == "reminders" else None
+        if source_kind is not None:
+            label = "Birthday" if source_kind == "birthday" else "Document-expiry"
+            self.handle_reminder_policy("global", 0, source_kind, f"{label} reminder defaults", "/inbox/reminders", active_slug="inbox")
+            return
         archived = query.get("archived") == "1"
         if len(parts) == 1 and self.command == "GET":
             page_size = int(query.get("page_size", "50")) if query.get("page_size", "50").isdigit() else 50
@@ -289,6 +299,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "POST":
                 self.handle_calendar_management_create()
                 return
+        policy_calendar_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" and parts[3] == "reminders" else None
+        if policy_calendar_id is not None:
+            self.handle_reminder_policy(
+                "calendar", policy_calendar_id, "event", f"Calendar reminder defaults", f"/calendar/manage/{policy_calendar_id}/edit", active_slug="calendar"
+            )
+            return
         managed_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" else None
         managed_action = parts[3] if managed_id is not None else ""
         if managed_id is not None and managed_action == "edit":
@@ -412,6 +428,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 self.redirect("/tasks")
                 return
             self.redirect("/tasks")
+            return
+        policy_task_list_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "lists" and parts[3] == "reminders" else None
+        if policy_task_list_id is not None:
+            self.handle_reminder_policy(
+                "task_list", policy_task_list_id, "task_deadline", "Task-list reminder defaults", "/tasks", active_slug="tasks"
+            )
             return
         if len(parts) == 4 and parts[1] == "lists" and self.command == "POST":
             task_list_id = self.parse_entity_id(parts[2])
@@ -548,6 +570,33 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.respond_page("Manage Calendars", views.calendar_management_page(calendars, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
             return
         self.redirect("/calendar/manage")
+
+    def handle_reminder_policy(self, context_kind: str, context_id: int, source_kind: str, title: str, back_url: str, *, active_slug: str) -> None:
+        if self.command == "GET":
+            with connect(self.database_path) as connection:
+                configured = get_policy(connection, context_kind, context_id, source_kind)
+            self.respond_page(title, views.reminder_policy_page(title, back_url, configured_timings=configured, inherited_timings=DEFAULT_TIMINGS[source_kind]), active_slug=active_slug)
+            return
+        if self.command == "POST":
+            values = self.read_form()
+            try:
+                with connect(self.database_path) as connection:
+                    if values.get("mode") == "inherit":
+                        clear_policy(connection, context_kind, context_id, source_kind)
+                    else:
+                        set_policy(connection, context_kind, context_id, source_kind, self.reminder_timings(values.get("timings", "")))
+            except ValueError:
+                if context_kind == "calendar":
+                    retry_url = f"/calendar/manage/{context_id}/reminders"
+                elif context_kind == "task_list":
+                    retry_url = f"/tasks/lists/{context_id}/reminders"
+                else:
+                    retry_url = f"/inbox/reminders/{'birthdays' if source_kind == 'birthday' else 'document-expiries'}"
+                self.redirect(retry_url)
+                return
+            self.redirect(back_url)
+            return
+        self.respond_not_found()
 
     def handle_calendar_event_edit(self, event_id: int) -> None:
         values = self.read_form()

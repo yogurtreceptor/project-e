@@ -16,7 +16,11 @@ def inbox_page(items: list[InboxItem], *, archived: bool, created: int = 0, page
         ) for size in (10, 50, 100)
     )
     paging = "" if not archived else f'<form class="compact-form" method="get" action="/inbox"><input type="hidden" name="archived" value="1"><label><span>Items per page</span><select name="page_size">{options}</select></label><button class="button secondary">Apply</button></form><p><a href="/inbox?archived=1&page_size=500&page={page + 1}">Deep archive</a> shows older retained history as one long scroll.</p>'
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Operational attention</p><h1>Inbox</h1><p>Durable reminders and items requiring action.</p></div><div class="actions"><form method="post" action="/inbox/evaluate"><button class="button" type="submit">Evaluate reminders</button></form><a class="button secondary" href="{archive_link}">{other}</a></div></section>{scan}<section class="panel"><h2>{view} items</h2><div class="task-list">{rows}</div>{paging}</section>'''
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Operational attention</p><h1>Inbox</h1><p>Durable reminders and items requiring action.</p></div><div class="actions"><form method="post" action="/inbox/evaluate"><button class="button" type="submit">Evaluate reminders</button></form><a class="button secondary" href="/inbox/reminders">Reminder defaults</a><a class="button secondary" href="{archive_link}">{other}</a></div></section>{scan}<section class="panel"><h2>{view} items</h2><div class="task-list">{rows}</div>{paging}</section>'''
+
+
+def global_reminder_policies_page() -> str:
+    return '''<section class="page-heading"><p class="eyebrow">Operational attention</p><h1>Global reminder defaults</h1><p>These defaults apply to derived birthdays and Document expiries.</p></section><section class="panel"><div class="actions"><a class="button secondary" href="/inbox/reminders/birthdays">Birthday reminders</a><a class="button secondary" href="/inbox/reminders/document-expiries">Document-expiry reminders</a><a class="button secondary" href="/inbox">Back to Inbox</a></div></section>'''
 
 
 def _item(item: InboxItem, archived: bool) -> str:

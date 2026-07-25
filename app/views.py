@@ -90,8 +90,8 @@ from app.view_pages.taxonomies import taxonomies_page
 from app.view_pages.system_tools import system_tools_page
 from app.view_pages.audit import system_audit_page
 from app.view_pages.portability import portability_page, import_preview_page
-from app.view_pages.inbox import inbox_page
-from app.view_pages.reminders import reminder_settings_page
+from app.view_pages.inbox import global_reminder_policies_page, inbox_page
+from app.view_pages.reminders import reminder_policy_page, reminder_settings_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -163,6 +163,8 @@ __all__ = [
     "system_audit_page",
     "portability_page",
     "inbox_page",
+    "global_reminder_policies_page",
+    "reminder_policy_page",
     "reminder_settings_page",
     "import_preview_page",
     "existing_location_action",

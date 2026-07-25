@@ -40,7 +40,7 @@ def _list_row(task_list: TaskListRecord) -> str:
     action = "unarchive" if task_list.is_archived else "archive"
     label = "Unarchive" if task_list.is_archived else "Archive"
     default = "" if task_list.is_default or task_list.is_archived else f'<form method="post" action="/tasks/lists/{task_list.id}/default"><button class="button secondary" type="submit">Make default</button></form>'
-    return f'''<article class="task-row"><div><h3>{escape(task_list.name)}</h3><p>{state}</p></div><div class="actions"><form method="post" action="/tasks/lists/{task_list.id}/rename"><label><span class="visually-hidden">Task list name</span><input name="name" value="{escape(task_list.name)}" required></label><button class="button secondary" type="submit">Rename</button></form>{default}<form method="post" action="/tasks/lists/{task_list.id}/{action}"><button class="button secondary" type="submit">{label}</button></form></div></article>'''
+    return f'''<article class="task-row"><div><h3>{escape(task_list.name)}</h3><p>{state}</p></div><div class="actions"><form method="post" action="/tasks/lists/{task_list.id}/rename"><label><span class="visually-hidden">Task list name</span><input name="name" value="{escape(task_list.name)}" required></label><button class="button secondary" type="submit">Rename</button></form><a class="button secondary" href="/tasks/lists/{task_list.id}/reminders">Reminder defaults</a>{default}<form method="post" action="/tasks/lists/{task_list.id}/{action}"><button class="button secondary" type="submit">{label}</button></form></div></article>'''
 
 
 def task_projection_page(task: TaskRecord, task_list: TaskListRecord | None, relationships: list, history: list, audit_events: list, sessions: list[TaskSessionRecord]) -> str:

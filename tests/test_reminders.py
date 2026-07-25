@@ -8,7 +8,7 @@ from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import EventInput, create_event
 from app.event_recurrence import RecurrenceRule, set_recurrence
 from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
-    list_inbox_items, set_override)
+    clear_policy, get_policy, list_inbox_items, set_override, set_policy)
 from app.task_service import TaskInput, create_task
 
 
@@ -81,3 +81,12 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual("snoozed", row["state"])
         self.assertEqual(item.delivery_key, row["delivery_key"])
         self.assertEqual(item.due_at, row["due_at"])
+
+    def test_context_policy_can_be_configured_and_restored_to_inheritance(self):
+        task_id = create_task(self.connection, TaskInput("Submit report", deadline_date="2026-01-10"))
+        task_list_id = self.connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (task_id,)).fetchone()[0]
+        set_policy(self.connection, "task_list", task_list_id, "task_deadline", ["2h"])
+        self.assertEqual(["2h"], get_policy(self.connection, "task_list", task_list_id, "task_deadline"))
+        self.assertEqual(1, evaluate_due_reminders(self.connection, now=datetime(2026, 1, 9, 22, 0, tzinfo=UTC)))
+        clear_policy(self.connection, "task_list", task_list_id, "task_deadline")
+        self.assertIsNone(get_policy(self.connection, "task_list", task_list_id, "task_deadline"))

@@ -40,6 +40,24 @@ def set_policy(connection: sqlite3.Connection, context_kind: str, context_id: in
     connection.commit()
 
 
+def get_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> list[str] | None:
+    """Return an explicitly configured policy, or None when it inherits."""
+    row = connection.execute(
+        "SELECT timings_json FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?",
+        (context_kind, context_id, source_kind),
+    ).fetchone()
+    return json.loads(row[0]) if row is not None else None
+
+
+def clear_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
+    """Restore a contextual policy to its inherited default."""
+    connection.execute(
+        "DELETE FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?",
+        (context_kind, context_id, source_kind),
+    )
+    connection.commit()
+
+
 def set_override(connection: sqlite3.Connection, source_kind: str, source_id: int, *, mode: str = "default", custom_timings: list[str] | None = None, suppressed_timings: list[str] | None = None, occurrence_key: str = "") -> None:
     if mode not in {"default", "custom", "disabled"}: raise ValueError("Reminder override mode is invalid.")
     custom_timings, suppressed_timings = custom_timings or [], suppressed_timings or []
