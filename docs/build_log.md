@@ -1,6 +1,12 @@
 # Build History
 
-Historical summary only. The Stage 1 specification and reference documents define current behaviour; the roadmap defines direction; the technical-debt register contains unresolved work.
+Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
+
+## 2026-07-25 — Agent guidance refresh
+
+- Updated repository guidance for the completed Phase 1 and active Phase 2 context, including the explicitly authorised local deterministic scheduling and automation boundary.
+- Added concise run, verification and code-routing guidance while preserving the existing repository-first, documentation, privacy and confirmation rules.
+- Aligned the contributor workflow with the current phase documentation and added explicit routing to the Phase 2 plan and security policy.
 
 ## 2026-07-23 — Phase 2B closeout
 
