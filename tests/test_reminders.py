@@ -6,7 +6,7 @@ from pathlib import Path
 from app.db import connect, create_entity, initialise_database
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import EventInput, create_event
-from app.event_recurrence import RecurrenceRule, set_recurrence
+from app.event_recurrence import RecurrenceRule, get_recurrence, set_recurrence, split_series
 from app.reminder_service import (act_on_inbox_item, evaluate_due_reminders,
     clear_policy, get_policy, list_inbox_items, set_override, set_policy)
 from app.task_service import TaskInput, create_task
@@ -100,6 +100,19 @@ class ReminderFoundationTests(unittest.TestCase):
         states = self.connection.execute(
             "SELECT DISTINCT state FROM inbox_items WHERE source_kind='task_deadline' AND source_id=? AND reason='reminder'",
             (task_id,),
+        ).fetchall()
+        self.assertEqual(["resolved"], [row["state"] for row in states])
+
+    def test_recurring_series_split_resolves_moved_pending_delivery(self):
+        event_id = create_event(self.connection, EventInput("Daily stand-up", True,
+            start_date="2026-01-01", end_date="2026-01-01"))
+        event = __import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)
+        set_recurrence(self.connection, event, RecurrenceRule("daily"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, 0, 0, tzinfo=UTC))
+        split_series(self.connection, event, get_recurrence(self.connection, event_id), "2026-01-02")
+        states = self.connection.execute(
+            "SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=? AND occurrence_key='2026-01-02'",
+            (event_id,),
         ).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
 

@@ -181,6 +181,8 @@ def split_series(connection: sqlite3.Connection, event: EventRecord, definition:
         connection, event.id, "series_split", {},
         {"occurrence_date": split_date, "scope": "this_and_following", "successor_event_id": successor_id},
     )
+    from app.reminder_service import resolve_source_items_after_occurrence
+    resolve_source_items_after_occurrence(connection, "event", event.id, split_date)
     connection.commit()
     return successor_id
 

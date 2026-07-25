@@ -129,6 +129,15 @@ def resolve_source_items(connection: sqlite3.Connection, source_kind: str, sourc
     connection.execute("UPDATE inbox_items SET state='resolved', acted_at=?, action_note='source no longer due' WHERE source_kind=? AND source_id=? AND state IN ('active', 'snoozed')", (utc_now(), source_kind, source_id))
 
 
+def resolve_source_items_after_occurrence(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str) -> None:
+    """Resolve pending source deliveries moved to a successor recurring series."""
+    connection.execute(
+        "UPDATE inbox_items SET state='resolved', acted_at=?, action_note='recurring series superseded' "
+        "WHERE source_kind=? AND source_id=? AND occurrence_key>=? AND state IN ('active', 'snoozed')",
+        (utc_now(), source_kind, source_id, occurrence_key),
+    )
+
+
 def _reconcile_context_deliveries(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
     """Resolve active deliveries whose timing was removed by a context policy edit."""
     source_ids = connection.execute(

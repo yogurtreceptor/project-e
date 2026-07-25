@@ -344,17 +344,32 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         delete_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "delete" else None
         if reminder_id is not None:
             if self.command == "GET":
+                occurrence_date = query.get("occurrence", "")
                 with connect(self.database_path) as connection:
                     event = get_event(connection, reminder_id, include_archived=True)
-                    override = get_override(connection, "event", reminder_id)
+                    override = get_override(connection, "event", reminder_id, occurrence_date)
                 if event is None: self.respond_not_found(); return
-                self.respond_page("Event reminder settings", views.reminder_settings_page(event.title, f"/calendar/events/{reminder_id}/edit", override), active_slug="calendar")
+                self.respond_page("Event reminder settings", views.reminder_settings_page(event.title, f"/calendar/events/{reminder_id}/edit", override, occurrence_date=occurrence_date), active_slug="calendar")
                 return
             if self.command == "POST":
                 values = self.read_form()
                 try:
                     with connect(self.database_path) as connection:
-                        set_override(connection, "event", reminder_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values.get("custom_timings", "")), suppressed_timings=self.reminder_timings(values.get("suppressed_timings", "")))
+                        event = get_event(connection, reminder_id, include_archived=True)
+                        if event is None:
+                            raise ValueError("Event does not exist.")
+                        occurrence_date = values.get("occurrence_date", "")
+                        scope = values.get("recurrence_scope", "all")
+                        settings = {"mode": values.get("mode", "default"), "custom_timings": self.reminder_timings(values.get("custom_timings", "")), "suppressed_timings": self.reminder_timings(values.get("suppressed_timings", ""))}
+                        definition = get_recurrence(connection, reminder_id)
+                        if occurrence_date and definition and scope == "this":
+                            set_override(connection, "event", reminder_id, occurrence_key=occurrence_date, **settings)
+                        elif occurrence_date and definition and scope == "following" and not is_series_anchor(event, occurrence_date):
+                            successor_id = split_series(connection, event, definition, occurrence_date)
+                            set_override(connection, "event", successor_id, **settings)
+                            self.redirect(f"/calendar/events/{successor_id}/edit?saved=1"); return
+                        else:
+                            set_override(connection, "event", reminder_id, **settings)
                 except ValueError:
                     self.redirect(f"/calendar/events/{reminder_id}/reminders"); return
                 self.redirect(f"/calendar/events/{reminder_id}/edit?saved=1"); return
