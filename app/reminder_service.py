@@ -23,6 +23,7 @@ DEFAULT_TIMINGS = {
     "birthday": ["1mo", "2w", "1w", "3d", "1d", "12h"],
     "document_expiry": ["1mo", "2w", "1w", "3d", "1d"],
 }
+MAX_REMINDERS = 10
 
 @dataclass(frozen=True)
 class InboxItem:
@@ -44,7 +45,7 @@ class InboxAction:
 
 
 def set_policy(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str, timings: list[str]) -> None:
-    _validate_timings(timings)
+    _validate_timings(timings, maximum=MAX_REMINDERS)
     connection.execute("""INSERT INTO reminder_policies (context_kind, context_id, source_kind, timings_json, updated_at)
         VALUES (?, ?, ?, ?, ?) ON CONFLICT(context_kind, context_id, source_kind)
         DO UPDATE SET timings_json=excluded.timings_json, updated_at=excluded.updated_at""",
@@ -84,7 +85,14 @@ def disable_policy(connection: sqlite3.Connection, context_kind: str, context_id
 def set_override(connection: sqlite3.Connection, source_kind: str, source_id: int, *, mode: str = "default", custom_timings: list[str] | None = None, suppressed_timings: list[str] | None = None, occurrence_key: str = "") -> None:
     if mode not in {"default", "custom", "disabled"}: raise ValueError("Reminder override mode is invalid.")
     custom_timings, suppressed_timings = custom_timings or [], suppressed_timings or []
-    _validate_timings(custom_timings + suppressed_timings)
+    _validate_timings(custom_timings, maximum=MAX_REMINDERS)
+    _validate_timings(suppressed_timings, maximum=MAX_REMINDERS)
+    if source_kind == "event" and mode != "disabled":
+        context = _context_for_source(connection, source_kind, source_id)
+        inherited = _context_timings(connection, context, source_kind) if context else []
+        effective = (set(inherited) - set(suppressed_timings)) | set(custom_timings)
+        if len(effective) > MAX_REMINDERS:
+            raise ValueError(f"An Event can have at most {MAX_REMINDERS} reminders.")
     connection.execute("""INSERT INTO reminder_overrides (source_kind, source_id, occurrence_key, mode, custom_timings_json, suppressed_timings_json, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(source_kind, source_id, occurrence_key)
         DO UPDATE SET mode=excluded.mode, custom_timings_json=excluded.custom_timings_json,
@@ -320,8 +328,7 @@ def _sources(connection, now):
 def _resolved_timings(connection, kind, source_id, context, occurrence):
     row = connection.execute("SELECT * FROM reminder_overrides WHERE source_kind=? AND source_id=? AND occurrence_key IN (?, '') ORDER BY occurrence_key DESC LIMIT 1", (kind, source_id, occurrence)).fetchone()
     if row and row["mode"] == "disabled": return []
-    policy = connection.execute("SELECT timings_json FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?", (*context, kind)).fetchone()
-    timings = json.loads(policy[0]) if policy else list(DEFAULT_TIMINGS[kind])
+    timings = _context_timings(connection, context, kind)
     if row:
         suppressed = set(json.loads(row["suppressed_timings_json"])); timings = [value for value in timings if value not in suppressed]
         timings.extend(json.loads(row["custom_timings_json"]))
@@ -356,7 +363,14 @@ def _month_day(year, month, day):
         except ValueError: day -= 1
 
 def _parse_utc(value): return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-def _validate_timings(timings):
+def _context_timings(connection, context, source_kind):
+    policy = connection.execute("SELECT timings_json FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?", (*context, source_kind)).fetchone()
+    return json.loads(policy[0]) if policy else list(DEFAULT_TIMINGS[source_kind])
+
+
+def _validate_timings(timings, *, maximum: int | None = None):
+    if maximum is not None and len(set(timings)) > maximum:
+        raise ValueError(f"No more than {maximum} reminder timings are allowed.")
     for value in timings:
         suffix = "mo" if isinstance(value, str) and value.endswith("mo") else value[-1:] if isinstance(value, str) else ""
         number = value[:-2] if suffix == "mo" else value[:-1] if isinstance(value, str) else ""

@@ -189,3 +189,16 @@ class ReminderFoundationTests(unittest.TestCase):
         ).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in rows])
         self.assertEqual(0, evaluate_due_reminders(self.connection, now=datetime(2025, 12, 31, 23, 55, tzinfo=UTC)))
+
+    def test_calendar_policy_rejects_more_than_ten_reminders(self):
+        calendar_id = self.connection.execute("SELECT id FROM calendars WHERE kind='event' AND is_default=1").fetchone()[0]
+        with self.assertRaisesRegex(ValueError, "10"):
+            set_policy(self.connection, "calendar", calendar_id, "event", [f"{value}m" for value in range(1, 12)])
+
+    def test_event_override_rejects_more_than_ten_effective_reminders(self):
+        event_id = create_event(self.connection, EventInput("Busy", False,
+            start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
+        calendar_id = self.connection.execute("SELECT calendar_id FROM events WHERE entity_id=?", (event_id,)).fetchone()[0]
+        set_policy(self.connection, "calendar", calendar_id, "event", [f"{value}m" for value in range(1, 11)])
+        with self.assertRaisesRegex(ValueError, "Event can have at most 10"):
+            set_override(self.connection, "event", event_id, custom_timings=["11m"])
