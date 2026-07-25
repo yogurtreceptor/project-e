@@ -1,11 +1,12 @@
 """Operational Inbox page for durable local reminder delivery."""
 
 from html import escape
-from app.reminder_service import InboxItem, UpcomingReminder
+from app.reminder_service import InboxAction, InboxItem, UpcomingReminder
 
 
-def inbox_page(items: list[InboxItem], *, archived: bool, upcoming: list[UpcomingReminder] | None = None, archived_count: int = 0, deep_archive: bool = False, created: int = 0, page_size: int = 50, page: int = 1) -> str:
-    rows = "".join(_item(item, archived) for item in items) or '<p class="empty">No Inbox items in this view.</p>'
+def inbox_page(items: list[InboxItem], *, archived: bool, action_history: dict[int, list[InboxAction]] | None = None, upcoming: list[UpcomingReminder] | None = None, archived_count: int = 0, deep_archive: bool = False, created: int = 0, page_size: int = 50, page: int = 1) -> str:
+    action_history = action_history or {}
+    rows = "".join(_item(item, archived, action_history.get(item.id, [])) for item in items) or '<p class="empty">No Inbox items in this view.</p>'
     scan = f'<p class="status-row" role="status">Evaluated reminders; created {created} new item{"s" if created != 1 else ""}.</p>' if created else ""
     view = "Archived" if archived else "Active"
     archive_link = "/inbox?archived=0" if archived else "/inbox?archived=1"
@@ -24,11 +25,12 @@ def global_reminder_policies_page() -> str:
     return '''<section class="page-heading"><p class="eyebrow">Operational attention</p><h1>Global reminder defaults</h1><p>These defaults apply to derived birthdays and Document expiries.</p></section><section class="panel"><div class="actions"><a class="button secondary" href="/inbox/reminders/birthdays">Birthday reminders</a><a class="button secondary" href="/inbox/reminders/document-expiries">Document-expiry reminders</a><a class="button secondary" href="/inbox">Back to Inbox</a></div></section>'''
 
 
-def _item(item: InboxItem, archived: bool) -> str:
+def _item(item: InboxItem, archived: bool, actions: list[InboxAction]) -> str:
     source = _source_link(item)
-    actions = "" if archived else f'''<div class="actions"><a class="button secondary" href="{source}">Open source</a><form method="post" action="/inbox/{item.id}/acknowledge"><button class="button secondary">Acknowledge</button></form><form method="post" action="/inbox/{item.id}/dismiss"><button class="button secondary">Dismiss</button></form><form method="post" action="/inbox/{item.id}/snooze_30m"><button class="button secondary">Snooze 30 min</button></form><form method="post" action="/inbox/{item.id}/snooze_next_open"><button class="button secondary">Until next open</button></form></div>'''
+    controls = "" if archived else f'''<div class="actions"><a class="button secondary" href="{source}">Open source</a><form method="post" action="/inbox/{item.id}/acknowledge"><button class="button secondary">Acknowledge</button></form><form method="post" action="/inbox/{item.id}/dismiss"><button class="button secondary">Dismiss</button></form><form method="post" action="/inbox/{item.id}/snooze_30m"><button class="button secondary">Snooze 30 min</button></form><form method="post" action="/inbox/{item.id}/snooze_next_open"><button class="button secondary">Until next open</button></form></div>'''
     state = item.state.replace("_", " ").title()
-    return f'<article class="task-row"><div><h3>{escape(item.title)}</h3><p>{escape(item.reason.title())} · due {escape(item.due_at)} · {escape(state)}</p></div>{actions}</article>'
+    history = "" if not archived else _history(actions)
+    return f'<article class="task-row"><div><h3>{escape(item.title)}</h3><p>{escape(item.reason.title())} · due {escape(item.due_at)} · {escape(state)}</p>{history}</div>{controls}</article>'
 
 
 def _source_link(item: InboxItem) -> str:
@@ -54,3 +56,10 @@ def _archive_paging(page_size: int, page: int, count: int, deep_archive: bool) -
     next_link = f'<a class="button secondary" href="/inbox?archived=1&page_size={page_size}&page={page + 1}">Next</a>' if page < pages else ""
     deep = '<p><a href="/inbox?archived=1&deep=1">Deep archive</a> shows history older than the most recent 500 items as one long scroll.</p>' if count > 500 and page == pages else ""
     return f'<form class="compact-form" method="get" action="/inbox"><input type="hidden" name="archived" value="1"><label><span>Items per page</span><select name="page_size">{"".join("<option value=\"{}\"{}>{}</option>".format(size, " selected" if size == page_size else "", size) for size in (10, 50, 100))}</select></label><button class="button secondary">Apply</button></form><p>Page {page} of {pages}</p><div class="actions">{previous}{next_link}</div>{deep}'
+
+
+def _history(actions: list[InboxAction]) -> str:
+    if not actions:
+        return ""
+    rows = "".join(f'<li>{escape(action.acted_at)} · {escape(action.action.replace("_", " "))} · {escape(action.resulting_state)}</li>' for action in actions)
+    return f'<details><summary>Delivery history</summary><ul class="entity-link-list">{rows}</ul></details>'

@@ -23,6 +23,7 @@ Historical summary only. The Stage 1 specification and reference documents defin
 - Connected recurring Event reminder settings to the existing this-occurrence, prospective-series and whole-series scopes, including source-delivery resolution when an occurrence moves to a successor series.
 - Added a non-materialising Upcoming reminder preview, urgency-led active Inbox ordering, and the specified 500-item paged Archive with a separate deep-history view.
 - Added append-only Inbox delivery-transition history for local delivery, user attention actions, source lifecycle resolution, policy reconciliation and recurring-series changes.
+- Exposed each archived Inbox item's delivery-transition history for local inspection.
 
 ## 2026-07-20 — Phase 2B Task foundation
 

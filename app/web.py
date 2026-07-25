@@ -75,8 +75,8 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
     clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
-    list_inbox_items, list_upcoming_reminders, reactivate_next_open_snoozes, set_override,
-    set_policy)
+    list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
+    reactivate_next_open_snoozes, set_override, set_policy)
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -260,9 +260,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 reactivate_next_open_snoozes(connection)
                 archived_count = archived_inbox_count(connection) if archived else 0
                 items = list_deep_archive_items(connection) if deep_archive else list_inbox_items(connection, archived=archived, limit=page_size, offset=(page - 1) * page_size)
+                action_history = list_inbox_actions_for_items(connection, [item.id for item in items]) if archived else {}
                 upcoming = [] if archived else list_upcoming_reminders(connection)
             created = int(query.get("created", "0")) if query.get("created", "0").isdigit() else 0
-            self.respond_page("Inbox", views.inbox_page(items, archived=archived, upcoming=upcoming, archived_count=archived_count, deep_archive=deep_archive, created=created, page_size=page_size, page=page), active_slug="inbox")
+            self.respond_page("Inbox", views.inbox_page(items, archived=archived, action_history=action_history, upcoming=upcoming, archived_count=archived_count, deep_archive=deep_archive, created=created, page_size=page_size, page=page), active_slug="inbox")
             return
         if parts[1:] == ["evaluate"] and self.command == "POST":
             with connect(self.database_path) as connection: created = evaluate_due_reminders(connection)

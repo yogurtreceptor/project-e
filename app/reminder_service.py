@@ -235,6 +235,23 @@ def list_inbox_actions(connection: sqlite3.Connection, item_id: int) -> list[Inb
     return [InboxAction(**dict(row)) for row in rows]
 
 
+def list_inbox_actions_for_items(connection: sqlite3.Connection, item_ids: list[int]) -> dict[int, list[InboxAction]]:
+    if not item_ids:
+        return {}
+    placeholders = ", ".join("?" for _ in item_ids)
+    rows = connection.execute(
+        f"SELECT inbox_item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at "
+        f"FROM inbox_item_actions WHERE inbox_item_id IN ({placeholders}) ORDER BY inbox_item_id, id",
+        item_ids,
+    ).fetchall()
+    result = {item_id: [] for item_id in item_ids}
+    for row in rows:
+        values = dict(row)
+        item_id = int(values.pop("inbox_item_id"))
+        result[item_id].append(InboxAction(**values))
+    return result
+
+
 def _resolve_items(connection: sqlite3.Connection, note: str, action: str, clause: str, parameters: tuple[object, ...]) -> None:
     rows = connection.execute("SELECT id, state FROM inbox_items WHERE " + clause + " AND state IN ('active', 'snoozed')", parameters).fetchall()
     now = utc_now()
