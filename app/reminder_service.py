@@ -97,13 +97,17 @@ def evaluate_due_reminders(connection: sqlite3.Connection, *, now: datetime | No
     now = (now or datetime.now(UTC)).astimezone(UTC)
     created = 0
     for kind, source_id, occurrence, title, due, context in _sources(connection, now):
+        if kind in {"event", "birthday"} and due <= now:
+            continue
+        if kind in {"task_deadline", "document_expiry"} and due <= now:
+            _resolve_pending_reminder_items(connection, kind, source_id)
+            created += _deliver(connection, kind, source_id, occurrence, title, due, "overdue", "overdue", now)
+            continue
         timings = _resolved_timings(connection, kind, source_id, context, occurrence)
         for timing in timings:
             attention = _subtract(due, timing)
             if attention > now: continue
             created += _deliver(connection, kind, source_id, occurrence, title, due, timing, "reminder", now)
-        if kind == "task_deadline" and due <= now:
-            created += _deliver(connection, kind, source_id, occurrence, title, due, "overdue", "overdue", now)
     connection.commit()
     return created
 
@@ -262,6 +266,10 @@ def _resolve_items(connection: sqlite3.Connection, note: str, action: str, claus
     now = utc_now()
     for row in rows:
         _transition_item(connection, int(row["id"]), row["state"], "resolved", action, "", note, now)
+
+
+def _resolve_pending_reminder_items(connection: sqlite3.Connection, source_kind: str, source_id: int) -> None:
+    _resolve_items(connection, "superseded by overdue condition", "overdue_condition", "source_kind=? AND source_id=? AND reason='reminder'", (source_kind, source_id))
 
 
 def _transition_item(connection: sqlite3.Connection, item_id: int, previous_state: str, resulting_state: str, action: str, next_attention_at: str, note: str, acted_at: str) -> None:

@@ -18,6 +18,10 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Added optional all-day and timed/timezone-aware Task deadlines plus repeatable all-day or bounded timed planned sessions through the shared temporal contract.
 - Added Calendar Task deadline/session projections with neutral Task treatment; completion permanently removes future sessions while preserving past session history.
 
+## 2026-07-25 — Phase 2C closeout
+
+- Closed Phase 2C with durable local reminder delivery, Inbox actions/history, contextual policies, recurring scopes, lifecycle suppression, retention tiers and fixed catch-up rules; scheduling and startup recovery remain Phase 2D.
+
 ## 2026-07-23 — Phase 2C reminder and Inbox foundation
 
 - Added forward-only SQLite storage for reminder policies, record/occurrence overrides and durable local Inbox deliveries with database-enforced delivery identity.

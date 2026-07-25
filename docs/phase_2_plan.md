@@ -4,7 +4,7 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — In progress.** Phase 2A implementation was authorised on **2026-07-19** and is complete. Phase 2B is complete: canonical Task/List storage and lifecycle, standard Relationships/Search integration, Calendar-originated capture, optional deadlines and planned sessions, Calendar Task projections, and Project coordination projections are delivered. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
+**Phase 2 — In progress.** Phase 2A, 2B and 2C are complete. Phase 2C delivers local reminder policy resolution, traceable derived birthday and Document-expiry occurrences, durable manual Inbox delivery and acknowledgement history, lifecycle suppression, retention tiers and local attention workflows. Phase 2D remains the next milestone for scheduled delivery and startup recovery. Phase 2 becomes **Complete** only after the integrated completion review defined below; an isolated table, page, reminder, scheduled job or automation rule is not completion.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -163,6 +163,8 @@ The initial default reminder timings are relative to the source's due instant or
 - Document expiries: 1 calendar month, 2 weeks, 1 week, 3 days and 1 day before.
 
 All all-day reminder sources use 09:00 in the configured platform timezone as their due-time anchor rather than midnight. The platform timezone defaults to `Australia/Brisbane` (UTC+10) until a user configuration setting is introduced; that future setting must preserve existing reminder meaning. Calendar-month offsets retain calendar semantics rather than being treated as a fixed number of days.
+
+**Catch-up policy.** Reminder evaluation classifies sources as transient occurrences, persistent conditions or recurring dates. Events are transient: a delivery is created only while the Event remains upcoming; a past Event is not backfilled. Open Task deadlines and active Document expiries are persistent conditions: after their due anchor, normal pending reminder deliveries resolve and one durable overdue item remains until the condition changes or its source lifecycle suppresses it. Birthdays are recurring dates: past annual occurrences are not backfilled, and evaluation considers the next occurrence only. Phase 2D startup recovery applies these same rules.
 
 Deterministically recurring facts such as birthdays and expiries do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy. Birthdays and Document expiries project as all-day derived occurrences, not canonical Event records. A 29 February birthday follows the established month-end backward-shift rule and occurs on 28 February in a non-leap year. Approximate dates do not generate reminders in this milestone; a later design may introduce narrowly defined, explainable circumstances for them.
 

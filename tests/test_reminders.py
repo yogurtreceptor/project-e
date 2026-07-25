@@ -27,7 +27,7 @@ class ReminderFoundationTests(unittest.TestCase):
     def test_event_delivery_is_durable_and_deduplicated(self):
         event_id = create_event(self.connection, EventInput("Planning", False,
             start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
-        now = datetime(2026, 1, 1, 1, 0, tzinfo=UTC)  # 11:00 Brisbane
+        now = datetime(2025, 12, 31, 23, 55, tzinfo=UTC)  # 09:55 Brisbane
         self.assertEqual(2, evaluate_due_reminders(self.connection, now=now))
         self.assertEqual(0, evaluate_due_reminders(self.connection, now=now))
         items = list_inbox_items(self.connection)
@@ -52,7 +52,7 @@ class ReminderFoundationTests(unittest.TestCase):
             start_date="2026-01-01", end_date="2026-01-01"))
         event = __import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)
         set_recurrence(self.connection, event, RecurrenceRule("daily"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, 0, 0, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, 55, tzinfo=UTC))
         occurrences = {item.occurrence_key for item in list_inbox_items(self.connection)}
         self.assertIn("2026-01-02", occurrences)
 
@@ -71,18 +71,18 @@ class ReminderFoundationTests(unittest.TestCase):
             "family_name": "Person", "sex": "Unknown", "birthday": "2000-02-29",
             "email": "", "phone": "", "notes": "", "summary": "",
         })
-        evaluate_due_reminders(self.connection, now=datetime(2025, 2, 27, 23, 0, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2025, 2, 27, 22, 55, tzinfo=UTC))
         items = [item for item in list_inbox_items(self.connection) if item.source_id == person_id]
         self.assertTrue(items)
         self.assertEqual({"2025-02-28"}, {item.occurrence_key for item in items})
 
     def test_override_can_disable_and_snooze_keeps_same_delivery(self):
-        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-01"))
+        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-02"))
         set_override(self.connection, "task_deadline", task_id, mode="disabled")
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, tzinfo=UTC))
         self.assertEqual([], [item for item in list_inbox_items(self.connection) if item.reason == "reminder"])
         set_override(self.connection, "task_deadline", task_id, mode="default")
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, tzinfo=UTC))
         item = next(item for item in list_inbox_items(self.connection) if item.reason == "reminder")
         self.assertTrue(act_on_inbox_item(self.connection, item.id, "snooze_30m"))
         row = self.connection.execute("SELECT delivery_key, due_at, state FROM inbox_items WHERE id=?", (item.id,)).fetchone()
@@ -93,7 +93,7 @@ class ReminderFoundationTests(unittest.TestCase):
     def test_policy_change_resolves_only_removed_pending_timing(self):
         event_id = create_event(self.connection, EventInput("Planning", False,
             start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 1, 0, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2025, 12, 31, 23, 55, tzinfo=UTC))
         set_override(self.connection, "event", event_id, suppressed_timings=["10m"])
         rows = self.connection.execute(
             "SELECT timing, state FROM inbox_items WHERE source_kind='event' AND source_id=? AND reason='reminder' ORDER BY timing",
@@ -102,8 +102,8 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual([("10m", "resolved"), ("1h", "active")], [(row["timing"], row["state"]) for row in rows])
 
     def test_disabling_reminders_resolves_existing_pending_delivery(self):
-        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-01"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        task_id = create_task(self.connection, TaskInput("Private", deadline_local="2026-01-01T12:00", deadline_timezone="Australia/Brisbane"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 1, tzinfo=UTC))
         set_override(self.connection, "task_deadline", task_id, mode="disabled")
         states = self.connection.execute(
             "SELECT DISTINCT state FROM inbox_items WHERE source_kind='task_deadline' AND source_id=? AND reason='reminder'",
@@ -111,9 +111,18 @@ class ReminderFoundationTests(unittest.TestCase):
         ).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
 
+    def test_catch_up_uses_one_persistent_overdue_item_and_skips_past_event(self):
+        task_id = create_task(self.connection, TaskInput("Late task", deadline_date="2026-01-01"))
+        event_id = create_event(self.connection, EventInput("Past event", False,
+            start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 5, tzinfo=UTC))
+        task_items = [item for item in list_inbox_items(self.connection) if item.source_id == task_id]
+        self.assertEqual(["overdue"], [item.reason for item in task_items])
+        self.assertEqual([], [item for item in list_inbox_items(self.connection) if item.source_id == event_id])
+
     def test_inbox_action_history_retains_delivery_snooze_and_acknowledgement(self):
-        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-01"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, tzinfo=UTC))
+        task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-02"))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, tzinfo=UTC))
         item = next(item for item in list_inbox_items(self.connection) if item.source_id == task_id and item.reason == "reminder")
         act_on_inbox_item(self.connection, item.id, "snooze_30m")
         act_on_inbox_item(self.connection, item.id, "acknowledge")
@@ -126,7 +135,7 @@ class ReminderFoundationTests(unittest.TestCase):
             start_date="2026-01-01", end_date="2026-01-01"))
         event = __import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)
         set_recurrence(self.connection, event, RecurrenceRule("daily"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, 0, 0, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, 55, tzinfo=UTC))
         split_series(self.connection, event, get_recurrence(self.connection, event_id), "2026-01-02")
         states = self.connection.execute(
             "SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=? AND occurrence_key='2026-01-02'",
@@ -137,7 +146,7 @@ class ReminderFoundationTests(unittest.TestCase):
     def test_recycling_event_resolves_pending_reminders(self):
         event_id = create_event(self.connection, EventInput("Planning", False,
             start_local="2026-01-01T10:00", end_local="2026-01-01T11:00"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 1, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2025, 12, 31, 23, 55, tzinfo=UTC))
         delete_entity(self.connection, EVENT_DEFINITION, event_id)
         states = self.connection.execute("SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=?", (event_id,)).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
@@ -147,7 +156,7 @@ class ReminderFoundationTests(unittest.TestCase):
             start_date="2026-01-01", end_date="2026-01-01"))
         event = __import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)
         definition = set_recurrence(self.connection, event, RecurrenceRule("daily"))
-        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 2, 0, 0, tzinfo=UTC))
+        evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, 55, tzinfo=UTC))
         cancel_occurrence(self.connection, definition, "2026-01-02")
         states = self.connection.execute("SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=? AND occurrence_key='2026-01-02'", (event_id,)).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
