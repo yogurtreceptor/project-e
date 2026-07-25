@@ -1550,6 +1550,9 @@ dd {
 .action-menu summary::-webkit-details-marker { display: none; }
 .action-menu[open] summary { background: var(--color-action-primary-active); }
 .menu-panel { background: var(--color-surface-panel); border: 1px solid var(--color-border-default); border-radius: var(--radius-group); box-shadow: var(--elevation-floating); min-width: 14rem; padding: var(--space-3); position: absolute; right: 0; top: calc(100% + var(--space-1)); z-index: 30; }
+.calendar-create-menu .menu-panel { left: 0; right: auto; }
+.menu-chevron { margin-left: var(--space-2); }
+.action-menu[open] .menu-chevron { transform: rotate(180deg); }
 .menu-panel strong { color: var(--color-text-secondary); display: block; font-size: var(--font-size-label); padding: var(--space-2); }
 .menu-panel ul { list-style: none; margin: 0; padding: 0; }
 .menu-panel a, .menu-panel form button { display: block; padding: var(--space-2); width: 100%; }
