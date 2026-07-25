@@ -321,7 +321,7 @@ The behaviour above is authoritative product direction. The following sequence i
 
 ### Phase 2 expansion workspace
 
-1. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local searchable, scrollable IANA selector. It presents current UTC offsets and country names from the installed timezone database; searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
+1. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local collapsed IANA combobox. It visibly defaults to `Australia/Brisbane`; opening or editing it reveals a searchable, scrollable list with current UTC offsets and country names from the installed timezone database. Searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
 
 ## Completion criteria
 

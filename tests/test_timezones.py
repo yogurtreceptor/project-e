@@ -12,14 +12,19 @@ class TimezonePickerTests(unittest.TestCase):
         self.assertEqual("United States", catalogue["America/New_York"][0])
         self.assertRegex(catalogue["America/New_York"][1], r"^UTC[+-]\d{2}:\d{2}$")
 
-    def test_picker_submits_iana_identifier_and_includes_searchable_labels(self) -> None:
+    def test_picker_defaults_to_brisbane_and_reveals_search_only_on_demand(self) -> None:
         page = timezone_picker("deadline_timezone", "America/New_York", name="deadline_timezone")
 
         self.assertIn('name="deadline_timezone"', page)
-        self.assertIn('value="America/New_York" selected', page)
+        self.assertIn('value="America/New_York"', page)
         self.assertIn("United States", page)
         self.assertIn("UTC", page)
-        self.assertIn("data-timezone-search", page)
+        self.assertIn("data-timezone-options", page)
+        self.assertIn('role="listbox" hidden', page)
+        self.assertNotIn('type="search"', page)
+
+        default_page = timezone_picker("timezone", "")
+        self.assertIn('value="Australia/Brisbane"', default_page)
 
 
 if __name__ == "__main__":

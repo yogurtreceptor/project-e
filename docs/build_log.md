@@ -8,6 +8,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Preserved stored IANA identifiers and UTC instants; the selector derives its local labels from the installed timezone database without a network or schema dependency.
 - Renamed the Phase 2 plan to `phase_2_workspace.md` and established it as the living Phase 2 refinement record until Phase 3 is defined.
 - Recorded deferred, versioned browser caching for growing local static assets; current local SVG, CSS and script requests remain intentionally simple.
+- Refined the timezone control into a collapsed combobox so its `Australia/Brisbane` default is visible without showing choices or search guidance until the field is opened or edited.
 
 ## 2026-07-25 — Phase 2E/2F deterministic automation and closeout
 

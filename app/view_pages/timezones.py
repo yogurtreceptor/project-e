@@ -1,4 +1,4 @@
-"""Reusable searchable IANA-timezone picker."""
+"""Reusable collapsed, searchable IANA-timezone combobox."""
 
 from html import escape
 
@@ -8,20 +8,19 @@ from app.timezones import timezone_catalogue
 def timezone_picker(
     field_id: str, value: str, *, name: str = "timezone", required: bool = True
 ) -> str:
-    """Render a progressively enhanced, scrollable timezone selector."""
+    """Render an IANA timezone field that reveals choices only on demand."""
     selected = value or "Australia/Brisbane"
-    field_name = name
-    options = []
-    known = False
+    choices = []
     for timezone_name, countries, offset in timezone_catalogue():
-        is_selected = timezone_name == selected
-        known = known or is_selected
         location = f" — {countries}" if countries else ""
-        options.append(
-            f'<option value="{escape(timezone_name)}"{" selected" if is_selected else ""}>'
-            f'{escape(offset)} · {escape(timezone_name)}{escape(location)}</option>'
+        search_text = " ".join((timezone_name, countries, offset)).lower()
+        choices.append(
+            f'<button type="button" class="timezone-option" role="option" '
+            f'data-timezone-value="{escape(timezone_name)}" '
+            f'data-timezone-search-text="{escape(search_text)}">'
+            f'<strong>{escape(timezone_name)}</strong>'
+            f'<span>{escape(offset)}{escape(location)}</span></button>'
         )
-    if not known:
-        options.insert(0, f'<option value="{escape(selected)}" selected>{escape(selected)}</option>')
     required_attribute = " required" if required else ""
-    return f'''<div class="timezone-picker" data-timezone-picker><label for="{escape(field_id)}"><span>Timezone</span></label><input id="{escape(field_id)}-search" type="search" placeholder="Search country, place, or UTC+/- offset" data-timezone-search autocomplete="off"><select id="{escape(field_id)}" name="{escape(field_name)}" size="8" data-timezone-select{required_attribute}>{"".join(options)}</select><p class="help-text">Search by country, city, IANA name, or an offset such as UTC+10.</p></div>'''
+    escaped_id = escape(field_id)
+    return f'''<div class="timezone-picker" data-timezone-picker><label for="{escaped_id}"><span>Timezone</span></label><div class="timezone-combobox"><input id="{escaped_id}" name="{escape(name)}" value="{escape(selected)}" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="{escaped_id}-options" data-timezone-input{required_attribute}><button class="timezone-toggle" type="button" aria-label="Show timezone choices" aria-expanded="false" aria-controls="{escaped_id}-options" data-timezone-toggle>⌄</button><div class="timezone-options" id="{escaped_id}-options" role="listbox" hidden data-timezone-options><p class="help-text">Search by country, city, IANA name, or an offset such as UTC+10.</p><div class="timezone-option-list" data-timezone-option-list>{"".join(choices)}</div><p class="help-text timezone-no-results" hidden data-timezone-no-results>No matching timezones.</p></div></div></div>'''
