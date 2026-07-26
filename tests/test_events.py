@@ -308,7 +308,8 @@ class EventServiceTests(unittest.TestCase):
         self.assertIn("occurrences", fourth_monday)
         styles = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
         self.assertIn('.custom-recurrence-ends input[type="radio"] { flex: 0 0 auto;', styles)
-        self.assertIn('max-width: 26rem;', styles)
+        self.assertIn('max-width: 24rem;', styles)
+        self.assertIn('height: 1.75rem;', styles)
 
     def test_calendar_renders_month_week_filters_and_event_preview(self) -> None:
         work_calendar_id = create_calendar(

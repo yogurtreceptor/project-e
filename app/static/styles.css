@@ -227,17 +227,17 @@ p {
 .recurrence-scope-options button:hover, .recurrence-scope-options button:focus { background: var(--color-surface-selected); outline: none; }
 .recurrence-scope-options button[aria-checked="true"] { background: var(--color-surface-selected); font-weight: 700; }
 .recurrence-scope-actions { justify-content: flex-end; margin-top: var(--space-2); }
-.custom-recurrence-dialog[open] { display: grid; gap: var(--space-3); max-width: 26rem; padding: var(--space-5); width: calc(100% - var(--space-8)); }
+.custom-recurrence-dialog[open] { display: grid; gap: var(--space-3); max-width: 24rem; padding: var(--space-5); width: calc(100% - var(--space-8)); }
 .custom-recurrence-dialog h2, .custom-recurrence-dialog h3 { margin: 0; }
 .custom-recurrence-fields { display: grid; gap: var(--space-3); }
 .custom-repeat-every { align-items: end; display: grid; gap: var(--space-2); grid-template-columns: auto minmax(5rem, 7rem) minmax(7rem, 10rem); }
 .custom-repeat-every > span { align-self: center; }
 .custom-repeat-every input, .custom-repeat-every select { margin: 0; }
 .custom-recurrence-fields section { display: grid; gap: var(--space-2); }
-.custom-weekday-options { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.custom-weekday-options { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .custom-weekday { cursor: pointer; display: block; position: relative; }
 .custom-weekday input { opacity: 0; position: absolute; }
-.custom-weekday span { align-items: center; border: 1px solid var(--line); border-radius: 50%; display: flex; height: 2.25rem; justify-content: center; width: 2.25rem; }
+.custom-weekday span { align-items: center; border: 1px solid var(--line); border-radius: 50%; display: flex; font-size: var(--font-size-compact); height: 1.75rem; justify-content: center; width: 1.75rem; }
 .custom-weekday input:checked + span { background: var(--accent); border-color: var(--accent); color: white; }
 .custom-weekday input:focus-visible + span { box-shadow: var(--focus-ring); }
 .custom-monthly-ordinal { display: flex; flex-wrap: wrap; gap: var(--space-2); }
