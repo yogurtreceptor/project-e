@@ -112,6 +112,25 @@ class DesignFoundationTests(unittest.TestCase):
             server.server_close()
             thread.join()
 
+    def test_mini_month_picker_script_is_allowed_by_static_handler(self) -> None:
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            with urlopen(
+                f"http://127.0.0.1:{server.server_port}/static/mini-month-picker.js",
+                timeout=5,
+            ) as response:
+                self.assertEqual(response.status, 200)
+                script = response.read()
+                self.assertIn(b"ArrowLeft", script)
+                self.assertIn(b"PageUp", script)
+                self.assertIn(b'event.key === " "', script)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
     def test_shared_stylesheet_has_balanced_blocks_and_defined_custom_properties(self) -> None:
         foundation = (STATIC_DIR / "foundation.css").read_text()
         stylesheet = (STATIC_DIR / "styles.css").read_text()

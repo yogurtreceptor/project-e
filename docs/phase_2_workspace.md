@@ -362,6 +362,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 13. **Complete (2026-07-26):** reserve the Calendar projection's left sidebar for Calendar-specific controls by rendering it empty while retaining its width, surface and quick-create docking target. The shared Browse sidebar remains unchanged on other pages.
 
+14. **Complete (2026-07-26):** add a compact, fixed-height Mini Month Day Picker as the first Calendar-sidebar control, with Create Event directly above it. The Monday-first six-row grid includes ISO week numbers and adjacent-month dates; selected and current dates are visually distinct. Its links and keyboard controls preserve the active Calendar view and filters while navigating the canonical Calendar anchor date.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria

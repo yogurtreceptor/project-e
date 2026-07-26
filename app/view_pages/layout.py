@@ -10,6 +10,7 @@ def layout(
     active_slug: str | None = None,
     show_save_toast: bool = False,
     sidebar_variant: str = "browse",
+    sidebar_content: str = "",
 ) -> str:
     def nav_link(href, label, icon_name, current=False):
         state = ' class="active" aria-current="page"' if current else ""
@@ -42,7 +43,7 @@ def layout(
         if show_save_toast else ""
     )
     if sidebar_variant == "calendar":
-        sidebar = '<aside class="sidebar calendar-sidebar" aria-label="Calendar sidebar"></aside>'
+        sidebar = f'<aside class="sidebar calendar-sidebar" aria-label="Calendar sidebar">{sidebar_content}</aside>'
     else:
         sidebar = f'''<aside class="sidebar" aria-label="Browse">
         <button class="sidebar-super-key" type="button" aria-haspopup="dialog" aria-controls="super-key-dialog" data-super-key-open title="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl/Cmd K</kbd></span></button>
@@ -108,6 +109,7 @@ def layout(
     <script src="/static/event-form.js"></script>
     <script src="/static/description-field.js"></script>
     <script src="/static/quick-create.js"></script>
+    <script src="/static/mini-month-picker.js"></script>
     <script src="/static/reminder-timings.js"></script>
     <script src="/static/timezone-picker.js"></script>
     {save_cleanup}
