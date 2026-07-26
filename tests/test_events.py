@@ -182,6 +182,8 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('data-quick-create-dock', page)
             self.assertIn('data-quick-create-drag', page)
             self.assertIn('data-description-field', page)
+            self.assertIn('<aside class="sidebar calendar-sidebar" aria-label="Calendar sidebar"></aside>', page)
+            self.assertNotIn('aria-label="Browse"', page)
             self.assertIn('href="/calendar/events/new?return_to=', page)
             self.assertNotIn('/calendar/tasks/new', page)
             self.assertIn('<summary class="button">Month<span class="menu-chevron" aria-hidden="true">▾</span></summary>', page)

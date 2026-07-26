@@ -9,6 +9,7 @@ def layout(
     content: str,
     active_slug: str | None = None,
     show_save_toast: bool = False,
+    sidebar_variant: str = "browse",
 ) -> str:
     def nav_link(href, label, icon_name, current=False):
         state = ' class="active" aria-current="page"' if current else ""
@@ -40,6 +41,19 @@ def layout(
     })();</script>"""
         if show_save_toast else ""
     )
+    if sidebar_variant == "calendar":
+        sidebar = '<aside class="sidebar calendar-sidebar" aria-label="Calendar sidebar"></aside>'
+    else:
+        sidebar = f'''<aside class="sidebar" aria-label="Browse">
+        <button class="sidebar-super-key" type="button" aria-haspopup="dialog" aria-controls="super-key-dialog" data-super-key-open title="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl/Cmd K</kbd></span></button>
+        <nav class="browse-nav" aria-label="Browse">
+          {nav_link("/", "Home", "home", active_slug is None)}
+          <section class="nav-group" aria-labelledby="information-nav-label"><h2 id="information-nav-label">{icon("information")}<span class="nav-label">Information</span></h2><div class="nav-children">{entity_nav}</div></section>
+          <section class="nav-group" aria-labelledby="connections-nav-label"><h2 id="connections-nav-label">{icon("connections")}<span class="nav-label">Connections and views</span></h2><div class="nav-children">{connection_nav}</div></section>
+          <section class="nav-group" aria-labelledby="tools-nav-label"><a class="nav-group-heading{' active-parent' if active_slug == 'system-tools' else ''}" id="tools-nav-label" href="/system-tools" aria-expanded="{'true' if active_slug == 'system-tools' else 'false'}" title="System Tools">{icon("system")}<span class="nav-label">System Tools</span></a><div class="nav-children">{tool_nav}</div></section>
+        </nav>
+        <button class="sidebar-toggle" type="button" aria-expanded="true" title="Collapse Browse" data-sidebar-toggle>{icon("overflow")}<span class="nav-label">Collapse</span></button>
+      </aside>'''
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -56,16 +70,7 @@ def layout(
         <a class="brand" href="/" title="Project E — Home">{icon("e-mark", "Project E", "brand-mark")}<span class="brand-name">Project E</span></a>
         <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
       </header>
-      <aside class="sidebar" aria-label="Browse">
-        <button class="sidebar-super-key" type="button" aria-haspopup="dialog" aria-controls="super-key-dialog" data-super-key-open title="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl/Cmd K</kbd></span></button>
-        <nav class="browse-nav" aria-label="Browse">
-          {nav_link("/", "Home", "home", active_slug is None)}
-          <section class="nav-group" aria-labelledby="information-nav-label"><h2 id="information-nav-label">{icon("information")}<span class="nav-label">Information</span></h2><div class="nav-children">{entity_nav}</div></section>
-          <section class="nav-group" aria-labelledby="connections-nav-label"><h2 id="connections-nav-label">{icon("connections")}<span class="nav-label">Connections and views</span></h2><div class="nav-children">{connection_nav}</div></section>
-          <section class="nav-group" aria-labelledby="tools-nav-label"><a class="nav-group-heading{' active-parent' if active_slug == 'system-tools' else ''}" id="tools-nav-label" href="/system-tools" aria-expanded="{'true' if active_slug == 'system-tools' else 'false'}" title="System Tools">{icon("system")}<span class="nav-label">System Tools</span></a><div class="nav-children">{tool_nav}</div></section>
-        </nav>
-        <button class="sidebar-toggle" type="button" aria-expanded="true" title="Collapse Browse" data-sidebar-toggle>{icon("overflow")}<span class="nav-label">Collapse</span></button>
-      </aside>
+      {sidebar}
       <main id="main-content" tabindex="-1">{content}</main>
     </div>
     <dialog class="super-key-dialog" id="super-key-dialog" data-super-key-dialog aria-labelledby="super-key-title">

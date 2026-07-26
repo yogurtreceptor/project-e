@@ -360,6 +360,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 12. **Complete (2026-07-26):** consolidate the Calendar Month, Week and Day controls into one dropdown labelled with the active view and a visible down arrow. Its menu marks the current projection and retains the Calendar anchor date and visible-Calendar filter when switching views.
 
+13. **Complete (2026-07-26):** reserve the Calendar projection's left sidebar for Calendar-specific controls by rendering it empty while retaining its width, surface and quick-create docking target. The shared Browse sidebar remains unchanged on other pages.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria

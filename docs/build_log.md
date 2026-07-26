@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar sidebar reservation
+
+The Calendar projection now retains an empty left sidebar as a dedicated future Calendar workspace; standard Browse navigation continues unchanged everywhere else, and Calendar quick-create can still dock into the reserved region.
+
 ## 2026-07-26 — Calendar view dropdown
 
 Replaced the separate Month, Week and Day controls with an active-view dropdown that preserves Calendar context when changing projections.
