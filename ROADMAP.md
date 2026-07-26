@@ -26,6 +26,8 @@ The work is human-first, database-first, local-first and AI-independent. Phases 
 
 Add bounded, attributable assistance such as natural-language retrieval, summarisation, classification, extraction, drafting and proposed actions. AI suggestions and actions must be reviewable, grounded in canonical records and visible in system audit. AI must not become a competing source of truth or bypass confirmation and validation.
 
+Informal ideas and assertions for a future Phase 3 are collected in [Phase 3 notes](docs/phase_3_notes.md). That document is not a specification or implementation authority.
+
 ## Phase 4 — AI/Agent Platform
 
 Explore goal-directed assistance only after the platform is independently useful, coherently machine-readable, safely machine-writable and supported by explicit authority and recovery boundaries. [Odysseus](docs/future_direction.md#odysseus) remains a possible future integration or fork target, not a present dependency.

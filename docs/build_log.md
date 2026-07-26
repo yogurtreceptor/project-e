@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Phase 3 note collection
+
+Moved the tentative local-first journey-planning proof slice out of Phase 2 closeout requirements and into a new informal Phase 3 notes document for future assertions and open questions.
+
 ## 2026-07-26 — Event recurrence picker
 
 Added the requested preset recurrence button menu to the full Event create and edit forms, including daily, calendar-aware weekly/monthly, annual and weekday rules. Added the Custom recurrence editor with interval/frequency, weekday patterns, date-derived monthly choices including last weekday where applicable, and Never/on-date/after-occurrence endings. Editing or deleting an individual recurring occurrence now asks its scope only when Save or Delete is pressed, using a selectable scope list with Cancel and OK. Quick create remains intentionally compact.

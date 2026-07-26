@@ -354,7 +354,7 @@ The behaviour above is authoritative product direction. The following sequence i
 
 11. **Complete (2026-07-26):** add the recurrence picker to the full Calendar Event create and edit forms, while keeping it out of the compact quick-create overlay. Its button menu starts at **Does not repeat** and creates deterministic daily, anchor-weekday weekly, anchor-ordinal-weekday monthly, annual-date and Monday–Friday rules. A fourth weekday offers both fourth and last-monthly patterns; a fifth weekday offers last-monthly only. **Custom** opens a local recurrence editor with bounded interval, day/week/month/year selection, selectable weekdays, and Never/on-date/after-occurrence endings. Its monthly menu derives its choices from the Event date: **on day X of the month**, the corresponding **first/second/third/fourth weekday** where applicable, and **last weekday** when the Event is the last such weekday in its month. “After” resolves to the deterministic final occurrence date without adding a second persistence model. Annual 29 February repeats retain the established 28 February non-leap-year behaviour. Editing or deleting a generated recurring occurrence defers the **This event**, **This and following**, or **All events** decision until Save or Delete is pressed. The dialog uses a selectable left-aligned scope list with Cancel and OK actions.
 
-12. **Weak-conviction closeout requirement:** before Phase 2 is declared complete, record a decision on a local-first journey-planning proof slice. The preferred direction is to plan travel between canonical Locations, optionally against an arrival Event, using locally held OSM and static public-transport data; a user-approved travel Event then uses the existing Calendar reminder workflow. Live transit and traffic data are optional replaceable enrichment, never required for core operation. This note authorises no implementation and does not decide whether an optional local routing runtime is acceptable within Phase 2.
+Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria
 
@@ -377,7 +377,7 @@ Create a Project
 → export and validate the integrated Phase 2 records through whole-platform portability
 ```
 
-The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. It must also record the decision required by the journey-planning closeout note above, whether that proof slice is accepted for Phase 2, deferred, or deliberately excluded. Persistent System Health remains a separately authorised future capability.
+The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. Persistent System Health remains a separately authorised future capability.
 
 An Event table, rendered Calendar, creatable Tasks, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The capabilities must work together as one operational system.
 
