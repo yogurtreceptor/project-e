@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
@@ -820,11 +820,16 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         monthly_weekday = -1
         if frequency == "weekly" and not weekdays:
             raise ValueError("Choose at least one weekday for a weekly recurrence.")
-        if frequency == "monthly" and values.get("recurrence_custom_monthly_pattern") == "ordinal":
+        if frequency == "monthly" and values.get("recurrence_custom_monthly_pattern") in {"ordinal", "last"}:
             anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
-            ordinal = (anchor.day - 1) // 7 + 1
             monthly_weekday = anchor.weekday()
-            if ordinal not in (1, 2, 3, 4):
+            if values.get("recurrence_custom_monthly_pattern") == "last":
+                if (anchor + timedelta(days=7)).month == anchor.month:
+                    raise ValueError("This Event date is not the last matching weekday of its month.")
+                ordinal = -1
+            else:
+                ordinal = (anchor.day - 1) // 7 + 1
+            if ordinal not in (-1, 1, 2, 3, 4):
                 raise ValueError("This Event date has no first-through-fourth weekday monthly pattern.")
         rule = RecurrenceRule(frequency, interval, weekdays, ordinal, monthly_weekday)
         ending = values.get("recurrence_custom_ends", "never")

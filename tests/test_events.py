@@ -296,6 +296,13 @@ class EventServiceTests(unittest.TestCase):
         self.assertIn("on day 1 of the month", first_monday)
         self.assertIn("on the first Monday", first_monday)
         self.assertNotIn("data-custom-monthly-ordinal", first_monday)
+        self.assertIn("on the last Monday", fourth_monday)
+        last_monday_event_id = create_event(self.connection, EventInput("Last Monday", True, start_date="2026-09-28", end_date="2026-09-28"))
+        last_monday_rule = EddyRequestHandler.recurrence_rule_from_form({
+            "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "month",
+            "recurrence_custom_monthly_pattern": "last", "recurrence_custom_ends": "never",
+        }, get_event(self.connection, last_monday_event_id))
+        self.assertEqual(("monthly", -1, 0), (last_monday_rule.frequency, last_monday_rule.monthly_ordinal, last_monday_rule.monthly_weekday))
         self.assertIn("Custom recurrence", fourth_monday)
         self.assertIn("Repeat every", fourth_monday)
         self.assertIn("occurrences", fourth_monday)
