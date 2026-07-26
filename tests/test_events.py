@@ -310,6 +310,7 @@ class EventServiceTests(unittest.TestCase):
         self.assertIn('.custom-recurrence-ends input[type="radio"] { flex: 0 0 auto;', styles)
         self.assertIn('max-width: 24rem;', styles)
         self.assertIn('height: 1.75rem;', styles)
+        self.assertIn('grid-template-columns: auto 4.5rem 5.5rem;', styles)
 
     def test_calendar_renders_month_week_filters_and_event_preview(self) -> None:
         work_calendar_id = create_calendar(
