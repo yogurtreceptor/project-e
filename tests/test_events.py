@@ -194,6 +194,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('<h2 id="other-calendars-title">Other calendars</h2>', page)
             self.assertIn('Additional calendar sources will appear here.', page)
             self.assertNotIn('Visible Calendars', page)
+            self.assertNotIn('Derived and related dates', page)
             self.assertIn('<summary class="button">Month<span class="menu-chevron" aria-hidden="true">▾</span></summary>', page)
             self.assertIn('href="/calendar?view=month&date=', page)
             self.assertIn('href="/calendar?view=week&date=', page)
@@ -830,6 +831,7 @@ class EventServiceTests(unittest.TestCase):
         )
         self.assertEqual(3, projection.count('class="calendar-event"'))
         self.assertIn('class="calendar-day-overflow" href="/calendar?view=day&amp;date=2026-09-10&amp;calendars=1&amp;calendars=2">+ 1 more</a>', projection)
+        self.assertNotIn("Derived and related dates", projection)
 
 
 if __name__ == "__main__":

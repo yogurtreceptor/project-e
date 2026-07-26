@@ -8,6 +8,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Moved Calendar visibility selection into My calendars, removed the duplicate toolbar Event-create action, and kept Calendar management as the secondary toolbar destination.
 - Bounded Month-day rendering to three Event entries with a context-preserving `+ N more` Day link; Week and Day now keep their complete time grids in a height-bounded scroll region with sticky orientation and an initial 07:00 viewport.
 - Added shared Escape/focus-return handling for native action menus and corrected dirty-form cancellation to restore its invoking link.
+- Corrected My calendars checkbox/name alignment and removed the unused derived-and-related-dates Calendar panel to preserve projection space.
 
 ## 2026-07-26 — Calendar mini month picker
 

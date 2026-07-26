@@ -314,7 +314,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
-                derived_occurrences = self.calendar_derived_occurrences(connection, anchor_date.year)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
                 recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
                 created_id = self.parse_entity_id(query.get("created", ""))
@@ -325,7 +324,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             selected_ids = selected_ids or {calendar.id for calendar in calendars if not calendar.is_archived}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, derived_occurrences=derived_occurrences)
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
             self.respond_page("Calendar", views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1", sidebar_variant="calendar", sidebar_content=views.calendar_sidebar(calendars=calendars, anchor_date=anchor_date, mini_month_date=mini_month_date, view=view, selected_calendar_ids=selected_ids, return_to=self.path))
             return
         if len(parts) == 2 and parts[1] == "manage":
@@ -748,22 +747,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return date.fromisoformat(value) if value else date.today()
         except ValueError:
             return date.today()
-
-    @staticmethod
-    def calendar_derived_occurrences(connection, year: int) -> list[dict[str, object]]:
-        """Project date facts without converting them into canonical Events."""
-        from datetime import date
-
-        result: list[dict[str, object]] = []
-        for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
-            expiry = document.metadata.get("expiry_date", "")
-            if expiry:
-                result.append({"label": "Document expiry", "title": document.title, "date": date.fromisoformat(expiry), "url": f"/documents/{document.id}"})
-        for project in list_entities(connection, DEFINITIONS_BY_TYPE["project"]):
-            target = project.metadata.get("target_date", "")
-            if target:
-                result.append({"label": "Project target", "title": project.title, "date": date.fromisoformat(target), "url": f"/projects/{project.id}"})
-        return result
 
     @staticmethod
     def event_input_from_form(values: dict[str, str]) -> EventInput:

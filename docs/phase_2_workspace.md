@@ -370,6 +370,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 17. **Complete (2026-07-26):** define the shared native action-menu Escape/focus-return contract and correct dirty-form cancellation focus return. An open Views, overflow or Calendar view menu closes on Escape and returns focus to its summary; cancelling a dirty-form warning returns focus to the link that invoked it, with a form-control fallback only when that link is gone.
 
+18. **Complete (2026-07-26):** correct My calendars visibility-row layout so each checkbox remains at the left edge and its Calendar name uses the remaining sidebar width. Remove the Calendar's derived-and-related-dates section and its unused projection fetch, leaving the Calendar viewport for its primary Event projection.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria

@@ -109,7 +109,6 @@ def calendar_projection(
     anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None, preview_occurrence: str = "",
     recurrences: dict[int, RecurrenceDefinition] | None = None,
     recurrence_exceptions: dict[int, object] | None = None,
-    derived_occurrences=None,
 ) -> str:
     """Build Month, Week or Day read projections from canonical Event intervals."""
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
@@ -150,7 +149,6 @@ def calendar_projection(
     day_url = _calendar_url([("view", "day"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     return_to = _calendar_url([("view", view), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None, return_to=return_to) if preview_event and preview_event.calendar_id in selected else ""
-    derived_projection = _derived_projection(derived_occurrences or [], period_start, period_end)
     view_options = "".join(
         f'<li><a href="{url}"{" aria-current=\"page\"" if option == view else ""}>{label}</a></li>'
         for option, label, url in (("month", "Month", month_url), ("week", "Week", week_url), ("day", "Day", day_url))
@@ -158,17 +156,9 @@ def calendar_projection(
     return f"""
     <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Manage calendars</a><details class="action-menu calendar-view-menu"><summary class="button">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details></div></div>
         {preview}
-        {grid}{derived_projection}
+        {grid}
     </section>
     """
-
-
-def _derived_projection(occurrences, start: date, end: date) -> str:
-    entries = [
-        f'<li><a href="{escape(item["url"])}">{escape(item["label"])} · {escape(item["title"])}</a> · {escape(item["date"].isoformat())}</li>'
-        for item in occurrences if start <= item["date"] <= end
-    ]
-    return f'<section class="calendar-task-projections"><h3>Derived and related dates</h3><ul>{"".join(entries) or "<li>No derived birthdays, expiry dates or Project targets in this period.</li>"}</ul></section>'
 
 
 def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], month: date, display_timezone: str, context_query: str) -> str:
