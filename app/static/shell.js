@@ -14,4 +14,16 @@
     apply(collapsed);
     sessionStorage.setItem("project-e-sidebar", collapsed ? "collapsed" : "expanded");
   });
+  const calendarContextKey = "project-e-calendar-context";
+  if (window.location.pathname === "/calendar") {
+    const url = new URL(window.location.href);
+    ["created", "created_task", "saved", "deleted", "preview", "occurrence"].forEach(key => url.searchParams.delete(key));
+    if (url.searchParams.has("view") || url.searchParams.has("date")) {
+      sessionStorage.setItem(calendarContextKey, `${url.pathname}${url.search}`);
+    }
+  }
+  const lastCalendarContext = sessionStorage.getItem(calendarContextKey);
+  if (lastCalendarContext?.startsWith("/calendar?")) {
+    document.querySelectorAll('a[title="Calendar"][href="/calendar"]').forEach(link => { link.href = lastCalendarContext; });
+  }
 })();

@@ -50,6 +50,12 @@ class DesignFoundationTests(unittest.TestCase):
 
         self.assertIn('<link rel="stylesheet" href="/static/styles.css">', html)
 
+    def test_shell_remembers_calendar_context_in_the_browser_session(self) -> None:
+        script = (STATIC_DIR / "shell.js").read_text()
+
+        self.assertIn("project-e-calendar-context", script)
+        self.assertIn('a[title="Calendar"][href="/calendar"]', script)
+
     def test_foundation_file_is_allowed_by_static_handler(self) -> None:
         server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
         thread = threading.Thread(target=server.serve_forever)

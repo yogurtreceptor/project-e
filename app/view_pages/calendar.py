@@ -103,7 +103,8 @@ def calendar_projection(
         f'<label class="calendar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected else ""}> <span style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</label>'
         for calendar in active_calendars
     )
-    preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None) if preview_event and preview_event.calendar_id in selected else ""
+    return_to = _calendar_url([("view", view), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
+    preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None, return_to=return_to) if preview_event and preview_event.calendar_id in selected else ""
     task_projection = _task_projection(tasks or [], task_sessions or {}, period_start, period_end, display_timezone)
     derived_projection = _derived_projection(derived_occurrences or [], period_start, period_end)
     return f"""
@@ -225,12 +226,13 @@ def _timed_dates(event: EventRecord, display_timezone: str) -> tuple[date, date]
     return start.date(), (end - timedelta(microseconds=1)).date()
 
 
-def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurrence_date: str = "", recurrence: RecurrenceDefinition | None = None) -> str:
+def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurrence_date: str = "", recurrence: RecurrenceDefinition | None = None, *, return_to: str = "/calendar") -> str:
     calendar_name = calendar.name if calendar else "Unavailable Calendar"
     colour = calendar.colour if calendar else "#6B7280"
-    occurrence_query = f"?occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
+    occurrence_query = f"&occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
     scope = _recurrence_scope_fields(occurrence_date, compact=True) if occurrence_date and recurrence else ""
-    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit{occurrence_query}">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Apply the selected deletion scope. The all-occurrences action moves this Event to the Recycle Bin.">{scope}<button class="button danger" type="submit">Delete</button></form></div></aside>'
+    context_query = urlencode({"return_to": return_to})
+    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit?{context_query}{occurrence_query}">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Apply the selected deletion scope. The all-occurrences action moves this Event to the Recycle Bin."><input type="hidden" name="return_to" value="{escape(return_to)}">{scope}<button class="button danger" type="submit">Delete</button></form></div></aside>'
 
 
 def _occurrence_date(event: EventRecord) -> str:

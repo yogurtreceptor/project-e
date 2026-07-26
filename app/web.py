@@ -314,7 +314,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions, derived_occurrences=derived_occurrences)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, return_to=self.path, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1")
+            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, return_to=self.path, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1" or query.get("saved") == "1" or query.get("deleted") == "1")
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":
@@ -442,7 +442,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 if not matches:
                     self.respond_not_found(); return
                 form_event = matches[0].event
-            self.respond_page("Edit Event", views.event_form_page(calendars, views.event_form_values(form_event, calendar), editing_event=event, recurrence=recurrence, occurrence_date=occurrence_date if form_event is not event else ""), active_slug="calendar", show_save_toast=query.get("saved") == "1")
+            self.respond_page("Edit Event", views.event_form_page(calendars, views.event_form_values(form_event, calendar), editing_event=event, recurrence=recurrence, occurrence_date=occurrence_date if form_event is not event else "", return_to=self.calendar_return_to(query.get("return_to", ""))), active_slug="calendar", show_save_toast=query.get("saved") == "1")
             return
         if editing_id is not None and self.command == "POST":
             self.handle_calendar_event_edit(editing_id)
@@ -716,7 +716,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except (ValueError, sqlite3.Error) as error:
             self.respond_calendar_event_form(values, [str(error)], event_id)
             return
-        self.redirect(f"/calendar/events/{event_id}/edit?saved=1")
+        self.redirect(self.calendar_return_url(values.get("return_to", ""), "saved=1"))
 
     def handle_calendar_event_delete(self, event_id: int) -> None:
         values = self.read_form()
@@ -737,7 +737,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     truncate_series(connection, event, definition, occurrence_date)
             else:
                 delete_entity(connection, EVENT_DEFINITION, event_id)
-        self.redirect("/calendar")
+        self.redirect(self.calendar_return_url(values.get("return_to", ""), "deleted=1"))
 
     @staticmethod
     def calendar_anchor_date(value: str):

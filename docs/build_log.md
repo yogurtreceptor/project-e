@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar session context
+
+The active Calendar Month/Week/Day context is now retained in browser session state for navigation and is preserved through Event preview edit, save, cancel and delete flows without adding a stored user preference.
+
 ## 2026-07-26 — Calendar context preservation
 
 Calendar creation now retains the current Month, Week or Day view, anchor date and visible-Calendar filter after Event creation and through the More options handoff.

@@ -234,13 +234,14 @@ class EventServiceTests(unittest.TestCase):
                 "start_date": "2026-09-11", "end_date": "2026-09-11",
                 "start_local": "2026-09-11T11:00", "end_local": "2026-09-11T12:00",
                 "timezone": "Australia/Brisbane", "notes": "Rescheduled in Calendar",
+                "return_to": "/calendar?view=week&date=2026-09-11",
             })
             client.request("POST", "/calendar/events/1/edit", edit_body, {
                 "Content-Type": "application/x-www-form-urlencoded",
             })
             response = client.getresponse()
             self.assertEqual(303, response.status)
-            self.assertEqual("/calendar/events/1/edit?saved=1", response.getheader("Location"))
+            self.assertEqual("/calendar?view=week&date=2026-09-11&saved=1", response.getheader("Location"))
             event = get_event(self.connection, 1)
             self.assertEqual("Calendar-edited Event", event.title)
             self.assertEqual("2026-09-11T01:00:00Z", event.start_utc)
@@ -309,10 +310,10 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn("Event preview", preview_page)
             self.assertIn(f'/calendar/events/{all_day_id}/delete', preview_page)
 
-            client.request("POST", f"/calendar/events/{all_day_id}/delete")
+            client.request("POST", f"/calendar/events/{all_day_id}/delete", urlencode({"return_to": "/calendar?view=week&date=2026-09-15"}), {"Content-Type": "application/x-www-form-urlencoded"})
             response = client.getresponse()
             self.assertEqual(303, response.status)
-            self.assertEqual("/calendar", response.getheader("Location"))
+            self.assertEqual("/calendar?view=week&date=2026-09-15&deleted=1", response.getheader("Location"))
             self.assertIsNone(get_event(self.connection, all_day_id))
         finally:
             client.close()
