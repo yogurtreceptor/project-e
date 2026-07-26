@@ -310,6 +310,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def route_calendar_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":
             anchor_date = self.calendar_anchor_date(query.get("date", ""))
+            mini_month_date = self.calendar_anchor_date(query["mini_date"]) if query.get("mini_date") else anchor_date
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
@@ -325,7 +326,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             selected_ids = selected_ids or {calendar.id for calendar in calendars if not calendar.is_archived}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, derived_occurrences=derived_occurrences)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1", sidebar_variant="calendar", sidebar_content=views.calendar_sidebar(anchor_date=anchor_date, view=view, selected_calendar_ids=selected_ids, return_to=self.path))
+            self.respond_page("Calendar", views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1", sidebar_variant="calendar", sidebar_content=views.calendar_sidebar(anchor_date=anchor_date, mini_month_date=mini_month_date, view=view, selected_calendar_ids=selected_ids, return_to=self.path))
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":

@@ -32,23 +32,25 @@ def calendar_page(
     return f'''<div class="calendar-page"><div data-quick-create-root>{_quick_create_dialogs(calendars)}</div>{projection}{created_notice}</div>'''
 
 
-def calendar_sidebar(*, anchor_date: date, view: str, selected_calendar_ids: set[int], return_to: str) -> str:
+def calendar_sidebar(*, anchor_date: date, mini_month_date: date, view: str, selected_calendar_ids: set[int], return_to: str) -> str:
     """Render Calendar-local controls in the reserved shell sidebar."""
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
-    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create Event</a>{_mini_month_day_picker(anchor_date, view, selected_calendar_ids)}</div>'''
+    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create Event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}</div>'''
 
 
-def _mini_month_day_picker(selected_date: date, view: str, selected_calendar_ids: set[int]) -> str:
-    """Render a fixed six-week, Monday-first picker linked to Calendar navigation."""
-    month = selected_date.replace(day=1)
+def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:
+    """Render a fixed six-week picker with independently navigable displayed month."""
+    month = displayed_date.replace(day=1)
     first_visible_day = month - timedelta(days=month.weekday())
     previous_month = (month - timedelta(days=1)).replace(day=1)
     next_month = (month.replace(day=monthrange(month.year, month.month)[1]) + timedelta(days=1)).replace(day=1)
-    previous_date = previous_month.replace(day=min(selected_date.day, monthrange(previous_month.year, previous_month.month)[1]))
-    next_date = next_month.replace(day=min(selected_date.day, monthrange(next_month.year, next_month.month)[1]))
+    focus_date = selected_date if first_visible_day <= selected_date < first_visible_day + timedelta(days=42) else month
 
-    def picker_url(day: date) -> str:
-        return _calendar_url([("view", view), ("date", day.isoformat()), *(("calendars", str(item)) for item in sorted(selected_calendar_ids))])
+    def picker_url(day: date, mini_date: date | None = None) -> str:
+        parameters = [("view", view), ("date", day.isoformat()), *(("calendars", str(item)) for item in sorted(selected_calendar_ids))]
+        if mini_date is not None:
+            parameters.append(("mini_date", mini_date.isoformat()))
+        return _calendar_url(parameters)
 
     weekday_labels = '<span aria-hidden="true"></span>' + "".join(
         f'<span aria-hidden="true">{label}</span>' for label in ("M", "T", "W", "T", "F", "S", "S")
@@ -69,13 +71,13 @@ def _mini_month_day_picker(selected_date: date, view: str, selected_calendar_ids
                 classes += " is-selected"
             cells.append(
                 f'<a class="{classes}" href="{picker_url(day)}" data-mini-picker-day '
-                f'data-date="{day.isoformat()}" tabindex="{"0" if day == selected_date else "-1"}" '
+                f'data-date="{day.isoformat()}" tabindex="{"0" if day == focus_date else "-1"}" '
                 f'aria-label="{escape(day.strftime("%A, %-d %B %Y"))}"{" aria-current=\"date\"" if day == today else ""}>'
                 f'<span>{day.day}</span></a>'
             )
         weeks.extend(cells)
     return f'''<section class="mini-month-picker" aria-label="Mini month day picker" data-mini-month-picker>
-      <header class="mini-month-header"><h2>{escape(month.strftime("%B %Y"))}</h2><div class="mini-month-navigation"><a class="mini-month-nav" href="{picker_url(previous_date)}" data-mini-month-previous aria-label="Previous month" title="Previous month">‹</a><a class="mini-month-nav" href="{picker_url(next_date)}" data-mini-month-next aria-label="Next month" title="Next month">›</a></div></header>
+      <header class="mini-month-header"><h2>{escape(month.strftime("%B %Y"))}</h2><div class="mini-month-navigation"><a class="mini-month-nav" href="{picker_url(selected_date, previous_month)}" data-mini-month-previous aria-label="Previous month" title="Previous month">‹</a><a class="mini-month-nav" href="{picker_url(selected_date, next_month)}" data-mini-month-next aria-label="Next month" title="Next month">›</a></div></header>
       <div class="mini-month-weekdays">{weekday_labels}</div>
       <div class="mini-month-grid">{"".join(weeks)}</div>
     </section>'''

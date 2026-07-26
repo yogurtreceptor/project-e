@@ -4,7 +4,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-26 — Calendar mini month picker
 
-Added the Calendar sidebar's first local control: a compact, six-week Monday-first month picker with ISO weeks, adjacent-month dates, distinct current/selected states and keyboard navigation. Create Event now sits immediately above it.
+Added the Calendar sidebar's first local control: a compact, six-week Monday-first month picker with ISO weeks, adjacent-month dates, distinct current/selected states and keyboard navigation. Its month browsing is independent of the main Calendar view; selecting a day navigates the main Calendar. Create Event now sits immediately above it.
 
 ## 2026-07-26 — Calendar sidebar reservation
 
