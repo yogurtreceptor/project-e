@@ -84,6 +84,7 @@ class DesignFoundationTests(unittest.TestCase):
                 self.assertIn(b"data-quick-preview", script)
                 self.assertIn(b"durationMinutes", script)
                 self.assertIn(b"previewMarkup", script)
+                self.assertIn(b"calendarReturnTo", script)
         finally:
             server.shutdown()
             server.server_close()

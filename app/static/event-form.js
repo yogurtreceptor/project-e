@@ -12,5 +12,8 @@
     };
     checkbox.addEventListener("change", setState);
     setState();
+    const returnTo = form.querySelector('input[name="return_to"]')?.value;
+    const cancel = form.querySelector('a.button.secondary[href="/calendar"]');
+    if (returnTo && cancel) cancel.href = returnTo;
   });
 })();

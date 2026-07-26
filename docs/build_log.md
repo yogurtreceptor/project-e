@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar context preservation
+
+Calendar creation now retains the current Month, Week or Day view, anchor date and visible-Calendar filter after Event creation and through the More options handoff.
+
 ## 2026-07-26 — Calendar quick-create refinement
 
 - Replaced modal quick-create dialogs with non-modal, draggable Event and Task panels that can dock into the sidebar without obscuring the Calendar.

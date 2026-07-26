@@ -183,8 +183,8 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('data-quick-create-dock', page)
             self.assertIn('data-quick-create-drag', page)
             self.assertIn('data-description-field', page)
-            self.assertIn('href="/calendar/events/new"', page)
-            self.assertIn('href="/calendar/tasks/new"', page)
+            self.assertIn('href="/calendar/events/new?return_to=', page)
+            self.assertIn('href="/calendar/tasks/new?return_to=', page)
             self.assertNotIn("Current Events", page)
             self.assertIn('class="calendar-page"', page)
             self.assertNotIn("Operational time", page)
@@ -211,6 +211,18 @@ class EventServiceTests(unittest.TestCase):
             response = client.getresponse()
             self.assertEqual(303, response.status)
             self.assertEqual("/calendar?created=1", response.getheader("Location"))
+
+            context_body = urlencode({
+                "title": "Week-context Event", "calendar_id": "1",
+                "start_local": "2026-09-10T09:00", "end_local": "2026-09-10T10:00",
+                "timezone": "Australia/Brisbane", "return_to": "/calendar?view=week&date=2026-09-10",
+            })
+            client.request("POST", "/calendar/events/new", context_body, {
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            response = client.getresponse()
+            self.assertEqual(303, response.status)
+            self.assertEqual("/calendar?view=week&date=2026-09-10&created=2", response.getheader("Location"))
 
             client.request("GET", "/calendar/events/1/edit")
             edit_page = client.getresponse().read().decode()

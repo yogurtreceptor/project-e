@@ -314,7 +314,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions, derived_occurrences=derived_occurrences)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1")
+            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, return_to=self.path, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1")
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":
@@ -355,7 +355,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 with connect(self.database_path) as connection:
                     calendars = list_calendars(connection, include_archived=True)
                 values = {**views.default_event_values(calendars), **{key: value for key, value in query.items() if key in {"title", "calendar_id", "all_day", "start_date", "end_date", "start_local", "end_local", "timezone", "notes"}}}
-                self.respond_page("Add Event", views.event_form_page(calendars, values), active_slug="calendar")
+                self.respond_page("Add Event", views.event_form_page(calendars, values, return_to=self.calendar_return_to(query.get("return_to", ""))), active_slug="calendar")
                 return
             if self.command == "POST":
                 self.handle_calendar_event_create()
@@ -457,7 +457,18 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except (ValueError, sqlite3.Error) as error:
             self.respond_calendar_event_form(values, [str(error)])
             return
-        self.redirect(f"/calendar?created={event_id}")
+        self.redirect(self.calendar_return_url(values.get("return_to", ""), f"created={event_id}"))
+
+    @staticmethod
+    def calendar_return_to(value: str) -> str:
+        parsed = urlparse(value)
+        if parsed.scheme or parsed.netloc or parsed.path != "/calendar":
+            return "/calendar"
+        return f"/calendar?{parsed.query}" if parsed.query else "/calendar"
+
+    def calendar_return_url(self, value: str, marker: str) -> str:
+        destination = self.calendar_return_to(value)
+        return f"{destination}{'&' if '?' in destination else '?'}{marker}"
 
     def handle_calendar_task_create(self) -> None:
         values = self.read_form()
@@ -474,7 +485,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 task_lists = list_task_lists(connection)
             self.respond_page("Add Task", views.task_form_page(task_lists, values, errors=[str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
             return
-        self.redirect("/calendar?created_task=1" if values.get("quick_create") == "1" else f"/tasks/{task_id}?saved=1")
+        self.redirect(self.calendar_return_url(values.get("return_to", ""), "created_task=1") if values.get("quick_create") == "1" else f"/tasks/{task_id}?saved=1")
 
     def route_task_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":
@@ -769,7 +780,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             calendars = list_calendars(connection, include_archived=True)
             events = list_events(connection)
             event = get_event(connection, event_id, include_archived=True) if event_id else None
-        self.respond_page("Edit Event" if event else "Add Event", views.event_form_page(calendars, values, editing_event=event, errors=errors), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+        self.respond_page("Edit Event" if event else "Add Event", views.event_form_page(calendars, values, editing_event=event, errors=errors, return_to=self.calendar_return_to(values.get("return_to", ""))), HTTPStatus.BAD_REQUEST, active_slug="calendar")
 
     def route_taxonomy_request(self, parts: list[str]) -> None:
         from app.taxonomy import archive_entry, create_entry, list_entries, load_relationship_catalog

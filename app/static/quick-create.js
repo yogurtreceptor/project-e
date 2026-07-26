@@ -24,8 +24,16 @@
       link.closest("details")?.removeAttribute("open");
       invoker = link;
       dialog.hidden = false;
+      setReturnContext(dialog);
       dialog.querySelector("input[name=title]")?.focus();
       updatePreview(dialog);
+    });
+  });
+  document.querySelectorAll('a[aria-label="Add Event"]').forEach(link => {
+    link.addEventListener("click", () => {
+      const url = new URL(link.href, window.location.origin);
+      url.searchParams.set("return_to", calendarReturnTo());
+      link.href = url;
     });
   });
   dialogs.forEach(dialog => {
@@ -117,6 +125,22 @@
         day.insertAdjacentHTML("beforeend", previewMarkup("calendar-timed-event provisional", segmentLabel, title, `top:${startMinutes * .8}px;height:${Math.max(durationMinutes * .8, 24)}px`));
       });
     }
+  }
+
+  function setReturnContext(dialog) {
+    const form = dialog.querySelector("form");
+    let input = form.querySelector('input[name="return_to"]');
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "return_to";
+      form.append(input);
+    }
+    input.value = calendarReturnTo();
+  }
+
+  function calendarReturnTo() {
+    return `${window.location.pathname}${window.location.search}`;
   }
 
   function previewMarkup(className, label, title, positioning = "") {
