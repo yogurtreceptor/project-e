@@ -220,7 +220,7 @@ p {
 .recurrence-options button:hover, .recurrence-options button:focus { background: var(--color-surface-selected); outline: none; }
 .recurrence-options button[aria-selected="true"] { font-weight: 700; }
 .recurrence-options button:disabled { color: var(--muted); cursor: not-allowed; }
-.recurrence-scope-dialog { display: grid; gap: var(--space-4); }
+.recurrence-scope-dialog[open] { display: grid; gap: var(--space-4); }
 .recurrence-scope-dialog h2 { margin: 0; }
 .recurrence-scope-options { align-items: start; display: grid; gap: var(--space-1); justify-items: start; }
 .recurrence-scope-options button { background: transparent; border: 0; border-radius: 4px; color: inherit; cursor: pointer; padding: .5rem .65rem; text-align: left; width: 100%; }
