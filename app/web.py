@@ -74,7 +74,7 @@ from app.task_service import (TaskInput, TaskListInput, archive_task, archive_ta
     list_task_lists, list_tasks, reopen_task, set_default_task_list,
     unarchive_task, unarchive_task_list, update_task, rename_task_list,
     TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
-from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
+from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series, until_date_after_occurrences
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
     clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
     list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
@@ -790,7 +790,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if preset == "none":
             return None
         if preset == "custom":
-            return fallback
+            return EddyRequestHandler.custom_recurrence_rule_from_form(values, event)
         anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
         if preset == "daily":
             return RecurrenceRule("daily")
@@ -806,6 +806,35 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if ordinal in (-1, 1, 2, 3, 4, 5):
                 return RecurrenceRule("monthly", monthly_ordinal=ordinal, monthly_weekday=anchor.weekday())
         raise ValueError("Recurrence choice is invalid.")
+
+    @staticmethod
+    def custom_recurrence_rule_from_form(values: dict[str, str], event) -> RecurrenceRule:
+        interval = int(values.get("recurrence_custom_interval", "1"))
+        if not 1 <= interval <= 999:
+            raise ValueError("Repeat interval must be between 1 and 999.")
+        frequency = {"day": "daily", "week": "weekly", "month": "monthly", "year": "yearly"}.get(values.get("recurrence_custom_frequency", ""))
+        if frequency is None:
+            raise ValueError("Custom recurrence frequency is invalid.")
+        weekdays = tuple(sorted({int(day) for day in values.get("recurrence_custom_weekdays", "").split(",") if day.isdigit() and int(day) in range(7)}))
+        ordinal = 0
+        monthly_weekday = -1
+        if frequency == "weekly" and not weekdays:
+            raise ValueError("Choose at least one weekday for a weekly recurrence.")
+        if frequency == "monthly" and values.get("recurrence_custom_monthly_pattern") == "ordinal":
+            ordinal = int(values.get("recurrence_custom_monthly_ordinal", "0"))
+            monthly_weekday = int(values.get("recurrence_custom_monthly_weekday", "-1"))
+            if ordinal not in (1, 2, 3, 4) or monthly_weekday not in range(7):
+                raise ValueError("Choose a valid monthly weekday pattern.")
+        rule = RecurrenceRule(frequency, interval, weekdays, ordinal, monthly_weekday)
+        ending = values.get("recurrence_custom_ends", "never")
+        if ending == "never":
+            return rule
+        if ending == "on":
+            return RecurrenceRule(**{**rule.__dict__, "until_date": values.get("recurrence_custom_until", "")})
+        if ending == "after":
+            count = int(values.get("recurrence_custom_count", "0"))
+            return RecurrenceRule(**{**rule.__dict__, "until_date": until_date_after_occurrences(event, rule, count)})
+        raise ValueError("Custom recurrence end condition is invalid.")
 
     @staticmethod
     def calendar_input_from_form(values: dict[str, str]) -> CalendarInput:

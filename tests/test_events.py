@@ -203,7 +203,9 @@ class EventServiceTests(unittest.TestCase):
                 "title": "Calendar-created Event", "calendar_id": "1",
                 "start_date": "2026-09-10", "end_date": "2026-09-10",
                 "start_local": "2026-09-10T09:00", "end_local": "2026-09-10T10:00",
-                "timezone": "Australia/Brisbane", "notes": "Created in Calendar", "recurrence_preset": "daily",
+                "timezone": "Australia/Brisbane", "notes": "Created in Calendar", "recurrence_preset": "custom",
+                "recurrence_custom_interval": "1", "recurrence_custom_frequency": "week",
+                "recurrence_custom_weekdays": "0,2", "recurrence_custom_ends": "after", "recurrence_custom_count": "3",
             })
             client.request("POST", "/calendar/events/new", create_body, {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -211,7 +213,8 @@ class EventServiceTests(unittest.TestCase):
             response = client.getresponse()
             self.assertEqual(303, response.status)
             self.assertEqual("/calendar?created=1", response.getheader("Location"))
-            self.assertEqual("daily", get_recurrence(self.connection, 1).rule.frequency)
+            created_rule = get_recurrence(self.connection, 1).rule
+            self.assertEqual(("weekly", (0, 2), "2026-09-21"), (created_rule.frequency, created_rule.weekdays, created_rule.until_date))
 
             context_body = urlencode({
                 "title": "Week-context Event", "calendar_id": "1",
@@ -275,7 +278,18 @@ class EventServiceTests(unittest.TestCase):
         self.assertIn("Monthly on the last Monday", fourth_monday)
         self.assertNotIn("Monthly on the fifth Monday", fifth_monday)
         self.assertIn("Monthly on the last Monday", fifth_monday)
-        self.assertIn("Custom (coming soon)", fourth_monday)
+        self.assertIn('value="custom"', fourth_monday)
+
+        custom_event_id = create_event(self.connection, EventInput("Custom", True, start_date="2026-01-05", end_date="2026-01-05"))
+        custom_event = get_event(self.connection, custom_event_id)
+        custom_rule = EddyRequestHandler.recurrence_rule_from_form({
+            "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "week",
+            "recurrence_custom_weekdays": "0,2", "recurrence_custom_ends": "after", "recurrence_custom_count": "3",
+        }, custom_event)
+        self.assertEqual(("weekly", (0, 2), "2026-01-12"), (custom_rule.frequency, custom_rule.weekdays, custom_rule.until_date))
+        self.assertIn("Custom recurrence", fourth_monday)
+        self.assertIn("Repeat every", fourth_monday)
+        self.assertIn("occurrences", fourth_monday)
 
     def test_calendar_renders_month_week_filters_and_event_preview(self) -> None:
         work_calendar_id = create_calendar(

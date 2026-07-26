@@ -375,9 +375,9 @@ def _recurrence_fields(values: dict[str, str], recurrence: RecurrenceDefinition 
     options = [("none", "Does not repeat"), ("daily", "Daily"), (f"weekly_{anchor.weekday()}", f"Weekly on {weekday}"), *monthly_options, ("yearly", f"Annually on {anchor.strftime('%-d %B')}"), ("weekdays", "Every weekday, Monday - Friday")]
     selected = _recurrence_preset(recurrence, anchor, options)
     choices = "".join(f'<button type="button" role="option" data-recurrence-choice value="{value}" aria-selected="{"true" if value == selected else "false"}">{escape(label)}</button>' for value, label in options)
-    custom = '<button type="button" role="option" disabled title="Custom recurrence is not available yet">Custom (coming soon)</button>'
-    label = next(label for value, label in options if value == selected) if selected != "custom" else "Custom (coming soon)"
-    return f'<fieldset class="calendar-recurrence"><legend>Recurrence</legend><input type="hidden" name="recurrence_preset" value="{escape(selected)}" data-recurrence-value><details class="recurrence-picker" data-recurrence-picker><summary class="button secondary"><span data-recurrence-label>{escape(label)}</span><span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="recurrence-options" role="listbox" aria-label="Repeat options">{choices}{custom}</div></details><small class="field-help">Annual repeats on 29 February occur on 28 February in non-leap years.</small></fieldset>'
+    custom = f'<button type="button" role="option" data-recurrence-choice value="custom" aria-selected="{"true" if selected == "custom" else "false"}">Custom</button>'
+    label = next(label for value, label in options if value == selected) if selected != "custom" else "Custom"
+    return f'<fieldset class="calendar-recurrence"><legend>Recurrence</legend><input type="hidden" name="recurrence_preset" value="{escape(selected)}" data-recurrence-value><details class="recurrence-picker" data-recurrence-picker><summary class="button secondary"><span data-recurrence-label>{escape(label)}</span><span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="recurrence-options" role="listbox" aria-label="Repeat options">{choices}{custom}</div></details><small class="field-help">Annual repeats on 29 February occur on 28 February in non-leap years.</small></fieldset>{_custom_recurrence_dialog(recurrence, anchor)}'
 
 
 def _recurrence_anchor(values: dict[str, str]) -> date:
@@ -407,3 +407,21 @@ def _recurrence_preset(recurrence: RecurrenceDefinition | None, anchor: date, op
             if (rule.frequency, rule.interval, rule.weekdays, rule.monthly_ordinal, rule.monthly_weekday) == ("monthly", 1, (), monthly_ordinal, int(weekday)):
                 return value
     return "custom"
+
+
+def _custom_recurrence_dialog(recurrence: RecurrenceDefinition | None, anchor: date) -> str:
+    rule = recurrence.rule if recurrence else None
+    frequency = {"daily": "day", "weekly": "week", "monthly": "month", "yearly": "year"}.get(rule.frequency if rule else "", "week")
+    interval = rule.interval if rule else 1
+    selected_weekdays = set(rule.weekdays) if rule and rule.weekdays else {anchor.weekday()}
+    weekday_buttons = "".join(
+        f'<label class="custom-weekday"><input type="checkbox" name="recurrence_custom_weekdays" value="{day}"{" checked" if day in selected_weekdays else ""}><span>{label}</span></label>'
+        for day, label in enumerate(("M", "T", "W", "T", "F", "S", "S"))
+    )
+    pattern = "ordinal" if rule and rule.monthly_ordinal else "day"
+    ordinal = rule.monthly_ordinal if rule and rule.monthly_ordinal in (1, 2, 3, 4) else (anchor.day - 1) // 7 + 1
+    weekday = rule.monthly_weekday if rule and rule.monthly_weekday in range(7) else anchor.weekday()
+    ordinal_options = "".join(f'<option value="{value}"{" selected" if value == ordinal else ""}>{label}</option>' for value, label in ((1, "first"), (2, "second"), (3, "third"), (4, "fourth")))
+    weekday_options = "".join(f'<option value="{value}"{" selected" if value == weekday else ""}>{label}</option>' for value, label in enumerate(("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")))
+    ending = "on" if rule and rule.until_date else "never"
+    return f'''<dialog class="confirmation-dialog custom-recurrence-dialog" data-custom-recurrence-dialog aria-labelledby="custom-recurrence-title"><h2 id="custom-recurrence-title">Custom recurrence</h2><div class="custom-recurrence-fields"><label class="custom-repeat-every"><span>Repeat every</span><input name="recurrence_custom_interval" type="number" min="1" max="999" step="1" value="{interval}" required><select name="recurrence_custom_frequency" data-custom-frequency><option value="day"{" selected" if frequency == "day" else ""}>day</option><option value="week"{" selected" if frequency == "week" else ""}>week</option><option value="month"{" selected" if frequency == "month" else ""}>month</option><option value="year"{" selected" if frequency == "year" else ""}>year</option></select></label><section data-custom-weekdays{" hidden" if frequency != "week" else ""}><h3>Repeat on</h3><div class="custom-weekday-options">{weekday_buttons}</div></section><section data-custom-monthly{" hidden" if frequency != "month" else ""}><label><span>Repeat</span><select name="recurrence_custom_monthly_pattern" data-custom-monthly-pattern><option value="day"{" selected" if pattern == "day" else ""}>on day {anchor.day} of the month</option><option value="ordinal"{" selected" if pattern == "ordinal" else ""}>on an ordinal weekday</option></select></label><label data-custom-monthly-ordinal{" hidden" if pattern != "ordinal" else ""}><span>Repeat on the</span><span class="custom-monthly-ordinal"><select name="recurrence_custom_monthly_ordinal">{ordinal_options}</select><select name="recurrence_custom_monthly_weekday">{weekday_options}</select></span></label></section><section class="custom-recurrence-ends"><h3>Ends</h3><label><input type="radio" name="recurrence_custom_ends" value="never"{" checked" if ending == "never" else ""}> Never</label><label class="custom-end-row"><input type="radio" name="recurrence_custom_ends" value="on"{" checked" if ending == "on" else ""}> On <input name="recurrence_custom_until" type="date" value="{escape(rule.until_date if rule else "")}" data-custom-end-on></label><label class="custom-end-row"><input type="radio" name="recurrence_custom_ends" value="after"> After <span class="custom-occurrence-count"><input name="recurrence_custom_count" type="number" min="1" max="500" step="1" value="1" data-custom-end-after> occurrences</span></label></section></div><div class="actions"><button class="button secondary" type="button" data-custom-recurrence-cancel>Cancel</button><button class="button" type="button" data-custom-recurrence-confirm>OK</button></div></dialog>'''

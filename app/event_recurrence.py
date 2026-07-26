@@ -232,6 +232,24 @@ def occurrences_between(event: EventRecord, definition: RecurrenceDefinition | N
     return results
 
 
+def until_date_after_occurrences(event: EventRecord, rule: RecurrenceRule, count: int) -> str:
+    """Return the last generated date when a recurrence is limited by occurrence count."""
+    if count < 1 or count > 500:
+        raise ValueError("Occurrence count must be between 1 and 500.")
+    anchor = _anchor_date(event)
+    current = anchor
+    occurrences = 0
+    while current <= date.max:
+        if _matches(current, anchor, rule):
+            occurrences += 1
+            if occurrences == count:
+                return current.isoformat()
+        if current == date.max:
+            break
+        current += timedelta(days=1)
+    raise ValueError("The requested occurrence count exceeds the supported calendar range.")
+
+
 def _exception_for_date(exceptions: set[str] | dict[str, dict[str, object]], occurrence_date: str) -> dict[str, object] | None:
     if isinstance(exceptions, set):
         return {"type": "cancelled"} if occurrence_date in exceptions else None
