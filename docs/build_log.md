@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Task work-management deferral
+
+Retained Task storage, migrations, services and validation for a future user-led to-do redesign, while removing Task routes and navigation plus Task search, Calendar, Project, Inbox-reminder and automation integration so Phase 2 can focus on Events.
+
 ## 2026-07-26 — Phase 3 note collection
 
 Moved the tentative local-first journey-planning proof slice out of Phase 2 closeout requirements and into a new informal Phase 3 notes document for future assertions and open questions.

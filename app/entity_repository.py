@@ -5,7 +5,7 @@ from typing import Any
 from app.db_support import sql_identifier, utc_now
 from app.entities import (
     ALL_DEFINITIONS_BY_TYPE,
-    EVENT_DEFINITION, TASK_DEFINITION,
+    EVENT_DEFINITION,
     ENTITY_DEFINITIONS,
     EntityDefinition,
     EntityRecord,
@@ -52,12 +52,12 @@ def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
 def list_searchable_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
     """Return canonical records exposed through global Search.
 
-    Events and Tasks have dedicated operational workflows rather than generic
-    CRUD, but remain canonical peer records and participate in discovery.
+    Events have a dedicated operational workflow. Task records are retained
+    for future work-management design, but are deliberately dormant and do
+    not participate in current discovery.
     """
     records = list_all_entities(connection)
     records.extend(list_entities(connection, EVENT_DEFINITION))
-    records.extend(list_entities(connection, TASK_DEFINITION))
     return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
 
 

@@ -48,12 +48,11 @@ class TaskServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Archived Task list"):
             create_task(self.connection, TaskInput("Unsafe", work_id))
 
-    def test_tasks_use_normal_relationships_and_global_search(self):
+    def test_retained_tasks_keep_their_relationship_records(self):
         task_id = create_task(self.connection, TaskInput("Prepare launch"))
         project_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["project"], {"display_name": "Launch", "summary": "", "notes": "", "project_type": "", "status": "Active", "started_at": "", "target_date": "", "ended_at": ""})
         create_relationship(self.connection, {"source_entity_id": str(task_id), "target_entity_id": str(project_id), "type": "task_related_to_project"})
         self.connection.commit()
-        self.assertEqual([task_id], [result["entity"].id for result in search_entities(self.connection, "prepare", entity_type="task")])
         self.assertEqual("task_related_to_project", list_relationships_for_entity(self.connection, task_id)[0].type_key)
 
     def test_deadlines_and_sessions_use_shared_temporal_contract(self):
@@ -75,10 +74,10 @@ class TaskServiceTests(unittest.TestCase):
         html = views.entity_detail_page(project, list_relationships_for_entity(self.connection, project_id), project_events=[__import__("app.event_service", fromlist=["get_event"]).get_event(self.connection, event_id)], project_tasks=[get_task(self.connection, task_id)])
         self.assertIn("Upcoming Events", html)
         self.assertIn("Launch meeting", html)
-        self.assertIn("Open Tasks", html)
-        self.assertIn("Prepare launch", html)
+        self.assertNotIn("Open Tasks", html)
+        self.assertNotIn("Prepare launch", html)
 
-    def test_calendar_originates_undated_task_creation(self):
+    def test_task_routes_are_dormant(self):
         EddyRequestHandler.database_path = self.database_path
         server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
         thread = threading.Thread(target=server.serve_forever)
@@ -87,23 +86,9 @@ class TaskServiceTests(unittest.TestCase):
             client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
             client.request("GET", "/calendar/tasks/new")
             response = client.getresponse()
-            self.assertEqual(200, response.status)
-            form_page = response.read().decode()
-            self.assertIn("Add Task", form_page)
-            self.assertIn("Description", form_page)
-            self.assertNotIn("Notes <em>", form_page)
-            client.request("GET", "/calendar/tasks/new?title=Quick+Task&deadline_date=2026-09-10")
-            handoff_page = client.getresponse().read().decode()
-            self.assertIn('value="Quick Task"', handoff_page)
-            self.assertIn('value="2026-09-10"', handoff_page)
-            client.request("POST", "/calendar/tasks/new", "title=Quick+Task&task_list_id=1&deadline_date=&notes=&quick_create=1", {"Content-Type": "application/x-www-form-urlencoded"})
-            quick_response = client.getresponse()
-            self.assertEqual(303, quick_response.status)
-            self.assertEqual("/calendar?created_task=1", quick_response.getheader("Location"))
-            client.request("POST", "/calendar/tasks/new", "title=Undated+Task&task_list_id=1&notes=", {"Content-Type": "application/x-www-form-urlencoded"})
-            response = client.getresponse()
-            self.assertEqual(303, response.status)
-            self.assertTrue(response.getheader("Location").startswith("/tasks/"))
+            self.assertEqual(404, response.status)
+            client.request("GET", "/tasks")
+            self.assertEqual(404, client.getresponse().status)
         finally:
             server.shutdown(); server.server_close(); thread.join()
 

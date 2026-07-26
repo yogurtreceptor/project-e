@@ -14,7 +14,6 @@ from app.entity_repository import list_entities
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import list_events
 from app.event_recurrence import get_recurrence, occurrence_exceptions, occurrences_between
-from app.task_service import list_tasks
 
 PLATFORM_TIMEZONE = "Australia/Brisbane"
 DEFAULT_TIMINGS = {
@@ -137,20 +136,20 @@ def list_inbox_items(connection: sqlite3.Connection, *, archived: bool = False, 
     if limit == 0:
         return []
     order = "delivered_at DESC, id DESC" if archived else "CASE WHEN reason='overdue' THEN 0 ELSE 1 END, due_at ASC, delivered_at ASC, id ASC"
-    rows = connection.execute(f"SELECT * FROM inbox_items WHERE {where} ORDER BY {order} LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
+    rows = connection.execute(f"SELECT * FROM inbox_items WHERE source_kind <> 'task_deadline' AND {where} ORDER BY {order} LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
     return [InboxItem(**dict(row)) for row in rows]
 
 
 def list_deep_archive_items(connection: sqlite3.Connection) -> list[InboxItem]:
     rows = connection.execute(
-        "SELECT * FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed' "
+        "SELECT * FROM inbox_items WHERE source_kind <> 'task_deadline' AND state <> 'active' AND state <> 'snoozed' "
         "ORDER BY delivered_at DESC, id DESC LIMIT -1 OFFSET 500"
     ).fetchall()
     return [InboxItem(**dict(row)) for row in rows]
 
 
 def archived_inbox_count(connection: sqlite3.Connection) -> int:
-    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed'").fetchone()[0])
+    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE source_kind <> 'task_deadline' AND state <> 'active' AND state <> 'snoozed'").fetchone()[0])
 
 
 def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | None = None, limit: int = 20) -> list[UpcomingReminder]:
@@ -170,13 +169,13 @@ def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | N
 
 
 def inbox_count(connection: sqlite3.Connection) -> int:
-    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state='active' OR (state='snoozed' AND next_attention_at <= ?)", (utc_now(),)).fetchone()[0])
+    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE source_kind <> 'task_deadline' AND (state='active' OR (state='snoozed' AND next_attention_at <= ?))", (utc_now(),)).fetchone()[0])
 
 
 def act_on_inbox_item(connection: sqlite3.Connection, item_id: int, action: str) -> bool:
     if action not in {"acknowledge", "dismiss", "snooze_30m", "snooze_next_open"}: raise ValueError("Inbox action is invalid.")
     row = connection.execute("SELECT * FROM inbox_items WHERE id = ?", (item_id,)).fetchone()
-    if row is None or row["state"] not in {"active", "snoozed"}: return False
+    if row is None or row["source_kind"] == "task_deadline" or row["state"] not in {"active", "snoozed"}: return False
     now = datetime.now(UTC)
     if action.startswith("snooze"):
         next_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds") if action == "snooze_30m" else "9999-12-31T23:59:59+00:00"
@@ -314,10 +313,6 @@ def _sources(connection, now):
         for occurrence in occurrences:
             due = _parse_utc(occurrence.start_utc) if not occurrence.is_all_day else datetime.combine(date.fromisoformat(occurrence.start_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
             yield "event", event.id, occurrence.start_date or occurrence.start_utc, occurrence.title, due, ("calendar", event.calendar_id)
-    for task in list_tasks(connection):
-        if not (task.deadline_date or task.deadline_utc): continue
-        due = _parse_utc(task.deadline_utc) if task.deadline_utc else datetime.combine(date.fromisoformat(task.deadline_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-        yield "task_deadline", task.id, task.deadline_date or task.deadline_utc, task.title, due, ("task_list", task.task_list_id)
     for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
         expiry = document.metadata.get("expiry_date", "")
         if expiry:

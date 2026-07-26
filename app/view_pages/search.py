@@ -7,6 +7,8 @@ from app.structured_filters import FILTERS
 def search_page(query: str, entity_type: str, favourites_only: bool, results: list[dict[str, object]], filter_key: str = "", filter_value: str = "") -> str:
     type_options = ['<option value="">All entity types</option>']
     for definition in ALL_ENTITY_DEFINITIONS:
+        if definition.type == "task":
+            continue
         selected = " selected" if definition.type == entity_type else ""
         type_options.append(f'<option value="{definition.type}"{selected}>{escape(definition.plural)}</option>')
     checked = " checked" if favourites_only else ""

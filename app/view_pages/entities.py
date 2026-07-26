@@ -143,16 +143,12 @@ def project_overview_section(record, events, tasks):
     milestones=definition_list([("Started",record.metadata.get("started_at","")),("Target",record.metadata.get("target_date","")),("Completed",record.metadata.get("ended_at",""))])
     kind=definition_list([("Project type",record.metadata.get("project_type",""))])
     event_rows = ''.join(f'<li><a href="/events/{item.id}">{escape(item.title)}</a><span>{escape(_event_schedule(item))}</span></li>' for item in events) or '<li>No upcoming Events.</li>'
-    task_rows = ''.join(f'<li><a href="/tasks/{item.id}">{escape(item.title)}</a><span>{escape(_task_deadline(item))}</span></li>' for item in tasks) or '<li>No open Tasks.</li>'
-    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}<h2>Upcoming Events</h2><ul class="entity-link-list">{event_rows}</ul><h2>Open Tasks</h2><ul class="entity-link-list">{task_rows}</ul></section>'
+    return f'<section class="panel profile-section project-overview"><div class="section-heading split"><h2>Status</h2>{badge}</div><h2>Milestones</h2>{milestones}{kind}<h2>Upcoming Events</h2><ul class="entity-link-list">{event_rows}</ul></section>'
 
 
 def _event_schedule(event):
     return event.start_date if event.is_all_day else event.start_utc
 
-
-def _task_deadline(task):
-    return task.deadline_date or task.deadline_utc or 'No deadline'
 
 def relationship_summary_section(record, relationships):
     rows=[]

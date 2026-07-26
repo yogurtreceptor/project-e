@@ -17,10 +17,8 @@ from app.view_pages.timezones import timezone_picker
 def calendar_page(
     calendars: list[CalendarRecord],
     events: list[EventRecord],
-    task_lists: list,
     return_to: str = "/calendar",
     created_event: EventRecord | None = None,
-    created_task: bool = False,
     projection: str = "",
 ) -> str:
     """Render Calendar projections only; Event mutation has dedicated routes."""
@@ -31,17 +29,13 @@ def calendar_page(
         <a href="/relationships/new?context_entity_id={created_event.id}">Add relationships</a>
         or <a href="/events/{created_event.id}">open the Event record</a>.</section>
         """
-    task_notice = '<section class="notice success" role="status"><strong>Task created.</strong></section>' if created_task else ""
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
-    task_url = f'/calendar/tasks/new?{urlencode({"return_to": return_to})}'
-    return f'''<div class="calendar-page"><div class="actions"><details class="action-menu calendar-create-menu"><summary class="button">Create<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul><li><a href="{event_url}" data-quick-create="event">Event</a></li><li><a href="{task_url}" data-quick-create="task">Task</a></li></ul></div></details></div><div data-quick-create-root>{_quick_create_dialogs(calendars, task_lists, return_to)}</div>{projection}{created_notice}{task_notice}</div>'''
+    return f'''<div class="calendar-page"><div class="actions"><a class="button" href="{event_url}" data-quick-create="event">Create Event</a></div><div data-quick-create-root>{_quick_create_dialogs(calendars)}</div>{projection}{created_notice}</div>'''
 
 
-def _quick_create_dialogs(calendars: list[CalendarRecord], task_lists: list, return_to: str) -> str:
+def _quick_create_dialogs(calendars: list[CalendarRecord]) -> str:
     event = default_event_values(calendars)
-    default_task_list = next((item for item in task_lists if item.is_default), None)
-    task_list_id = str(default_task_list.id) if default_task_list else ""
-    return f'''<section class="calendar-quick-create" data-quick-create-dialog="event" aria-labelledby="quick-event-title" hidden><form method="post" action="/calendar/events/new" data-quick-event-form><input type="hidden" name="calendar_id" value="{escape(event["calendar_id"])}"><input type="hidden" name="timezone" value="{escape(event["timezone"])}"><input type="hidden" name="quick_create" value="1"><header class="quick-create-heading"><button class="button quiet" type="button" data-quick-create-dock>Dock</button><h2 id="quick-event-title" data-quick-create-drag>Add Event</h2><button class="button quiet icon-button" type="button" data-quick-create-close aria-label="Close Add Event" title="Close">×</button></header><label><span>Title</span><input name="title" required value=""></label><label class="inline-check"><input name="all_day" type="checkbox" value="1" data-event-all-day> All day</label><div data-all-day-fields hidden><label><span>Start date</span><input name="start_date" type="date" value="{escape(event["start_date"])}"></label><label><span>End date</span><input name="end_date" type="date" value="{escape(event["end_date"])}"></label></div><div data-timed-fields><label><span>Starts</span><input name="start_local" type="datetime-local" value="{escape(event["start_local"])}" required></label><label><span>Ends</span><input name="end_local" type="datetime-local" value="{escape(event["end_local"])}" required></label></div>{description_field()}<footer class="quick-create-actions"><button class="button secondary" type="button" data-quick-create-more data-quick-create-url="/calendar/events/new">More options</button><button class="button" type="submit">Add Event</button></footer></form></section><section class="calendar-quick-create" data-quick-create-dialog="task" aria-labelledby="quick-task-title" hidden><form method="post" action="/calendar/tasks/new"><input type="hidden" name="task_list_id" value="{task_list_id}"><input type="hidden" name="deadline_timezone" value="Australia/Brisbane"><input type="hidden" name="quick_create" value="1"><header class="quick-create-heading"><button class="button quiet" type="button" data-quick-create-dock>Dock</button><h2 id="quick-task-title" data-quick-create-drag>Add Task</h2><button class="button quiet icon-button" type="button" data-quick-create-close aria-label="Close Add Task" title="Close">×</button></header><label><span>Title</span><input name="title" required value=""></label><label><span>Deadline</span><input name="deadline_date" type="date"></label>{description_field()}<footer class="quick-create-actions"><button class="button secondary" type="button" data-quick-create-more data-quick-create-url="/calendar/tasks/new">More options</button><button class="button" type="submit">Add Task</button></footer></form></section>'''
+    return f'''<section class="calendar-quick-create" data-quick-create-dialog="event" aria-labelledby="quick-event-title" hidden><form method="post" action="/calendar/events/new" data-quick-event-form><input type="hidden" name="calendar_id" value="{escape(event["calendar_id"])}"><input type="hidden" name="timezone" value="{escape(event["timezone"])}"><input type="hidden" name="quick_create" value="1"><header class="quick-create-heading"><button class="button quiet" type="button" data-quick-create-dock>Dock</button><h2 id="quick-event-title" data-quick-create-drag>Add Event</h2><button class="button quiet icon-button" type="button" data-quick-create-close aria-label="Close Add Event" title="Close">×</button></header><label><span>Title</span><input name="title" required value=""></label><label class="inline-check"><input name="all_day" type="checkbox" value="1" data-event-all-day> All day</label><div data-all-day-fields hidden><label><span>Start date</span><input name="start_date" type="date" value="{escape(event["start_date"])}"></label><label><span>End date</span><input name="end_date" type="date" value="{escape(event["end_date"])}"></label></div><div data-timed-fields><label><span>Starts</span><input name="start_local" type="datetime-local" value="{escape(event["start_local"])}" required></label><label><span>Ends</span><input name="end_local" type="datetime-local" value="{escape(event["end_local"])}" required></label></div>{description_field()}<footer class="quick-create-actions"><button class="button secondary" type="button" data-quick-create-more data-quick-create-url="/calendar/events/new">More options</button><button class="button" type="submit">Add Event</button></footer></form></section>'''
 
 
 def event_form_page(calendars, values, *, editing_event=None, recurrence=None, occurrence_date="", errors=None, return_to="/calendar") -> str:
@@ -59,7 +53,7 @@ def calendar_projection(
     events: list[EventRecord], calendars: list[CalendarRecord], *, view: str,
     anchor_date: date, selected_calendar_ids: set[int], preview_event: EventRecord | None, preview_occurrence: str = "",
     recurrences: dict[int, RecurrenceDefinition] | None = None,
-    recurrence_exceptions: dict[int, object] | None = None, tasks=None, task_sessions=None,
+    recurrence_exceptions: dict[int, object] | None = None,
     derived_occurrences=None,
 ) -> str:
     """Build Month, Week or Day read projections from canonical Event intervals."""
@@ -105,32 +99,14 @@ def calendar_projection(
     )
     return_to = _calendar_url([("view", view), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None, return_to=return_to) if preview_event and preview_event.calendar_id in selected else ""
-    task_projection = _task_projection(tasks or [], task_sessions or {}, period_start, period_end, display_timezone)
     derived_projection = _derived_projection(derived_occurrences or [], period_start, period_end)
     return f"""
     <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Calendars</a><a class="button{' secondary' if view != 'month' else ''}" href="{month_url}">Month</a><a class="button{' secondary' if view != 'week' else ''}" href="{week_url}">Week</a><a class="button{' secondary' if view != 'day' else ''}" href="{day_url}">Day</a><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
         <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
         {preview}
-        {grid}{task_projection}{derived_projection}
+        {grid}{derived_projection}
     </section>
     """
-
-
-def _task_projection(tasks, sessions, start: date, end: date, display_timezone: str) -> str:
-    entries = []
-    for task in tasks:
-        if task.deadline_date and start <= date.fromisoformat(task.deadline_date) <= end:
-            entries.append(f'<li class="calendar-task-deadline"><a href="/tasks/{task.id}">Deadline · {escape(task.title)}</a> · {escape(task.deadline_date)}</li>')
-        elif task.deadline_utc:
-            due = datetime.fromisoformat(task.deadline_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(display_timezone))
-            if start <= due.date() <= end:
-                entries.append(f'<li class="calendar-task-deadline"><a href="/tasks/{task.id}">Deadline · {escape(task.title)}</a> · {due.strftime("%Y-%m-%d %H:%M")}</li>')
-        for session in sessions.get(task.id, []):
-            session_day = date.fromisoformat(session.start_date) if session.is_all_day else datetime.fromisoformat(session.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(display_timezone)).date()
-            if start <= session_day <= end:
-                label = "All day session" if session.is_all_day else "Planned session"
-                entries.append(f'<li class="calendar-task-session"><a href="/tasks/{task.id}">{label} · {escape(task.title)}</a> · {escape(session_day.isoformat())}</li>')
-    return f'<section class="calendar-task-projections"><h3>Task deadlines and planned sessions</h3><ul>{"".join(entries) or "<li>No Task deadlines or sessions in this period.</li>"}</ul></section>'
 
 
 def _derived_projection(occurrences, start: date, end: date) -> str:

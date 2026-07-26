@@ -4,7 +4,9 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — expanded and active.** The original Phases 2A–2F form one locally verified operational system: canonical Events and Tasks, Calendar projections, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, approval-gated canonical mutations, portability and data-quality coverage. This workspace remains the living record for Phase 2 refinements and hardening until Phase 3 is deliberately defined. Persistent System Health remains deferred; neither the original closeout nor this workspace authorises it.
+**Phase 2 — Event-focused and active.** Calendar and Event work, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, portability and data-quality coverage remain active. The previously delivered Task work-management implementation is retained but dormant pending a later, user-led to-do design; it has no normal routes, navigation, search, Calendar projection, Inbox delivery or automation interaction. This workspace remains the living record for Phase 2 refinements and hardening until Phase 3 is deliberately defined. Persistent System Health remains deferred; neither the original closeout nor this workspace authorises it.
+
+> **Task-work-management deferral (2026-07-26).** Historical Task requirements and delivery entries below record the work that was completed before this decision; they are not current user-facing behaviour. Existing Task records, migrations, services and validation remain preserved for future reconsideration, rather than being deleted or moved into an archive directory.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
@@ -332,7 +334,9 @@ The behaviour above is authoritative product direction. The following sequence i
 
 ### Phase 2 expansion workspace
 
-1. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local collapsed IANA combobox. It visibly defaults to `Australia/Brisbane`; opening or editing it reveals a searchable, scrollable list with current UTC offsets and country names from the installed timezone database. Searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
+1. **Complete (2026-07-26):** defer Task work management while retaining its migration-safe storage and service implementation for later redesign. Task navigation and direct routes now return no user-facing Task workflow; Tasks are excluded from Calendar creation and projections, global Search, Project projections, Inbox reminder delivery and registered automation. Existing Task-related operational records are retained but hidden, preserving data without letting the dormant feature affect Event-focused Phase 2 work.
+
+2. **Complete (2026-07-25):** replace free-text timezone entry in Calendar, Event, Task deadline and Task-session forms with a local collapsed IANA combobox. It visibly defaults to `Australia/Brisbane`; opening or editing it reveals a searchable, scrollable list with current UTC offsets and country names from the installed timezone database. Searches match country, place, IANA identifier and offset text. Stored values remain validated IANA identifiers, so existing UTC instants and record meaning are unchanged.
 
 2. **Complete (2026-07-25):** add the protected built-in `Birthdays` Calendar. A Person with a birthday owns one linked, canonical, yearly recurring all-day Event in that Calendar; changing the Person name or birthday synchronises that same Event, while deleting/restoring the Person archives/restores it. Birthdays remain a Calendar category rather than a derived event type. Its reminder defaults live in Birthdays Calendar settings; the former global birthday policy migrates there without discarding configured timings.
 

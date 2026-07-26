@@ -103,6 +103,15 @@ def _default_task_list_value(task_lists) -> str:
     return str(default.id) if default is not None else ""
 
 
+def _visible_relationships(relationships):
+    """Hide retained Task relationships while Task work management is dormant."""
+    return [item for item in relationships if item.source.type != "task" and item.target.type != "task"]
+
+
+def _relationship_involves_task(relationship) -> bool:
+    return relationship.source.type == "task" or relationship.target.type == "task"
+
+
 class EddyRequestHandler(BaseHTTPRequestHandler):
     database_path = DATABASE_PATH
     document_storage_dir = DOCUMENT_STORAGE_DIR
@@ -201,8 +210,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             self.route_calendar_request(parts, query)
             return
 
+        # Task work management is retained in storage but intentionally dormant.
+        # Do not expose legacy Task routes while Event-focused Phase 2 work continues.
         if parts[0] == "tasks":
-            self.route_task_request(parts, query)
+            self.respond_not_found()
             return
 
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
@@ -302,9 +313,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
-                tasks = list_tasks(connection, include_completed=True)
-                task_lists = list_task_lists(connection)
-                task_sessions = {task.id: list_task_sessions(connection, task.id) for task in tasks}
                 derived_occurrences = self.calendar_derived_occurrences(connection, anchor_date.year)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
                 recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
@@ -315,8 +323,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 preview_occurrence = query.get("occurrence", "")
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, tasks=tasks, task_sessions=task_sessions, derived_occurrences=derived_occurrences)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, task_lists, return_to=self.path, created_event=created_event, created_task=query.get("created_task") == "1", projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("created_task") == "1" or query.get("saved") == "1" or query.get("deleted") == "1")
+            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions, derived_occurrences=derived_occurrences)
+            self.respond_page("Calendar", views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1")
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":
@@ -361,17 +369,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 return
             if self.command == "POST":
                 self.handle_calendar_event_create()
-                return
-        if len(parts) == 3 and parts[1:] == ["tasks", "new"]:
-            if self.command == "GET":
-                with connect(self.database_path) as connection:
-                    task_lists = list_task_lists(connection)
-                values = {"title": "", "notes": "", "task_list_id": _default_task_list_value(task_lists), "deadline_date": "", "deadline_local": "", "deadline_timezone": "Australia/Brisbane"}
-                values.update({key: value for key, value in query.items() if key in {"title", "task_list_id", "notes", "deadline_date", "deadline_local", "deadline_timezone"}})
-                self.respond_page("Add Task", views.task_form_page(task_lists, values), active_slug="calendar")
-                return
-            if self.command == "POST":
-                self.handle_calendar_task_create()
                 return
         editing_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "edit" else None
         reminder_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "events" and parts[3] == "reminders" else None
@@ -1055,6 +1052,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_search(self, query: dict[str, str]) -> None:
         search_query = query.get("q", "")
         entity_type = query.get("type", "")
+        if entity_type == "task":
+            entity_type = ""
         favourites_only = query.get("favourites") == "1"
         filter_key = query.get("filter", "")
         filter_value = query.get("filter_value", "")
@@ -1143,13 +1142,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if record is not None:
                 mark_entity_viewed(connection, entity_id)
                 record = get_entity(connection, definition, entity_id)
-            relationships = list_relationships_for_entity(connection, entity_id) if record else []
+            relationships = _visible_relationships(list_relationships_for_entity(connection, entity_id)) if record else []
             integrity_warnings = warnings_for_entity(audit_relationships(connection), entity_id) if record else []
             history = list_entity_history(connection, entity_id) if record else []
             audit_events = list_audit_events(connection, "entity", entity_id) if record else []
             journal_entries = list_journal_entries(connection, "person", entity_id) if record and definition.type == "person" else []
             project_events = []
-            project_tasks = []
             if record and definition.type == "project":
                 from datetime import date
                 for relationship in relationships:
@@ -1158,17 +1156,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         event = get_event(connection, other.id)
                         if event and (event.start_date >= date.today().isoformat() if event.is_all_day else event.start_utc[:10] >= date.today().isoformat()):
                             project_events.append(event)
-                    elif other.type == "task":
-                        task = get_task(connection, other.id)
-                        if task and not task.is_completed:
-                            project_tasks.append(task)
         if record is None:
             self.respond_not_found()
             return
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries, project_events, project_tasks),
+            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries, project_events),
             active_slug=definition.slug,
             show_save_toast=query.get("saved") == "1",
         )
@@ -1481,7 +1475,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_relationship_list(self) -> None:
         with connect(self.database_path) as connection:
             integrity_warnings = audit_relationships(connection)
-            relationships = list_relationships(connection)
+            relationships = _visible_relationships(list_relationships(connection))
         self.respond_page(
             "Relationships",
             views.relationship_list_page(relationships, integrity_warnings),
@@ -1496,6 +1490,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         with connect(self.database_path) as connection:
             relationship = get_relationship(connection, relationship_id)
         if relationship is None:
+            self.respond_not_found()
+            return
+        if relationship.source.type == "task" or relationship.target.type == "task":
             self.respond_not_found()
             return
         self.respond_page(
@@ -1513,6 +1510,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 inline_errors = self.create_inline_relationship_target(connection, values, raw_form, query)
                 normalise_relationship_direction(connection, values)
                 errors = validate_relationship_values(connection, values)
+                endpoint_ids = [self.parse_entity_id(values.get(key, "")) for key in ("source_entity_id", "target_entity_id")]
+                if any(entity_id is not None and (record := get_entity_by_id(connection, entity_id)) is not None and record.type == "task" for entity_id in endpoint_ids):
+                    errors.append("Task relationships are unavailable while work management is deferred.")
                 errors = inline_errors + errors
                 entities = list_all_entities(connection)
                 if not errors:
@@ -1551,6 +1551,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if relationship is None:
             self.respond_not_found()
             return
+        if _relationship_involves_task(relationship):
+            self.respond_not_found()
+            return
 
         if self.command == "POST":
             values = normalise_relationship_values(self.read_form())
@@ -1581,6 +1584,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         redirect_to = "/relationships"
         with connect(self.database_path) as connection:
+            relationship = get_relationship(connection, relationship_id)
+            if relationship is None or _relationship_involves_task(relationship):
+                self.respond_not_found()
+                return
             context_entity = self.relationship_context_entity(connection, query, {})
             if context_entity is not None:
                 redirect_to = f"/{context_entity.slug}/{context_entity.id}"
