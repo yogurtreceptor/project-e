@@ -230,9 +230,11 @@ def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurren
     calendar_name = calendar.name if calendar else "Unavailable Calendar"
     colour = calendar.colour if calendar else "#6B7280"
     occurrence_query = f"&occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
-    scope = _recurrence_scope_fields(occurrence_date, compact=True) if occurrence_date and recurrence else ""
+    recurring_occurrence = bool(occurrence_date and recurrence)
+    scope = _recurrence_delete_scope_fields(occurrence_date) if recurring_occurrence else ""
+    delete_confirmation = 'data-recurrence-delete-form' if recurring_occurrence else f'data-confirm-object="{escape(event.title)}" data-confirm-consequence="Move this Event to the Recycle Bin. It can be restored later."'
     context_query = urlencode({"return_to": return_to})
-    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit?{context_query}{occurrence_query}">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" data-confirm-object="{escape(event.title)}" data-confirm-consequence="Apply the selected deletion scope. The all-occurrences action moves this Event to the Recycle Bin."><input type="hidden" name="return_to" value="{escape(return_to)}">{scope}<button class="button danger" type="submit">Delete</button></form></div></aside>'
+    return f'<aside class="calendar-preview"><div><p class="eyebrow">Event preview</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p></div><div class="actions"><a class="button secondary" href="/calendar/events/{event.id}/edit?{context_query}{occurrence_query}">Edit</a><form method="post" action="/calendar/events/{event.id}/delete" {delete_confirmation}><input type="hidden" name="return_to" value="{escape(return_to)}">{scope}<button class="button danger" type="submit">Delete</button></form></div></aside>'
 
 
 def _occurrence_date(event: EventRecord) -> str:
@@ -250,6 +252,10 @@ def _recurrence_scope_fields(occurrence_date: str, compact: bool = False) -> str
 
 def _recurrence_edit_scope_fields(occurrence_date: str) -> str:
     return f'''<input type="hidden" name="occurrence_date" value="{escape(occurrence_date)}"><input type="hidden" name="recurrence_scope" value="all" data-recurrence-scope-value><dialog class="confirmation-dialog recurrence-edit-scope-dialog" data-recurrence-scope-dialog aria-labelledby="recurrence-edit-scope-title"><h2 id="recurrence-edit-scope-title">Apply Event changes</h2><p>Where should these saved changes apply?</p><div class="actions"><button class="button secondary" type="button" data-recurrence-scope-cancel>Keep editing</button><button class="button secondary" type="button" value="this" data-recurrence-scope-save>This event</button><button class="button secondary" type="button" value="following" data-recurrence-scope-save>This and following events</button><button class="button" type="button" value="all" data-recurrence-scope-save>All events</button></div></dialog>'''
+
+
+def _recurrence_delete_scope_fields(occurrence_date: str) -> str:
+    return f'''<input type="hidden" name="occurrence_date" value="{escape(occurrence_date)}"><input type="hidden" name="recurrence_scope" value="all" data-recurrence-delete-scope-value><dialog class="confirmation-dialog recurrence-delete-scope-dialog" data-recurrence-delete-scope-dialog aria-labelledby="recurrence-delete-scope-title"><h2 id="recurrence-delete-scope-title">Delete recurring Event</h2><p>Which Events should be deleted?</p><div class="actions"><button class="button secondary" type="button" data-recurrence-delete-scope-cancel>Cancel</button><button class="button secondary" type="button" value="this" data-recurrence-delete-scope-save>This event</button><button class="button secondary" type="button" value="following" data-recurrence-delete-scope-save>This and following events</button><button class="button danger" type="button" value="all" data-recurrence-delete-scope-save>All events</button></div></dialog>'''
 
 
 def calendar_management_page(calendars: list[CalendarRecord], errors: list[str] | None = None) -> str:

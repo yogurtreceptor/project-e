@@ -33,4 +33,31 @@
         pendingForm = null;
         invoker = null;
     });
+
+    document.querySelectorAll("[data-recurrence-delete-form]").forEach(form => {
+        const scopeDialog = form.querySelector("[data-recurrence-delete-scope-dialog]");
+        const scopeValue = form.querySelector("[data-recurrence-delete-scope-value]");
+        if (!scopeDialog || !scopeValue) return;
+        form.addEventListener("submit", event => {
+            if (form.dataset.recurrenceDeleteScopeConfirmed === "true") return;
+            event.preventDefault();
+            scopeDialog.showModal();
+            scopeDialog.querySelector("[data-recurrence-delete-scope-save]")?.focus();
+        });
+        scopeDialog.querySelectorAll("[data-recurrence-delete-scope-save]").forEach(button => {
+            button.addEventListener("click", () => {
+                scopeValue.value = button.value;
+                form.dataset.recurrenceDeleteScopeConfirmed = "true";
+                scopeDialog.close();
+                form.requestSubmit();
+            });
+        });
+        scopeDialog.querySelector("[data-recurrence-delete-scope-cancel]")?.addEventListener("click", () => {
+            scopeDialog.close();
+            form.querySelector("button[type=submit]")?.focus();
+        });
+        scopeDialog.addEventListener("close", () => {
+            if (form.dataset.recurrenceDeleteScopeConfirmed !== "true") form.querySelector("button[type=submit]")?.focus();
+        });
+    });
 })();

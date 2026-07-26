@@ -4,7 +4,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-26 — Event recurrence picker
 
-Added the requested preset recurrence button menu to the full Event create and edit forms, including daily, calendar-aware weekly/monthly, annual and weekday rules. Editing an individual recurring occurrence now asks its scope only when Save is pressed. Quick create remains intentionally compact and Custom recurrence remains deferred.
+Added the requested preset recurrence button menu to the full Event create and edit forms, including daily, calendar-aware weekly/monthly, annual and weekday rules. Editing or deleting an individual recurring occurrence now asks its scope only when Save or Delete is pressed. Quick create remains intentionally compact and Custom recurrence remains deferred.
 
 ## 2026-07-26 — Calendar session context
 
