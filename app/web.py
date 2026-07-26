@@ -1,11 +1,13 @@
 import json
 import sqlite3
+from datetime import date, datetime
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from zoneinfo import ZoneInfo
 
 from app import views
 from app.config import (BACKUP_DIR, DATABASE_PATH, DOCUMENT_STORAGE_DIR, IMPORT_STAGING_DIR, initialise_local_storage)
@@ -454,6 +456,10 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         try:
             with connect(self.database_path) as connection:
                 event_id = create_event(connection, self.event_input_from_form(values))
+                event = get_event(connection, event_id, include_archived=True)
+                rule = self.recurrence_rule_from_form(values, event)
+                if rule is not None:
+                    set_recurrence(connection, event, rule)
         except (ValueError, sqlite3.Error) as error:
             self.respond_calendar_event_form(values, [str(error)])
             return
@@ -697,9 +703,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 if occurrence_date and definition and scope == "this":
                     override_occurrence(connection, event, definition, occurrence_date, event_input)
                 elif occurrence_date and definition and scope == "following" and not is_series_anchor(event, occurrence_date):
-                    interval = int(values.get("recurrence_interval", "1"))
-                    weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
-                    rule = RecurrenceRule(values.get("recurrence_frequency", definition.rule.frequency), interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", ""))
+                    rule = self.recurrence_rule_from_form(values, event, definition.rule)
                     successor_id = split_series(connection, event, definition, occurrence_date, rule, event_input)
                     self.redirect(f"/calendar/events/{successor_id}/edit?saved=1")
                     return
@@ -707,12 +711,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     update_event(connection, event_id, EventUpdate(event_input.title, event_input.calendar_id, event_input.notes))
                     reschedule_event(connection, event_id, EventSchedule(event_input.all_day, event_input.timezone, event_input.start_local, event_input.end_local, start_date=event_input.start_date, end_date=event_input.end_date))
                     updated = get_event(connection, event_id, include_archived=True)
-                    if values.get("recurrence_frequency", ""):
-                        interval = int(values.get("recurrence_interval", "1"))
-                        weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
-                        set_recurrence(connection, updated, RecurrenceRule(values["recurrence_frequency"], interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", "")))
-                    else:
+                    rule = self.recurrence_rule_from_form(values, updated, definition.rule if definition else None)
+                    if rule is None:
                         remove_recurrence(connection, event_id)
+                    else:
+                        set_recurrence(connection, updated, rule)
         except (ValueError, sqlite3.Error) as error:
             self.respond_calendar_event_form(values, [str(error)], event_id)
             return
@@ -767,6 +770,42 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def event_input_from_form(values: dict[str, str]) -> EventInput:
         calendar_id = int(values["calendar_id"]) if values.get("calendar_id", "").isdigit() else None
         return EventInput(values.get("title", ""), values.get("all_day") == "1", calendar_id, values.get("notes", ""), values.get("timezone", ""), values.get("start_local", ""), values.get("end_local", ""), start_date=values.get("start_date", ""), end_date=values.get("end_date", ""))
+
+    @staticmethod
+    def recurrence_rule_from_form(values: dict[str, str], event, fallback: RecurrenceRule | None = None) -> RecurrenceRule | None:
+        """Map the simple Event-form picker to canonical recurrence rules.
+
+        Retain support for legacy detailed-form submissions while Custom remains deferred.
+        """
+        preset = values.get("recurrence_preset")
+        if not preset:
+            if "recurrence_frequency" not in values:
+                return fallback
+            frequency = values.get("recurrence_frequency", "")
+            if not frequency:
+                return None
+            interval = int(values.get("recurrence_interval", "1"))
+            weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
+            return RecurrenceRule(frequency, interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", ""))
+        if preset == "none":
+            return None
+        if preset == "custom":
+            return fallback
+        anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
+        if preset == "daily":
+            return RecurrenceRule("daily")
+        if preset == "yearly":
+            return RecurrenceRule("yearly")
+        if preset == "weekdays":
+            return RecurrenceRule("weekly", weekdays=(0, 1, 2, 3, 4))
+        if preset == f"weekly_{anchor.weekday()}":
+            return RecurrenceRule("weekly", weekdays=(anchor.weekday(),))
+        parts = preset.split("_")
+        if len(parts) == 3 and parts[0] == "monthly" and parts[2].isdigit() and int(parts[2]) == anchor.weekday():
+            ordinal = -1 if parts[1] == "last" else int(parts[1]) if parts[1].isdigit() else 0
+            if ordinal in (-1, 1, 2, 3, 4, 5):
+                return RecurrenceRule("monthly", monthly_ordinal=ordinal, monthly_weekday=anchor.weekday())
+        raise ValueError("Recurrence choice is invalid.")
 
     @staticmethod
     def calendar_input_from_form(values: dict[str, str]) -> CalendarInput:

@@ -52,7 +52,7 @@ def event_form_page(calendars, values, *, editing_event=None, recurrence=None, o
     scope_fields = f'<input type="hidden" name="return_to" value="{escape(return_to)}">' + (_recurrence_scope_fields(occurrence_date) if occurrence_date else "")
     reminder_query = f'?occurrence={escape(occurrence_date)}' if occurrence_date else ""
     reminder_link = f'<a class="button secondary" href="/calendar/events/{editing_event.id}/reminders{reminder_query}">Reminder settings</a>' if editing else ""
-    return f'''<section class="page-heading"><p class="eyebrow">Calendar</p><h1>{"Edit" if editing else "Add"} Event</h1></section><section class="panel calendar-event-editor">{error_block(errors)}<form class="record-form" method="post" action="{action}" data-dirty-form data-event-form>{scope_fields}<div class="calendar-form-grid"><label for="title"><span>Title</span><input id="title" name="title" required value="{escape(values.get("title", ""))}"></label><label for="calendar_id"><span>Calendar</span><select id="calendar_id" name="calendar_id">{_calendar_options(calendars, values.get("calendar_id", ""))}</select></label><label class="inline-check" for="all_day"><input id="all_day" name="all_day" type="checkbox" value="1" data-event-all-day{" checked" if values.get("all_day") == "1" else ""}> All day</label><div data-all-day-fields><label for="start_date"><span>Start date</span><input id="start_date" name="start_date" type="date" value="{escape(values.get("start_date", ""))}"></label><label for="end_date"><span>End date</span><input id="end_date" name="end_date" type="date" value="{escape(values.get("end_date", ""))}"></label></div><div data-timed-fields><label for="start_local"><span>Starts</span><input id="start_local" name="start_local" type="datetime-local" value="{escape(values.get("start_local", ""))}"></label><label for="end_local"><span>Ends</span><input id="end_local" name="end_local" type="datetime-local" value="{escape(values.get("end_local", ""))}"></label>{timezone_picker("timezone", values.get("timezone", ""))}</div>{description_field(values.get("notes", ""))}{_recurrence_fields(recurrence) if editing else ""}</div><div class="actions"><a class="button secondary" href="/calendar">Cancel</a>{reminder_link}<button class="button" type="submit">{"Save changes" if editing else "Add Event"}</button></div></form>{relationship_link}</section>'''
+    return f'''<section class="page-heading"><p class="eyebrow">Calendar</p><h1>{"Edit" if editing else "Add"} Event</h1></section><section class="panel calendar-event-editor">{error_block(errors)}<form class="record-form" method="post" action="{action}" data-dirty-form data-event-form>{scope_fields}<div class="calendar-form-grid"><label for="title"><span>Title</span><input id="title" name="title" required value="{escape(values.get("title", ""))}"></label><label for="calendar_id"><span>Calendar</span><select id="calendar_id" name="calendar_id">{_calendar_options(calendars, values.get("calendar_id", ""))}</select></label><label class="inline-check" for="all_day"><input id="all_day" name="all_day" type="checkbox" value="1" data-event-all-day{" checked" if values.get("all_day") == "1" else ""}> All day</label><div data-all-day-fields><label for="start_date"><span>Start date</span><input id="start_date" name="start_date" type="date" value="{escape(values.get("start_date", ""))}"></label><label for="end_date"><span>End date</span><input id="end_date" name="end_date" type="date" value="{escape(values.get("end_date", ""))}"></label></div><div data-timed-fields><label for="start_local"><span>Starts</span><input id="start_local" name="start_local" type="datetime-local" value="{escape(values.get("start_local", ""))}"></label><label for="end_local"><span>Ends</span><input id="end_local" name="end_local" type="datetime-local" value="{escape(values.get("end_local", ""))}"></label>{timezone_picker("timezone", values.get("timezone", ""))}</div>{description_field(values.get("notes", ""))}{_recurrence_fields(values, recurrence)}</div><div class="actions"><a class="button secondary" href="/calendar">Cancel</a>{reminder_link}<button class="button" type="submit">{"Save changes" if editing else "Add Event"}</button></div></form>{relationship_link}</section>'''
 
 
 def calendar_projection(
@@ -338,7 +338,7 @@ def _edit_actions(event: EventRecord) -> str:
     return f'<p class="help-text">Relationships are managed through the shared workflow: <a href="/relationships/new?context_entity_id={event.id}">add a relationship</a>. <a href="/events/{event.id}">Open record</a>.</p>'
 
 
-def _recurrence_fields(recurrence: RecurrenceDefinition | None) -> str:
+def _legacy_recurrence_fields(recurrence: RecurrenceDefinition | None) -> str:
     rule = recurrence.rule if recurrence else None
     frequency = rule.frequency if rule else ""
     interval = str(rule.interval) if rule else "1"
@@ -351,3 +351,49 @@ def _recurrence_fields(recurrence: RecurrenceDefinition | None) -> str:
     weekday_options = "".join(f'<option value="{day}"{" selected" if str(day) == monthly_weekday else ""}>{label}</option>' for day, label in enumerate(("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")))
     options = '<option value="">Does not repeat</option>' + ''.join(f'<option value="{item}"{" selected" if item == frequency else ""}>{item.title()}</option>' for item in ("daily", "weekly", "monthly", "yearly"))
     return f'<fieldset class="calendar-recurrence"><legend>Recurrence</legend><label for="recurrence_frequency"><span>Repeats</span><select id="recurrence_frequency" name="recurrence_frequency">{options}</select></label><label for="recurrence_interval"><span>Every</span><input id="recurrence_interval" name="recurrence_interval" type="number" min="1" value="{interval}"></label><label for="recurrence_until"><span>Ends</span><input id="recurrence_until" name="recurrence_until" type="date" value="{escape(until)}"></label><fieldset><legend>Weekly days</legend>{weekday_choices}</fieldset><label for="recurrence_ordinal"><span>Monthly pattern</span><select id="recurrence_ordinal" name="recurrence_ordinal">{ordinal_options}</select></label><label for="recurrence_monthly_weekday"><span>Ordinal weekday</span><select id="recurrence_monthly_weekday" name="recurrence_monthly_weekday">{weekday_options}</select></label><small class="field-help">Monthly and yearly repeats on the 29th–31st shift backward in shorter periods.</small></fieldset>'
+
+
+def _recurrence_fields(values: dict[str, str], recurrence: RecurrenceDefinition | None) -> str:
+    anchor = _recurrence_anchor(values)
+    weekday = anchor.strftime("%A")
+    ordinal = (anchor.day - 1) // 7 + 1
+    monthly_options = [(f"monthly_{ordinal}_{anchor.weekday()}", f"Monthly on the {_ordinal_label(ordinal)} {weekday}")]
+    if ordinal == 4:
+        monthly_options.append((f"monthly_last_{anchor.weekday()}", f"Monthly on the last {weekday}"))
+    elif ordinal == 5:
+        monthly_options = [(f"monthly_last_{anchor.weekday()}", f"Monthly on the last {weekday}")]
+    options = [("none", "Does not repeat"), ("daily", "Daily"), (f"weekly_{anchor.weekday()}", f"Weekly on {weekday}"), *monthly_options, ("yearly", f"Annually on {anchor.strftime('%-d %B')}"), ("weekdays", "Every weekday, Monday - Friday")]
+    selected = _recurrence_preset(recurrence, anchor, options)
+    choices = "".join(f'<button type="button" role="option" data-recurrence-choice value="{value}" aria-selected="{"true" if value == selected else "false"}">{escape(label)}</button>' for value, label in options)
+    custom = '<button type="button" role="option" disabled title="Custom recurrence is not available yet">Custom (coming soon)</button>'
+    label = next(label for value, label in options if value == selected) if selected != "custom" else "Custom (coming soon)"
+    return f'<fieldset class="calendar-recurrence"><legend>Recurrence</legend><input type="hidden" name="recurrence_preset" value="{escape(selected)}" data-recurrence-value><details class="recurrence-picker" data-recurrence-picker><summary class="button secondary"><span data-recurrence-label>{escape(label)}</span><span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="recurrence-options" role="listbox" aria-label="Repeat options">{choices}{custom}</div></details><small class="field-help">Annual repeats on 29 February occur on 28 February in non-leap years.</small></fieldset>'
+
+
+def _recurrence_anchor(values: dict[str, str]) -> date:
+    raw_value = values.get("start_date", "") if values.get("all_day") == "1" else values.get("start_local", "")[:10]
+    try:
+        return date.fromisoformat(raw_value)
+    except ValueError:
+        return date.today()
+
+
+def _ordinal_label(value: int) -> str:
+    return ("first", "second", "third", "fourth", "fifth")[value - 1]
+
+
+def _recurrence_preset(recurrence: RecurrenceDefinition | None, anchor: date, options: list[tuple[str, str]]) -> str:
+    if recurrence is None:
+        return "none"
+    rule = recurrence.rule
+    expected = {"daily": ("daily", 1, (), 0, -1), f"weekly_{anchor.weekday()}": ("weekly", 1, (anchor.weekday(),), 0, -1), "yearly": ("yearly", 1, (), 0, -1), "weekdays": ("weekly", 1, (0, 1, 2, 3, 4), 0, -1)}
+    for value, signature in expected.items():
+        if (rule.frequency, rule.interval, rule.weekdays, rule.monthly_ordinal, rule.monthly_weekday) == signature:
+            return value
+    for value, _ in options:
+        if value.startswith("monthly_"):
+            _, ordinal, weekday = value.split("_")
+            monthly_ordinal = -1 if ordinal == "last" else int(ordinal)
+            if (rule.frequency, rule.interval, rule.weekdays, rule.monthly_ordinal, rule.monthly_weekday) == ("monthly", 1, (), monthly_ordinal, int(weekday)):
+                return value
+    return "custom"

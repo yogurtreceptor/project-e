@@ -15,5 +15,18 @@
     const returnTo = form.querySelector('input[name="return_to"]')?.value;
     const cancel = form.querySelector('a.button.secondary[href="/calendar"]');
     if (returnTo && cancel) cancel.href = returnTo;
+
+    form.querySelectorAll("[data-recurrence-picker]").forEach(picker => {
+      const value = picker.parentElement.querySelector("[data-recurrence-value]");
+      const label = picker.querySelector("[data-recurrence-label]");
+      picker.querySelectorAll("[data-recurrence-choice]").forEach(choice => {
+        choice.addEventListener("click", () => {
+          value.value = choice.value;
+          label.textContent = choice.textContent;
+          picker.querySelectorAll("[data-recurrence-choice]").forEach(item => item.setAttribute("aria-selected", String(item === choice)));
+          picker.open = false;
+        });
+      });
+    });
   });
 })();
