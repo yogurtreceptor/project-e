@@ -372,7 +372,7 @@ The behaviour above is authoritative product direction. The following sequence i
 
 18. **Complete (2026-07-26):** correct My calendars visibility-row layout so each checkbox remains at the left edge and its Calendar name uses the remaining sidebar width. Remove the Calendar's derived-and-related-dates section and its unused projection fetch, leaving the Calendar viewport for its primary Event projection.
 
-19. **Complete (2026-07-26):** make My calendars visibility controls immediate and local. Toggling a Calendar now hides or shows its projected Events without a submit action or page reload, retains the selected set in browser session/navigation context, and exposes a left-side vertical-ellipsis link to each Calendar's existing edit form.
+19. **Complete (2026-07-26):** make My calendars visibility controls immediate and local. Toggling a Calendar now hides or shows its projected Events without a submit action or page reload, retains the selected set in browser session/navigation context, and exposes a right-side vertical-ellipsis link beside each Calendar name to its existing edit form.
 
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 

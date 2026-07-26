@@ -195,6 +195,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('Additional calendar sources will appear here.', page)
             self.assertIn('data-calendar-visibility-controls', page)
             self.assertIn('aria-label="Edit General calendar"', page)
+            self.assertIn('<span>General</span><a class="calendar-edit-control" href="/calendar/manage/1/edit"', page)
             self.assertNotIn('Apply calendars', page)
             self.assertNotIn('Visible Calendars', page)
             self.assertNotIn('Derived and related dates', page)
