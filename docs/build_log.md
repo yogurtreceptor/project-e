@@ -2,6 +2,10 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar view dropdown
+
+Replaced the separate Month, Week and Day controls with an active-view dropdown that preserves Calendar context when changing projections.
+
 ## 2026-07-26 — Task work-management deferral
 
 Retained Task storage, migrations, services and validation for a future user-led to-do redesign, while removing Task routes and navigation plus Task search, Calendar, Project, Inbox-reminder and automation integration so Phase 2 can focus on Events.

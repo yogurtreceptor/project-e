@@ -259,6 +259,8 @@ p {
 .calendar-toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; margin-bottom: var(--space-4); }
 .calendar-toolbar h2 { margin: 0; }
 .calendar-view-switch { display: flex; gap: var(--space-2); }
+.calendar-view-menu .menu-panel { min-width: 8rem; }
+.calendar-view-menu .menu-panel a[aria-current="page"] { background: var(--color-action-primary-active); color: var(--color-action-primary-text); }
 .calendar-filters { align-items: end; display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
 .calendar-filters fieldset { border: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0; padding: 0; }
 .calendar-filters legend { font-size: var(--font-size-label); font-weight: 700; margin-bottom: var(--space-2); }
