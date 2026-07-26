@@ -65,6 +65,13 @@ Repository documents have distinct responsibilities:
 
 Record important behaviour, constraints, migrations and follow-up work in the document responsible for that information, keeping feature status and reference documentation aligned with current code.
 
+For every implementation change within an active phase, add or update a dated, numbered **Complete:** entry in that phase's `### <Phase> expansion workspace` list before committing. The build log remains a concise cross-phase history; the phase workspace is the detailed delivery ledger. This follows the existing workspace style and should record only the implementation detail needed to preserve current delivery context.
+
+Before committing an active-phase implementation, confirm:
+- The behaviour/specification section is updated if its contract changed.
+- The detailed active-phase expansion-workspace entry is added or amended.
+- The build log contains only a concise summary when a cross-phase history entry is warranted.
+
 Repository Evolution
 --------------------
 Project E is in active development. Prefer clean architecture, then a practical migration, then a development database reset, and only then backwards compatibility. Remove obsolete fields and implementations instead of adding compatibility layers or duplicate sources of truth. Compatibility becomes a priority once the platform reaches a stable release.
