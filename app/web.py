@@ -1691,6 +1691,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         content_types = {
             "action-menus.js": "text/javascript; charset=utf-8",
             "calendar-grid.js": "text/javascript; charset=utf-8",
+            "calendar-visibility.js": "text/javascript; charset=utf-8",
             "confirmation.js": "text/javascript; charset=utf-8",
             "description-field.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",

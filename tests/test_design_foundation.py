@@ -144,6 +144,19 @@ class DesignFoundationTests(unittest.TestCase):
             server.server_close()
             thread.join()
 
+    def test_calendar_visibility_script_is_allowed_by_static_handler(self) -> None:
+        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            with urlopen(f"http://127.0.0.1:{server.server_port}/static/calendar-visibility.js", timeout=5) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn(b"item.hidden = !selected.has", response.read())
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
     def test_action_menu_script_has_escape_and_focus_return_contract(self) -> None:
         script = (STATIC_DIR / "action-menus.js").read_text()
         dirty_form = (STATIC_DIR / "dirty-form.js").read_text()

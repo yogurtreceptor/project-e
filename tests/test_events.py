@@ -190,9 +190,12 @@ class EventServiceTests(unittest.TestCase):
             self.assertLess(page.index('>Create event</a>'), page.index('data-mini-month-picker'))
             self.assertIn('href="/calendar/events/new?return_to=', page)
             self.assertNotIn('/calendar/tasks/new', page)
-            self.assertIn('<h2>My calendars</h2>', page)
+            self.assertIn('<h2 id="my-calendars-title">My calendars</h2>', page)
             self.assertIn('<h2 id="other-calendars-title">Other calendars</h2>', page)
             self.assertIn('Additional calendar sources will appear here.', page)
+            self.assertIn('data-calendar-visibility-controls', page)
+            self.assertIn('aria-label="Edit General calendar"', page)
+            self.assertNotIn('Apply calendars', page)
             self.assertNotIn('Visible Calendars', page)
             self.assertNotIn('Derived and related dates', page)
             self.assertIn('<summary class="button">Month<span class="menu-chevron" aria-hidden="true">▾</span></summary>', page)
@@ -830,6 +833,7 @@ class EventServiceTests(unittest.TestCase):
             selected_calendar_ids={calendar.id for calendar in calendars}, preview_event=None,
         )
         self.assertEqual(3, projection.count('class="calendar-event"'))
+        self.assertIn('data-calendar-id="1"', projection)
         self.assertIn('class="calendar-day-overflow" href="/calendar?view=day&amp;date=2026-09-10&amp;calendars=1&amp;calendars=2">+ 1 more</a>', projection)
         self.assertNotIn("Derived and related dates", projection)
 

@@ -37,10 +37,10 @@ def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
     calendar_filters = "".join(
-        f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span></label>'
+        f'<label class="calendar-sidebar-filter"><a class="calendar-edit-control" href="/calendar/manage/{calendar.id}/edit" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span></label>'
         for calendar in active_calendars
     )
-    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}<form class="calendar-sidebar-calendars" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><h2>My calendars</h2>{calendar_filters}<button class="button secondary" type="submit">Apply calendars</button></form><section class="calendar-other-calendars" aria-labelledby="other-calendars-title"><h2 id="other-calendars-title">Other calendars</h2><p>Additional calendar sources will appear here.</p></section></div>'''
+    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}<section class="calendar-sidebar-calendars" aria-labelledby="my-calendars-title" data-calendar-visibility-controls><h2 id="my-calendars-title">My calendars</h2>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></section><section class="calendar-other-calendars" aria-labelledby="other-calendars-title"><h2 id="other-calendars-title">Other calendars</h2><p>Additional calendar sources will appear here.</p></section></div>'''
 
 
 def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:
@@ -218,7 +218,7 @@ def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, d
     label = _projection_label(event, day, display_timezone)
     query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
-    return f'<a class="calendar-event{state}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
+    return f'<a class="calendar-event{state}" data-calendar-id="{calendar.id}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
 
 
 def _timed_projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:
@@ -233,7 +233,7 @@ def _timed_projection_event(event: EventRecord, calendar: CalendarRecord, day: d
     query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
     label = f"{segment_start.strftime('%H:%M')}–{segment_end.strftime('%H:%M')}"
-    return f'<a class="calendar-timed-event{state}" style="--calendar-colour:{escape(calendar.colour)};top:{start_minutes * .8:.1f}px;height:{max(duration_minutes * .8, 24):.1f}px" href="{_calendar_url_with_query(query)}"><span>{label}</span>{escape(event.title)}</a>'
+    return f'<a class="calendar-timed-event{state}" data-calendar-id="{calendar.id}" style="--calendar-colour:{escape(calendar.colour)};top:{start_minutes * .8:.1f}px;height:{max(duration_minutes * .8, 24):.1f}px" href="{_calendar_url_with_query(query)}"><span>{label}</span>{escape(event.title)}</a>'
 
 
 def _event_occurs_on(event: EventRecord, day: date, display_timezone: str) -> bool:
