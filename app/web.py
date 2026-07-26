@@ -1706,6 +1706,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def serve_static(self, relative_path: str) -> None:
         content_types = {
+            "calendar-grid.js": "text/javascript; charset=utf-8",
             "confirmation.js": "text/javascript; charset=utf-8",
             "description-field.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",

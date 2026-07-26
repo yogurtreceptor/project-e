@@ -199,6 +199,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('href="/calendar?view=week&date=', page)
             self.assertIn('href="/calendar?view=day&date=', page)
             self.assertIn('aria-current="page">Month</a>', page)
+            self.assertIn('class="calendar-day-events"', page)
             self.assertNotIn("Current Events", page)
             self.assertIn('class="calendar-page"', page)
             self.assertNotIn("Operational time", page)
@@ -367,7 +368,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn("September 2026", month_page)
             self.assertIn("Conference", month_page)
             self.assertIn("18:00 · </span>London call", month_page)
-            self.assertIn("Visible Calendars", month_page)
+            self.assertIn("My calendars", month_page)
 
             client.request("GET", "/calendar?view=month&date=2026-09-15&calendars=1")
             filtered_page = client.getresponse().read().decode()
@@ -377,6 +378,7 @@ class EventServiceTests(unittest.TestCase):
             week_page = client.getresponse().read().decode()
             self.assertIn("Week of 14 September 2026", week_page)
             self.assertIn("calendar-time-grid", week_page)
+            self.assertIn('data-calendar-time-grid-scroll', week_page)
             self.assertIn("18:00–00:00", week_page)
             self.assertIn("00:00–02:00", week_page)
             self.assertIn("Overnight focus", week_page)
@@ -813,6 +815,21 @@ class EventServiceTests(unittest.TestCase):
         self.assertEqual("archived", event["archived_at"])
         self.assertEqual(calendar_id, event["calendar_id"])
         self.assertEqual("General", calendar["name"])
+
+
+    def test_month_projection_bounds_day_entries_and_links_overflow_to_day(self) -> None:
+        for index in range(4):
+            create_event(self.connection, EventInput(
+                title=f"Busy {index}", all_day=True,
+                start_date="2026-09-10", end_date="2026-09-10",
+            ))
+        calendars = list_calendars(self.connection)
+        projection = views.calendar_projection(
+            list_events(self.connection), calendars, view="month", anchor_date=date(2026, 9, 10),
+            selected_calendar_ids={calendar.id for calendar in calendars}, preview_event=None,
+        )
+        self.assertEqual(3, projection.count('class="calendar-event"'))
+        self.assertIn('class="calendar-day-overflow" href="/calendar?view=day&amp;date=2026-09-10&amp;calendars=1&amp;calendars=2">+ 1 more</a>', projection)
 
 
 if __name__ == "__main__":

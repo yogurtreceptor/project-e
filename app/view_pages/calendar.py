@@ -3,7 +3,7 @@
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from html import escape
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 from zoneinfo import ZoneInfo
 
 from app.calendar_service import CalendarRecord
@@ -176,7 +176,15 @@ def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord],
     final = month.replace(day=monthrange(month.year, month.month)[1])
     last = final + timedelta(days=6 - final.weekday())
     days = [first + timedelta(days=index) for index in range((last - first).days + 1)]
-    cells = "".join(_day_cell(day, events, calendars, display_timezone, day.month == month.month, context_query=context_query) for day in days)
+    context_pairs = [(key, value) for key, value in parse_qsl(context_query) if key == "calendars"]
+    cells = "".join(
+        _day_cell(
+            day, events, calendars, display_timezone, day.month == month.month,
+            context_query=context_query,
+            more_url=_calendar_url([("view", "day"), ("date", day.isoformat()), *context_pairs]),
+        )
+        for day in days
+    )
     return f'<div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid">{cells}</div>'
 
 
@@ -204,13 +212,16 @@ def _time_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], 
         f'<div class="calendar-time-day" aria-label="{day.isoformat()}">{"".join(_timed_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if not event.is_all_day and _event_occurs_on(event, day, display_timezone))}</div>'
         for day in days
     )
-    return f'<div class="calendar-time-grid-scroll"><div class="calendar-time-grid" style="--calendar-day-count:{len(days)}"><div class="calendar-time-axis-heading"></div>{headers}<div class="calendar-time-all-day-label">All day</div>{all_day_cells}<div class="calendar-time-axis">{hour_labels}</div>{timed_cells}</div></div>'
+    return f'<div class="calendar-time-grid-scroll" data-calendar-time-grid-scroll><div class="calendar-time-grid" style="--calendar-day-count:{len(days)}"><div class="calendar-time-axis-heading"></div>{headers}<div class="calendar-time-all-day-label">All day</div>{all_day_cells}<div class="calendar-time-axis">{hour_labels}</div>{timed_cells}</div></div>'
 
 
-def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, CalendarRecord], display_timezone: str, in_current_month: bool, include_weekday: bool = False, context_query: str = "") -> str:
-    event_items = "".join(_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if _event_occurs_on(event, day, display_timezone))
+def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, CalendarRecord], display_timezone: str, in_current_month: bool, include_weekday: bool = False, context_query: str = "", more_url: str = "") -> str:
+    day_events = [event for event in events if _event_occurs_on(event, day, display_timezone)]
+    visible_events = day_events[:3]
+    event_items = "".join(_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in visible_events)
+    overflow = f'<a class="calendar-day-overflow" href="{escape(more_url)}">+ {len(day_events) - len(visible_events)} more</a>' if len(day_events) > len(visible_events) else ""
     weekday = f'<span class="calendar-day-name">{day.strftime("%A")}</span>' if include_weekday else ""
-    return f'<section class="calendar-day{" outside-month" if not in_current_month else ""}"><header>{weekday}<time datetime="{day.isoformat()}">{day.day}</time></header>{event_items}</section>'
+    return f'<section class="calendar-day{" outside-month" if not in_current_month else ""}"><header>{weekday}<time datetime="{day.isoformat()}">{day.day}</time></header><div class="calendar-day-events">{event_items}</div>{overflow}</section>'
 
 
 def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:

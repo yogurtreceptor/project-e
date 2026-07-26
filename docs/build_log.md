@@ -2,6 +2,12 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-07-26 — Calendar consolidation and viewport density
+
+- Added the Event-focused Calendar sidebar structure: Create event, Mini Month, My calendars and a visual-only Other calendars section reserved for later supplied, imported or derived sources.
+- Moved Calendar visibility selection into My calendars, removed the duplicate toolbar Event-create action, and kept Calendar management as the secondary toolbar destination.
+- Bounded Month-day rendering to three Event entries with a context-preserving `+ N more` Day link; Week and Day now keep their complete time grids in a height-bounded scroll region with sticky orientation and an initial 07:00 viewport.
+
 ## 2026-07-26 — Calendar mini month picker
 
 Added the Calendar sidebar's first local control: a compact, six-week Monday-first month picker with ISO weeks, adjacent-month dates, distinct current/selected states and keyboard navigation. Its month browsing is independent of the main Calendar view; selecting a day navigates the main Calendar. Create Event now sits immediately above it.

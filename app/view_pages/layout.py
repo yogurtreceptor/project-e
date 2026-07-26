@@ -109,6 +109,7 @@ def layout(
     <script src="/static/event-form.js"></script>
     <script src="/static/description-field.js"></script>
     <script src="/static/quick-create.js"></script>
+    <script src="/static/calendar-grid.js"></script>
     <script src="/static/mini-month-picker.js"></script>
     <script src="/static/reminder-timings.js"></script>
     <script src="/static/timezone-picker.js"></script>
