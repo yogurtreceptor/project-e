@@ -70,20 +70,16 @@
       const frequency = customDialog.querySelector("[data-custom-frequency]");
       const weekdays = customDialog.querySelector("[data-custom-weekdays]");
       const monthly = customDialog.querySelector("[data-custom-monthly]");
-      const monthlyPattern = customDialog.querySelector("[data-custom-monthly-pattern]");
-      const monthlyOrdinal = customDialog.querySelector("[data-custom-monthly-ordinal]");
       const endOn = customDialog.querySelector("[data-custom-end-on]");
       const endAfter = customDialog.querySelector("[data-custom-end-after]");
       const sync = () => {
         weekdays.hidden = frequency.value !== "week";
         monthly.hidden = frequency.value !== "month";
-        monthlyOrdinal.hidden = monthlyPattern.value !== "ordinal";
         const ending = customDialog.querySelector('input[name="recurrence_custom_ends"]:checked')?.value;
         endOn.disabled = ending !== "on";
         endAfter.disabled = ending !== "after";
       };
       frequency.addEventListener("change", sync);
-      monthlyPattern.addEventListener("change", sync);
       customDialog.querySelectorAll('input[name="recurrence_custom_ends"]').forEach(input => input.addEventListener("change", sync));
       customDialog.querySelector("[data-custom-recurrence-confirm]")?.addEventListener("click", () => {
         const customChoice = picker.querySelector('[data-recurrence-choice][value="custom"]');

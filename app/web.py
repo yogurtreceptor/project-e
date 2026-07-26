@@ -821,10 +821,11 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if frequency == "weekly" and not weekdays:
             raise ValueError("Choose at least one weekday for a weekly recurrence.")
         if frequency == "monthly" and values.get("recurrence_custom_monthly_pattern") == "ordinal":
-            ordinal = int(values.get("recurrence_custom_monthly_ordinal", "0"))
-            monthly_weekday = int(values.get("recurrence_custom_monthly_weekday", "-1"))
-            if ordinal not in (1, 2, 3, 4) or monthly_weekday not in range(7):
-                raise ValueError("Choose a valid monthly weekday pattern.")
+            anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
+            ordinal = (anchor.day - 1) // 7 + 1
+            monthly_weekday = anchor.weekday()
+            if ordinal not in (1, 2, 3, 4):
+                raise ValueError("This Event date has no first-through-fourth weekday monthly pattern.")
         rule = RecurrenceRule(frequency, interval, weekdays, ordinal, monthly_weekday)
         ending = values.get("recurrence_custom_ends", "never")
         if ending == "never":

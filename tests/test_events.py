@@ -287,6 +287,15 @@ class EventServiceTests(unittest.TestCase):
             "recurrence_custom_weekdays": "0,2", "recurrence_custom_ends": "after", "recurrence_custom_count": "3",
         }, custom_event)
         self.assertEqual(("weekly", (0, 2), "2026-01-12"), (custom_rule.frequency, custom_rule.weekdays, custom_rule.until_date))
+        monthly_custom_rule = EddyRequestHandler.recurrence_rule_from_form({
+            "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "month",
+            "recurrence_custom_monthly_pattern": "ordinal", "recurrence_custom_ends": "never",
+        }, custom_event)
+        self.assertEqual(("monthly", 1, 0), (monthly_custom_rule.frequency, monthly_custom_rule.monthly_ordinal, monthly_custom_rule.monthly_weekday))
+        first_monday = views.event_form_page(calendars, {"all_day": "1", "start_date": "2024-01-01"})
+        self.assertIn("on day 1 of the month", first_monday)
+        self.assertIn("on the first Monday", first_monday)
+        self.assertNotIn("data-custom-monthly-ordinal", first_monday)
         self.assertIn("Custom recurrence", fourth_monday)
         self.assertIn("Repeat every", fourth_monday)
         self.assertIn("occurrences", fourth_monday)
