@@ -340,7 +340,19 @@ The behaviour above is authoritative product direction. The following sequence i
 
 4. **Complete (2026-07-25):** place Calendar default notifications on the Calendar edit form alongside colour and default Event duration. Replace comma-separated timing entry and policy-state pickers with repeatable integer-and-unit notification rows and a local Add notification control. Empty Event-specific rows inherit the linked Calendar defaults. Calendar defaults and effective Event reminder sets are capped at ten; persistence remains canonical validated timing-token JSON rather than free-form comma-separated text.
 
-5. **Weak-conviction closeout requirement:** before Phase 2 is declared complete, record a decision on a local-first journey-planning proof slice. The preferred direction is to plan travel between canonical Locations, optionally against an arrival Event, using locally held OSM and static public-transport data; a user-approved travel Event then uses the existing Calendar reminder workflow. Live transit and traffic data are optional replaceable enrichment, never required for core operation. This note authorises no implementation and does not decide whether an optional local routing runtime is acceptable within Phase 2.
+5. **Complete (2026-07-26):** replace the Calendar's separate Add Event and Add Task controls with one **Create** menu. The menu visibly indicates that it expands and contains Event and Task choices while retaining the existing canonical creation routes.
+
+6. **Complete (2026-07-26):** add in-Calendar Event and Task quick-create panels. The panels provide the essential scheduling or deadline fields, close control, direct save action and **More options** handoff. More options serialises the entered quick-create values into the existing complete form; quick save continues to invoke the same validated Event and Task services.
+
+7. **Complete (2026-07-26):** refine quick-create panels into non-modal Calendar overlays. Opening a panel does not dim the Calendar. It can be dragged by its title bar, docked into the sidebar to temporarily replace navigation, undocked again, and closed without retaining a draft. Docked headings, controls and fields remain constrained to the sidebar width.
+
+8. **Complete (2026-07-26):** render a provisional unsaved Event in the active Calendar projection while Event quick-create is open. The provisional projection updates with the typed title and scheduling inputs, uses the actual timed duration, and clips or continues across visible days. It is purely client-side presentation and does not materialise an Event or alter canonical records before save.
+
+9. **Complete (2026-07-26):** rename Event and Task free text from Notes to **Description** in their creation, editing and read-only presentation. The control starts as a compact Description trigger, expands only on selection, and grows with its entered text. Persistence remains the existing canonical `notes` field, so no migration or duplicate source of truth is introduced.
+
+10. **Complete (2026-07-26):** preserve Calendar navigation context. The browser session remembers an explicit Month, Week or Day view together with anchor date and visible-Calendar filter. Calendar navigation restores that context. Quick create, More options, full Event creation, Event preview edit, cancel, save and delete use validated Calendar-only return targets so they return to the originating projection; this is session-local presentation state, not a user preference stored in SQLite.
+
+11. **Weak-conviction closeout requirement:** before Phase 2 is declared complete, record a decision on a local-first journey-planning proof slice. The preferred direction is to plan travel between canonical Locations, optionally against an arrival Event, using locally held OSM and static public-transport data; a user-approved travel Event then uses the existing Calendar reminder workflow. Live transit and traffic data are optional replaceable enrichment, never required for core operation. This note authorises no implementation and does not decide whether an optional local routing runtime is acceptable within Phase 2.
 
 ## Completion criteria
 
