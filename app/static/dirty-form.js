@@ -20,6 +20,7 @@
   form.addEventListener("input", updateDirty);
   form.addEventListener("change", updateDirty);
   form.addEventListener("submit", () => { submitting = true; });
+  form.addEventListener("recurrence-scope-cancel", () => { submitting = false; });
   document.addEventListener("click", event => {
     const link = event.target.closest("a[href]");
     if (!link || !dirty || submitting || link.target || link.hasAttribute("download")) return;

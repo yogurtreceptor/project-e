@@ -16,6 +16,33 @@
     const cancel = form.querySelector('a.button.secondary[href="/calendar"]');
     if (returnTo && cancel) cancel.href = returnTo;
 
+    const scopeDialog = form.querySelector("[data-recurrence-scope-dialog]");
+    if (scopeDialog) {
+      const scopeValue = form.querySelector("[data-recurrence-scope-value]");
+      form.addEventListener("submit", event => {
+        if (form.dataset.recurrenceScopeConfirmed === "true") return;
+        event.preventDefault();
+        scopeDialog.showModal();
+        scopeDialog.querySelector("[data-recurrence-scope-save]")?.focus();
+      });
+      scopeDialog.querySelectorAll("[data-recurrence-scope-save]").forEach(button => {
+        button.addEventListener("click", () => {
+          scopeValue.value = button.value;
+          form.dataset.recurrenceScopeConfirmed = "true";
+          scopeDialog.close();
+          form.requestSubmit();
+        });
+      });
+      scopeDialog.querySelector("[data-recurrence-scope-cancel]")?.addEventListener("click", () => {
+        scopeDialog.close();
+        form.dispatchEvent(new Event("recurrence-scope-cancel"));
+        form.querySelector("button[type=submit]")?.focus();
+      });
+      scopeDialog.addEventListener("close", () => {
+        if (form.dataset.recurrenceScopeConfirmed !== "true") form.dispatchEvent(new Event("recurrence-scope-cancel"));
+      });
+    }
+
     form.querySelectorAll("[data-recurrence-picker]").forEach(picker => {
       const value = picker.parentElement.querySelector("[data-recurrence-value]");
       const label = picker.querySelector("[data-recurrence-label]");

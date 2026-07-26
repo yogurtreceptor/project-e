@@ -395,8 +395,9 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn("occurrence=2026-01-19", page)
             client.request("GET", f"/calendar/events/{event_id}/edit?occurrence=2026-01-19")
             form = client.getresponse().read().decode()
-            self.assertIn('name="recurrence_scope"', form)
-            self.assertIn("This and following", form)
+            self.assertIn('data-recurrence-scope-dialog', form)
+            self.assertIn("This and following events", form)
+            self.assertNotIn('<select name="recurrence_scope">', form)
             body = urlencode({
                 "title": "One-off stand-up", "calendar_id": "1", "all_day": "1",
                 "start_date": "2026-01-19", "end_date": "2026-01-19", "notes": "Exception",
