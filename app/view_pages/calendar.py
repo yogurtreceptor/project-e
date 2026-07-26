@@ -32,10 +32,15 @@ def calendar_page(
     return f'''<div class="calendar-page"><div data-quick-create-root>{_quick_create_dialogs(calendars)}</div>{projection}{created_notice}</div>'''
 
 
-def calendar_sidebar(*, anchor_date: date, mini_month_date: date, view: str, selected_calendar_ids: set[int], return_to: str) -> str:
+def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini_month_date: date, view: str, selected_calendar_ids: set[int], return_to: str) -> str:
     """Render Calendar-local controls in the reserved shell sidebar."""
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
-    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create Event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}</div>'''
+    active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
+    calendar_filters = "".join(
+        f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span></label>'
+        for calendar in active_calendars
+    )
+    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}<form class="calendar-sidebar-calendars" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><h2>My calendars</h2>{calendar_filters}<button class="button secondary" type="submit">Apply calendars</button></form><section class="calendar-other-calendars" aria-labelledby="other-calendars-title"><h2 id="other-calendars-title">Other calendars</h2><p>Additional calendar sources will appear here.</p></section></div>'''
 
 
 def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:
@@ -143,10 +148,6 @@ def calendar_projection(
     month_url = _calendar_url([("view", "month"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     week_url = _calendar_url([("view", "week"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     day_url = _calendar_url([("view", "day"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    filters = "".join(
-        f'<label class="calendar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected else ""}> <span style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</label>'
-        for calendar in active_calendars
-    )
     return_to = _calendar_url([("view", view), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None, return_to=return_to) if preview_event and preview_event.calendar_id in selected else ""
     derived_projection = _derived_projection(derived_occurrences or [], period_start, period_end)
@@ -155,8 +156,7 @@ def calendar_projection(
         for option, label, url in (("month", "Month", month_url), ("week", "Week", week_url), ("day", "Day", day_url))
     )
     return f"""
-    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Calendars</a><details class="action-menu calendar-view-menu"><summary class="button">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details><a class="button" href="/calendar/events/new" aria-label="Add Event">+</a></div></div>
-        <form class="calendar-filters" method="get" action="/calendar"><input type="hidden" name="view" value="{escape(view)}"><input type="hidden" name="date" value="{anchor_date.isoformat()}"><fieldset><legend>Visible Calendars</legend>{filters}</fieldset><button class="button secondary" type="submit">Apply</button></form>
+    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Manage calendars</a><details class="action-menu calendar-view-menu"><summary class="button">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details></div></div>
         {preview}
         {grid}{derived_projection}
     </section>
