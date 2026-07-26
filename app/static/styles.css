@@ -227,9 +227,9 @@ p {
 .recurrence-scope-options button:hover, .recurrence-scope-options button:focus { background: var(--color-surface-selected); outline: none; }
 .recurrence-scope-options button[aria-checked="true"] { background: var(--color-surface-selected); font-weight: 700; }
 .recurrence-scope-actions { justify-content: flex-end; margin-top: var(--space-2); }
-.custom-recurrence-dialog[open] { display: grid; gap: var(--space-4); max-width: 34rem; }
+.custom-recurrence-dialog[open] { display: grid; gap: var(--space-3); max-width: 26rem; padding: var(--space-5); width: calc(100% - var(--space-8)); }
 .custom-recurrence-dialog h2, .custom-recurrence-dialog h3 { margin: 0; }
-.custom-recurrence-fields { display: grid; gap: var(--space-4); }
+.custom-recurrence-fields { display: grid; gap: var(--space-3); }
 .custom-repeat-every { align-items: end; display: grid; gap: var(--space-2); grid-template-columns: auto minmax(5rem, 7rem) minmax(7rem, 10rem); }
 .custom-repeat-every > span { align-self: center; }
 .custom-repeat-every input, .custom-repeat-every select { margin: 0; }
@@ -242,9 +242,10 @@ p {
 .custom-weekday input:focus-visible + span { box-shadow: var(--focus-ring); }
 .custom-monthly-ordinal { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .custom-monthly-ordinal select { margin: 0; }
-.custom-recurrence-ends { border-top: 1px solid var(--line); padding-top: var(--space-3); }
-.custom-recurrence-ends > label { align-items: center; display: flex; gap: var(--space-2); }
-.custom-end-row input[type="date"] { flex: 1; margin: 0; }
+.custom-recurrence-ends { border-top: 1px solid var(--line); justify-items: start; padding-top: var(--space-3); }
+.custom-recurrence-ends > label { align-items: center; display: flex; gap: var(--space-2); justify-content: flex-start; width: 100%; }
+.custom-recurrence-ends input[type="radio"] { flex: 0 0 auto; margin: 0; padding: 0; width: auto; }
+.custom-end-row input[type="date"] { flex: 0 1 11rem; margin: 0; width: 11rem; }
 .custom-occurrence-count { align-items: center; border: 1px solid var(--line); border-radius: var(--radius-control); display: inline-flex; overflow: hidden; }
 .custom-occurrence-count input { border: 0; margin: 0; min-width: 4.5rem; width: 4.5rem; }
 .custom-occurrence-count { padding-right: var(--space-2); }
