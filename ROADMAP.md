@@ -20,7 +20,7 @@ Phase 2 establishes the platform's operational time and automation foundation. T
 structured information → relationships → temporal information → events → calendar projections → tasks → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, Task, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Focused Phase 2 refinements continue in a living workspace until Phase 3 is deliberately defined. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 workspace](docs/phase_2_workspace.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, the then-active Task implementation, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Focused Event, Calendar and operational refinements continue in a living workspace until Phase 3 is deliberately defined. Task product behaviour is dormant pending a user-led Phase 3 redesign. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 workspace](docs/phase_2_workspace.md).
 
 ## Phase 3 — AI-assisted Platform
 

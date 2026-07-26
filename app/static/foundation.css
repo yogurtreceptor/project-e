@@ -76,6 +76,7 @@
     --color-action-primary-active: color-mix(in srgb, var(--primitive-accent) 76%, var(--primitive-charcoal-950));
     --color-action-primary-subtle: color-mix(in srgb, var(--primitive-accent) 16%, transparent);
     --color-action-on-primary: var(--primitive-charcoal-950);
+    --color-action-primary-text: var(--color-action-on-primary);
     --color-status-info: #8bd8ff;
     --color-status-info-surface: #162b36;
     --color-status-info-border: #3f839f;

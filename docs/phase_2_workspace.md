@@ -76,14 +76,14 @@ Users may create, rename, archive and order Calendars as local configuration rec
 
 Calendar archival retains each assigned Event and its Calendar identity; it neither archives nor silently moves Events. Existing Events may remain assigned to and be edited without changing an archived Calendar, but archived Calendars cannot be selected for a new Event or a reassignment. Before archiving the default Calendar, a user must explicitly select another active Calendar as default. Calendar deletion is limited to empty, non-default Calendars, including no recycled Event assignments; no bulk reassignment operation is introduced in this milestone.
 
-Human-created Events and Tasks originate from the Calendar rather than a generic entity-create menu. The Calendar provides a compact **Create** menu with **Event** and **Task** options. Each option opens an in-calendar quick-create panel with the essential scheduling fields, close control, direct save action and **More options** handoff. Panels are non-modal, draggable by their title bar and dockable into the sidebar; an unsaved Event is rendered provisionally in the active Calendar projection as its schedule changes. Calendar creation preserves the current Month, Week or Day view, anchor date and visible-Calendar filter through quick creation, More options, and full Event creation. The browser session retains that Calendar context for Calendar navigation, and Event preview edit/delete flows return to it after completion or cancellation; this is a local presentation preference rather than stored user data. More options carries every entered quick-create value into the existing dedicated full form. Event and Task free text is presented as a progressive **Description** control that expands only when selected and grows with its content; storage remains the existing canonical notes field. The Event full form contains title, Calendar, all-day choice, either an inclusive date range or timed start/end datetimes, timezone and description; it selects the default Calendar and applies its default duration and timezone for a new form. Existing Events open a dedicated editing form from their Calendar preview. Relationships are added after creation or from Event editing through the standard relationship system, not special People, Location or Project pickers in the initial form. Calendar management, reminders, recurrence and other facts remain outside this first form.
+Human-created Events originate from the Calendar rather than a generic entity-create menu. The Calendar provides a compact **Create event** control that opens an in-calendar quick-create panel with the essential scheduling fields, close control, direct save action and **More options** handoff. The panel is non-modal, draggable by its title bar and dockable into the sidebar; an unsaved Event is rendered provisionally in the active Calendar projection as its schedule changes. Calendar creation preserves the current Month, Week or Day view, anchor date and visible-Calendar filter through quick creation, More options, and full Event creation. The browser session retains that Calendar context for Calendar navigation, and Event preview edit/delete flows return to it after completion or cancellation; this is a local presentation preference rather than stored user data. More options carries every entered quick-create value into the existing dedicated full form. Event free text is presented as a progressive **Description** control that expands only when selected and grows with its content; storage remains the existing canonical notes field. The Event full form contains title, Calendar, all-day choice, either an inclusive date range or timed start/end datetimes, timezone and description; it selects the default Calendar and applies its default duration and timezone for a new form. Existing Events open a dedicated editing form from their Calendar preview. Relationships are added after creation or from Event editing through the standard relationship system, not special People, Location or Project pickers in the initial form. Calendar management, reminders, recurrence and other facts remain outside this first form.
 
 #### Calendar refinement delivery record
 
 The active Phase 2 expansion workspace records the following delivered Calendar refinements in detail so later consolidation does not lose their interaction contracts:
 
-- The Calendar top-level Create control replaces separate Event and Task buttons and visually identifies itself as a menu.
-- Event and Task selection opens a compact quick-create panel in the Calendar rather than changing page. The panel has close, save and More options controls; More options serialises currently entered values into the complete form.
+- The Calendar has one clearly labelled top-level **Create event** control; it does not duplicate Event creation in the toolbar.
+- Event creation opens a compact quick-create panel in the Calendar rather than changing page. The panel has close, save and More options controls; More options serialises currently entered values into the complete form.
 - Quick-create panels do not dim the Calendar, can be repositioned by dragging their title bar and may dock into the sidebar, temporarily replacing sidebar navigation without overflowing its width.
 - While an Event is unsaved, the Calendar renders it as a distinct provisional projection. Timed previews use their actual duration, clip or continue across visible days, and render the typed title; the preview disappears when the panel closes.
 - Event and Task free text is named **Description** in the interface. It begins as an unobtrusive trigger and expands to a one-line textarea when selected, then grows with the entered content. The underlying canonical `notes` persistence field is unchanged.
@@ -364,6 +364,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 14. **Complete (2026-07-26):** add a compact, fixed-height Mini Month Day Picker as the first Calendar-sidebar control, with Create Event directly above it. The Monday-first six-row grid includes ISO week numbers and adjacent-month dates; selected and current dates are visually distinct. Previous/next changes only the picker month; selecting a day changes the canonical Calendar anchor date. All navigation preserves the active Calendar view and filters.
 
+15. **Complete (2026-07-26):** establish the Calendar sidebar's Event-focused information architecture: Create event, Mini Month, **My calendars** and an honest visual-only **Other calendars** section. My calendars contains the protected Birthdays Calendar, General and user-created Calendars; Other calendars reserves the presentation and visibility pattern for future supplied, imported or derived sources without introducing source configuration, external dependencies or a second Event store.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria
@@ -374,22 +376,20 @@ Phase 2 completes only when an end-to-end review can demonstrate:
 Create a Project
 → create an Event related to that Project
 → relate People and a Location to the Event
-→ create preparation Tasks related to the Event and Project
-→ display the Event, planned Task sessions and Task deadlines in Calendar views
 → create a recurring Event and trace its generated occurrence and exception to its series
 → synchronise a Person birthday to its canonical Birthdays-Calendar Event and project its recurrence, or generate a document-expiry occurrence
 → apply an applicable reminder default and a record-level override
 → deliver one useful actionable local notification
 → recover a missed due item without duplicate delivery
 → run a scheduled background check and record its Job Run separately
-→ present any proposed canonical Event or Task mutation for explicit approval
+→ present any proposed canonical Event mutation for explicit approval
 → show generated records, decisions and actions in provenance and audit history
 → export and validate the integrated Phase 2 records through whole-platform portability
 ```
 
 The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. Persistent System Health remains a separately authorised future capability.
 
-An Event table, rendered Calendar, creatable Tasks, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The capabilities must work together as one operational system.
+An Event table, rendered Calendar, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The active capabilities must work together as one operational system. The dormant Task implementation is not a current completion prerequisite.
 
 ## Explicit exclusions and staged follow-ups
 
@@ -421,7 +421,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Task temporal interaction.** Calendar-originated undated Task capture, deadlines, sessions and Calendar projections are implemented. A later refinement may improve multi-session editing ergonomics.
+- **Task product redesign.** Calendar-originated Task capture, deadlines, sessions and Calendar projections are historical implementation work and dormant as of 2026-07-26. A user-led Phase 3 redesign must settle the Task model before any route, projection, reminder or automation interaction returns.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.
 
