@@ -396,12 +396,14 @@ class EventServiceTests(unittest.TestCase):
             client.request("GET", f"/calendar?view=week&date=2026-01-19&preview={event_id}&occurrence=2026-01-19")
             preview = client.getresponse().read().decode()
             self.assertIn('data-recurrence-delete-scope-dialog', preview)
-            self.assertIn("This and following events", preview)
+            self.assertIn("Delete recurring event", preview)
+            self.assertIn("This and following", preview)
             self.assertNotIn('<select name="recurrence_scope">', preview)
             client.request("GET", f"/calendar/events/{event_id}/edit?occurrence=2026-01-19")
             form = client.getresponse().read().decode()
             self.assertIn('data-recurrence-scope-dialog', form)
-            self.assertIn("This and following events", form)
+            self.assertIn("Edit recurring event", form)
+            self.assertIn("This and following", form)
             self.assertNotIn('<select name="recurrence_scope">', form)
             body = urlencode({
                 "title": "One-off stand-up", "calendar_id": "1", "all_day": "1",

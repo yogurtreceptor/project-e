@@ -42,15 +42,18 @@
             if (form.dataset.recurrenceDeleteScopeConfirmed === "true") return;
             event.preventDefault();
             scopeDialog.showModal();
-            scopeDialog.querySelector("[data-recurrence-delete-scope-save]")?.focus();
+            scopeDialog.querySelector('[data-recurrence-delete-scope-choice][aria-checked="true"]')?.focus();
         });
-        scopeDialog.querySelectorAll("[data-recurrence-delete-scope-save]").forEach(button => {
+        scopeDialog.querySelectorAll("[data-recurrence-delete-scope-choice]").forEach(button => {
             button.addEventListener("click", () => {
                 scopeValue.value = button.value;
+                scopeDialog.querySelectorAll("[data-recurrence-delete-scope-choice]").forEach(choice => choice.setAttribute("aria-checked", String(choice === button)));
+            });
+        });
+        scopeDialog.querySelector("[data-recurrence-delete-scope-confirm]")?.addEventListener("click", () => {
                 form.dataset.recurrenceDeleteScopeConfirmed = "true";
                 scopeDialog.close();
                 form.requestSubmit();
-            });
         });
         scopeDialog.querySelector("[data-recurrence-delete-scope-cancel]")?.addEventListener("click", () => {
             scopeDialog.close();
