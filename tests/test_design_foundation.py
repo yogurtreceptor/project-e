@@ -144,6 +144,14 @@ class DesignFoundationTests(unittest.TestCase):
             server.server_close()
             thread.join()
 
+    def test_action_menu_script_has_escape_and_focus_return_contract(self) -> None:
+        script = (STATIC_DIR / "action-menus.js").read_text()
+        dirty_form = (STATIC_DIR / "dirty-form.js").read_text()
+        self.assertIn('event.key !== "Escape"', script)
+        self.assertIn('menu.querySelector("summary")?.focus()', script)
+        self.assertIn("let invoker = null", dirty_form)
+        self.assertIn("invoker?.isConnected ? invoker", dirty_form)
+
     def test_shared_stylesheet_has_balanced_blocks_and_defined_custom_properties(self) -> None:
         foundation = (STATIC_DIR / "foundation.css").read_text()
         stylesheet = (STATIC_DIR / "styles.css").read_text()

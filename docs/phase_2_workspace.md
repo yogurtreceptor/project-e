@@ -368,6 +368,8 @@ The behaviour above is authoritative product direction. The following sequence i
 
 16. **Complete (2026-07-26):** refine Calendar projection density for the supported desktop targets. Month bounds each day cell and links an overflow count to that day's Calendar view; Week and Day retain their complete 24-hour grid inside a height-bounded, horizontally and vertically scrollable region with sticky day and all-day orientation. The initial viewport begins at 07:00 without changing temporal data or the full-day model.
 
+17. **Complete (2026-07-26):** define the shared native action-menu Escape/focus-return contract and correct dirty-form cancellation focus return. An open Views, overflow or Calendar view menu closes on Escape and returns focus to its summary; cancelling a dirty-form warning returns focus to the link that invoked it, with a form-control fallback only when that link is gone.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria

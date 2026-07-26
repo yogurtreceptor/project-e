@@ -9,6 +9,7 @@
   let dirty = false;
   let submitting = false;
   let pendingDestination = null;
+  let invoker = null;
   const serialise = data => JSON.stringify(Array.from(data.entries(), ([key, value]) => [
     key,
     value instanceof File ? [value.name, value.size, value.lastModified] : value,
@@ -25,12 +26,16 @@
     const link = event.target.closest("a[href]");
     if (!link || !dirty || submitting || link.target || link.hasAttribute("download")) return;
     event.preventDefault();
+    invoker = link;
     pendingDestination = link.href;
     dialog.showModal();
     keepButton.focus();
   });
   dialog.addEventListener("close", () => {
-    if (dialog.returnValue !== "discard") form.querySelector("input, select, textarea, button")?.focus();
+    if (dialog.returnValue !== "discard") {
+      (invoker?.isConnected ? invoker : form.querySelector("input, select, textarea, button"))?.focus();
+    }
+    invoker = null;
   });
   discardButton.addEventListener("click", () => {
     dirty = false;

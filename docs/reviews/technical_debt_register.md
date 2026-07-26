@@ -2,26 +2,6 @@
 
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
-## Dirty-form warning does not return focus to its invoker
-
-Severity: medium
-
-After cancelling the dirty-form warning, `app/static/dirty-form.js` focuses the first control in the form rather than the link or Cancel control that opened the dialog. This breaks predictable focus return for keyboard users.
-
-Trigger: any unsaved entity, relationship or journal form where navigation is cancelled from the discard warning.
-
-Direction: retain the invoking element when opening the dialog and restore focus to it on non-discard close, with a safe fallback only when it no longer exists. Add browser-level regression coverage for Cancel, Escape and focus return.
-
-## Views and overflow menus have no explicit Escape or focus-return contract
-
-Severity: medium
-
-The entity Views and More actions use native `<details>` controls without menu-specific Escape handling or focus return. Their current interaction therefore depends on browser defaults and does not meet the documented predictable close/focus behaviour.
-
-Trigger: keyboard use of the Person Views control or entity overflow menu.
-
-Direction: define and implement one accessible disclosure/menu pattern that closes on Escape, returns focus to its summary/invoker, and preserves ordinary Enter/Space/Tab behaviour. Cover both controls with browser-level tests.
-
 ## Collapsed sidebar exposes nested destinations as unexplained icons
 
 Severity: low

@@ -103,6 +103,7 @@ def layout(
     </dialog>
     <script src="/static/shell.js"></script>
     <script src="/static/super-key.js"></script>
+    <script src="/static/action-menus.js"></script>
     <script src="/static/taxonomy.js"></script>
     <script src="/static/confirmation.js"></script>
     <script src="/static/dirty-form.js"></script>
