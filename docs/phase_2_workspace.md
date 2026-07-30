@@ -98,7 +98,7 @@ Every Event selects a Calendar and uses that Calendar's defaults. The default du
 - Direct Week-view time-slot creation, drag-and-drop rescheduling and Event resizing follow only after the overlay-based create and edit workflow is stable.
 - Agenda/list views follow only after the core Event workflow is stable.
 
-The desktop baseline remains usable at 800 × 600. Phone responsiveness is deferred. A later visual-design review may use familiar Google Calendar interaction and layout patterns as reference, but must not alter the local-first Calendar, Event or Relationship model. That review is deferred until current functional workflows are confirmed.
+The desktop baseline remains usable at 800 × 600. Phone responsiveness is deferred. The Calendar visual-refinement brief approved on 2026-07-30 may use familiar Google Calendar interaction and layout patterns as reference, but must not alter the local-first Calendar, Event or Relationship model. Its authorised implementation order is recorded in the Phase 2 expansion workspace below.
 
 #### Temporal semantics
 
@@ -373,6 +373,20 @@ The behaviour above is authoritative product direction. The following sequence i
 18. **Complete (2026-07-26):** correct My calendars visibility-row layout so each checkbox remains at the left edge and its Calendar name uses the remaining sidebar width. Remove the Calendar's derived-and-related-dates section and its unused projection fetch, leaving the Calendar viewport for its primary Event projection.
 
 19. **Complete (2026-07-26):** make My calendars visibility controls immediate and local. Toggling a Calendar now hides or shows its projected Events without a submit action or page reload, retains the selected set in browser session/navigation context, and exposes a right-side vertical-ellipsis link beside each Calendar name to its existing edit form.
+
+The following Calendar visual-refinement brief was approved on **2026-07-30**. Its implementation order is:
+
+20. **Planned:** move Calendar navigation into the Project E header on Calendar pages only. The header will contain a compact **Today** control, sleek previous/next chevrons, the current anchor date without its weekday (for example, **30 July 2026**), the existing Calendar-view selector, and a cog affordance for future Calendar settings. The cog will look interactive and expose **Coming soon!** on hover, but clicking it will have no effect until a separately authorised settings workflow is implemented.
+
+21. **Planned:** refine the Calendar sidebar's Calendar-group controls. Remove the separate **Manage calendars** button. Give **My calendars** and **Other calendars** independently operable up/down disclosure arrows; collapsing a group hides only its Calendar names and visibility checkboxes and does not change the current visibility filter or any projected Event. Place a single plus control beside **Other calendars** as the entry point for creating every new local Calendar. A created local Calendar remains part of **My calendars**; the same entry point is reserved for a later, separately designed workflow for supplied calendars, imported files or external Calendar APIs. **My calendars** has no plus control.
+
+22. **Planned:** make the Calendar's left sidebar an independently vertically scrollable region, separate from the main Calendar projection and page scrolling. Preserve its existing width, visual boundary and quick-create docking role.
+
+23. **Planned:** revise Calendar projection sizing so Month view has no page-level vertical scrolling and the complete month grid remains visible within the available Calendar viewport. Month cells may become more compact as browser zoom increases; the target is usable complete-grid presentation through approximately 300% zoom on practical supported desktop geometry, acknowledging that sufficiently small effective viewports impose a hard breakpoint. Week and Day retain their independently scrollable full 24-hour timed grids.
+
+24. **Planned:** add a live current-time indicator to Day and Week. A red dot sits at the left edge where the timed grid begins and a red line extends across the current day's timed area at the current local display time. It identifies both the present time and the Event occupying that position, if any, without changing canonical Event data.
+
+25. **Planned follow-up, not authorised for implementation by this brief:** define a Year view presenting January through December of the selected year as a full-page family of mini-month grids, with direct navigation to dates within that year. Also define a Schedule view that lists Events chronologically and carries the same live red current-time boundary through the day's sequence. Both views must remain deterministic projections over the existing canonical Calendar and Event model; their detailed interactions require a later implementation brief.
 
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
