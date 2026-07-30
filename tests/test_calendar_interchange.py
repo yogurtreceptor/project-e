@@ -626,6 +626,57 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
             self.assertEqual(1, len(archive.namelist()))
             self.assertEqual("fictional-one@example.test", parse_icalendar(archive.read(archive.namelist()[0])).events[0].uid)
 
+    def test_url_calendars_live_under_settings_for_other_calendars(self) -> None:
+        with connect(self.database_path) as connection:
+            subscription_id = create_subscription(
+                connection,
+                SubscriptionFetch(
+                    "https://example.com/calendar.ics",
+                    "https://example.com/calendar.ics",
+                    FICTIONAL_ICS,
+                    "text/calendar",
+                    '"fictional-etag"',
+                    "",
+                    parse_icalendar(FICTIONAL_ICS),
+                ),
+            )
+
+        self.client.request("GET", "/calendar/settings/from-url")
+        response = self.client.getresponse()
+        page = response.read().decode()
+        self.assertEqual(200, response.status)
+        self.assertIn("Settings for my calendars", page)
+        self.assertIn("Settings for other calendars", page)
+        self.assertIn("Fictional Observances", page)
+        self.assertNotIn("<h2>Subscriptions</h2>", page)
+
+        self.client.request(
+            "GET", f"/calendar/settings/other-calendars/{subscription_id}"
+        )
+        response = self.client.getresponse()
+        detail = response.read().decode()
+        self.assertEqual(200, response.status)
+        self.assertIn("Settings for other calendars", detail)
+        self.assertIn("externally owned and remains read-only", detail)
+        self.assertIn("Refresh now", detail)
+        self.assertIn("Remove calendar", detail)
+
+        body = urlencode({"return_to": "/calendar"})
+        self.client.request(
+            "POST",
+            f"/calendar/settings/other-calendars/{subscription_id}/disable",
+            body,
+            {"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = self.client.getresponse()
+        self.assertEqual(303, response.status)
+        self.assertIn(
+            f"/calendar/settings/other-calendars/{subscription_id}",
+            response.getheader("Location"),
+        )
+        with connect(self.database_path) as connection:
+            self.assertFalse(get_subscription(connection, subscription_id).enabled)
+
 
 if __name__ == "__main__":
     unittest.main()

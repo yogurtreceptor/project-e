@@ -199,7 +199,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertEqual(1, page.count('aria-label="Create calendar"'))
             other_heading = page[page.index('<h2 id="other-calendars-title">'):page.index('id="other-calendars-list"')]
             self.assertLess(other_heading.index('aria-label="Create calendar"'), other_heading.index('aria-label="Collapse Other calendars"'))
-            self.assertIn('No subscribed calendars yet.', page)
+            self.assertIn('No URL calendars yet.', page)
             self.assertIn('data-calendar-visibility-controls', page)
             self.assertIn('aria-label="Edit General calendar"', page)
             self.assertIn('<span>General</span></label><a class="calendar-edit-control" href="/calendar/settings/calendars/1?return_to=%2Fcalendar"', page)

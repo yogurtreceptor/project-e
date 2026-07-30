@@ -60,7 +60,7 @@ def calendar_sidebar(
     external_filters = "".join(
         f'<div class="calendar-sidebar-filter" draggable="true" data-calendar-order-item="{subscription.id}"><button class="calendar-drag-handle" type="button" aria-label="Reorder {escape(subscription.name)}" aria-pressed="false" title="Drag to reorder">⋮⋮</button><label><input type="checkbox" name="calendars" value="{-subscription.id}"{" checked" if -subscription.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(subscription.colour)}"></span><span>{escape(subscription.name)}</span></label></div>'
         for subscription in subscriptions if subscription.enabled
-    ) or "<p>No subscribed calendars yet.</p>"
+    ) or "<p>No URL calendars yet.</p>"
     other_calendars = f'''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
       <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title">Other calendars</h2><div class="calendar-sidebar-group-actions"><a class="calendar-add-control" href="{escape(_calendar_settings_url("/add", return_to))}" aria-label="Create calendar" title="Create calendar">+</a><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" aria-label="Collapse Other calendars" data-calendar-group-label="Other calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
       <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content data-calendar-visibility-controls data-calendar-order-list="external">{external_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p><p class="visually-hidden" role="status" data-calendar-order-status></p></div>
@@ -348,7 +348,7 @@ def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurren
     calendar_name = calendar.name if calendar else "Unavailable Calendar"
     colour = calendar.colour if calendar else "#6B7280"
     if calendar is not None and calendar.kind == "external":
-        return f'<aside class="calendar-preview"><div><p class="eyebrow">Read-only subscribed Event</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p>{f"<p>{escape(event.notes)}</p>" if event.notes else ""}</div><p class="help-text">This Event is supplied by an external Calendar and cannot be edited here.</p></aside>'
+        return f'<aside class="calendar-preview"><div><p class="eyebrow">Read-only URL Calendar Event</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p>{f"<p>{escape(event.notes)}</p>" if event.notes else ""}</div><p class="help-text">This Event is supplied by an external Calendar and cannot be edited here.</p></aside>'
     occurrence_query = f"&occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
     recurring_occurrence = bool(occurrence_date and recurrence)
     scope = _recurrence_delete_scope_fields(occurrence_date) if recurring_occurrence else ""
@@ -385,6 +385,7 @@ def calendar_settings_header(return_to: str) -> str:
 
 def calendar_settings_sidebar(
     calendars: list[CalendarRecord],
+    subscriptions: list[SubscriptionRecord] | None = None,
     *,
     active_section: str,
     return_to: str,
@@ -418,6 +419,16 @@ def calendar_settings_sidebar(
 
     calendar_links = "".join(calendar_link(calendar) for calendar in calendars if not calendar.is_archived)
     archived_links = "".join(calendar_link(calendar) for calendar in calendars if calendar.is_archived)
+    subscriptions = subscriptions or []
+
+    def subscription_link(source: SubscriptionRecord) -> str:
+        selected = active_section == f"subscription:{source.id}"
+        disabled = "<small>Disabled</small>" if not source.enabled else ""
+        return f'<a class="calendar-settings-calendar{" is-archived" if not source.enabled else ""}{" active" if selected else ""}" href="{escape(_calendar_settings_url(f"/other-calendars/{source.id}", return_to))}"{" aria-current=\"page\"" if selected else ""}><span class="calendar-colour" style="background:{escape(source.colour)}"></span><span>{escape(source.name)}{disabled}</span></a>'
+
+    subscription_links = "".join(
+        subscription_link(source) for source in subscriptions
+    ) or "<p>No URL calendars.</p>"
     archived_section = f'''<div class="calendar-settings-archived">
         <h3>Archived calendars</h3>
         <div class="calendar-settings-calendar-list">{archived_links}</div>
@@ -437,6 +448,10 @@ def calendar_settings_sidebar(
       <h2 id="calendar-settings-calendars-title">Settings for my calendars</h2>
       <div class="calendar-settings-calendar-list">{calendar_links}</div>
       {archived_section}
+    </section>
+    <section class="calendar-settings-calendars calendar-settings-other-calendars" aria-labelledby="calendar-settings-other-calendars-title">
+      <h2 id="calendar-settings-other-calendars-title">Settings for other calendars</h2>
+      <div class="calendar-settings-calendar-list">{subscription_links}</div>
     </section>'''
 
 
@@ -533,17 +548,32 @@ def calendar_settings_from_url_page(
     return_to: str = "/calendar",
 ) -> str:
     errors = errors or []
-    add_form = f'''<section class="panel calendar-interchange-panel">{error_block(errors)}<form class="record-form" method="post" action="/calendar/settings/from-url"><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Public iCalendar HTTPS URL</span><input name="url" type="url" placeholder="https://public-holidays.dteoh.com/all.ics" required></label><p class="help-text">The URL is validated and fetched once for preview. Subscriptions stay read-only and retain a last-known-good local cache for offline Calendar use.</p><button class="button" type="submit">Preview Calendar</button></form></section>'''
+    add_form = f'''<section class="panel calendar-interchange-panel">{error_block(errors)}<form class="record-form" method="post" action="/calendar/settings/from-url"><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Public iCalendar HTTPS URL</span><input name="url" type="url" placeholder="https://public-holidays.dteoh.com/all.ics" required></label><p class="help-text">The URL is validated and fetched once for preview. URL calendars stay read-only and retain a last-known-good local cache for offline Calendar use.</p><button class="button" type="submit">Preview Calendar</button></form></section>'''
     preview_html = ""
     if preview and preview.document:
         start, end = preview.document.date_span
         name = preview.document.name or "Subscribed Calendar"
         preview_html = f'''<section class="panel"><h2>Subscription preview</h2><dl><div><dt>Calendar</dt><dd>{escape(name)}</dd></div><div><dt>Final host</dt><dd>{escape(urlparse(preview.final_url).hostname or "")}</dd></div><div><dt>Content type</dt><dd>{escape(preview.content_type or "Not supplied")}</dd></div><div><dt>Events</dt><dd>{len(preview.document.events)}</dd></div><div><dt>Date span</dt><dd>{escape(start or "Empty")}{" to " + escape(end) if end else ""}</dd></div></dl><form class="record-form" method="post" action="/calendar/settings/from-url/confirm" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><input type="hidden" name="token" value="{escape(token)}"><label><span>Display name</span><input name="display_name" value="{escape(name)}" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#7C3AED"></label><button class="button" type="submit">Add subscription</button></form></section>'''
-    source_rows = "".join(
-        f'''<article class="calendar-subscription-card"><div><span class="calendar-colour" style="background:{escape(source.colour)}"></span><strong>{escape(source.name)}</strong><p>{escape(source.host)} · {"Enabled" if source.enabled else "Disabled"}</p><p>Last successful refresh: {escape(source.last_success_at or "Never")}</p>{f'<p class="warning-text">{escape(source.current_error)}</p>' if source.current_error else ""}</div><div class="actions"><form method="post" action="/calendar/settings/subscriptions/{source.id}/refresh"><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button secondary" type="submit">Refresh now</button></form><form method="post" action="/calendar/settings/subscriptions/{source.id}/{"disable" if source.enabled else "enable"}"><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button secondary" type="submit">{"Disable" if source.enabled else "Enable"}</button></form><form method="post" action="/calendar/settings/subscriptions/{source.id}/remove" data-confirm-object="{escape(source.name)}" data-confirm-consequence="Remove this read-only subscription and its local cache."><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button danger" type="submit">Remove subscription</button></form></div></article>'''
-        for source in subscriptions
-    ) or "<p>No URL subscriptions have been added.</p>"
-    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Add Calendar</p><h1>From URL</h1><p>Add renewable, read-only public iCalendar sources under Other calendars.</p></section>{add_form}{preview_html}<section class="panel"><h2>Subscriptions</h2><div class="calendar-subscription-list">{source_rows}</div></section>'''
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Add Calendar</p><h1>From URL</h1><p>Add renewable, read-only public iCalendar sources under Other calendars.</p></section>{add_form}{preview_html}'''
+
+
+def calendar_settings_subscription_page(
+    source: SubscriptionRecord,
+    *,
+    errors: list[str] | None = None,
+    return_to: str = "/calendar",
+) -> str:
+    errors = errors or []
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Settings for other calendars</p><h1>{escape(source.name)}</h1><p>This URL calendar is externally owned and remains read-only in Project E.</p></section>
+    <section class="panel calendar-subscription-card">{error_block(errors)}<div><p><span class="calendar-colour" style="background:{escape(source.colour)}"></span><strong>{escape(source.name)}</strong></p><dl><div><dt>Source host</dt><dd>{escape(source.host)}</dd></div><div><dt>Status</dt><dd>{"Enabled" if source.enabled else "Disabled"}</dd></div><div><dt>Last successful refresh</dt><dd>{escape(source.last_success_at or "Never")}</dd></div></dl>{f'<p class="warning-text">{escape(source.current_error)}</p>' if source.current_error else ""}</div>{_calendar_subscription_actions(source, return_to)}</section>'''
+
+
+def _calendar_subscription_actions(
+    source: SubscriptionRecord,
+    return_to: str,
+) -> str:
+    hidden_return = f'<input type="hidden" name="return_to" value="{escape(return_to)}">'
+    return f'''<div class="actions"><form method="post" action="/calendar/settings/other-calendars/{source.id}/refresh">{hidden_return}<button class="button secondary" type="submit">Refresh now</button></form><form method="post" action="/calendar/settings/other-calendars/{source.id}/{"disable" if source.enabled else "enable"}">{hidden_return}<button class="button secondary" type="submit">{"Disable" if source.enabled else "Enable"}</button></form><form method="post" action="/calendar/settings/other-calendars/{source.id}/remove" data-confirm-object="{escape(source.name)}" data-confirm-consequence="Remove this read-only URL calendar and its local cache.">{hidden_return}<button class="button danger" type="submit">Remove calendar</button></form></div>'''
 
 
 def calendar_settings_create_page(

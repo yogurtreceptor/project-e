@@ -74,6 +74,7 @@ from app.calendar_service import (
 )
 from app.calendar_subscription_service import (
     create_subscription, fetch_subscription, get_external_projection_event,
+    get_subscription,
     list_subscriptions, read_staged_subscription, refresh_subscription,
     remove_subscription, reorder_subscriptions, set_subscription_enabled,
     stage_subscription_fetch, subscription_projection,
@@ -601,9 +602,31 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if len(parts) == 4 and parts[2:] == ["from-url", "confirm"] and self.command == "POST":
             self.handle_calendar_subscription_confirm()
             return
+        managed_subscription_id = (
+            self.parse_entity_id(parts[3])
+            if len(parts) == 4 and parts[2] == "other-calendars" else None
+        )
+        if managed_subscription_id is not None and self.command == "GET":
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                source = get_subscription(connection, managed_subscription_id)
+            if source is None:
+                self.respond_not_found()
+                return
+            self.respond_calendar_settings(
+                source.name,
+                views.calendar_settings_subscription_page(
+                    source, return_to=return_to
+                ),
+                calendars,
+                active_section=f"subscription:{source.id}",
+                return_to=return_to,
+                show_save_toast=query.get("saved") == "1",
+            )
+            return
         subscription_id = (
             self.parse_entity_id(parts[3])
-            if len(parts) == 5 and parts[2] == "subscriptions" else None
+            if len(parts) == 5 and parts[2] == "other-calendars" else None
         )
         if subscription_id is not None and self.command == "POST":
             self.handle_calendar_subscription_action(subscription_id, parts[4])
@@ -1000,7 +1023,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 values.get("token", ""), self.import_staging_dir, consume=True
             )
             with connect(self.database_path) as connection:
-                create_subscription(
+                subscription_id = create_subscription(
                     connection,
                     fetched,
                     colour=values.get("colour", "#7C3AED"),
@@ -1009,19 +1032,34 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
+                source = get_subscription(connection, subscription_id)
                 subscriptions = list_subscriptions(connection)
-            self.respond_calendar_settings(
-                "From URL",
-                views.calendar_settings_from_url_page(
+            if source is not None:
+                page = views.calendar_settings_subscription_page(
+                    source, errors=[str(error)], return_to=return_to
+                )
+                active_section = f"subscription:{source.id}"
+                title = source.name
+            else:
+                page = views.calendar_settings_from_url_page(
                     subscriptions, errors=[str(error)], return_to=return_to
-                ),
+                )
+                active_section = "from-url"
+                title = "From URL"
+            self.respond_calendar_settings(
+                title,
+                page,
                 calendars,
-                active_section="from-url",
+                active_section=active_section,
                 return_to=return_to,
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
-        self.redirect(self.calendar_settings_url("/from-url", return_to, saved=True))
+        destination = (
+            "/from-url" if action == "remove"
+            else f"/other-calendars/{subscription_id}"
+        )
+        self.redirect(self.calendar_settings_url(destination, return_to, saved=True))
 
     def handle_calendar_subscription_action(self, subscription_id: int, action: str) -> None:
         values = self.read_form()
@@ -1054,7 +1092,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
-        self.redirect(self.calendar_settings_url("/from-url", return_to, saved=True))
+        self.redirect(self.calendar_settings_url(
+            f"/other-calendars/{subscription_id}", return_to, saved=True
+        ))
 
     def handle_calendar_settings_edit(self, calendar_id: int) -> None:
         values = self.read_form()
@@ -2313,6 +2353,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         status: HTTPStatus = HTTPStatus.OK,
         show_save_toast: bool = False,
     ) -> None:
+        with connect(self.database_path) as connection:
+            subscriptions = list_subscriptions(connection)
         self.respond_page(
             title,
             content,
@@ -2321,6 +2363,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             sidebar_variant="calendar-settings",
             sidebar_content=views.calendar_settings_sidebar(
                 calendars,
+                subscriptions,
                 active_section=active_section,
                 return_to=return_to,
             ),
