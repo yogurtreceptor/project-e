@@ -7,6 +7,7 @@
     toggle.addEventListener("click", () => {
       const expanded = toggle.getAttribute("aria-expanded") === "true";
       toggle.setAttribute("aria-expanded", String(!expanded));
+      toggle.setAttribute("aria-label", `${expanded ? "Expand" : "Collapse"} ${toggle.dataset.calendarGroupLabel}`);
       content.hidden = expanded;
     });
   });

@@ -42,11 +42,11 @@ def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini
         for calendar in active_calendars
     )
     my_calendars = f'''<section class="calendar-sidebar-calendars calendar-sidebar-group" aria-labelledby="my-calendars-title" data-calendar-group>
-      <div class="calendar-sidebar-group-heading"><h2 id="my-calendars-title"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="my-calendars-list" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span><span>My calendars</span></button></h2></div>
+      <div class="calendar-sidebar-group-heading"><h2 id="my-calendars-title">My calendars</h2><div class="calendar-sidebar-group-actions"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="my-calendars-list" aria-label="Collapse My calendars" data-calendar-group-label="My calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
       <div class="calendar-sidebar-group-content" id="my-calendars-list" data-calendar-group-content data-calendar-visibility-controls>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></div>
     </section>'''
     other_calendars = '''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
-      <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span><span>Other calendars</span></button></h2><a class="calendar-add-control" href="/calendar/manage#add-calendar" aria-label="Create calendar" title="Create calendar">+</a></div>
+      <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title">Other calendars</h2><div class="calendar-sidebar-group-actions"><a class="calendar-add-control" href="/calendar/manage#add-calendar" aria-label="Create calendar" title="Create calendar">+</a><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" aria-label="Collapse Other calendars" data-calendar-group-label="Other calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
       <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content><p>Additional calendar sources will appear here.</p></div>
     </section>'''
     return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}{my_calendars}{other_calendars}</div>'''
@@ -76,8 +76,7 @@ def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[
       <nav class="calendar-header-step" aria-label="Move through {escape(view)} view"><a href="{previous_url}" aria-label="Previous {escape(view)}" title="Previous {escape(view)}">‹</a><a href="{following_url}" aria-label="Next {escape(view)}" title="Next {escape(view)}">›</a></nav>
       <h1 class="calendar-header-date">{escape(title)}</h1>
       <details class="action-menu calendar-view-menu"><summary class="calendar-header-view">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details>
-      <button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>
-    </div>'''
+    </div><button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>'''
 
 
 def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:

@@ -390,6 +390,8 @@ The following Calendar visual-refinement brief was approved on **2026-07-30**. I
 
 26. **Complete (2026-07-30):** park historical Task service, projection, reminder-delivery and overdue-Inbox tests behind explicit `unittest.skip` markers while Task work management remains dormant. The test bodies remain local and readable for reconsideration during the user-led Task redesign. Active tests continue to enforce the current deferral boundary, including unavailable Task routes and disabled Task automation.
 
+27. **Complete (2026-07-30):** align the Calendar-only header navigation with the left edge of the main Calendar column rather than immediately after the Project E brand, and place the future-settings cog directly beside global Search. Remove the remaining Calendar projection inset so its surface meets the header and sidebar boundaries without a gap. Move each Calendar-group disclosure control to the far right of its heading; **Other calendars** orders its plus control immediately before the disclosure arrow.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria
