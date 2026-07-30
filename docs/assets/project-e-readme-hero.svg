@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="560" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
+  <title id="title">Project E</title>
+  <desc id="desc">A dark, technical Project E banner showing connected canonical records flowing into local views and workflows.</desc>
+
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#263137" stroke-width="1"/>
+    </pattern>
+    <clipPath id="canvas">
+      <rect width="1600" height="560" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#canvas)">
+    <rect width="1600" height="560" fill="#0b0f11"/>
+    <rect width="1600" height="560" fill="url(#grid)" opacity=".34"/>
+    <path d="M0 0H1600" stroke="#66ccff" stroke-width="8"/>
+    <circle cx="1515" cy="66" r="170" fill="#66ccff" opacity=".04"/>
+    <circle cx="1515" cy="66" r="104" fill="none" stroke="#66ccff" stroke-width="1" opacity=".18"/>
+
+    <g transform="translate(88 78)">
+      <rect width="164" height="164" rx="20" fill="#111719" stroke="#334047" stroke-width="2"/>
+      <path d="M42 33h80v27H69v20h47v27H69v20h53v27H42z" fill="#66ccff" transform="rotate(-38 82 82)"/>
+    </g>
+
+    <text x="294" y="136" fill="#91a0a7" font-family="Roboto, Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="6">PRIVATE INFORMATION PLATFORM</text>
+    <text x="286" y="236" fill="#f4f7f8" font-family="Roboto, Arial, sans-serif" font-size="94" font-weight="800" letter-spacing="-4">PROJECT E</text>
+    <text x="294" y="291" fill="#b8c3c8" font-family="Roboto, Arial, sans-serif" font-size="27">Your information. Connected, local and under your control.</text>
+
+    <g font-family="Roboto Mono, Consolas, monospace" font-size="17" font-weight="700" letter-spacing="1">
+      <g transform="translate(294 346)">
+        <rect width="166" height="46" rx="7" fill="#14252d" stroke="#3f839f"/>
+        <circle cx="24" cy="23" r="5" fill="#66ccff"/>
+        <text x="41" y="29" fill="#bce9ff">LOCAL-FIRST</text>
+      </g>
+      <g transform="translate(476 346)">
+        <rect width="176" height="46" rx="7" fill="#14251e" stroke="#3e8060"/>
+        <circle cx="24" cy="23" r="5" fill="#8fddb8"/>
+        <text x="41" y="29" fill="#bdebd5">CANONICAL</text>
+      </g>
+      <g transform="translate(668 346)">
+        <rect width="178" height="46" rx="7" fill="#211d2a" stroke="#735f8b"/>
+        <circle cx="24" cy="23" r="5" fill="#c4a7e7"/>
+        <text x="41" y="29" fill="#decdf1">TRACEABLE</text>
+      </g>
+    </g>
+
+    <text x="294" y="456" fill="#76868e" font-family="Roboto Mono, Consolas, monospace" font-size="16" letter-spacing="2">PYTHON STDLIB  /  SQLITE  /  ZERO THIRD-PARTY PACKAGES</text>
+
+    <g transform="translate(950 72)">
+      <rect width="556" height="416" rx="18" fill="#0f1416" stroke="#334047" stroke-width="2"/>
+      <circle cx="30" cy="30" r="5" fill="#66ccff"/>
+      <text x="48" y="37" fill="#91a0a7" font-family="Roboto Mono, Consolas, monospace" font-size="15" font-weight="700" letter-spacing="2">ONE SOURCE OF TRUTH</text>
+      <path d="M24 59H532" stroke="#273238"/>
+
+      <g fill="none" stroke="#42535c" stroke-width="2">
+        <path d="M134 128C190 128 189 190 258 190"/>
+        <path d="M134 214C193 214 195 190 258 190"/>
+        <path d="M134 300C190 300 193 190 258 190"/>
+        <path d="M320 190C384 190 385 128 442 128"/>
+        <path d="M320 190C385 190 384 214 442 214"/>
+        <path d="M320 190C386 190 386 300 442 300"/>
+      </g>
+
+      <g font-family="Roboto, Arial, sans-serif">
+        <g transform="translate(30 100)">
+          <rect width="104" height="56" rx="8" fill="#151c1f" stroke="#56666d"/>
+          <text x="52" y="34" text-anchor="middle" fill="#d7dfe2" font-size="16" font-weight="700">PEOPLE</text>
+        </g>
+        <g transform="translate(30 186)">
+          <rect width="104" height="56" rx="8" fill="#151c1f" stroke="#56666d"/>
+          <text x="52" y="34" text-anchor="middle" fill="#d7dfe2" font-size="16" font-weight="700">PLACES</text>
+        </g>
+        <g transform="translate(30 272)">
+          <rect width="104" height="56" rx="8" fill="#151c1f" stroke="#56666d"/>
+          <text x="52" y="34" text-anchor="middle" fill="#d7dfe2" font-size="16" font-weight="700">EVENTS</text>
+        </g>
+
+        <g transform="translate(258 154)">
+          <circle cx="31" cy="36" r="53" fill="#14252d" stroke="#66ccff" stroke-width="2"/>
+          <text x="31" y="31" text-anchor="middle" fill="#f4f7f8" font-size="16" font-weight="800">LOCAL</text>
+          <text x="31" y="52" text-anchor="middle" fill="#66ccff" font-size="15" font-weight="700">SQLITE</text>
+        </g>
+
+        <g transform="translate(442 100)">
+          <rect width="84" height="56" rx="8" fill="#14252d" stroke="#3f839f"/>
+          <text x="42" y="34" text-anchor="middle" fill="#bce9ff" font-size="15" font-weight="700">SEARCH</text>
+        </g>
+        <g transform="translate(442 186)">
+          <rect width="84" height="56" rx="8" fill="#14251e" stroke="#3e8060"/>
+          <text x="42" y="34" text-anchor="middle" fill="#bdebd5" font-size="15" font-weight="700">VIEWS</text>
+        </g>
+        <g transform="translate(442 272)">
+          <rect width="84" height="56" rx="8" fill="#292212" stroke="#8b7436"/>
+          <text x="42" y="34" text-anchor="middle" fill="#f2ce75" font-size="15" font-weight="700">INBOX</text>
+        </g>
+      </g>
+
+      <path d="M30 362H526" stroke="#273238"/>
+      <text x="30" y="391" fill="#76868e" font-family="Roboto Mono, Consolas, monospace" font-size="14" letter-spacing="1.5">CANONICAL RECORDS → DETERMINISTIC PROJECTIONS</text>
+    </g>
+  </g>
+</svg>

@@ -1,119 +1,112 @@
 # Project E
 
-> A local-first Personal Information Platform for turning private, connected information into a useful operational foundation.
+![Project E — your information, connected, local and under your control](docs/assets/project-e-readme-hero.svg)
 
-Project E brings People, Organisations, Locations, Projects, Documents, Assets, Events and Tasks into one relationship-rich system. Its embedded SQLite database is the canonical source of truth, with private documents stored locally alongside it. Search, maps, timelines, Calendar, Tasks and Inbox are views and workflows over the same records—not competing data stores.
+<p align="center">
+  <strong>A local-first Personal Information Platform for one private user.</strong><br>
+  Canonical records, explicit relationships and useful operational views—without a cloud-shaped hole in the middle.
+</p>
 
-The immediate aim is deliberately human: make the platform useful, trustworthy and pleasant for one private user. Automation and AI are later capabilities built on validation, provenance and user control; they are not the foundation.
+<p align="center">
+  <a href="#the-idea">The idea</a> ·
+  <a href="#current-state">Current state</a> ·
+  <a href="#see-it">See it</a> ·
+  <a href="#run-it">Run it</a> ·
+  <a href="#documentation">Documentation</a>
+</p>
 
-## Current product
+---
 
-| Status | Capability |
-| --- | --- |
-| **Available now** | Canonical records and relationships; search and structured filters; maps; document storage; journals and timelines; taxonomies; audit history; data-quality tools; duplicate merging; soft deletion; reviewed family inference; Calendar and recurring Events; Tasks and Calendar/Project projections; reminder policies and a durable local Inbox; portable export, import and recovery. |
-| **In progress** | Scheduler-driven reminder delivery, startup recovery and the later deterministic-automation runtime in Phase 2. |
-| **Not current scope** | AI, user accounts, cloud-dependent core operation, and external email, SMS, push or operating-system notification channels. |
+## The idea
 
-Phase 1 — Information Platform is complete as a development milestone. Phase 2's original operational foundation is complete and its expanded workspace is active for focused refinements; Phase 3 has not been defined. The product requires no account. Core records and workflows work without WAN access; optional map tiles and address lookup use replaceable network services. See the [Phase 2 workspace](docs/phase_2_workspace.md).
+Project E keeps People, Organisations, Locations, Projects, Documents, Assets and Events in one connected system. Each real-world object has one canonical record; Search, Map, Timeline, Calendar, Inbox and other workflows are projections over that same information—not rival stores that slowly drift apart.
 
-## Product map
+| **CONNECT** | **OPERATE** | **OWN** |
+| --- | --- | --- |
+| Model real things once and link them through first-class Relationships. | Turn the same records into search, temporal, geographic and attention workflows. | Keep the database, documents, audit trail, exports and recovery bundles on the local machine. |
+
+The immediate goal is deliberately human: make private information useful, trustworthy and pleasant to work with. Deterministic automation builds on validation, provenance and explicit control. AI is a later consumer of the platform, not its organising principle.
+
+## Current state
+
+| Track | State | What that means |
+| --- | :---: | --- |
+| **Phase 1 · Information Platform** | **Complete** | Canonical records and Relationships, Search, Map, Timeline, local Documents, taxonomies, audit/history, data quality, reviewed inference, merging and recovery. |
+| **Phase 2 · Operational Time** | **Active** | Calendar and recurring Events, derived occurrences, reminder policies, durable Inbox delivery, startup recovery, registered scheduled jobs and deterministic automation are delivered and undergoing focused refinement. |
+| **Task work management** | **Parked** | Its storage, migrations, services and validation are retained, but normal Task routes and projections are dormant pending a user-led redesign. |
+| **Phase 3** | **Undefined** | AI, agent workflows, external notification channels, accounts and cloud-dependent operation are not current product scope. |
+
+Project E currently needs no account and remains useful without WAN access. Optional map tiles and address lookup use replaceable network services; canonical records and core workflows do not.
+
+> [!NOTE]
+> This is an active, source-available development project—not a stable release or an open-source distribution. The [Phase 2 workspace](docs/phase_2_workspace.md) is the detailed status authority.
+
+## See it
+
+The current Home screen uses the persistent Project E shell to open information domains, specialist views, favourites and recent records.
+
+<img width="1895" height="1077" alt="Project E Home page with the Browse sidebar, information-domain shortcuts, favourites and recent records." src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
+
+## One source, many views
 
 ```mermaid
 flowchart LR
-    R["Canonical records<br/>People · Organisations · Locations · Projects<br/>Documents · Assets · Events · Tasks"]
-    G["Relationships"]
-    V["Views and workflows<br/>Search · Timeline · Map · Calendar<br/>Tasks · Inbox"]
-    D[("Local SQLite database")]
-    F["Private local documents"]
+    C["Canonical records<br/>People · Organisations · Locations · Projects<br/>Documents · Assets · Events"]
+    R["First-class<br/>Relationships"]
+    V["Human views<br/>Search · Map · Timeline · Calendar"]
+    O["Local operations<br/>Reminders · Inbox · Scheduler"]
+    D[("SQLite<br/>source of truth")]
+    F["Private local<br/>documents"]
 
-    R <--> G
+    C <--> R
+    C --> V
     R --> V
-    G --> V
-    R <--> D
-    R <--> F
+    C --> O
+    C <--> D
+    C <--> F
 ```
 
-Every view remains traceable to canonical local records. Optional map resources may use the network, but they are not required for core operation.
+Every view and deterministic operation stays traceable to canonical local records. Consequential changes require explicit user control.
 
-## Principles
+## Run it
 
-- **Local-first and private:** useful without a cloud service or continuous connection.
-- **Entity- and relationship-first:** model each real thing once, then provide multiple views over it.
-- **Human usefulness before intelligence:** earn value through dependable everyday workflows before adding advanced assistance.
-- **Safe evolution:** validation, audit history, provenance and explicit confirmation precede consequential machine-written changes.
-- **Simple, maintainable foundations:** prefer standard-library Python, SQLite and conservative dependencies.
-- **Coherent active development:** prefer a clean current architecture over obsolete compatibility layers while the product remains unstable.
-
-For the durable direction, see the [project goal](PROJECT_GOAL.md), [roadmap](ROADMAP.md) and [future platform direction](docs/future_direction.md).
-
-## Documentation
-
-### Product and planning
-
-- [Project goal](PROJECT_GOAL.md) — product purpose and durable principles
-- [Phase 1 specification](docs/phase_1_spec.md) — delivered Information Platform behaviour and acceptance criteria
-- [Phase 2 workspace](docs/phase_2_workspace.md) — living operational-time and deterministic-automation workspace
-- [Roadmap](ROADMAP.md) and [future direction](docs/future_direction.md) — phased and longer-term direction
-- [Build history](docs/build_log.md) and [Phase 1 closure review](docs/reviews/phase_1_exit_review.md) — completed-work context
-
-### Technical reference
-
-- [Architecture](docs/architecture.md), [database design](docs/database_design.md) and [ontology](docs/ontology.md)
-- [Architecture decisions](ARCHITECTURE_DECISIONS.md), [glossary](docs/glossary.md) and [technical debt](docs/reviews/technical_debt_register.md)
-
-### Experience and design
-
-- [Experience philosophy](docs/experience_philosophy.md), [design documentation](docs/design/README.md) and [UI principles](docs/ui_principles.md)
-
-### Contribute and report safely
-
-- [Contributor and agent workflow](AGENTS.md) and [contributing guide](CONTRIBUTING.md)
-- [Security policy](SECURITY.md) and [copyright notice](COPYRIGHT.md)
-
-Project E is currently source-available, not open source. Copyright is retained by yogurtreceptor and no licence for reuse or redistribution is granted.
-
-## Run locally
-
-Project E needs Python 3 and no third-party Python packages.
+The runtime is standard-library Python with SQLite and no third-party Python packages.
 
 ```bash
 python3 run.py
 ```
 
-Open `http://127.0.0.1:8000`. A fresh clone starts empty and creates its Git-ignored SQLite database, document storage and recovery directories beneath `instance/`.
+Open `http://127.0.0.1:8000`. A fresh clone starts empty and creates its Git-ignored database, document storage and recovery directories beneath `instance/`.
+
+Run the project checks with:
 
 ```bash
 python3 -m unittest discover -s tests
 python3 -m compileall app run.py tests
 ```
 
-## Screenshot gallery
+## Built deliberately
 
-### Home
+- **Local-first and private.** The useful core does not depend on a hosted service or continuous connection.
+- **Entity- and relationship-first.** Model each real thing once, then derive coherent views over it.
+- **Human usefulness before intelligence.** Dependable everyday workflows come before advanced assistance.
+- **Safe, legible change.** Validation, audit history, provenance and confirmation protect consequential writes.
+- **Small technical surface.** Standard-library Python, embedded SQLite and conservative dependencies keep the platform understandable.
+- **Clean evolution.** While the product is unstable, coherent current architecture wins over compatibility layers for abandoned designs.
 
-Project E Home, showing the persistent navigation shell and information entry points.
+## Documentation
 
-<img width="1895" height="1077" alt="Project E Home page with the Browse sidebar, information-domain shortcuts, favourites and recent records." src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
+| Start here | Go deeper |
+| --- | --- |
+| [Project goal](PROJECT_GOAL.md) | [Architecture](docs/architecture.md) · [Database design](docs/database_design.md) · [Ontology](docs/ontology.md) |
+| [Phase 1 specification](docs/phase_1_spec.md) | [Architecture decisions](ARCHITECTURE_DECISIONS.md) · [Glossary](docs/glossary.md) |
+| [Phase 2 workspace](docs/phase_2_workspace.md) | [Experience philosophy](docs/experience_philosophy.md) · [Design system](docs/design/README.md) |
+| [Roadmap](ROADMAP.md) · [Future direction](docs/future_direction.md) | [Build history](docs/build_log.md) · [Technical debt](docs/reviews/technical_debt_register.md) |
+| [Contributing](CONTRIBUTING.md) · [Agent workflow](AGENTS.md) | [Security policy](SECURITY.md) · [Copyright](COPYRIGHT.md) |
 
-### Further screenshots
+## Portability and recovery
 
-Calendar, Tasks, Inbox, Relationships and Map are implemented. Add representative, fictional screenshots of these workflows as they receive visual refreshes.
-
-### Add a screenshot
-
-Use this paste-ready pattern for a GitHub-hosted attachment. Replace all three placeholders; it deliberately renders no empty image while a slot is awaiting a screenshot.
-
-```html
-<img width="1895" alt="{ALT_TEXT}" src="{SCREENSHOT_URL}" />
-
-*{CAPTION}*
-```
-
-GitHub attachments are suitable for this gallery. Use fictional, scrubbed names, addresses, document filenames, dates and map coordinates; keep the original files locally; and refresh a screenshot when the workflow it depicts materially changes. If the gallery later needs repository-controlled URLs or release-stable images, move reviewed fictional assets into committed documentation assets.
-
-## Portable export and recovery
-
-System Tools → Import and Export downloads a versioned, checksummed ZIP containing a consistent SQLite snapshot and referenced document files. Import validates and previews a bundle, requires an empty target, requires explicit confirmation and creates a recovery backup first. Confirmed merges and permanent entity deletion also create recovery bundles under the Git-ignored `instance/backups/` directory.
+System Tools → Import and Export creates a versioned, checksummed ZIP containing a consistent SQLite snapshot and referenced document files. Import validates and previews the bundle, requires an empty target and creates a recovery backup before confirmed replacement. Confirmed merges and permanent entity deletion also create local recovery bundles.
 
 Recovery is preview-only unless explicitly confirmed:
 
@@ -122,4 +115,11 @@ python3 tools/restore_backup.py instance/backups/<bundle>.zip
 python3 tools/restore_backup.py instance/backups/<bundle>.zip --confirm-replace
 ```
 
-Private databases, uploaded documents, logs, caches, exports and backups must never be committed.
+Private databases, uploaded documents, logs, caches, exports and backups belong under Git-ignored local storage and must never be committed.
+
+---
+
+<p align="center">
+  <strong>Project E is source-available, not open source.</strong><br>
+  Copyright © 2026 yogurtreceptor. No licence for reuse or redistribution is granted.
+</p>
