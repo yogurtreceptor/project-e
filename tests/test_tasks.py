@@ -14,6 +14,11 @@ from app import views
 from app.event_service import EventInput, create_event
 
 
+DORMANT_TASK_TEST = unittest.skip(
+    "Task work management is dormant pending the user-led Task redesign."
+)
+
+
 class TaskServiceTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -25,6 +30,7 @@ class TaskServiceTests(unittest.TestCase):
         self.connection.close()
         self.directory.cleanup()
 
+    @DORMANT_TASK_TEST
     def test_default_list_and_task_lifecycle_preserve_canonical_identity(self):
         default = list_task_lists(self.connection)[0]
         self.assertEqual("Tasks", default.name)
@@ -40,6 +46,7 @@ class TaskServiceTests(unittest.TestCase):
         self.assertTrue(reopen_task(self.connection, task_id))
         self.assertEqual("", get_task(self.connection, task_id).completed_at)
 
+    @DORMANT_TASK_TEST
     def test_archived_list_retains_tasks_but_rejects_new_assignment(self):
         work_id = create_task_list(self.connection, TaskListInput("Work"))
         task_id = create_task(self.connection, TaskInput("Existing", work_id))
@@ -48,6 +55,7 @@ class TaskServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Archived Task list"):
             create_task(self.connection, TaskInput("Unsafe", work_id))
 
+    @DORMANT_TASK_TEST
     def test_retained_tasks_keep_their_relationship_records(self):
         task_id = create_task(self.connection, TaskInput("Prepare launch"))
         project_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["project"], {"display_name": "Launch", "summary": "", "notes": "", "project_type": "", "status": "Active", "started_at": "", "target_date": "", "ended_at": ""})
@@ -55,6 +63,7 @@ class TaskServiceTests(unittest.TestCase):
         self.connection.commit()
         self.assertEqual("task_related_to_project", list_relationships_for_entity(self.connection, task_id)[0].type_key)
 
+    @DORMANT_TASK_TEST
     def test_deadlines_and_sessions_use_shared_temporal_contract(self):
         task_id = create_task(self.connection, TaskInput("Book venue", deadline_date="2026-08-10"))
         self.assertEqual("2026-08-10", get_task(self.connection, task_id).deadline_date)
@@ -63,6 +72,7 @@ class TaskServiceTests(unittest.TestCase):
         complete_task(self.connection, task_id)
         self.assertEqual([], list_task_sessions(self.connection, task_id))
 
+    @DORMANT_TASK_TEST
     def test_project_projects_related_upcoming_events_and_open_tasks(self):
         project_id = create_entity(self.connection, DEFINITIONS_BY_TYPE["project"], {"display_name": "Launch", "summary": "", "notes": "", "project_type": "", "status": "Active", "started_at": "", "target_date": "", "ended_at": ""})
         task_id = create_task(self.connection, TaskInput("Prepare launch"))

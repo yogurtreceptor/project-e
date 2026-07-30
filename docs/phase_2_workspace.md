@@ -388,6 +388,8 @@ The following Calendar visual-refinement brief was approved on **2026-07-30**. I
 
 25. **Planned follow-up, not authorised for implementation by this brief:** define a Year view presenting January through December of the selected year as a full-page family of mini-month grids, with direct navigation to dates within that year. Also define a Schedule view that lists Events chronologically and carries the same live red current-time boundary through the day's sequence. Both views must remain deterministic projections over the existing canonical Calendar and Event model; their detailed interactions require a later implementation brief.
 
+26. **Complete (2026-07-30):** park historical Task service, projection, reminder-delivery and overdue-Inbox tests behind explicit `unittest.skip` markers while Task work management remains dormant. The test bodies remain local and readable for reconsideration during the user-led Task redesign. Active tests continue to enforce the current deferral boundary, including unavailable Task routes and disabled Task automation.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria

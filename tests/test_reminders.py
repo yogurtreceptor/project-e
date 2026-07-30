@@ -13,6 +13,11 @@ from app.reminder_service import (act_on_inbox_item, disable_policy, evaluate_du
 from app.task_service import TaskInput, create_task
 
 
+DORMANT_TASK_TEST = unittest.skip(
+    "Task reminder delivery is dormant pending the user-led Task redesign."
+)
+
+
 class ReminderFoundationTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -56,6 +61,7 @@ class ReminderFoundationTests(unittest.TestCase):
         occurrences = {item.occurrence_key for item in list_inbox_items(self.connection)}
         self.assertIn("2026-01-02", occurrences)
 
+    @DORMANT_TASK_TEST
     def test_task_overdue_is_one_distinct_delivery(self):
         task_id = create_task(self.connection, TaskInput("Send proposal", deadline_date="2026-01-01"))
         evaluate_due_reminders(self.connection, now=datetime(2026, 1, 5, tzinfo=UTC))
@@ -80,6 +86,7 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual({"event"}, {item.source_kind for item in items})
         self.assertEqual({"2025-02-28"}, {item.occurrence_key for item in items})
 
+    @DORMANT_TASK_TEST
     def test_override_can_disable_and_snooze_keeps_same_delivery(self):
         task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-02"))
         set_override(self.connection, "task_deadline", task_id, mode="disabled")
@@ -105,6 +112,7 @@ class ReminderFoundationTests(unittest.TestCase):
         ).fetchall()
         self.assertEqual([("10m", "resolved"), ("1h", "active")], [(row["timing"], row["state"]) for row in rows])
 
+    @DORMANT_TASK_TEST
     def test_disabling_reminders_resolves_existing_pending_delivery(self):
         task_id = create_task(self.connection, TaskInput("Private", deadline_local="2026-01-01T12:00", deadline_timezone="Australia/Brisbane"))
         evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 1, tzinfo=UTC))
@@ -115,6 +123,7 @@ class ReminderFoundationTests(unittest.TestCase):
         ).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
 
+    @DORMANT_TASK_TEST
     def test_catch_up_uses_one_persistent_overdue_item_and_skips_past_event(self):
         task_id = create_task(self.connection, TaskInput("Late task", deadline_date="2026-01-01"))
         event_id = create_event(self.connection, EventInput("Past event", False,
@@ -124,6 +133,7 @@ class ReminderFoundationTests(unittest.TestCase):
         self.assertEqual(["overdue"], [item.reason for item in task_items])
         self.assertEqual([], [item for item in list_inbox_items(self.connection) if item.source_id == event_id])
 
+    @DORMANT_TASK_TEST
     def test_inbox_action_history_retains_delivery_snooze_and_acknowledgement(self):
         task_id = create_task(self.connection, TaskInput("Private", deadline_date="2026-01-02"))
         evaluate_due_reminders(self.connection, now=datetime(2026, 1, 1, 22, tzinfo=UTC))
@@ -165,6 +175,7 @@ class ReminderFoundationTests(unittest.TestCase):
         states = self.connection.execute("SELECT DISTINCT state FROM inbox_items WHERE source_kind='event' AND source_id=? AND occurrence_key='2026-01-02'", (event_id,)).fetchall()
         self.assertEqual(["resolved"], [row["state"] for row in states])
 
+    @DORMANT_TASK_TEST
     def test_context_policy_can_be_configured_and_restored_to_inheritance(self):
         task_id = create_task(self.connection, TaskInput("Submit report", deadline_date="2026-01-10"))
         task_list_id = self.connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (task_id,)).fetchone()[0]
