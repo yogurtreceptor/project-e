@@ -21,6 +21,7 @@ from app.calendar_service import (
 from app.calendar_subscription_service import (
     _PublicRedirectHandler,
     SubscriptionFetch,
+    SubscriptionSettingsInput,
     create_subscription,
     get_subscription,
     list_subscriptions,
@@ -30,6 +31,7 @@ from app.calendar_subscription_service import (
     reorder_subscriptions,
     set_subscription_enabled,
     subscription_projection,
+    update_subscription_settings,
     validate_public_https_url,
 )
 from app.db import connect, initialise_database
@@ -40,6 +42,12 @@ from app.event_recurrence import (
     set_recurrence,
 )
 from app.event_service import EventInput, create_event, get_event, list_events
+from app.reminder_service import (
+    evaluate_due_reminders,
+    get_policy,
+    list_inbox_items,
+    set_policy,
+)
 from app.icalendar_service import (
     MAX_ICALENDAR_BYTES,
     apply_icalendar_import,
@@ -57,6 +65,7 @@ from app.view_pages.calendar import (
     calendar_settings_edit_page,
     calendar_settings_export_page,
 )
+from app.view_pages.inbox import inbox_page
 from app.web import EddyRequestHandler, ThreadingHTTPServer
 
 
@@ -352,6 +361,93 @@ class CalendarInterchangeTests(unittest.TestCase):
         self.assertEqual("external", projection.calendars[0].kind)
         self.assertEqual("Fictional Day", projection.events[0].title)
         self.assertEqual(-subscription_id, projection.events[0].calendar_id)
+
+    def test_url_calendar_settings_and_reminders_use_stable_cached_occurrences(
+        self,
+    ) -> None:
+        subscription_id = create_subscription(
+            self.connection, self.subscription_fetch(FICTIONAL_ICS)
+        )
+        external_event_id = int(self.connection.execute(
+            """SELECT id FROM external_calendar_events
+               WHERE subscription_id = ?""",
+            (subscription_id,),
+        ).fetchone()["id"])
+
+        self.assertTrue(update_subscription_settings(
+            self.connection,
+            subscription_id,
+            SubscriptionSettingsInput(
+                "Personal observances", "#123ABC", "Pacific/Auckland"
+            ),
+        ))
+        set_policy(
+            self.connection,
+            "calendar_subscription",
+            subscription_id,
+            "event",
+            ["1d"],
+        )
+
+        self.assertEqual(
+            1,
+            evaluate_due_reminders(
+                self.connection,
+                now=datetime(2026, 7, 28, 23, 0, tzinfo=UTC),
+            ),
+        )
+        item = list_inbox_items(self.connection)[0]
+        self.assertEqual("event", item.source_kind)
+        self.assertEqual(-external_event_id, item.source_id)
+        self.assertEqual("2026-07-30", item.occurrence_key)
+        self.assertIn(
+            f"external_preview=-{external_event_id}",
+            inbox_page([item], archived=False),
+        )
+
+        renamed_feed = FICTIONAL_ICS.replace(
+            b"Fictional Observances", b"Remote source name"
+        ).replace(
+            b"X-WR-TIMEZONE:Australia/Brisbane",
+            b"X-WR-TIMEZONE:Europe/London",
+        )
+        self.assertTrue(refresh_subscription(
+            self.connection,
+            subscription_id,
+            fetcher=lambda *args, **kwargs: self.subscription_fetch(renamed_feed),
+        ))
+        source = get_subscription(self.connection, subscription_id)
+        self.assertEqual("Personal observances", source.name)
+        self.assertEqual("#123ABC", source.colour)
+        self.assertEqual("Pacific/Auckland", source.timezone)
+        self.assertEqual(
+            external_event_id,
+            int(self.connection.execute(
+                """SELECT id FROM external_calendar_events
+                   WHERE subscription_id = ?""",
+                (subscription_id,),
+            ).fetchone()["id"]),
+        )
+        self.assertEqual(
+            ["1d"],
+            get_policy(
+                self.connection,
+                "calendar_subscription",
+                subscription_id,
+                "event",
+            ),
+        )
+
+        self.assertTrue(
+            set_subscription_enabled(self.connection, subscription_id, False)
+        )
+        self.assertEqual(
+            "resolved",
+            self.connection.execute(
+                "SELECT state FROM inbox_items WHERE source_id = ?",
+                (-external_event_id,),
+            ).fetchone()["state"],
+        )
 
     def test_refresh_swaps_valid_cache_and_retains_stale_cache_on_error(self) -> None:
         subscription_id = create_subscription(
@@ -658,8 +754,46 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
         self.assertEqual(200, response.status)
         self.assertIn("Settings for other calendars", detail)
         self.assertIn("externally owned and remains read-only", detail)
+        self.assertIn('name="name"', detail)
+        self.assertIn('name="colour"', detail)
+        self.assertIn('name="timezone"', detail)
+        self.assertIn("Event notifications", detail)
+        self.assertNotIn('name="default_event_duration_minutes"', detail)
         self.assertIn("Refresh now", detail)
         self.assertIn("Remove calendar", detail)
+
+        body = urlencode({
+            "return_to": "/calendar",
+            "name": "Renamed observances",
+            "colour": "#345678",
+            "timezone": "Europe/London",
+            "calendar_reminder_amount_0": "2",
+            "calendar_reminder_unit_0": "d",
+            "default_event_duration_minutes": "5",
+        })
+        self.client.request(
+            "POST",
+            f"/calendar/settings/other-calendars/{subscription_id}",
+            body,
+            {"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = self.client.getresponse()
+        response.read()
+        self.assertEqual(303, response.status)
+        with connect(self.database_path) as connection:
+            source = get_subscription(connection, subscription_id)
+            self.assertEqual("Renamed observances", source.name)
+            self.assertEqual("#345678", source.colour)
+            self.assertEqual("Europe/London", source.timezone)
+            self.assertEqual(
+                ["2d"],
+                get_policy(
+                    connection,
+                    "calendar_subscription",
+                    subscription_id,
+                    "event",
+                ),
+            )
 
         body = urlencode({"return_to": "/calendar"})
         self.client.request(
@@ -676,6 +810,28 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
         )
         with connect(self.database_path) as connection:
             self.assertFalse(get_subscription(connection, subscription_id).enabled)
+
+        self.client.request(
+            "POST",
+            f"/calendar/settings/other-calendars/{subscription_id}/remove",
+            body,
+            {"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = self.client.getresponse()
+        response.read()
+        self.assertEqual(303, response.status)
+        self.assertIn(
+            "/calendar/settings/from-url",
+            response.getheader("Location"),
+        )
+        with connect(self.database_path) as connection:
+            self.assertIsNone(get_subscription(connection, subscription_id))
+            self.assertIsNone(get_policy(
+                connection,
+                "calendar_subscription",
+                subscription_id,
+                "event",
+            ))
 
 
 if __name__ == "__main__":

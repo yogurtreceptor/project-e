@@ -559,13 +559,15 @@ def calendar_settings_from_url_page(
 
 def calendar_settings_subscription_page(
     source: SubscriptionRecord,
+    configured_timings: list[str] | None,
     *,
     errors: list[str] | None = None,
     return_to: str = "/calendar",
 ) -> str:
     errors = errors or []
     return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Settings for other calendars</p><h1>{escape(source.name)}</h1><p>This URL calendar is externally owned and remains read-only in Project E.</p></section>
-    <section class="panel calendar-subscription-card">{error_block(errors)}<div><p><span class="calendar-colour" style="background:{escape(source.colour)}"></span><strong>{escape(source.name)}</strong></p><dl><div><dt>Source host</dt><dd>{escape(source.host)}</dd></div><div><dt>Status</dt><dd>{"Enabled" if source.enabled else "Disabled"}</dd></div><div><dt>Last successful refresh</dt><dd>{escape(source.last_success_at or "Never")}</dd></div></dl>{f'<p class="warning-text">{escape(source.current_error)}</p>' if source.current_error else ""}</div>{_calendar_subscription_actions(source, return_to)}</section>'''
+    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/other-calendars/{source.id}" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required value="{escape(source.name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="{escape(source.colour)}"></label>{timezone_picker("timezone", source.timezone)}{calendar_reminder_fields(configured_timings)}<p class="help-text">External Events remain read-only. Their schedule comes from the source, so this Calendar has no default Event duration.</p><div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>
+    <section class="panel calendar-subscription-card"><div><p><span class="calendar-colour" style="background:{escape(source.colour)}"></span><strong>{escape(source.name)}</strong></p><dl><div><dt>Source host</dt><dd>{escape(source.host)}</dd></div><div><dt>Status</dt><dd>{"Enabled" if source.enabled else "Disabled"}</dd></div><div><dt>Last successful refresh</dt><dd>{escape(source.last_success_at or "Never")}</dd></div></dl>{f'<p class="warning-text">{escape(source.current_error)}</p>' if source.current_error else ""}</div>{_calendar_subscription_actions(source, return_to)}</section>'''
 
 
 def _calendar_subscription_actions(

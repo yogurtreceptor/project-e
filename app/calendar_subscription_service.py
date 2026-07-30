@@ -57,6 +57,13 @@ class SubscriptionRecord:
 
 
 @dataclass(frozen=True)
+class SubscriptionSettingsInput:
+    name: str
+    colour: str
+    timezone: str
+
+
+@dataclass(frozen=True)
 class SubscriptionFetch:
     source_url: str
     final_url: str
@@ -337,21 +344,14 @@ def refresh_subscription(
             return False
         if fetched.document is None:
             raise ValueError("Calendar refresh returned no parsed document.")
-        name, timezone = _normalise_metadata(
-            fetched.document,
-            subscription.name,
-            subscription.colour,
-        )
         connection.execute("BEGIN IMMEDIATE")
         _replace_cache(connection, subscription_id, fetched.document.events)
         connection.execute(
-            """UPDATE calendar_subscriptions SET final_url = ?, name = ?, timezone = ?,
+            """UPDATE calendar_subscriptions SET final_url = ?,
                etag = ?, last_modified = ?, content_type = ?, last_checked_at = ?,
                last_success_at = ?, current_error = '', updated_at = ? WHERE id = ?""",
             (
                 fetched.final_url,
-                name,
-                timezone,
                 fetched.etag,
                 fetched.last_modified,
                 fetched.content_type,
@@ -391,6 +391,49 @@ def refresh_due_subscriptions(
     return refreshed
 
 
+def update_subscription_settings(
+    connection: sqlite3.Connection,
+    subscription_id: int,
+    values: SubscriptionSettingsInput,
+) -> bool:
+    """Update local presentation settings for a read-only URL Calendar."""
+    current = get_subscription(connection, subscription_id)
+    if current is None:
+        raise ValueError("Calendar subscription does not exist.")
+    name, colour, timezone = _normalise_subscription_settings(
+        values.name, values.colour, values.timezone
+    )
+    before = {
+        "name": current.name,
+        "colour": current.colour,
+        "timezone": current.timezone,
+    }
+    after = {"name": name, "colour": colour, "timezone": timezone}
+    if before == after:
+        return False
+    now = utc_now()
+    try:
+        connection.execute(
+            """UPDATE calendar_subscriptions
+               SET name = ?, colour = ?, timezone = ?, updated_at = ?
+               WHERE id = ?""",
+            (name, colour, timezone, now, subscription_id),
+        )
+        record_audit_event(
+            connection,
+            "edit",
+            [("calendar_subscription", subscription_id)],
+            before=before,
+            after=after,
+            notes="Other calendar settings updated",
+        )
+        connection.commit()
+        return True
+    except Exception:
+        connection.rollback()
+        raise
+
+
 def set_subscription_enabled(
     connection: sqlite3.Connection,
     subscription_id: int,
@@ -402,6 +445,14 @@ def set_subscription_enabled(
     if current.enabled == enabled:
         return False
     now = utc_now()
+    if not enabled:
+        from app.reminder_service import resolve_source_items
+        rows = connection.execute(
+            "SELECT id FROM external_calendar_events WHERE subscription_id = ?",
+            (subscription_id,),
+        ).fetchall()
+        for row in rows:
+            resolve_source_items(connection, "event", -int(row["id"]))
     connection.execute(
         "UPDATE calendar_subscriptions SET enabled = ?, updated_at = ? WHERE id = ?",
         (int(enabled), now, subscription_id),
@@ -414,6 +465,29 @@ def remove_subscription(connection: sqlite3.Connection, subscription_id: int) ->
     current = get_subscription(connection, subscription_id)
     if current is None:
         raise ValueError("Calendar subscription does not exist.")
+    from app.reminder_service import resolve_source_items
+    event_ids = [
+        -int(row["id"])
+        for row in connection.execute(
+            "SELECT id FROM external_calendar_events WHERE subscription_id = ?",
+            (subscription_id,),
+        )
+    ]
+    for event_id in event_ids:
+        resolve_source_items(connection, "event", event_id)
+    if event_ids:
+        placeholders = ", ".join("?" for _ in event_ids)
+        connection.execute(
+            f"""DELETE FROM reminder_overrides
+                WHERE source_kind = 'event' AND source_id IN ({placeholders})""",
+            event_ids,
+        )
+    connection.execute(
+        """DELETE FROM reminder_policies
+           WHERE context_kind = 'calendar_subscription'
+             AND context_id = ? AND source_kind = 'event'""",
+        (subscription_id,),
+    )
     connection.execute(
         "DELETE FROM calendar_subscriptions WHERE id = ?",
         (subscription_id,),
@@ -558,32 +632,81 @@ def _replace_cache(
     subscription_id: int,
     events: tuple[ICalendarEvent, ...],
 ) -> None:
-    connection.execute(
-        "DELETE FROM external_calendar_events WHERE subscription_id = ?",
-        (subscription_id,),
-    )
-    connection.executemany(
-        """INSERT INTO external_calendar_events (
-            subscription_id, source_uid, source_sequence, source_fingerprint,
-            title, description, start_date, end_date_exclusive, status, recurrence_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        [
-            (
-                subscription_id,
-                event.uid,
-                event.sequence,
-                event.fingerprint,
-                event.title,
-                event.description,
-                event.start_date,
-                event.end_date_exclusive,
-                event.status,
-                json.dumps(event.recurrence.__dict__, sort_keys=True)
-                if event.recurrence else "",
+    from app.reminder_service import resolve_source_items
+
+    existing = {
+        row["source_uid"]: row
+        for row in connection.execute(
+            "SELECT * FROM external_calendar_events WHERE subscription_id = ?",
+            (subscription_id,),
+        )
+    }
+    retained_ids: set[int] = set()
+    for event in events:
+        recurrence_json = (
+            json.dumps(event.recurrence.__dict__, sort_keys=True)
+            if event.recurrence else ""
+        )
+        stored = (
+            event.sequence,
+            event.fingerprint,
+            event.title,
+            event.description,
+            event.start_date,
+            event.end_date_exclusive,
+            event.status,
+            recurrence_json,
+        )
+        row = existing.get(event.uid)
+        if row is None:
+            cursor = connection.execute(
+                """INSERT INTO external_calendar_events (
+                    subscription_id, source_uid, source_sequence,
+                    source_fingerprint, title, description, start_date,
+                    end_date_exclusive, status, recurrence_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (subscription_id, event.uid, *stored),
             )
-            for event in events
-        ],
-    )
+            retained_ids.add(int(cursor.lastrowid))
+            continue
+
+        event_id = int(row["id"])
+        retained_ids.add(event_id)
+        material_before = (
+            row["start_date"],
+            row["end_date_exclusive"],
+            row["status"],
+            row["recurrence_json"],
+        )
+        material_after = (
+            event.start_date,
+            event.end_date_exclusive,
+            event.status,
+            recurrence_json,
+        )
+        connection.execute(
+            """UPDATE external_calendar_events
+               SET source_sequence = ?, source_fingerprint = ?, title = ?,
+                   description = ?, start_date = ?, end_date_exclusive = ?,
+                   status = ?, recurrence_json = ?
+               WHERE id = ?""",
+            (*stored, event_id),
+        )
+        if material_before != material_after:
+            resolve_source_items(connection, "event", -event_id)
+
+    removed = [
+        int(row["id"]) for row in existing.values()
+        if int(row["id"]) not in retained_ids
+    ]
+    for event_id in removed:
+        resolve_source_items(connection, "event", -event_id)
+    if removed:
+        placeholders = ", ".join("?" for _ in removed)
+        connection.execute(
+            f"DELETE FROM external_calendar_events WHERE id IN ({placeholders})",
+            removed,
+        )
 
 
 def _normalise_metadata(
@@ -592,16 +715,27 @@ def _normalise_metadata(
     colour: str,
 ) -> tuple[str, str]:
     name = (display_name or document.name or "Subscribed Calendar").strip()
+    name, _, timezone = _normalise_subscription_settings(
+        name, colour, document.timezone or "Australia/Brisbane"
+    )
+    return name, timezone
+
+
+def _normalise_subscription_settings(
+    name: str,
+    colour: str,
+    timezone: str,
+) -> tuple[str, str, str]:
+    name = name.strip()
     if not name:
         raise ValueError("Calendar subscription name is required.")
     if not _COLOUR_PATTERN.fullmatch(colour):
         raise ValueError("Calendar subscription colour must be a #RRGGBB value.")
-    timezone = document.timezone or "Australia/Brisbane"
     try:
         get_timezone(timezone)
     except TemporalValueError as error:
         raise ValueError("Calendar subscription timezone is not a known IANA timezone.") from error
-    return name, timezone
+    return name, colour.upper(), timezone
 
 
 def _subscription(row: sqlite3.Row) -> SubscriptionRecord:

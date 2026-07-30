@@ -66,7 +66,7 @@ A first-class local Event grouping and configuration record, comparable to a Goo
 
 ### Calendar Subscription
 
-An explicitly configured, read-only public-HTTPS iCalendar source shown under Other calendars. Its external items remain non-canonical and uneditable. Project E retains a last-known-good local cache so Calendar rendering stays usable without WAN access, but the source is still externally owned.
+An explicitly configured, read-only public-HTTPS iCalendar source shown under Other calendars. Its local settings provide name, colour, IANA timezone, ordering, enabled state and default Event notifications, but no default Event duration because users do not create its items. External items remain non-canonical and uneditable. Project E retains a stable-UID, last-known-good local cache so Calendar rendering and reminder evaluation stay usable without WAN access, but the source is still externally owned.
 
 See also: Calendar, Calendar Projection, iCalendar.
 
@@ -364,7 +364,7 @@ See also: Relationship, Relationship Type.
 
 ### Reminder
 
-A notification or attention policy attached to a record or derived occurrence. Calendar and record controls use repeatable positive-integer/unit rows, rather than comma-separated text or a policy-state picker. An Event without specific rows inherits its linked Calendar timings; an Event can resolve to at most ten effective reminders. Delivery history is a notification record, not the reminder's canonical definition.
+A notification or attention policy attached to a record, cached external occurrence or derived occurrence. Calendar and record controls use repeatable positive-integer/unit rows, rather than comma-separated text or a policy-state picker. A canonical Event without specific rows inherits its linked local Calendar timings; a cached URL Calendar occurrence uses its Calendar Subscription timings without gaining an item-level override. An Event can resolve to at most ten effective reminders. Delivery history is a notification record, not the reminder's canonical definition.
 
 ### Repository Source of Truth
 

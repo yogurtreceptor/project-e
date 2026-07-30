@@ -73,11 +73,12 @@ from app.calendar_service import (
     set_default_calendar, unarchive_calendar, update_calendar,
 )
 from app.calendar_subscription_service import (
-    create_subscription, fetch_subscription, get_external_projection_event,
+    SubscriptionSettingsInput, create_subscription, fetch_subscription,
+    get_external_projection_event,
     get_subscription,
     list_subscriptions, read_staged_subscription, refresh_subscription,
     remove_subscription, reorder_subscriptions, set_subscription_enabled,
-    stage_subscription_fetch, subscription_projection,
+    stage_subscription_fetch, subscription_projection, update_subscription_settings,
 )
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
@@ -610,18 +611,29 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 source = get_subscription(connection, managed_subscription_id)
+                configured = get_policy(
+                    connection,
+                    "calendar_subscription",
+                    managed_subscription_id,
+                    "event",
+                )
             if source is None:
                 self.respond_not_found()
                 return
             self.respond_calendar_settings(
                 source.name,
                 views.calendar_settings_subscription_page(
-                    source, return_to=return_to
+                    source, configured, return_to=return_to
                 ),
                 calendars,
                 active_section=f"subscription:{source.id}",
                 return_to=return_to,
                 show_save_toast=query.get("saved") == "1",
+            )
+            return
+        if managed_subscription_id is not None and self.command == "POST":
+            self.handle_calendar_subscription_settings_edit(
+                managed_subscription_id
             )
             return
         subscription_id = (
@@ -1032,34 +1044,87 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
-                source = get_subscription(connection, subscription_id)
                 subscriptions = list_subscriptions(connection)
-            if source is not None:
-                page = views.calendar_settings_subscription_page(
-                    source, errors=[str(error)], return_to=return_to
-                )
-                active_section = f"subscription:{source.id}"
-                title = source.name
-            else:
-                page = views.calendar_settings_from_url_page(
-                    subscriptions, errors=[str(error)], return_to=return_to
-                )
-                active_section = "from-url"
-                title = "From URL"
             self.respond_calendar_settings(
-                title,
-                page,
+                "From URL",
+                views.calendar_settings_from_url_page(
+                    subscriptions, errors=[str(error)], return_to=return_to
+                ),
                 calendars,
-                active_section=active_section,
+                active_section="from-url",
                 return_to=return_to,
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
-        destination = (
-            "/from-url" if action == "remove"
-            else f"/other-calendars/{subscription_id}"
-        )
-        self.redirect(self.calendar_settings_url(destination, return_to, saved=True))
+        self.redirect(self.calendar_settings_url(
+            f"/other-calendars/{subscription_id}", return_to, saved=True
+        ))
+
+    def handle_calendar_subscription_settings_edit(
+        self,
+        subscription_id: int,
+    ) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        try:
+            reminder_timings = self.reminder_timings(
+                values, "calendar_reminder"
+            )
+            with connect(self.database_path) as connection:
+                update_subscription_settings(
+                    connection,
+                    subscription_id,
+                    SubscriptionSettingsInput(
+                        values.get("name", ""),
+                        values.get("colour", "#7C3AED"),
+                        values.get("timezone", "Australia/Brisbane"),
+                    ),
+                )
+                if reminder_timings:
+                    set_policy(
+                        connection,
+                        "calendar_subscription",
+                        subscription_id,
+                        "event",
+                        reminder_timings,
+                    )
+                else:
+                    clear_policy(
+                        connection,
+                        "calendar_subscription",
+                        subscription_id,
+                        "event",
+                    )
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                source = get_subscription(connection, subscription_id)
+                configured = get_policy(
+                    connection,
+                    "calendar_subscription",
+                    subscription_id,
+                    "event",
+                )
+            if source is None:
+                self.respond_not_found()
+                return
+            self.respond_calendar_settings(
+                source.name,
+                views.calendar_settings_subscription_page(
+                    source,
+                    configured,
+                    errors=[str(error)],
+                    return_to=return_to,
+                ),
+                calendars,
+                active_section=f"subscription:{source.id}",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.redirect(self.calendar_settings_url(
+            f"/other-calendars/{subscription_id}", return_to, saved=True
+        ))
 
     def handle_calendar_subscription_action(self, subscription_id: int, action: str) -> None:
         values = self.read_form()
@@ -1092,8 +1157,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
+        destination = (
+            "/from-url" if action == "remove"
+            else f"/other-calendars/{subscription_id}"
+        )
         self.redirect(self.calendar_settings_url(
-            f"/other-calendars/{subscription_id}", return_to, saved=True
+            destination, return_to, saved=True
         ))
 
     def handle_calendar_settings_edit(self, calendar_id: int) -> None:

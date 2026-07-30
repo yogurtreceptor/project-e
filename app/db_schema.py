@@ -74,6 +74,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_task_table(connection)
     create_task_temporal_tables(connection)
     create_reminder_tables(connection)
+    expand_reminder_policy_contexts_for_external_calendars(connection)
     create_scheduler_tables(connection)
     create_automation_tables(connection)
     create_reference_data_tables(connection)
@@ -521,7 +522,7 @@ def create_reminder_tables(connection: sqlite3.Connection) -> None:
     connection.executescript("""
         CREATE TABLE IF NOT EXISTS reminder_policies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            context_kind TEXT NOT NULL CHECK (context_kind IN ('global', 'calendar', 'task_list')),
+            context_kind TEXT NOT NULL CHECK (context_kind IN ('global', 'calendar', 'calendar_subscription', 'task_list')),
             context_id INTEGER NOT NULL DEFAULT 0,
             source_kind TEXT NOT NULL CHECK (source_kind IN ('event', 'task_deadline', 'birthday', 'document_expiry')),
             timings_json TEXT NOT NULL,
@@ -558,6 +559,48 @@ def create_reminder_tables(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_inbox_active_attention ON inbox_items(state, next_attention_at, due_at, id);
         CREATE INDEX IF NOT EXISTS idx_inbox_source_active ON inbox_items(source_kind, source_id, state);
     """)
+
+
+def expand_reminder_policy_contexts_for_external_calendars(
+    connection: sqlite3.Connection,
+) -> None:
+    """Allow read-only URL Calendars to own Event notification defaults."""
+    create_reminder_tables(connection)
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'reminder_policies'"
+    ).fetchone()
+    if row is not None and "'calendar_subscription'" in (row["sql"] or ""):
+        return
+    connection.executescript(
+        """
+        ALTER TABLE reminder_policies RENAME TO reminder_policies_legacy;
+
+        CREATE TABLE reminder_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            context_kind TEXT NOT NULL
+                CHECK (context_kind IN (
+                    'global', 'calendar', 'calendar_subscription', 'task_list'
+                )),
+            context_id INTEGER NOT NULL DEFAULT 0,
+            source_kind TEXT NOT NULL
+                CHECK (source_kind IN (
+                    'event', 'task_deadline', 'birthday', 'document_expiry'
+                )),
+            timings_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (context_kind, context_id, source_kind)
+        );
+
+        INSERT INTO reminder_policies (
+            id, context_kind, context_id, source_kind, timings_json, updated_at
+        )
+        SELECT
+            id, context_kind, context_id, source_kind, timings_json, updated_at
+        FROM reminder_policies_legacy;
+
+        DROP TABLE reminder_policies_legacy;
+        """
+    )
 
 
 def add_inbox_delivery_timing(connection: sqlite3.Connection) -> None:
@@ -1126,6 +1169,10 @@ SCHEMA_MIGRATIONS = (
     ("20260725_27_deterministic_automation", create_automation_tables),
     ("20260725_28_birthday_calendar", lambda connection: (create_calendar_table(connection), create_birthday_event_links_table(connection), migrate_birthday_reminder_policy(connection), __import__("app.birthday_calendar", fromlist=["sync_all_birthdays"]).sync_all_birthdays(connection))),
     ("20260730_29_calendar_interchange", create_calendar_interchange_tables),
+    (
+        "20260730_30_external_calendar_reminders",
+        expand_reminder_policy_contexts_for_external_calendars,
+    ),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

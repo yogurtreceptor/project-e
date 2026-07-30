@@ -187,6 +187,15 @@ A Calendar is the sole local Event grouping and configuration record. It supplie
 - Exactly one active default Calendar is maintained for each Calendar kind. Before archiving a default Calendar, the user selects another active default of that kind.
 - A Calendar with active or recycled Event assignments cannot be deleted.
 
+### Calendar Subscriptions
+
+A Calendar Subscription is an explicitly configured, read-only public-HTTPS iCalendar source shown under **Other calendars**. It is an operational configuration record rather than a local Calendar or canonical Event owner.
+
+- Its local settings provide name, colour, IANA timezone, ordering, enabled state and a default Event-notification policy. It has no default Event duration because users do not create or schedule its items.
+- Its source-scoped UIDs identify items in a last-known-good operational cache. Refresh reconciles that cache without creating `Calendar`, `Entity` or `Event` rows.
+- Cached items remain non-canonical and have no relationships, item-level reminder override, edit history or Recycle Bin lifecycle. A Calendar-level policy may still create a durable local Notification for an upcoming cached occurrence.
+- Disabling or removing the subscription suppresses future delivery and resolves active reminder attention without deleting retained Inbox history.
+
 ### Task Lists
 
 A Task list is a first-class local organisational record that groups Tasks by the user's intended category. It is not a Calendar, ownership boundary or separate classification layer.
@@ -209,7 +218,7 @@ Operational and historical records support deterministic attention, execution, r
 
 ### Reminders and Notifications
 
-A Reminder is a policy attached to an Event, Task deadline, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Calendar, Task-list, record and occurrence contexts resolve the applicable reminder timings.
+A Reminder is a policy attached to an Event, cached URL Calendar occurrence, Task deadline, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Local Calendar, Calendar Subscription, Task-list, record and occurrence contexts resolve the applicable reminder timings.
 
 A Notification is the durable, actionable local Inbox delivery produced for a due condition. Delivery, acknowledgement, dismissal, snooze, resolution and failure history belong to the Notification and append-only action history, not to the Reminder definition.
 

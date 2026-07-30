@@ -9,6 +9,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 - Added preview-first, repeat-safe all-day iCalendar import into an existing or explicitly new local Calendar, plus selectable all-or-nothing ZIP export with one ordinary iCalendar member per local or cached external source.
 - Added safe public-HTTPS Calendar subscriptions as independently ordered, read-only Other calendars with conditional refresh and a last-known-good non-canonical cache.
 - Split Calendar Settings navigation into **Settings for my calendars** for local ownership and **Settings for other calendars** for individually managed URL Calendars, removing the generic visible Subscriptions collection.
+- Added applicable Other-calendar editing for name, colour, timezone and Calendar-level notifications while retaining read-only source items and omitting local-only default Event duration.
 - Reduced Calendar creation to name and colour, moved ordering to accessible drag-only sidebar interaction, and added view-specific date headings plus ISO week context and the Month week-number rail.
 - Updated portability validation to recognise the required active default separately for each Calendar kind.
 

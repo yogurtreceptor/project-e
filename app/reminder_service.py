@@ -14,6 +14,7 @@ from app.entity_repository import list_entities
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import list_events
 from app.event_recurrence import get_recurrence, occurrence_exceptions, occurrences_between
+from app.calendar_subscription_service import subscription_projection
 
 PLATFORM_TIMEZONE = "Australia/Brisbane"
 DEFAULT_TIMINGS = {
@@ -245,6 +246,16 @@ def _reconcile_source_deliveries(connection: sqlite3.Connection, source_kind: st
 
 def _context_for_source(connection: sqlite3.Connection, source_kind: str, source_id: int) -> tuple[str, int] | None:
     if source_kind == "event":
+        if source_id < 0:
+            row = connection.execute(
+                """SELECT subscription_id FROM external_calendar_events
+                   WHERE id = ?""",
+                (-source_id,),
+            ).fetchone()
+            return (
+                "calendar_subscription",
+                int(row["subscription_id"]),
+            ) if row is not None else None
         row = connection.execute("SELECT calendar_id FROM events WHERE entity_id=?", (source_id,)).fetchone()
         return ("calendar", int(row["calendar_id"])) if row is not None else None
     if source_kind == "task_deadline":
@@ -313,6 +324,45 @@ def _sources(connection, now):
         for occurrence in occurrences:
             due = _parse_utc(occurrence.start_utc) if not occurrence.is_all_day else datetime.combine(date.fromisoformat(occurrence.start_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
             yield "event", event.id, occurrence.start_date or occurrence.start_utc, occurrence.title, due, ("calendar", event.calendar_id)
+    external = subscription_projection(connection)
+    for event in external.events:
+        if event.is_cancelled or event.date_precision != "exact":
+            continue
+        context = ("calendar_subscription", -event.calendar_id)
+        recurrence = external.recurrences.get(event.id)
+        if recurrence is None:
+            occurrences = [event]
+        else:
+            timings = _context_timings(connection, context, "event")
+            if not timings:
+                continue
+            local_today = now.astimezone(
+                ZoneInfo(event.timezone or PLATFORM_TIMEZONE)
+            ).date()
+            horizon = _timing_horizon_days(timings)
+            occurrences = [
+                item.event for item in occurrences_between(
+                    event,
+                    recurrence,
+                    local_today - timedelta(days=1),
+                    local_today + timedelta(days=horizon),
+                    [],
+                )
+            ]
+        for occurrence in occurrences:
+            due = datetime.combine(
+                date.fromisoformat(occurrence.start_date),
+                datetime.min.time(),
+                zone,
+            ).replace(hour=9).astimezone(UTC)
+            yield (
+                "event",
+                event.id,
+                occurrence.start_date,
+                occurrence.title,
+                due,
+                context,
+            )
     for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
         expiry = document.metadata.get("expiry_date", "")
         if expiry:
@@ -356,6 +406,21 @@ def _month_day(year, month, day):
     while True:
         try: return date(year, month, day)
         except ValueError: day -= 1
+
+
+def _timing_horizon_days(timings: list[str]) -> int:
+    """Bound recurring projection far enough to include every configured lead time."""
+    days = 1
+    for timing in timings:
+        if timing.endswith("mo"):
+            days = max(days, int(timing[:-2]) * 32)
+        elif timing.endswith("w"):
+            days = max(days, int(timing[:-1]) * 7)
+        elif timing.endswith("d"):
+            days = max(days, int(timing[:-1]))
+        else:
+            days = max(days, 1)
+    return days + 2
 
 def _parse_utc(value): return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 def _context_timings(connection, context, source_kind):

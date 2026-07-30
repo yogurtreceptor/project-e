@@ -1,6 +1,7 @@
 """Operational Inbox page for durable local reminder delivery."""
 
 from html import escape
+from urllib.parse import urlencode
 from app.reminder_service import InboxAction, InboxItem, UpcomingReminder
 
 
@@ -34,7 +35,13 @@ def _item(item: InboxItem, archived: bool, actions: list[InboxAction]) -> str:
 
 
 def _source_link(item: InboxItem) -> str:
-    if item.source_kind == "event": return f"/events/{item.source_id}"
+    if item.source_kind == "event":
+        if item.source_id < 0:
+            return "/calendar?" + urlencode({
+                "date": item.occurrence_key[:10],
+                "external_preview": item.source_id,
+            })
+        return f"/events/{item.source_id}"
     if item.source_kind == "task_deadline": return f"/tasks/{item.source_id}"
     return f"/{'people' if item.source_kind == 'birthday' else 'documents'}/{item.source_id}"
 
