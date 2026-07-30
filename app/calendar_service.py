@@ -63,7 +63,13 @@ def get_calendar(
     return _to_record(row) if row is not None else None
 
 
-def create_calendar(connection: sqlite3.Connection, values: CalendarInput) -> int:
+def create_calendar(
+    connection: sqlite3.Connection,
+    values: CalendarInput,
+    *,
+    commit: bool = True,
+    provenance: str = "manual",
+) -> int:
     normalised = _normalise(values)
     if normalised.kind != "event":
         raise ValueError("Only the built-in Birthdays calendar can use the birthday type.")
@@ -82,13 +88,57 @@ def create_calendar(connection: sqlite3.Connection, values: CalendarInput) -> in
         after = _snapshot(get_calendar(connection, calendar_id, include_archived=True))
         record_audit_event(
             connection, "create", [("calendar", calendar_id)], after=after,
-            notes="Calendar created",
+            notes="Calendar created", provenance=provenance,
         )
         for field_name, value in after.items():
             if value not in ("", None, False):
-                set_provenance(connection, "calendar", calendar_id, field_name, "manual")
-        connection.commit()
+                set_provenance(connection, "calendar", calendar_id, field_name, provenance)
+        if commit:
+            connection.commit()
         return calendar_id
+    except Exception:
+        connection.rollback()
+        raise
+
+
+def next_calendar_sort_order(connection: sqlite3.Connection) -> int:
+    row = connection.execute(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM calendars WHERE archived_at = ''"
+    ).fetchone()
+    return int(row[0])
+
+
+def reorder_calendars(connection: sqlite3.Connection, calendar_ids: list[int]) -> bool:
+    """Atomically normalise the complete active local Calendar order."""
+    expected = [
+        calendar.id for calendar in list_calendars(connection)
+    ]
+    if len(calendar_ids) != len(set(calendar_ids)):
+        raise ValueError("Calendar order contains duplicate identifiers.")
+    if set(calendar_ids) != set(expected) or len(calendar_ids) != len(expected):
+        raise ValueError("Calendar order must contain every active My calendars item exactly once.")
+    if calendar_ids == expected and all(
+        calendar.sort_order == position
+        for position, calendar in enumerate(list_calendars(connection))
+    ):
+        return False
+    before = {"calendar_ids": expected}
+    now = utc_now()
+    try:
+        connection.executemany(
+            "UPDATE calendars SET sort_order = ?, updated_at = ? WHERE id = ?",
+            [(position, now, calendar_id) for position, calendar_id in enumerate(calendar_ids)],
+        )
+        record_audit_event(
+            connection,
+            "edit",
+            [("calendar", calendar_id) for calendar_id in calendar_ids],
+            before=before,
+            after={"calendar_ids": calendar_ids},
+            notes="My calendars reordered",
+        )
+        connection.commit()
+        return True
     except Exception:
         connection.rollback()
         raise

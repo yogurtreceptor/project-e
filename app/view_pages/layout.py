@@ -132,6 +132,8 @@ def layout(
     <script src="/static/calendar-grid.js"></script>
     <script src="/static/calendar-groups.js"></script>
     <script src="/static/calendar-visibility.js"></script>
+    <script src="/static/calendar-ordering.js"></script>
+    <script src="/static/calendar-export-selection.js"></script>
     <script src="/static/mini-month-picker.js"></script>
     <script src="/static/reminder-timings.js"></script>
     <script src="/static/timezone-picker.js"></script>

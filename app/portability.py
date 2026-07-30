@@ -250,11 +250,17 @@ def _validate_database(connection: sqlite3.Connection) -> None:
     calendars = list(connection.execute("SELECT id FROM calendars"))
     if not calendars:
         raise ValueError("Imported database has no Calendar.")
-    defaults = [row for row in connection.execute(
-        "SELECT id FROM calendars WHERE is_default = 1 AND archived_at = ''"
-    )]
-    if len(defaults) != 1:
-        raise ValueError("Imported database must have one active default Calendar.")
+    default_counts = list(connection.execute(
+        """SELECT kind,
+                  SUM(CASE WHEN is_default = 1 AND archived_at = '' THEN 1 ELSE 0 END)
+                     AS active_defaults
+           FROM calendars
+           GROUP BY kind"""
+    ))
+    if any(int(row["active_defaults"]) != 1 for row in default_counts):
+        raise ValueError(
+            "Imported database must have one active default Calendar per kind."
+        )
     for row in calendars:
         errors = validate_stored_calendar(connection, int(row["id"]))
         if errors:

@@ -54,7 +54,14 @@ def _rule_from_row(row: sqlite3.Row) -> RecurrenceRule:
     )
 
 
-def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: RecurrenceRule, *, commit: bool = True) -> RecurrenceDefinition:
+def set_recurrence(
+    connection: sqlite3.Connection,
+    event: EventRecord,
+    rule: RecurrenceRule,
+    *,
+    commit: bool = True,
+    provenance: str = "manual",
+) -> RecurrenceDefinition:
     rule = _normalise_rule(rule, _anchor_date(event))
     current = get_recurrence(connection, event.id)
     now = utc_now()
@@ -75,6 +82,7 @@ def set_recurrence(connection: sqlite3.Connection, event: EventRecord, rule: Rec
     _record_recurrence_change(
         connection, event.id, "recurrence_set", _definition_snapshot(current),
         _definition_snapshot(RecurrenceDefinition(event.id, rule, version)),
+        provenance=provenance,
     )
     if commit:
         connection.commit()
@@ -285,11 +293,27 @@ def _definition_snapshot(definition: RecurrenceDefinition | None) -> dict[str, o
     return {"version": definition.version, **definition.rule.__dict__}
 
 
-def _record_recurrence_change(connection: sqlite3.Connection, event_id: int, event_type: str, before: object, after: object) -> None:
+def _record_recurrence_change(
+    connection: sqlite3.Connection,
+    event_id: int,
+    event_type: str,
+    before: object,
+    after: object,
+    *,
+    provenance: str = "manual",
+) -> None:
     details = json.dumps({"before": before, "after": after}, sort_keys=True)
     connection.execute("INSERT INTO entity_edit_history (entity_id, event_type, details, created_at) VALUES (?, ?, ?, ?)", (event_id, event_type, details, utc_now()))
-    record_audit_event(connection, "edit", [("entity", event_id)], before=before, after=after, notes=event_type.replace("_", " ").capitalize())
-    set_provenance(connection, "entity", event_id, "recurrence", "manual")
+    record_audit_event(
+        connection,
+        "edit",
+        [("entity", event_id)],
+        before=before,
+        after=after,
+        notes=event_type.replace("_", " ").capitalize(),
+        provenance=provenance,
+    )
+    set_provenance(connection, "entity", event_id, "recurrence", provenance)
 
 
 def _normalise_rule(rule: RecurrenceRule, anchor: date) -> RecurrenceRule:
@@ -340,7 +364,10 @@ def _matches(current: date, anchor: date, rule: RecurrenceRule) -> bool:
         return days % rule.interval == 0
     if rule.frequency == "weekly":
         weekdays = rule.weekdays or (anchor.weekday(),)
-        return days // 7 % rule.interval == 0 and current.weekday() in weekdays
+        anchor_week = anchor - timedelta(days=anchor.weekday())
+        current_week = current - timedelta(days=current.weekday())
+        weeks = (current_week - anchor_week).days // 7
+        return weeks % rule.interval == 0 and current.weekday() in weekdays
     if rule.frequency == "monthly":
         months = (current.year - anchor.year) * 12 + current.month - anchor.month
         return months >= 0 and months % rule.interval == 0 and _matches_month_day(current, anchor, rule)
@@ -354,12 +381,14 @@ def _matches_month_day(current: date, anchor: date, rule: RecurrenceRule) -> boo
     return current.day == min(anchor.day, calendar.monthrange(current.year, current.month)[1])
 
 
-def _ordinal_weekday(year: int, month: int, weekday: int, ordinal: int) -> date:
+def _ordinal_weekday(
+    year: int, month: int, weekday: int, ordinal: int
+) -> date | None:
     if ordinal == -1:
         value = date(year, month, calendar.monthrange(year, month)[1])
         return value - timedelta(days=(value.weekday() - weekday) % 7)
     value = date(year, month, 1) + timedelta(days=(weekday - date(year, month, 1).weekday()) % 7 + (ordinal - 1) * 7)
-    return value if value.month == month else _ordinal_weekday(year, month, weekday, -1)
+    return value if value.month == month else None
 
 
 def _anchor_date(event: EventRecord) -> date:

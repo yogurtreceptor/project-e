@@ -3,12 +3,14 @@
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from html import escape
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlparse
 from zoneinfo import ZoneInfo
 
 from app.calendar_service import CalendarRecord
+from app.calendar_subscription_service import SubscriptionFetch, SubscriptionRecord
 from app.event_service import EventRecord
 from app.event_recurrence import RecurrenceDefinition, occurrences_between
+from app.icalendar_service import ImportPreview
 from app.view_pages.forms import description_field, error_block
 from app.view_pages.icons import icon
 from app.view_pages.reminders import calendar_reminder_fields
@@ -33,28 +35,42 @@ def calendar_page(
     return f'''<div class="calendar-page"><div data-quick-create-root>{_quick_create_dialogs(calendars)}</div>{projection}{created_notice}</div>'''
 
 
-def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini_month_date: date, view: str, selected_calendar_ids: set[int], return_to: str) -> str:
+def calendar_sidebar(
+    *,
+    calendars: list[CalendarRecord],
+    subscriptions: list[SubscriptionRecord] | None = None,
+    anchor_date: date,
+    mini_month_date: date,
+    view: str,
+    selected_calendar_ids: set[int],
+    return_to: str,
+) -> str:
     """Render Calendar-local controls in the reserved shell sidebar."""
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
+    subscriptions = subscriptions or []
     calendar_filters = "".join(
-        f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span><a class="calendar-edit-control" href="{escape(_calendar_settings_url(f"/calendars/{calendar.id}", return_to))}" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a></label>'
+        f'<div class="calendar-sidebar-filter" draggable="true" data-calendar-order-item="{calendar.id}"><button class="calendar-drag-handle" type="button" aria-label="Reorder {escape(calendar.name)}" aria-pressed="false" title="Drag to reorder">⋮⋮</button><label><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span></label><a class="calendar-edit-control" href="{escape(_calendar_settings_url(f"/calendars/{calendar.id}", return_to))}" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a></div>'
         for calendar in active_calendars
     )
     my_calendars = f'''<section class="calendar-sidebar-calendars calendar-sidebar-group" aria-labelledby="my-calendars-title" data-calendar-group>
       <div class="calendar-sidebar-group-heading"><h2 id="my-calendars-title">My calendars</h2><div class="calendar-sidebar-group-actions"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="my-calendars-list" aria-label="Collapse My calendars" data-calendar-group-label="My calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
-      <div class="calendar-sidebar-group-content" id="my-calendars-list" data-calendar-group-content data-calendar-visibility-controls>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></div>
+      <div class="calendar-sidebar-group-content" id="my-calendars-list" data-calendar-group-content data-calendar-visibility-controls data-calendar-order-list="local">{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p><p class="visually-hidden" role="status" data-calendar-order-status></p></div>
     </section>'''
+    external_filters = "".join(
+        f'<div class="calendar-sidebar-filter" draggable="true" data-calendar-order-item="{subscription.id}"><button class="calendar-drag-handle" type="button" aria-label="Reorder {escape(subscription.name)}" aria-pressed="false" title="Drag to reorder">⋮⋮</button><label><input type="checkbox" name="calendars" value="{-subscription.id}"{" checked" if -subscription.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(subscription.colour)}"></span><span>{escape(subscription.name)}</span></label></div>'
+        for subscription in subscriptions if subscription.enabled
+    ) or "<p>No subscribed calendars yet.</p>"
     other_calendars = f'''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
       <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title">Other calendars</h2><div class="calendar-sidebar-group-actions"><a class="calendar-add-control" href="{escape(_calendar_settings_url("/add", return_to))}" aria-label="Create calendar" title="Create calendar">+</a><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" aria-label="Collapse Other calendars" data-calendar-group-label="Other calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
-      <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content><p>Additional calendar sources will appear here.</p></div>
+      <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content data-calendar-visibility-controls data-calendar-order-list="external">{external_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p><p class="visually-hidden" role="status" data-calendar-order-status></p></div>
     </section>'''
     return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}{my_calendars}{other_calendars}</div>'''
 
 
 def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[int], return_to: str) -> str:
     """Render Calendar-only navigation in the shared Project E header."""
-    _, _, previous, following, title = _calendar_period(view, anchor_date)
+    period_start, _, previous, following, title = _calendar_period(view, anchor_date)
     selected = sorted(selected_calendar_ids)
 
     def navigation_url(target_view: str, target_date: date) -> str:
@@ -71,10 +87,14 @@ def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[
         f'<li><a href="{navigation_url(option, anchor_date)}"{" aria-current=\"page\"" if option == view else ""}>{label}</a></li>'
         for option, label in (("month", "Month"), ("week", "Week"), ("day", "Day"))
     )
+    week_companion = (
+        f'<span class="calendar-header-week">Week {(period_start if view == "week" else anchor_date).isocalendar().week}</span>'
+        if view in {"week", "day"} else ""
+    )
     return f'''<div class="calendar-header-controls" role="navigation" aria-label="Calendar navigation">
       <a class="calendar-header-today" href="{today_url}">Today</a>
       <nav class="calendar-header-step" aria-label="Move through {escape(view)} view"><a href="{previous_url}" aria-label="Previous {escape(view)}" title="Previous {escape(view)}">‹</a><a href="{following_url}" aria-label="Next {escape(view)}" title="Next {escape(view)}">›</a></nav>
-      <h1 class="calendar-header-date">{escape(title)}</h1>
+      <div class="calendar-header-period"><h1 class="calendar-header-date">{escape(title)}</h1>{week_companion}</div>
     </div><div class="calendar-header-tools">
       <details class="action-menu calendar-view-menu"><summary class="calendar-header-view">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details>
       <a class="calendar-settings-control" href="{escape(_calendar_settings_url("", return_to))}" aria-label="Calendar settings" title="Calendar settings">{icon("settings")}</a>
@@ -185,7 +205,7 @@ def _calendar_period(view: str, anchor_date: date) -> tuple[date, date, date, da
             period_end,
             period_start - timedelta(days=7),
             period_start + timedelta(days=7),
-            f"Week of {period_start.strftime('%-d %B %Y')}",
+            _week_heading(period_start, period_end),
         )
     if view == "day":
         return (
@@ -206,22 +226,41 @@ def _calendar_period(view: str, anchor_date: date) -> tuple[date, date, date, da
     )
 
 
+def _week_heading(period_start: date, period_end: date) -> str:
+    if (period_start.year, period_start.month) == (period_end.year, period_end.month):
+        return period_start.strftime("%B %Y")
+    if period_start.year == period_end.year:
+        return f"{period_start.strftime('%b')} – {period_end.strftime('%b %Y')}"
+    return f"{period_start.strftime('%b %Y')} – {period_end.strftime('%b %Y')}"
+
+
 def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], month: date, display_timezone: str, context_query: str) -> str:
     first = month - timedelta(days=month.weekday())
     final = month.replace(day=monthrange(month.year, month.month)[1])
     last = final + timedelta(days=6 - final.weekday())
     days = [first + timedelta(days=index) for index in range((last - first).days + 1)]
     context_pairs = [(key, value) for key, value in parse_qsl(context_query) if key == "calendars"]
-    cells = "".join(
-        _day_cell(
-            day, events, calendars, display_timezone, day.month == month.month,
-            context_query=context_query,
-            more_url=_calendar_url([("view", "day"), ("date", day.isoformat()), *context_pairs]),
+    rows = []
+    for week_start_index in range(0, len(days), 7):
+        week_days = days[week_start_index:week_start_index + 7]
+        week_start = week_days[0]
+        rows.append(
+            f'<span class="calendar-month-week-number" aria-label="Week {week_start.isocalendar().week}">{week_start.isocalendar().week}</span>'
         )
-        for day in days
-    )
+        rows.extend(
+            _day_cell(
+                day, events, calendars, display_timezone, day.month == month.month,
+                context_query=context_query,
+                more_url=_calendar_url([("view", "day"), ("date", day.isoformat()), *context_pairs]),
+            )
+            for day in week_days
+        )
+    cells = "".join(rows)
     week_count = len(days) // 7
-    return f'<div class="calendar-month-view"><div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid" style="--calendar-week-count:{week_count}">{cells}</div></div>'
+    weekdays = '<span class="calendar-week-heading" aria-label="Weeks">Wk</span>' + "".join(
+        f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    )
+    return f'<div class="calendar-month-view"><div class="calendar-weekdays">{weekdays}</div><div class="calendar-month-grid" style="--calendar-week-count:{week_count}">{cells}</div></div>'
 
 
 def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceDefinition], exceptions: dict[int, object], start: date, end: date) -> list[EventRecord]:
@@ -262,7 +301,8 @@ def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, Calenda
 
 def _projection_event(event: EventRecord, calendar: CalendarRecord, day: date, display_timezone: str, context_query: str) -> str:
     label = _projection_label(event, day, display_timezone)
-    query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
+    preview_key = "external_preview" if event.id < 0 else "preview"
+    query = f"{context_query}&{preview_key}={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
     return f'<a class="calendar-event{state}" data-calendar-id="{calendar.id}" style="--calendar-colour:{escape(calendar.colour)}" href="{_calendar_url_with_query(query)}"><span>{escape(label)}</span>{escape(event.title)}</a>'
 
@@ -276,7 +316,8 @@ def _timed_projection_event(event: EventRecord, calendar: CalendarRecord, day: d
     segment_start, segment_end = max(start, day_start), min(end, day_end)
     start_minutes = segment_start.hour * 60 + segment_start.minute
     duration_minutes = max(1, int((segment_end - segment_start).total_seconds() / 60))
-    query = f"{context_query}&preview={event.id}&occurrence={_occurrence_date(event)}"
+    preview_key = "external_preview" if event.id < 0 else "preview"
+    query = f"{context_query}&{preview_key}={event.id}&occurrence={_occurrence_date(event)}"
     state = " cancelled" if event.is_cancelled else ""
     label = f"{segment_start.strftime('%H:%M')}–{segment_end.strftime('%H:%M')}"
     return f'<a class="calendar-timed-event{state}" data-calendar-id="{calendar.id}" style="--calendar-colour:{escape(calendar.colour)};top:{start_minutes * .8:.1f}px;height:{max(duration_minutes * .8, 24):.1f}px" href="{_calendar_url_with_query(query)}"><span>{label}</span>{escape(event.title)}</a>'
@@ -306,6 +347,8 @@ def _timed_dates(event: EventRecord, display_timezone: str) -> tuple[date, date]
 def _preview_panel(event: EventRecord, calendar: CalendarRecord | None, occurrence_date: str = "", recurrence: RecurrenceDefinition | None = None, *, return_to: str = "/calendar") -> str:
     calendar_name = calendar.name if calendar else "Unavailable Calendar"
     colour = calendar.colour if calendar else "#6B7280"
+    if calendar is not None and calendar.kind == "external":
+        return f'<aside class="calendar-preview"><div><p class="eyebrow">Read-only subscribed Event</p><h3>{escape(event.title)}</h3><p>{escape(_event_schedule(event))}</p><p><span class="calendar-colour" style="background:{escape(colour)}"></span>{escape(calendar_name)}</p>{f"<p>{escape(event.notes)}</p>" if event.notes else ""}</div><p class="help-text">This Event is supplied by an external Calendar and cannot be edited here.</p></aside>'
     occurrence_query = f"&occurrence={escape(occurrence_date)}" if occurrence_date and recurrence else ""
     recurring_occurrence = bool(occurrence_date and recurrence)
     scope = _recurrence_delete_scope_fields(occurrence_date) if recurring_occurrence else ""
@@ -358,14 +401,14 @@ def calendar_settings_sidebar(
     add_children = "".join((
         settings_link("/add", "Create New Calendar", "add"),
         settings_link("/discover", "Browse calendars of interest", "discover", coming_soon=True),
-        settings_link("/from-url", "From URL", "from-url", coming_soon=True),
+        settings_link("/from-url", "From URL", "from-url"),
     ))
     interchange_open = active_section in {"import", "export"}
     interchange_children = ""
     if interchange_open:
         interchange_children = f'''<div class="calendar-settings-subnav">
-          {settings_link("/import", "Import", "import", coming_soon=True)}
-          {settings_link("/export", "Export", "export", coming_soon=True)}
+          {settings_link("/import", "Import", "import")}
+          {settings_link("/export", "Export", "export")}
         </div>'''
 
     def calendar_link(calendar: CalendarRecord) -> str:
@@ -409,6 +452,100 @@ def calendar_settings_placeholder_page(title: str, description: str) -> str:
     <section class="panel calendar-settings-placeholder"><span class="status-badge">Coming soon!</span><h2>{escape(title)}</h2><p>{escape(description)}</p></section>'''
 
 
+def calendar_settings_import_page(
+    calendars: list[CalendarRecord],
+    *,
+    preview: ImportPreview | None = None,
+    token: str = "",
+    errors: list[str] | None = None,
+    return_to: str = "/calendar",
+) -> str:
+    errors = errors or []
+    upload = f'''<section class="panel calendar-interchange-panel">{error_block(errors)}<form class="record-form" method="post" action="/calendar/settings/import" enctype="multipart/form-data"><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>iCalendar file</span><input type="file" name="upload" accept=".ics,.ical,text/calendar" required></label><p class="help-text">Supported now: UTF-8 iCalendar 2.0 files containing losslessly representable all-day Events. VCS and CSV are not yet supported.</p><div class="actions"><button class="button" type="submit">Validate file</button></div></form></section>'''
+    if preview is None:
+        return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Import/Export</p><h1>Import</h1><p>Validate a file before choosing where its Events will be added.</p></section>{upload}'''
+    document = preview.document
+    start, end = document.date_span
+    diagnostics = [
+        *document.warnings,
+        *document.blockers,
+        *(message for item in preview.events for message in (*item.event.warnings, *item.event.blockers)),
+    ]
+    diagnostic_html = (
+        '<section class="calendar-import-diagnostics"><h3>Compatibility diagnostics</h3><ul>'
+        + "".join(f"<li>{escape(item)}</li>" for item in dict.fromkeys(diagnostics))
+        + "</ul></section>"
+    ) if diagnostics else '<p class="notice success">No blocking compatibility issues were found.</p>'
+    rows = "".join(
+        f'<tr><td>{escape(item.event.title or "(Untitled)")}</td><td>{escape(item.event.start_date)}</td><td>{"Recurring" if item.event.recurrence else "One Event"}</td><td>{escape(item.classification.title())}</td></tr>'
+        for item in preview.events
+    )
+    active_event_calendars = [
+        calendar for calendar in calendars
+        if not calendar.is_archived and calendar.kind == "event"
+    ]
+    default = next((calendar for calendar in active_event_calendars if calendar.is_default), active_event_calendars[0])
+    options = "".join(
+        f'<option value="{calendar.id}"{" selected" if calendar.id == default.id else ""}>{escape(calendar.name)}</option>'
+        for calendar in active_event_calendars
+    )
+    disabled = " disabled" if not preview.can_apply else ""
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Import/Export</p><h1>Import preview</h1><p>No canonical Event or Calendar has been created yet.</p></section>
+    <section class="panel calendar-import-summary"><dl><div><dt>Source Calendar</dt><dd>{escape(document.name or "Not supplied")}</dd></div><div><dt>Timezone</dt><dd>{escape(document.timezone or "Not supplied")}</dd></div><div><dt>Events</dt><dd>{len(document.events)} ({document.recurring_count} recurring)</dd></div><div><dt>Date span</dt><dd>{escape(start or "Empty")}{" to " + escape(end) if end else ""}</dd></div></dl>{diagnostic_html}</section>
+    <section class="panel"><div class="table-scroll"><table><thead><tr><th>Event</th><th>Starts</th><th>Pattern</th><th>Import state</th></tr></thead><tbody>{rows}</tbody></table></div></section>
+    <section class="panel"><form class="record-form" method="post" action="/calendar/settings/import/confirm" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><input type="hidden" name="token" value="{escape(token)}"><fieldset class="calendar-import-destination"><legend>Destination</legend><label><input type="radio" name="destination_mode" value="existing" checked> Add to an existing Calendar</label><label><span>Calendar</span><select name="calendar_id">{options}</select></label><label><input type="radio" name="destination_mode" value="new"> Create a new Calendar</label><div class="calendar-import-new-calendar"><label><span>Calendar name</span><input name="new_name" value="{escape(preview.proposed_name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="new_colour" type="color" value="#7C3AED"></label>{timezone_picker("new_timezone", preview.proposed_timezone)}</div></fieldset><div class="actions"><button class="button" type="submit"{disabled}>Import Events</button></div></form><form method="post" action="/calendar/settings/import/cancel"><input type="hidden" name="return_to" value="{escape(return_to)}"><input type="hidden" name="token" value="{escape(token)}"><button class="button secondary" type="submit">Cancel import</button></form></section>'''
+
+
+def calendar_settings_export_page(
+    calendars: list[CalendarRecord],
+    subscriptions: list[SubscriptionRecord],
+    *,
+    errors: list[str] | None = None,
+    return_to: str = "/calendar",
+) -> str:
+    errors = errors or []
+
+    def choice(value: str, name: str, colour: str, checked: bool) -> str:
+        return f'<label class="calendar-export-choice"><input type="checkbox" name="sources" value="{escape(value)}"{" checked" if checked else ""}><span class="calendar-colour" style="background:{escape(colour)}"></span><span>{escape(name)}</span></label>'
+
+    active = "".join(
+        choice(f"local:{calendar.id}", calendar.name, calendar.colour, True)
+        for calendar in calendars if not calendar.is_archived
+    )
+    archived = "".join(
+        choice(f"local:{calendar.id}", calendar.name, calendar.colour, False)
+        for calendar in calendars if calendar.is_archived
+    ) or "<p>No archived Calendars.</p>"
+    external = "".join(
+        choice(f"external:{source.id}", source.name, source.colour, False)
+        for source in subscriptions if source.enabled
+    ) or "<p>No enabled URL subscriptions.</p>"
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Import/Export</p><h1>Export</h1><p>Download one ordinary iCalendar file per selected source in a ZIP archive.</p></section>
+    <section class="panel calendar-interchange-panel">{error_block(errors)}<form class="record-form" method="post" action="/calendar/settings/export" data-calendar-export-form><input type="hidden" name="return_to" value="{escape(return_to)}"><div class="actions"><button class="button secondary" type="button" data-calendar-export-select> Select all</button><button class="button secondary" type="button" data-calendar-export-clear>Clear all</button></div><fieldset><legend>Active local Calendars</legend>{active}</fieldset><fieldset><legend>Archived local Calendars</legend>{archived}</fieldset><fieldset><legend>Read-only URL Calendars</legend>{external}</fieldset><p class="help-text">Timed Events and recurrence exceptions are reported before download rather than exported with data loss.</p><button class="button" type="submit">Download ZIP</button></form></section>'''
+
+
+def calendar_settings_from_url_page(
+    subscriptions: list[SubscriptionRecord],
+    *,
+    preview: SubscriptionFetch | None = None,
+    token: str = "",
+    errors: list[str] | None = None,
+    return_to: str = "/calendar",
+) -> str:
+    errors = errors or []
+    add_form = f'''<section class="panel calendar-interchange-panel">{error_block(errors)}<form class="record-form" method="post" action="/calendar/settings/from-url"><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Public iCalendar HTTPS URL</span><input name="url" type="url" placeholder="https://public-holidays.dteoh.com/all.ics" required></label><p class="help-text">The URL is validated and fetched once for preview. Subscriptions stay read-only and retain a last-known-good local cache for offline Calendar use.</p><button class="button" type="submit">Preview Calendar</button></form></section>'''
+    preview_html = ""
+    if preview and preview.document:
+        start, end = preview.document.date_span
+        name = preview.document.name or "Subscribed Calendar"
+        preview_html = f'''<section class="panel"><h2>Subscription preview</h2><dl><div><dt>Calendar</dt><dd>{escape(name)}</dd></div><div><dt>Final host</dt><dd>{escape(urlparse(preview.final_url).hostname or "")}</dd></div><div><dt>Content type</dt><dd>{escape(preview.content_type or "Not supplied")}</dd></div><div><dt>Events</dt><dd>{len(preview.document.events)}</dd></div><div><dt>Date span</dt><dd>{escape(start or "Empty")}{" to " + escape(end) if end else ""}</dd></div></dl><form class="record-form" method="post" action="/calendar/settings/from-url/confirm" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><input type="hidden" name="token" value="{escape(token)}"><label><span>Display name</span><input name="display_name" value="{escape(name)}" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#7C3AED"></label><button class="button" type="submit">Add subscription</button></form></section>'''
+    source_rows = "".join(
+        f'''<article class="calendar-subscription-card"><div><span class="calendar-colour" style="background:{escape(source.colour)}"></span><strong>{escape(source.name)}</strong><p>{escape(source.host)} · {"Enabled" if source.enabled else "Disabled"}</p><p>Last successful refresh: {escape(source.last_success_at or "Never")}</p>{f'<p class="warning-text">{escape(source.current_error)}</p>' if source.current_error else ""}</div><div class="actions"><form method="post" action="/calendar/settings/subscriptions/{source.id}/refresh"><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button secondary" type="submit">Refresh now</button></form><form method="post" action="/calendar/settings/subscriptions/{source.id}/{"disable" if source.enabled else "enable"}"><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button secondary" type="submit">{"Disable" if source.enabled else "Enable"}</button></form><form method="post" action="/calendar/settings/subscriptions/{source.id}/remove" data-confirm-object="{escape(source.name)}" data-confirm-consequence="Remove this read-only subscription and its local cache."><input type="hidden" name="return_to" value="{escape(return_to)}"><button class="button danger" type="submit">Remove subscription</button></form></div></article>'''
+        for source in subscriptions
+    ) or "<p>No URL subscriptions have been added.</p>"
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Add Calendar</p><h1>From URL</h1><p>Add renewable, read-only public iCalendar sources under Other calendars.</p></section>{add_form}{preview_html}<section class="panel"><h2>Subscriptions</h2><div class="calendar-subscription-list">{source_rows}</div></section>'''
+
+
 def calendar_settings_create_page(
     errors: list[str] | None = None,
     *,
@@ -416,7 +553,7 @@ def calendar_settings_create_page(
 ) -> str:
     errors = errors or []
     return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Add Calendar</p><h1>Create New Calendar</h1><p>Create a local Calendar for grouping Events and supplying their display defaults.</p></section>
-    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/add" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Create Calendar</button></div></form></section>'''
+    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/add" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Calendar name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label><div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Create Calendar</button></div></form></section>'''
 
 
 def calendar_settings_edit_page(
@@ -431,7 +568,7 @@ def calendar_settings_edit_page(
     status_controls = _calendar_settings_status_controls(calendar, return_to)
     status_panel = f'''<section class="panel calendar-settings-status"><div><p class="eyebrow">Calendar status</p><h2>{state}</h2><p>Calendar lifecycle changes retain existing Event assignments and use the established safeguards.</p></div><div class="actions">{status_controls}</div></section>''' if status_controls else f'''<section class="panel calendar-settings-status"><div><p class="eyebrow">Calendar status</p><h2>{state}</h2><p>This protected Calendar is managed from its source records.</p></div></section>'''
     return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Calendar settings</p><h1>{escape(calendar.name)}</h1></section>
-    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/calendars/{calendar.id}" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required value="{escape(calendar.name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="{escape(calendar.colour)}"></label>{timezone_picker("timezone", calendar.timezone)}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="{calendar.default_event_duration_minutes}" required></label><label><span>Order</span><input name="sort_order" type="number" value="{calendar.sort_order}" required></label>{calendar_reminder_fields(configured_timings, allow_months=calendar.kind == "birthday")}<div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>{status_panel}'''
+    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/calendars/{calendar.id}" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required value="{escape(calendar.name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="{escape(calendar.colour)}"></label>{timezone_picker("timezone", calendar.timezone)}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="{calendar.default_event_duration_minutes}" required></label>{calendar_reminder_fields(configured_timings, allow_months=calendar.kind == "birthday")}<div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>{status_panel}'''
 
 
 def _calendar_settings_status_controls(calendar: CalendarRecord, return_to: str) -> str:

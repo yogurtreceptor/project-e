@@ -246,12 +246,17 @@ def _release_after_run(connection: sqlite3.Connection, job: ScheduledJob, token:
 def _run_handler(connection: sqlite3.Connection, handler_name: str, now: datetime, trigger_key: str) -> str:
     if handler_name == REMINDER_DELIVERY_JOB:
         from app.automation_service import dispatch
+        from app.calendar_subscription_service import refresh_due_subscriptions
         completed = dispatch(connection, "reminder_scan", trigger_key, now=now)
         row = connection.execute("""SELECT run.outcome_json FROM automation_runs AS run
             JOIN automation_rules AS rule ON rule.id=run.rule_id
             WHERE run.trigger_key=? AND rule.action_name='deliver_due_reminders'""", (trigger_key,)).fetchone()
         deliveries = json.loads(row["outcome_json"]).get("created_deliveries", 0) if row else 0
-        return f"created_deliveries={deliveries}; automation_rules={completed}"
+        subscription_checks = refresh_due_subscriptions(connection, now=now)
+        return (
+            f"created_deliveries={deliveries}; automation_rules={completed}; "
+            f"calendar_subscription_checks={subscription_checks}"
+        )
     raise ValueError(f"Unregistered scheduler handler: {handler_name}")
 
 

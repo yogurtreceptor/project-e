@@ -4,11 +4,18 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-30
 
+### Calendar interchange, subscriptions and date context
+
+- Added preview-first, repeat-safe all-day iCalendar import into an existing or explicitly new local Calendar, plus selectable all-or-nothing ZIP export with one ordinary iCalendar member per local or cached external source.
+- Added safe public-HTTPS Calendar subscriptions as independently ordered, read-only Other calendars with conditional refresh and a last-known-good non-canonical cache.
+- Reduced Calendar creation to name and colour, moved ordering to accessible drag-only sidebar interaction, and added view-specific date headings plus ISO week context and the Month week-number rail.
+- Updated portability validation to recognise the required active default separately for each Calendar kind.
+
 ### Calendar settings workspace
 
 - Activated the Calendar settings cog and added a stripped-back, context-preserving settings shell with a narrower navigation sidebar.
 - Moved existing local Calendar creation, editing, notification defaults and lifecycle controls into the settings workspace, with rapid colour-and-name switching between active Calendars and retained access to archived Calendars.
-- Added presentation-only General, calendar discovery, URL, Import and Export destinations while keeping external access and Calendar file interchange explicitly inactive.
+- Added the General and calendar-discovery placeholders and the navigation destinations subsequently activated for From URL, Import and Export.
 
 ### Calendar shell and live-time refinement
 

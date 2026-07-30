@@ -69,6 +69,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_calendar_history_table(connection)
     create_event_table(connection)
     create_event_recurrence_tables(connection)
+    create_calendar_interchange_tables(connection)
     create_task_list_table(connection)
     create_task_table(connection)
     create_task_temporal_tables(connection)
@@ -382,6 +383,64 @@ def create_event_recurrence_tables(connection: sqlite3.Connection) -> None:
             ON event_recurrence_exceptions (event_id, recurrence_version, occurrence_date);
         CREATE INDEX IF NOT EXISTS idx_event_recurrence_splits_source
             ON event_recurrence_splits (source_event_id, split_occurrence_date);
+        """
+    )
+
+
+def create_calendar_interchange_tables(connection: sqlite3.Connection) -> None:
+    """Create local interchange identity and read-only URL Calendar cache storage."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS event_icalendar_identities (
+            event_id INTEGER PRIMARY KEY REFERENCES events(entity_id) ON DELETE CASCADE,
+            source_uid TEXT NOT NULL COLLATE BINARY UNIQUE,
+            source_sequence INTEGER NOT NULL DEFAULT 0 CHECK (source_sequence >= 0),
+            source_fingerprint TEXT NOT NULL,
+            imported_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS calendar_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_url TEXT NOT NULL UNIQUE,
+            final_url TEXT NOT NULL,
+            name TEXT NOT NULL,
+            colour TEXT NOT NULL,
+            timezone TEXT NOT NULL DEFAULT 'Australia/Brisbane',
+            enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            etag TEXT NOT NULL DEFAULT '',
+            last_modified TEXT NOT NULL DEFAULT '',
+            content_type TEXT NOT NULL DEFAULT '',
+            last_checked_at TEXT NOT NULL DEFAULT '',
+            last_success_at TEXT NOT NULL DEFAULT '',
+            current_error TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_calendar_subscriptions_order
+            ON calendar_subscriptions (enabled DESC, sort_order, lower(name), id);
+
+        CREATE TABLE IF NOT EXISTS external_calendar_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subscription_id INTEGER NOT NULL
+                REFERENCES calendar_subscriptions(id) ON DELETE CASCADE,
+            source_uid TEXT NOT NULL COLLATE BINARY,
+            source_sequence INTEGER NOT NULL DEFAULT 0 CHECK (source_sequence >= 0),
+            source_fingerprint TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            start_date TEXT NOT NULL,
+            end_date_exclusive TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'planned'
+                CHECK (status IN ('planned', 'cancelled')),
+            recurrence_json TEXT NOT NULL DEFAULT '',
+            UNIQUE (subscription_id, source_uid),
+            CHECK (start_date < end_date_exclusive)
+        );
+        CREATE INDEX IF NOT EXISTS idx_external_calendar_events_dates
+            ON external_calendar_events (
+                subscription_id, start_date, end_date_exclusive, id
+            );
         """
     )
 
@@ -1066,6 +1125,7 @@ SCHEMA_MIGRATIONS = (
     ("20260725_26_operational_scheduler", create_scheduler_tables),
     ("20260725_27_deterministic_automation", create_automation_tables),
     ("20260725_28_birthday_calendar", lambda connection: (create_calendar_table(connection), create_birthday_event_links_table(connection), migrate_birthday_reminder_policy(connection), __import__("app.birthday_calendar", fromlist=["sync_all_birthdays"]).sync_all_birthdays(connection))),
+    ("20260730_29_calendar_interchange", create_calendar_interchange_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

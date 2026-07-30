@@ -199,10 +199,10 @@ class EventServiceTests(unittest.TestCase):
             self.assertEqual(1, page.count('aria-label="Create calendar"'))
             other_heading = page[page.index('<h2 id="other-calendars-title">'):page.index('id="other-calendars-list"')]
             self.assertLess(other_heading.index('aria-label="Create calendar"'), other_heading.index('aria-label="Collapse Other calendars"'))
-            self.assertIn('Additional calendar sources will appear here.', page)
+            self.assertIn('No subscribed calendars yet.', page)
             self.assertIn('data-calendar-visibility-controls', page)
             self.assertIn('aria-label="Edit General calendar"', page)
-            self.assertIn('<span>General</span><a class="calendar-edit-control" href="/calendar/settings/calendars/1?return_to=%2Fcalendar"', page)
+            self.assertIn('<span>General</span></label><a class="calendar-edit-control" href="/calendar/settings/calendars/1?return_to=%2Fcalendar"', page)
             self.assertNotIn('Apply calendars', page)
             self.assertNotIn('Visible Calendars', page)
             self.assertNotIn('Derived and related dates', page)
@@ -426,7 +426,8 @@ class EventServiceTests(unittest.TestCase):
 
             client.request("GET", "/calendar?view=week&date=2026-09-15")
             week_page = client.getresponse().read().decode()
-            self.assertIn("Week of 14 September 2026", week_page)
+            self.assertIn("September 2026", week_page)
+            self.assertIn("Week 38", week_page)
             self.assertIn("calendar-time-grid", week_page)
             self.assertIn('data-calendar-time-grid-scroll', week_page)
             self.assertEqual(7, week_page.count("data-calendar-current-time"))
@@ -588,23 +589,26 @@ class EventServiceTests(unittest.TestCase):
             client.request("GET", f"/calendar/settings/import?{settings_query}")
             import_page = client.getresponse().read().decode()
             self.assertIn('aria-current="page" href="/calendar/settings/import?', import_page)
-            self.assertIn('title="Coming soon!">Import</a>', import_page)
+            self.assertNotIn('title="Coming soon!">Import</a>', import_page)
             self.assertIn(">Export</a>", import_page)
-            self.assertIn("Calendar import from ICS, VCS or CSV", import_page)
+            self.assertIn("Supported now: UTF-8 iCalendar 2.0", import_page)
             self.assertNotIn("/system-tools/portability", import_page)
 
-            for destination, heading in (
-                ("discover", "Browse calendars of interest"),
-                ("from-url", "From URL"),
-                ("export", "Export"),
-            ):
-                client.request("GET", f"/calendar/settings/{destination}?{settings_query}")
-                placeholder_page = client.getresponse().read().decode()
-                self.assertIn(f"<h1>{heading}</h1>", placeholder_page)
-                self.assertIn("Coming soon!", placeholder_page)
+            client.request("GET", f"/calendar/settings/discover?{settings_query}")
+            discover_page = client.getresponse().read().decode()
+            self.assertIn("<h1>Browse calendars of interest</h1>", discover_page)
+            self.assertIn("Coming soon!", discover_page)
+            client.request("GET", f"/calendar/settings/from-url?{settings_query}")
+            from_url_page = client.getresponse().read().decode()
+            self.assertIn("<h1>From URL</h1>", from_url_page)
+            self.assertIn("Public iCalendar HTTPS URL", from_url_page)
+            client.request("GET", f"/calendar/settings/export?{settings_query}")
+            export_page = client.getresponse().read().decode()
+            self.assertIn("<h1>Export</h1>", export_page)
+            self.assertIn("Download ZIP", export_page)
 
             client.request("POST", f"/calendar/settings/import?{settings_query}", "", {"Content-Type": "application/x-www-form-urlencoded"})
-            self.assertEqual(404, client.getresponse().status)
+            self.assertEqual(400, client.getresponse().status)
 
             client.request("GET", "/calendar/settings?return_to=https%3A%2F%2Fexample.com")
             safe_page = client.getresponse().read().decode()
@@ -618,11 +622,16 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn('class="calendar-colour-picker"', add_page)
             self.assertIn('action="/calendar/settings/add"', add_page)
             self.assertIn('action="/calendar/settings/add" data-dirty-form', add_page)
+            self.assertNotIn('name="timezone"', add_page)
+            self.assertNotIn('name="default_event_duration_minutes"', add_page)
+            self.assertNotIn('name="sort_order"', add_page)
             body = urlencode({"name": "Work", "colour": "#EF4444", "timezone": "Europe/London", "default_event_duration_minutes": "45", "sort_order": "2", "return_to": return_to})
             client.request("POST", "/calendar/settings/add", body, {"Content-Type": "application/x-www-form-urlencoded"})
             response = client.getresponse()
             self.assertEqual(303, response.status)
             work = next(item for item in list_calendars(self.connection) if item.name == "Work")
+            self.assertEqual("Australia/Brisbane", work.timezone)
+            self.assertEqual(60, work.default_event_duration_minutes)
             expected_location = f"/calendar/settings/calendars/{work.id}?return_to=%2Fcalendar%3Fview%3Dweek%26date%3D2026-09-15%26calendars%3D1&saved=1"
             self.assertEqual(expected_location, response.getheader("Location"))
 

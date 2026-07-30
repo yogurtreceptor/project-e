@@ -1,6 +1,6 @@
 # Page and View Catalogue
 
-Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-12. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
+Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-30. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
 
 This catalogue bridges the Experience Philosophy, design standards and later implementation tasks. It is descriptive about current behaviour and normative only where it points to a responsible standard.
 
@@ -30,7 +30,10 @@ This module split is maintainable and worth preserving. Design work should impro
 | --- | --- | --- | --- |
 | `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Useful launch/discovery patterns, but “Operation Eddy” branding and domain-count emphasis conflict with the Project E command-centre philosophy. Retain curated launch/discovery; add attention/upcoming summaries only with delivered capability. |
 | Ordinary application pages | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell exposes current routes through Information, Connections and views, and System Tools groups; Super Key Go provides deterministic exact-alias navigation and an explicit Search fallback. |
-| `/calendar/settings` and children | Dedicated Calendar Settings shell with context-preserving return, local settings navigation and Calendar colour/name switching | `layout()`, `calendar_settings_sidebar()` | Deliberately omits the global Project E/Browse/Search frame while settings are being edited. General, discovery, URL and Calendar file-interchange destinations are visibly marked placeholders; existing local Calendar create/edit operations remain functional. |
+| `/calendar/settings` and children | Dedicated Calendar Settings shell with context-preserving return, local settings navigation and Calendar colour/name switching | `layout()`, `calendar_settings_sidebar()` | Deliberately omits the global Project E/Browse/Search frame while settings are being edited. General and discovery remain marked placeholders; existing local Calendar create/edit operations remain functional. |
+| `/calendar/settings/import` | Upload and validate one iCalendar file, preview mappings and diagnostics, then explicitly import into an existing or new local Calendar | `calendar_settings_import_page()` | Preview and cancellation make no canonical writes. Confirmation is atomic, repeat-safe by source UID and limited to the lossless all-day/recurrence subset. |
+| `/calendar/settings/export` | Select active, archived and cached external Calendar sources and download one iCalendar member per source in a ZIP | `calendar_settings_export_page()` | Independent from view visibility and whole-platform portability. Compatibility is validated before download, so no partial or lossy ZIP is produced. |
+| `/calendar/settings/from-url` | Preview and confirm public-HTTPS iCalendar subscriptions; inspect, refresh, enable, disable or remove them | `calendar_settings_from_url_page()` | External items remain read-only and non-canonical under Other calendars. Projection and export consume a last-known-good cache rather than fetching during Calendar renders. |
 | Unknown route | Generic not-found response | `not_found_page()` | Needs designed missing/recycled distinctions where known and a route back to useful context. |
 
 ### Entity domains

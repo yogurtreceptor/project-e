@@ -64,6 +64,12 @@ One idempotent execution of an Automation Rule for a stable logical trigger iden
 
 A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; its edit form keeps the compact colour control and repeatable reminder rows beside those defaults. A Calendar has at most ten notification timings. It is not an independent Event store. The protected Birthdays Calendar is a built-in category populated by linked canonical birthday Events from People. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
 
+### Calendar Subscription
+
+An explicitly configured, read-only public-HTTPS iCalendar source shown under Other calendars. Its external items remain non-canonical and uneditable. Project E retains a last-known-good local cache so Calendar rendering stays usable without WAN access, but the source is still externally owned.
+
+See also: Calendar, Calendar Projection, iCalendar.
+
 ### Calendar Projection
 
 A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.
@@ -182,9 +188,9 @@ See also: Design System, Entity Page, Super Key.
 
 ### Export
 
-A versioned, checksummed local ZIP containing a consistent canonical database snapshot and its referenced uploaded documents. It supports migration, review and recovery without an external service.
+Either a whole-platform portability bundle or a Calendar interchange download. The portability export is a versioned, checksummed local ZIP containing a consistent canonical database snapshot and its referenced uploaded documents. Calendar export is a selected ZIP of ordinary iCalendar members for interoperability and is not a backup.
 
-See also: Import, Local-first.
+See also: Import, iCalendar, Local-first.
 
 ## I
 
@@ -192,11 +198,17 @@ See also: Import, Local-first.
 
 A named timezone from the installed IANA timezone database, such as `Australia/Brisbane` or `America/New_York`. Calendar, Event and timed Task controls select and store this identifier; the local selector can be searched by current UTC offset, country, place or identifier. It never stores a display label or a fixed offset in place of the identifier.
 
+### iCalendar
+
+The RFC-style Calendar interchange format used by `.ics` and `.ical` files. Project E previews and validates a deliberately lossless supported subset before importing canonical local Events or exporting Calendar members. It is distinct from whole-platform portability and from renewable Calendar subscriptions.
+
+See also: Calendar Subscription, Export, Import.
+
 ### Import
 
-A confirmed way to restore a validated portable bundle into an empty Project E target. Import checks integrity and document membership, previews its effects, creates a recovery backup, preserves canonical identity/provenance and records an audit event.
+Either a confirmed whole-platform restoration or a previewed Calendar interchange operation. Portability import restores a validated bundle into an empty Project E target. Calendar import explicitly adds supported iCalendar Events to a selected local Calendar, optionally creating that Calendar, and never creates a subscription.
 
-See also: Export, Canonical Record.
+See also: Export, Canonical Record, iCalendar.
 
 ### Inference-created Relationship
 

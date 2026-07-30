@@ -35,6 +35,7 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(["completed"], [run.status for run in runs])
         self.assertEqual("scheduled", runs[0].trigger_kind)
         self.assertIn("created_deliveries=2", runs[0].details)
+        self.assertIn("calendar_subscription_checks=0", runs[0].details)
 
     def test_startup_recovery_coalesces_delivery_and_records_checkpoint(self) -> None:
         now = datetime(2025, 12, 31, 23, 55, tzinfo=UTC)

@@ -67,7 +67,17 @@ from app.entity_merge import list_entity_history, merge_entities, preview_entity
 from app.audit import AuditFilters, list_audit_events
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION, EntityDefinition
-from app.calendar_service import CalendarInput, archive_calendar, create_calendar, delete_calendar, get_calendar, list_calendars, set_default_calendar, unarchive_calendar, update_calendar
+from app.calendar_service import (
+    CalendarInput, archive_calendar, create_calendar, delete_calendar, get_calendar,
+    list_calendars, next_calendar_sort_order, reorder_calendars,
+    set_default_calendar, unarchive_calendar, update_calendar,
+)
+from app.calendar_subscription_service import (
+    create_subscription, fetch_subscription, get_external_projection_event,
+    list_subscriptions, read_staged_subscription, refresh_subscription,
+    remove_subscription, reorder_subscriptions, set_subscription_enabled,
+    stage_subscription_fetch, subscription_projection,
+)
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
     complete_task, create_task, create_task_list, get_task, get_task_list,
@@ -93,6 +103,11 @@ from app.relationship_workflow import (
 )
 from app.timeline import TimelineFilters, registry as timeline_registry
 from app.portability import (apply_import_bundle, consume_staged_bundle, create_bundle, create_recovery_backup, inspect_bundle, stage_bundle)
+from app.icalendar_service import (
+    apply_icalendar_import, create_calendar_export, discard_staged_icalendar,
+    inspect_icalendar_import, new_import_calendar_input, read_staged_icalendar,
+    stage_icalendar,
+)
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -316,15 +331,32 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 events = list_events(connection)
                 recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
                 recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
+                subscriptions = list_subscriptions(connection, include_disabled=False)
+                external = subscription_projection(connection)
+                projection_calendars = [*calendars, *external.calendars]
+                projection_events = [*events, *external.events]
+                recurrences.update(external.recurrences)
                 created_id = self.parse_entity_id(query.get("created", ""))
                 created_event = get_event(connection, created_id) if created_id else None
                 preview_id = self.parse_entity_id(query.get("preview", ""))
                 preview_event = get_event(connection, preview_id) if preview_id else None
+                external_preview_id = self.parse_entity_id(query.get("external_preview", ""))
+                external_preview = (
+                    get_external_projection_event(connection, external_preview_id)
+                    if external_preview_id is not None else None
+                )
+                if external_preview:
+                    preview_event = external_preview[0]
                 preview_occurrence = query.get("occurrence", "")
             view = query.get("view", "month") if query.get("view") in {"month", "week", "day"} else "month"
-            selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
-            selected_ids = selected_ids or {calendar.id for calendar in calendars if not calendar.is_archived}
-            projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
+            selected_ids = {
+                int(item) for item in query.get("calendars", "").split(",")
+                if item.lstrip("-").isdigit() and int(item) != 0
+            }
+            selected_ids = selected_ids or {
+                calendar.id for calendar in projection_calendars if not calendar.is_archived
+            }
+            projection = views.calendar_projection(projection_events, projection_calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
             self.respond_page(
                 "Calendar",
                 views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection),
@@ -333,6 +365,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 sidebar_variant="calendar",
                 sidebar_content=views.calendar_sidebar(
                     calendars=calendars,
+                    subscriptions=subscriptions,
                     anchor_date=anchor_date,
                     mini_month_date=mini_month_date,
                     view=view,
@@ -346,6 +379,27 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     return_to=self.calendar_return_to(self.path),
                 ),
             )
+            return
+        if len(parts) == 3 and parts[1] == "order" and self.command == "POST":
+            values = self.read_form()
+            try:
+                ids = [
+                    int(item) for item in values.get("ids", "").split(",")
+                    if item
+                ]
+                with connect(self.database_path) as connection:
+                    if parts[2] == "local":
+                        reorder_calendars(connection, ids)
+                    elif parts[2] == "external":
+                        reorder_subscriptions(connection, ids)
+                    else:
+                        self.respond_not_found()
+                        return
+            except (ValueError, sqlite3.Error) as error:
+                self.respond_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_response(HTTPStatus.NO_CONTENT)
+            self.end_headers()
             return
         if len(parts) >= 2 and parts[1] == "settings":
             self.route_calendar_settings_request(parts, query)
@@ -466,36 +520,93 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if self.command == "POST":
                 self.handle_calendar_settings_create()
                 return
-        placeholder_pages = {
-            "discover": (
-                "Browse calendars of interest",
-                "Optional public calendars such as holidays and moon phases will be available here after their catalogue and update behaviour are designed.",
-            ),
-            "from-url": (
-                "From URL",
-                "Calendar subscriptions from a supplied URL will be available here after validation, refresh and offline behaviour are designed.",
-            ),
-            "import": (
-                "Import",
-                "Calendar import from ICS, VCS or CSV files will be added after the interface and interoperability tests are agreed.",
-            ),
-            "export": (
-                "Export",
-                "Calendar export to ICS, VCS or CSV files will be added after the interface and interoperability tests are agreed.",
-            ),
-        }
-        if len(parts) == 3 and parts[2] in placeholder_pages and self.command == "GET":
-            section = parts[2]
-            title, description = placeholder_pages[section]
+        if len(parts) == 3 and parts[2] == "discover" and self.command == "GET":
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
             self.respond_calendar_settings(
-                title,
-                views.calendar_settings_placeholder_page(title, description),
+                "Browse calendars of interest",
+                views.calendar_settings_placeholder_page(
+                    "Browse calendars of interest",
+                    "Optional public calendars such as holidays and moon phases will be available here after their catalogue and update behaviour are designed.",
+                ),
                 calendars,
-                active_section=section,
+                active_section="discover",
                 return_to=return_to,
             )
+            return
+        if len(parts) == 3 and parts[2] == "import":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                self.respond_calendar_settings(
+                    "Import",
+                    views.calendar_settings_import_page(calendars, return_to=return_to),
+                    calendars,
+                    active_section="import",
+                    return_to=return_to,
+                    show_save_toast=query.get("saved") == "1",
+                )
+                return
+            if self.command == "POST":
+                self.handle_calendar_icalendar_preview()
+                return
+        if len(parts) == 4 and parts[2:] == ["import", "confirm"] and self.command == "POST":
+            self.handle_calendar_icalendar_confirm()
+            return
+        if len(parts) == 4 and parts[2:] == ["import", "cancel"] and self.command == "POST":
+            values = self.read_form()
+            try:
+                discard_staged_icalendar(values.get("token", ""), self.import_staging_dir)
+            except ValueError:
+                pass
+            self.redirect(self.calendar_settings_url("/import", self.calendar_return_to(values.get("return_to", ""))))
+            return
+        if len(parts) == 3 and parts[2] == "export":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                    subscriptions = list_subscriptions(connection)
+                self.respond_calendar_settings(
+                    "Export",
+                    views.calendar_settings_export_page(
+                        calendars, subscriptions, return_to=return_to
+                    ),
+                    calendars,
+                    active_section="export",
+                    return_to=return_to,
+                )
+                return
+            if self.command == "POST":
+                self.handle_calendar_export()
+                return
+        if len(parts) == 3 and parts[2] == "from-url":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                    subscriptions = list_subscriptions(connection)
+                self.respond_calendar_settings(
+                    "From URL",
+                    views.calendar_settings_from_url_page(
+                        subscriptions, return_to=return_to
+                    ),
+                    calendars,
+                    active_section="from-url",
+                    return_to=return_to,
+                    show_save_toast=query.get("saved") == "1",
+                )
+                return
+            if self.command == "POST":
+                self.handle_calendar_subscription_preview()
+                return
+        if len(parts) == 4 and parts[2:] == ["from-url", "confirm"] and self.command == "POST":
+            self.handle_calendar_subscription_confirm()
+            return
+        subscription_id = (
+            self.parse_entity_id(parts[3])
+            if len(parts) == 5 and parts[2] == "subscriptions" else None
+        )
+        if subscription_id is not None and self.command == "POST":
+            self.handle_calendar_subscription_action(subscription_id, parts[4])
             return
         managed_id = self.parse_entity_id(parts[3]) if len(parts) in {4, 5} and parts[2] == "calendars" else None
         if managed_id is None:
@@ -691,7 +802,16 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         return_to = self.calendar_return_to(values.get("return_to", ""))
         try:
             with connect(self.database_path) as connection:
-                calendar_id = create_calendar(connection, self.calendar_input_from_form(values))
+                calendar_id = create_calendar(
+                    connection,
+                    CalendarInput(
+                        name=values.get("name", ""),
+                        colour=values.get("colour", "#2563EB"),
+                        timezone="Australia/Brisbane",
+                        default_event_duration_minutes=60,
+                        sort_order=next_calendar_sort_order(connection),
+                    ),
+                )
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
@@ -706,13 +826,257 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         self.redirect(self.calendar_settings_url(f"/calendars/{calendar_id}", return_to, saved=True))
 
+    def handle_calendar_icalendar_preview(self) -> None:
+        values: dict[str, str] = {}
+        return_to = "/calendar"
+        try:
+            if int(self.headers.get("Content-Length", "0")) > 2_200_000:
+                raise ValueError("Calendar import upload exceeds the supported request size.")
+            values, upload = self.read_multipart_form()
+            return_to = self.calendar_return_to(values.get("return_to", ""))
+            if upload is None:
+                raise ValueError("Choose an iCalendar file to import.")
+            suffix = Path(upload.file_name).suffix.lower()
+            if suffix not in {".ics", ".ical"} and upload.content_type != "text/calendar":
+                raise ValueError("Choose an .ics or .ical iCalendar file.")
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                preview = inspect_icalendar_import(
+                    connection, upload.data, filename=upload.file_name
+                )
+            token = stage_icalendar(upload.data, self.import_staging_dir)
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_calendar_settings(
+                "Import",
+                views.calendar_settings_import_page(
+                    calendars, errors=[str(error)], return_to=return_to
+                ),
+                calendars,
+                active_section="import",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.respond_calendar_settings(
+            "Import preview",
+            views.calendar_settings_import_page(
+                calendars,
+                preview=preview,
+                token=token,
+                return_to=return_to,
+            ),
+            calendars,
+            active_section="import",
+            return_to=return_to,
+        )
+
+    def handle_calendar_icalendar_confirm(self) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        try:
+            content = read_staged_icalendar(
+                values.get("token", ""), self.import_staging_dir, consume=True
+            )
+            with connect(self.database_path) as connection:
+                if values.get("destination_mode", "existing") == "new":
+                    new_calendar = new_import_calendar_input(
+                        connection,
+                        values.get("new_name", ""),
+                        values.get("new_colour", "#7C3AED"),
+                        values.get("new_timezone", "Australia/Brisbane"),
+                    )
+                    result = apply_icalendar_import(
+                        connection, content, new_calendar=new_calendar
+                    )
+                    destination_path = (
+                        f"/calendars/{result.calendar_id}"
+                        if result.calendar_id else "/import"
+                    )
+                else:
+                    calendar_id = self.parse_entity_id(values.get("calendar_id", ""))
+                    if calendar_id is None:
+                        raise ValueError("Choose an existing destination Calendar.")
+                    result = apply_icalendar_import(
+                        connection,
+                        content,
+                        destination_calendar_id=calendar_id,
+                    )
+                    destination_path = "/import"
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_calendar_settings(
+                "Import",
+                views.calendar_settings_import_page(
+                    calendars, errors=[str(error)], return_to=return_to
+                ),
+                calendars,
+                active_section="import",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.redirect(self.calendar_settings_url(destination_path, return_to, saved=True))
+
+    def handle_calendar_export(self) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        selections = [item for item in values.get("sources", "").split(",") if item]
+        try:
+            with connect(self.database_path) as connection:
+                content = create_calendar_export(connection, selections)
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                subscriptions = list_subscriptions(connection)
+            self.respond_calendar_settings(
+                "Export",
+                views.calendar_settings_export_page(
+                    calendars,
+                    subscriptions,
+                    errors=[str(error)],
+                    return_to=return_to,
+                ),
+                calendars,
+                active_section="export",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header(
+            "Content-Disposition",
+            'attachment; filename="project-e-calendars.zip"',
+        )
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def handle_calendar_subscription_preview(self) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        try:
+            fetched = fetch_subscription(values.get("url", ""))
+            token = stage_subscription_fetch(fetched, self.import_staging_dir)
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                subscriptions = list_subscriptions(connection)
+            self.respond_calendar_settings(
+                "From URL",
+                views.calendar_settings_from_url_page(
+                    subscriptions, errors=[str(error)], return_to=return_to
+                ),
+                calendars,
+                active_section="from-url",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        with connect(self.database_path) as connection:
+            calendars = list_calendars(connection, include_archived=True)
+            subscriptions = list_subscriptions(connection)
+        self.respond_calendar_settings(
+            "From URL preview",
+            views.calendar_settings_from_url_page(
+                subscriptions,
+                preview=fetched,
+                token=token,
+                return_to=return_to,
+            ),
+            calendars,
+            active_section="from-url",
+            return_to=return_to,
+        )
+
+    def handle_calendar_subscription_confirm(self) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        try:
+            fetched = read_staged_subscription(
+                values.get("token", ""), self.import_staging_dir, consume=True
+            )
+            with connect(self.database_path) as connection:
+                create_subscription(
+                    connection,
+                    fetched,
+                    colour=values.get("colour", "#7C3AED"),
+                    display_name=values.get("display_name", ""),
+                )
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                subscriptions = list_subscriptions(connection)
+            self.respond_calendar_settings(
+                "From URL",
+                views.calendar_settings_from_url_page(
+                    subscriptions, errors=[str(error)], return_to=return_to
+                ),
+                calendars,
+                active_section="from-url",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.redirect(self.calendar_settings_url("/from-url", return_to, saved=True))
+
+    def handle_calendar_subscription_action(self, subscription_id: int, action: str) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
+        try:
+            with connect(self.database_path) as connection:
+                if action == "refresh":
+                    refresh_subscription(connection, subscription_id)
+                elif action == "enable":
+                    set_subscription_enabled(connection, subscription_id, True)
+                elif action == "disable":
+                    set_subscription_enabled(connection, subscription_id, False)
+                elif action == "remove":
+                    remove_subscription(connection, subscription_id)
+                else:
+                    self.respond_not_found()
+                    return
+        except (ValueError, sqlite3.Error) as error:
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                subscriptions = list_subscriptions(connection)
+            self.respond_calendar_settings(
+                "From URL",
+                views.calendar_settings_from_url_page(
+                    subscriptions, errors=[str(error)], return_to=return_to
+                ),
+                calendars,
+                active_section="from-url",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        self.redirect(self.calendar_settings_url("/from-url", return_to, saved=True))
+
     def handle_calendar_settings_edit(self, calendar_id: int) -> None:
         values = self.read_form()
         return_to = self.calendar_return_to(values.get("return_to", ""))
         try:
             reminder_timings = self.reminder_timings(values, "calendar_reminder")
             with connect(self.database_path) as connection:
-                update_calendar(connection, calendar_id, self.calendar_input_from_form(values))
+                current = get_calendar(connection, calendar_id, include_archived=True)
+                if current is None:
+                    raise ValueError("Calendar does not exist.")
+                update_calendar(
+                    connection,
+                    calendar_id,
+                    CalendarInput(
+                        values.get("name", ""),
+                        values.get("colour", "#2563EB"),
+                        values.get("timezone", "Australia/Brisbane"),
+                        int(values.get("default_event_duration_minutes", "60")),
+                        current.sort_order,
+                        current.kind,
+                    ),
+                )
                 if not reminder_timings:
                     clear_policy(connection, "calendar", calendar_id, "event")
                 else:
@@ -939,13 +1303,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             count = int(values.get("recurrence_custom_count", "0"))
             return RecurrenceRule(**{**rule.__dict__, "until_date": until_date_after_occurrences(event, rule, count)})
         raise ValueError("Custom recurrence end condition is invalid.")
-
-    @staticmethod
-    def calendar_input_from_form(values: dict[str, str]) -> CalendarInput:
-        return CalendarInput(
-            values.get("name", ""), values.get("colour", "#2563EB"), values.get("timezone", "Australia/Brisbane"),
-            int(values.get("default_event_duration_minutes", "60")), int(values.get("sort_order", "0")),
-        )
 
     def respond_calendar_event_form(self, values: dict[str, str], errors: list[str], event_id: int | None = None) -> None:
         with connect(self.database_path) as connection:
@@ -1808,6 +2165,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             "action-menus.js": "text/javascript; charset=utf-8",
             "calendar-groups.js": "text/javascript; charset=utf-8",
             "calendar-grid.js": "text/javascript; charset=utf-8",
+            "calendar-ordering.js": "text/javascript; charset=utf-8",
+            "calendar-export-selection.js": "text/javascript; charset=utf-8",
             "calendar-visibility.js": "text/javascript; charset=utf-8",
             "confirmation.js": "text/javascript; charset=utf-8",
             "description-field.js": "text/javascript; charset=utf-8",

@@ -81,8 +81,17 @@ class EventRecord:
         return self.status == "cancelled"
 
 
-def create_event(connection: sqlite3.Connection, event: EventInput) -> int:
-    values = _normalise_event(connection, event)
+def create_event(
+    connection: sqlite3.Connection,
+    event: EventInput,
+    *,
+    commit: bool = True,
+    provenance: str = "manual",
+    status: str = "planned",
+) -> int:
+    if status not in {"planned", "cancelled"}:
+        raise ValueError("Event status is invalid.")
+    values = _normalise_event(connection, event, current_status=status)
     now = utc_now()
     try:
         cursor = connection.execute(
@@ -102,11 +111,13 @@ def create_event(connection: sqlite3.Connection, event: EventInput) -> int:
             [("entity", event_id)],
             after=snapshot,
             notes="Event created",
+            provenance=provenance,
         )
         for field_name, value in snapshot.items():
             if value not in ("", None, False):
-                set_provenance(connection, "entity", event_id, field_name, "manual")
-        connection.commit()
+                set_provenance(connection, "entity", event_id, field_name, provenance)
+        if commit:
+            connection.commit()
         return event_id
     except Exception:
         connection.rollback()

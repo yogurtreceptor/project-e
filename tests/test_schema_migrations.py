@@ -44,6 +44,9 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("relationships", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
+        self.assertIn("event_icalendar_identities", tables)
+        self.assertIn("calendar_subscriptions", tables)
+        self.assertIn("external_calendar_events", tables)
         with connect(self.database_path) as connection:
             entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
             project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
@@ -103,8 +106,27 @@ class SchemaMigrationTests(unittest.TestCase):
             existing = connection.execute(
                 "SELECT display_name, created_at FROM entities WHERE id = 1"
             ).fetchone()
+            interchange_tables = {
+                row["name"]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type = 'table' AND name IN ("
+                    "'event_icalendar_identities', "
+                    "'calendar_subscriptions', "
+                    "'external_calendar_events'"
+                    ")"
+                )
+            }
         self.assertEqual(existing["display_name"], "Existing Person")
         self.assertEqual(existing["created_at"], "before")
+        self.assertEqual(
+            interchange_tables,
+            {
+                "event_icalendar_identities",
+                "calendar_subscriptions",
+                "external_calendar_events",
+            },
+        )
 
     def test_existing_typed_tables_gain_new_domain_columns_additively(self) -> None:
         with sqlite3.connect(self.database_path) as connection:

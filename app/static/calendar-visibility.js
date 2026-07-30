@@ -1,8 +1,8 @@
 (() => {
-  const controls = document.querySelector("[data-calendar-visibility-controls]");
-  if (!controls) return;
-  const checkboxes = [...controls.querySelectorAll('input[name="calendars"]')];
-  const status = controls.querySelector("[data-calendar-visibility-status]");
+  const controls = [...document.querySelectorAll("[data-calendar-visibility-controls]")];
+  if (!controls.length) return;
+  const checkboxes = controls.flatMap(control => [...control.querySelectorAll('input[name="calendars"]')]);
+  const statuses = controls.map(control => control.querySelector("[data-calendar-visibility-status]")).filter(Boolean);
 
   const apply = () => {
     const selected = new Set(checkboxes.filter(item => item.checked).map(item => item.value));
@@ -21,7 +21,9 @@
     [...selected].sort((left, right) => Number(left) - Number(right)).forEach(id => current.searchParams.append("calendars", id));
     history.replaceState(history.state, "", current.pathname + current.search + current.hash);
     sessionStorage.setItem("project-e-calendar-context", current.pathname + current.search);
-    if (status) status.textContent = `${selected.size} calendar${selected.size === 1 ? "" : "s"} visible`;
+    statuses.forEach(status => {
+      status.textContent = `${selected.size} calendar${selected.size === 1 ? "" : "s"} visible`;
+    });
   };
 
   checkboxes.forEach(checkbox => checkbox.addEventListener("change", apply));
