@@ -94,6 +94,7 @@ a:hover {
 .calendar-shell .brand { padding-left: var(--space-6); }
 .calendar-shell .global-search-link { margin-left: var(--space-2); }
 .calendar-header-controls { align-items: center; display: flex; flex: 1; gap: var(--space-2); min-width: 0; white-space: nowrap; }
+.calendar-header-tools { align-items: center; display: flex; gap: var(--space-1); }
 .calendar-header-today, .calendar-header-step a, .calendar-header-view, .calendar-settings-control { align-items: center; background: transparent; border: 1px solid transparent; border-radius: var(--radius-control); color: var(--color-text-primary); cursor: pointer; display: inline-flex; font: inherit; justify-content: center; min-height: var(--control-height-compact); text-decoration: none; }
 .calendar-header-today { border-color: var(--color-border-default); font-size: var(--font-size-compact); font-weight: 650; padding: var(--space-1) var(--space-3); }
 .calendar-header-step { display: flex; }
@@ -102,7 +103,7 @@ a:hover {
 .calendar-header-date { font-size: var(--font-size-section-title); font-weight: 650; margin: 0 var(--space-2); }
 .calendar-header-view { gap: var(--space-1); list-style: none; padding: var(--space-1) var(--space-2); }
 .calendar-header-view::-webkit-details-marker { display: none; }
-.calendar-settings-control { margin-left: var(--space-2); padding: var(--space-1); width: var(--control-height-compact); }
+.calendar-settings-control { padding: var(--space-1); width: var(--control-height-compact); }
 .calendar-settings-control .icon { height: 18px; width: 18px; }
 .icon, .brand-mark { display: inline-block; filter: invert(1); flex: 0 0 auto; vertical-align: text-bottom; }
 @media (prefers-color-scheme: light) { .icon, .brand-mark { filter: none; } }

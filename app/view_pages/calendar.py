@@ -75,8 +75,10 @@ def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[
       <a class="calendar-header-today" href="{today_url}">Today</a>
       <nav class="calendar-header-step" aria-label="Move through {escape(view)} view"><a href="{previous_url}" aria-label="Previous {escape(view)}" title="Previous {escape(view)}">‹</a><a href="{following_url}" aria-label="Next {escape(view)}" title="Next {escape(view)}">›</a></nav>
       <h1 class="calendar-header-date">{escape(title)}</h1>
+    </div><div class="calendar-header-tools">
       <details class="action-menu calendar-view-menu"><summary class="calendar-header-view">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details>
-    </div><button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>'''
+      <button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>
+    </div>'''
 
 
 def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:

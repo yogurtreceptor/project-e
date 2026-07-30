@@ -6,7 +6,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ### Calendar shell and live-time refinement
 
-- Moved Today, previous/next, anchor date and view selection into the main Calendar column of the Project E header, with the future-settings affordance beside Search.
+- Moved Today, previous/next and the anchor date into the main Calendar column of the Project E header; grouped view selection immediately left of the future-settings affordance beside Search.
 - Replaced the Calendar management toolbar link with collapsible My calendars and Other calendars groups plus one Other-calendars creation control; disclosure arrows sit at the right of each heading and the Calendar sidebar scrolls independently.
 - Removed the remaining inset between the Calendar projection and its header/sidebar boundaries.
 - Made Month consume its fixed Calendar viewport without page-level vertical scrolling while retaining independently scrollable 24-hour Week and Day grids.

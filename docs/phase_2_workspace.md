@@ -392,6 +392,8 @@ The following Calendar visual-refinement brief was approved on **2026-07-30**. I
 
 27. **Complete (2026-07-30):** align the Calendar-only header navigation with the left edge of the main Calendar column rather than immediately after the Project E brand, and place the future-settings cog directly beside global Search. Remove the remaining Calendar projection inset so its surface meets the header and sidebar boundaries without a gap. Move each Calendar-group disclosure control to the far right of its heading; **Other calendars** orders its plus control immediately before the disclosure arrow.
 
+28. **Complete (2026-07-30):** move the Calendar-view picker out of the date-navigation cluster and into the right-side header tools, immediately to the left of the future-settings cog.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria
