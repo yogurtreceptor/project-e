@@ -152,6 +152,9 @@ class DesignFoundationTests(unittest.TestCase):
             with urlopen(f"http://127.0.0.1:{server.server_port}/static/calendar-visibility.js", timeout=5) as response:
                 self.assertEqual(response.status, 200)
                 self.assertIn(b"item.hidden = !selected.has", response.read())
+            with urlopen(f"http://127.0.0.1:{server.server_port}/static/calendar-groups.js", timeout=5) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn(b"content.hidden = expanded", response.read())
         finally:
             server.shutdown()
             server.server_close()

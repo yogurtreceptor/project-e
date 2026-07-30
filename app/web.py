@@ -325,7 +325,26 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             selected_ids = {int(item) for item in query.get("calendars", "").split(",") if item.isdigit()}
             selected_ids = selected_ids or {calendar.id for calendar in calendars if not calendar.is_archived}
             projection = views.calendar_projection(events, calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
-            self.respond_page("Calendar", views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection), active_slug="calendar", show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1", sidebar_variant="calendar", sidebar_content=views.calendar_sidebar(calendars=calendars, anchor_date=anchor_date, mini_month_date=mini_month_date, view=view, selected_calendar_ids=selected_ids, return_to=self.path))
+            self.respond_page(
+                "Calendar",
+                views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection),
+                active_slug="calendar",
+                show_save_toast=created_event is not None or query.get("saved") == "1" or query.get("deleted") == "1",
+                sidebar_variant="calendar",
+                sidebar_content=views.calendar_sidebar(
+                    calendars=calendars,
+                    anchor_date=anchor_date,
+                    mini_month_date=mini_month_date,
+                    view=view,
+                    selected_calendar_ids=selected_ids,
+                    return_to=self.path,
+                ),
+                header_content=views.calendar_header(
+                    view=view,
+                    anchor_date=anchor_date,
+                    selected_calendar_ids=selected_ids,
+                ),
+            )
             return
         if len(parts) == 2 and parts[1] == "manage":
             if self.command == "GET":
@@ -1690,6 +1709,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def serve_static(self, relative_path: str) -> None:
         content_types = {
             "action-menus.js": "text/javascript; charset=utf-8",
+            "calendar-groups.js": "text/javascript; charset=utf-8",
             "calendar-grid.js": "text/javascript; charset=utf-8",
             "calendar-visibility.js": "text/javascript; charset=utf-8",
             "confirmation.js": "text/javascript; charset=utf-8",
@@ -1808,8 +1828,17 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         show_save_toast: bool = False,
         sidebar_variant: str = "browse",
         sidebar_content: str = "",
+        header_content: str = "",
     ) -> None:
-        body = views.layout(title, content, active_slug, show_save_toast, sidebar_variant, sidebar_content)
+        body = views.layout(
+            title,
+            content,
+            active_slug=active_slug,
+            show_save_toast=show_save_toast,
+            sidebar_variant=sidebar_variant,
+            sidebar_content=sidebar_content,
+            header_content=header_content,
+        )
         encoded = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")

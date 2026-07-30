@@ -89,6 +89,7 @@
     --color-status-danger: #ffaaa3;
     --color-status-danger-surface: #351d1c;
     --color-status-danger-border: #99534e;
+    --color-calendar-current-time: #ea4335;
     --color-series-1: var(--primitive-accent);
     --color-series-2: #9ccf91;
     --color-series-3: #d8b57a;

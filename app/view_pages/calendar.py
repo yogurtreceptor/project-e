@@ -10,6 +10,7 @@ from app.calendar_service import CalendarRecord
 from app.event_service import EventRecord
 from app.event_recurrence import RecurrenceDefinition, occurrences_between
 from app.view_pages.forms import description_field, error_block
+from app.view_pages.icons import icon
 from app.view_pages.reminders import calendar_reminder_fields
 from app.view_pages.timezones import timezone_picker
 
@@ -40,7 +41,43 @@ def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini
         f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span><a class="calendar-edit-control" href="/calendar/manage/{calendar.id}/edit" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a></label>'
         for calendar in active_calendars
     )
-    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}<section class="calendar-sidebar-calendars" aria-labelledby="my-calendars-title" data-calendar-visibility-controls><h2 id="my-calendars-title">My calendars</h2>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></section><section class="calendar-other-calendars" aria-labelledby="other-calendars-title"><h2 id="other-calendars-title">Other calendars</h2><p>Additional calendar sources will appear here.</p></section></div>'''
+    my_calendars = f'''<section class="calendar-sidebar-calendars calendar-sidebar-group" aria-labelledby="my-calendars-title" data-calendar-group>
+      <div class="calendar-sidebar-group-heading"><h2 id="my-calendars-title"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="my-calendars-list" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span><span>My calendars</span></button></h2></div>
+      <div class="calendar-sidebar-group-content" id="my-calendars-list" data-calendar-group-content data-calendar-visibility-controls>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></div>
+    </section>'''
+    other_calendars = '''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
+      <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span><span>Other calendars</span></button></h2><a class="calendar-add-control" href="/calendar/manage#add-calendar" aria-label="Create calendar" title="Create calendar">+</a></div>
+      <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content><p>Additional calendar sources will appear here.</p></div>
+    </section>'''
+    return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}{my_calendars}{other_calendars}</div>'''
+
+
+def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[int]) -> str:
+    """Render Calendar-only navigation in the shared Project E header."""
+    _, _, previous, following, title = _calendar_period(view, anchor_date)
+    selected = sorted(selected_calendar_ids)
+
+    def navigation_url(target_view: str, target_date: date) -> str:
+        return _calendar_url([
+            ("view", target_view),
+            ("date", target_date.isoformat()),
+            *(("calendars", str(item)) for item in selected),
+        ])
+
+    today_url = navigation_url(view, date.today())
+    previous_url = navigation_url(view, previous)
+    following_url = navigation_url(view, following)
+    view_options = "".join(
+        f'<li><a href="{navigation_url(option, anchor_date)}"{" aria-current=\"page\"" if option == view else ""}>{label}</a></li>'
+        for option, label in (("month", "Month"), ("week", "Week"), ("day", "Day"))
+    )
+    return f'''<div class="calendar-header-controls" role="navigation" aria-label="Calendar navigation">
+      <a class="calendar-header-today" href="{today_url}">Today</a>
+      <nav class="calendar-header-step" aria-label="Move through {escape(view)} view"><a href="{previous_url}" aria-label="Previous {escape(view)}" title="Previous {escape(view)}">‹</a><a href="{following_url}" aria-label="Next {escape(view)}" title="Next {escape(view)}">›</a></nav>
+      <h1 class="calendar-header-date">{escape(title)}</h1>
+      <details class="action-menu calendar-view-menu"><summary class="calendar-header-view">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details>
+      <button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>
+    </div>'''
 
 
 def _mini_month_day_picker(selected_date: date, displayed_date: date, view: str, selected_calendar_ids: set[int]) -> str:
@@ -118,47 +155,54 @@ def calendar_projection(
     display_timezone = next(calendar.timezone for calendar in active_calendars if calendar.is_default and calendar.kind == "event")
     parameters = [("view", view), ("date", anchor_date.isoformat())]
     parameters.extend(("calendars", str(calendar_id)) for calendar_id in sorted(selected))
+    period_start, period_end, _, _, _ = _calendar_period(view, anchor_date)
     if view == "week":
-        period_start = anchor_date - timedelta(days=anchor_date.weekday())
-        period_end = period_start + timedelta(days=6)
         visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
         grid = _week_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
-        previous = period_start - timedelta(days=7)
-        following = period_start + timedelta(days=7)
-        title = f"Week of {period_start.strftime('%-d %B %Y')}"
     elif view == "day":
-        period_start = period_end = anchor_date
         visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
         grid = _time_grid(visible_events, calendar_by_id, [period_start], display_timezone, urlencode(parameters))
-        previous = period_start - timedelta(days=1)
-        following = period_start + timedelta(days=1)
-        title = period_start.strftime("%A, %-d %B %Y")
     else:
-        period_start = anchor_date.replace(day=1)
-        period_end = period_start.replace(day=monthrange(period_start.year, period_start.month)[1])
         visible_events = _expand_events(visible_events, recurrences or {}, recurrence_exceptions or {}, period_start, period_end)
         grid = _month_grid(visible_events, calendar_by_id, period_start, display_timezone, urlencode(parameters))
-        previous = (period_start - timedelta(days=1)).replace(day=1)
-        following = (period_end + timedelta(days=1)).replace(day=1)
-        title = period_start.strftime("%B %Y")
-    previous_url = _calendar_url([( "view", view), ("date", previous.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    following_url = _calendar_url([( "view", view), ("date", following.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    today_url = _calendar_url([( "view", view), ("date", date.today().isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    month_url = _calendar_url([("view", "month"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    week_url = _calendar_url([("view", "week"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
-    day_url = _calendar_url([("view", "day"), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     return_to = _calendar_url([("view", view), ("date", anchor_date.isoformat()), *(("calendars", str(item)) for item in sorted(selected))])
     preview = _preview_panel(preview_event, calendar_by_id.get(preview_event.calendar_id) if preview_event else None, preview_occurrence, recurrences.get(preview_event.id) if preview_event else None, return_to=return_to) if preview_event and preview_event.calendar_id in selected else ""
-    view_options = "".join(
-        f'<li><a href="{url}"{" aria-current=\"page\"" if option == view else ""}>{label}</a></li>'
-        for option, label, url in (("month", "Month", month_url), ("week", "Week", week_url), ("day", "Day", day_url))
-    )
     return f"""
-    <section class="panel calendar-projection"><div class="calendar-toolbar"><div class="actions"><a class="button secondary" href="{previous_url}" aria-label="Previous {view}">Previous</a><a class="button secondary" href="{today_url}">Today</a><a class="button secondary" href="{following_url}" aria-label="Next {view}">Next</a></div><h2>{escape(title)}</h2><div class="calendar-view-switch" aria-label="Calendar view"><a class="button secondary" href="/calendar/manage">Manage calendars</a><details class="action-menu calendar-view-menu"><summary class="button">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details></div></div>
+    <section class="panel calendar-projection calendar-projection-{escape(view)}">
         {preview}
         {grid}
     </section>
     """
+
+
+def _calendar_period(view: str, anchor_date: date) -> tuple[date, date, date, date, str]:
+    if view == "week":
+        period_start = anchor_date - timedelta(days=anchor_date.weekday())
+        period_end = period_start + timedelta(days=6)
+        return (
+            period_start,
+            period_end,
+            period_start - timedelta(days=7),
+            period_start + timedelta(days=7),
+            f"Week of {period_start.strftime('%-d %B %Y')}",
+        )
+    if view == "day":
+        return (
+            anchor_date,
+            anchor_date,
+            anchor_date - timedelta(days=1),
+            anchor_date + timedelta(days=1),
+            anchor_date.strftime("%-d %B %Y"),
+        )
+    period_start = anchor_date.replace(day=1)
+    period_end = period_start.replace(day=monthrange(period_start.year, period_start.month)[1])
+    return (
+        period_start,
+        period_end,
+        (period_start - timedelta(days=1)).replace(day=1),
+        (period_end + timedelta(days=1)).replace(day=1),
+        period_start.strftime("%B %Y"),
+    )
 
 
 def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], month: date, display_timezone: str, context_query: str) -> str:
@@ -175,7 +219,8 @@ def _month_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord],
         )
         for day in days
     )
-    return f'<div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid">{cells}</div>'
+    week_count = len(days) // 7
+    return f'<div class="calendar-month-view"><div class="calendar-weekdays">{"".join(f"<span>{name}</span>" for name in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))}</div><div class="calendar-month-grid" style="--calendar-week-count:{week_count}">{cells}</div></div>'
 
 
 def _expand_events(events: list[EventRecord], recurrences: dict[int, RecurrenceDefinition], exceptions: dict[int, object], start: date, end: date) -> list[EventRecord]:
@@ -199,10 +244,10 @@ def _time_grid(events: list[EventRecord], calendars: dict[int, CalendarRecord], 
     )
     hour_labels = "".join(f'<time style="top:{hour * 48}px">{hour:02d}:00</time>' for hour in range(24))
     timed_cells = "".join(
-        f'<div class="calendar-time-day" aria-label="{day.isoformat()}">{"".join(_timed_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if not event.is_all_day and _event_occurs_on(event, day, display_timezone))}</div>'
+        f'<div class="calendar-time-day" aria-label="{day.isoformat()}" data-calendar-date="{day.isoformat()}">{"".join(_timed_projection_event(event, calendars[event.calendar_id], day, display_timezone, context_query) for event in events if not event.is_all_day and _event_occurs_on(event, day, display_timezone))}<span class="calendar-current-time" data-calendar-current-time hidden aria-hidden="true"><span class="calendar-current-time-dot"></span></span></div>'
         for day in days
     )
-    return f'<div class="calendar-time-grid-scroll" data-calendar-time-grid-scroll><div class="calendar-time-grid" style="--calendar-day-count:{len(days)}"><div class="calendar-time-axis-heading"></div>{headers}<div class="calendar-time-all-day-label">All day</div>{all_day_cells}<div class="calendar-time-axis">{hour_labels}</div>{timed_cells}</div></div>'
+    return f'<div class="calendar-time-grid-scroll" data-calendar-time-grid-scroll data-calendar-timezone="{escape(display_timezone)}"><div class="calendar-time-grid" style="--calendar-day-count:{len(days)}"><div class="calendar-time-axis-heading"></div>{headers}<div class="calendar-time-all-day-label">All day</div>{all_day_cells}<div class="calendar-time-axis">{hour_labels}</div>{timed_cells}</div></div>'
 
 
 def _day_cell(day: date, events: list[EventRecord], calendars: dict[int, CalendarRecord], display_timezone: str, in_current_month: bool, include_weekday: bool = False, context_query: str = "", more_url: str = "") -> str:
@@ -292,7 +337,7 @@ def _recurrence_delete_scope_fields(occurrence_date: str) -> str:
 def calendar_management_page(calendars: list[CalendarRecord], errors: list[str] | None = None) -> str:
     errors = errors or []
     rows = "".join(_calendar_management_row(calendar) for calendar in calendars)
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone, default duration and reminder defaults. Birthdays is a protected built-in calendar populated from People.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
+    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone, default duration and reminder defaults. Birthdays is a protected built-in calendar populated from People.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel" id="add-calendar"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
 
 
 def calendar_management_edit_page(calendar: CalendarRecord, configured_timings: list[str] | None, errors: list[str] | None = None) -> str:

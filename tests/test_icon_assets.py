@@ -20,6 +20,7 @@ class IconAssetTests(unittest.TestCase):
         required = {
             "e-mark", "home", "information", "connections", "system", "search",
             "super-key", "add", "edit", "delete", "overflow", "close", "warning",
+            "settings",
             "people", "organisation", "location", "project", "document", "asset",
             "relationships", "timeline", "map",
         }
