@@ -114,6 +114,8 @@ The header contains only persistent global capability:
 
 Entity create actions, filters, edit actions and page-specific tools belong in page or entity headers, not the global frame.
 
+Calendar Settings is the deliberate task-scoped exception to the ordinary global frame. Its dedicated shell replaces Project E identity, Search and Browse/Calendar navigation with one **‹ Settings** return control and a narrower settings-navigation sidebar. That return preserves the originating Calendar projection context. The exception does not redefine ordinary application-shell responsibilities or make task-local controls global.
+
 ## Super Key: Go
 
 The Super Key is a deterministic destination launcher.

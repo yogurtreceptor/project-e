@@ -6,7 +6,7 @@ from email.policy import default
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 from zoneinfo import ZoneInfo
 
 from app import views
@@ -268,7 +268,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def route_inbox_request(self, parts: list[str], query: dict[str, str]) -> None:
         if parts[1:] == ["reminders"] and self.command == "GET":
-            self.redirect("/calendar/manage")
+            self.redirect("/calendar/settings")
             return
         source_kind = {"birthdays": "birthday", "document-expiries": "document_expiry"}.get(parts[2]) if len(parts) == 3 and parts[1] == "reminders" else None
         if source_kind is not None:
@@ -277,7 +277,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     calendar = connection.execute(
                         "SELECT id FROM calendars WHERE kind = 'birthday'"
                     ).fetchone()
-                self.redirect(f"/calendar/manage/{calendar['id']}/reminders" if calendar else "/calendar/manage")
+                self.redirect(f"/calendar/settings/calendars/{calendar['id']}" if calendar else "/calendar/settings")
                 return
             label = "Birthday" if source_kind == "birthday" else "Document-expiry"
             self.handle_reminder_policy("global", 0, source_kind, f"{label} reminder defaults", "/inbox/reminders", active_slug="inbox")
@@ -343,42 +343,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     view=view,
                     anchor_date=anchor_date,
                     selected_calendar_ids=selected_ids,
+                    return_to=self.calendar_return_to(self.path),
                 ),
             )
             return
-        if len(parts) == 2 and parts[1] == "manage":
-            if self.command == "GET":
-                with connect(self.database_path) as connection:
-                    calendars = list_calendars(connection, include_archived=True)
-                self.respond_page("Manage Calendars", views.calendar_management_page(calendars), active_slug="calendar")
-                return
-            if self.command == "POST":
-                self.handle_calendar_management_create()
-                return
-        policy_calendar_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" and parts[3] == "reminders" else None
-        if policy_calendar_id is not None:
-            with connect(self.database_path) as connection:
-                policy_calendar = get_calendar(connection, policy_calendar_id, include_archived=True)
-            if policy_calendar is None:
-                self.respond_not_found(); return
-            self.redirect(f"/calendar/manage/{policy_calendar_id}/edit")
-            return
-        managed_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "manage" else None
-        managed_action = parts[3] if managed_id is not None else ""
-        if managed_id is not None and managed_action == "edit":
-            if self.command == "GET":
-                with connect(self.database_path) as connection:
-                    calendar = get_calendar(connection, managed_id, include_archived=True)
-                    configured = get_policy(connection, "calendar", managed_id, "event")
-                if calendar is None:
-                    self.respond_not_found(); return
-                self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, configured), active_slug="calendar")
-                return
-            if self.command == "POST":
-                self.handle_calendar_management_edit(managed_id)
-                return
-        if managed_id is not None and self.command == "POST" and managed_action in {"default", "archive", "unarchive", "delete"}:
-            self.handle_calendar_management_action(managed_id, managed_action)
+        if len(parts) >= 2 and parts[1] == "settings":
+            self.route_calendar_settings_request(parts, query)
             return
         if len(parts) == 3 and parts[1:] == ["events", "new"]:
             if self.command == "GET":
@@ -468,6 +438,94 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return
         self.respond_not_found()
 
+    def route_calendar_settings_request(self, parts: list[str], query: dict[str, str]) -> None:
+        return_to = self.calendar_return_to(query.get("return_to", ""))
+        if len(parts) == 2 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_calendar_settings(
+                "General",
+                views.calendar_settings_general_page(),
+                calendars,
+                active_section="general",
+                return_to=return_to,
+            )
+            return
+        if len(parts) == 3 and parts[2] == "add":
+            if self.command == "GET":
+                with connect(self.database_path) as connection:
+                    calendars = list_calendars(connection, include_archived=True)
+                self.respond_calendar_settings(
+                    "Create New Calendar",
+                    views.calendar_settings_create_page(return_to=return_to),
+                    calendars,
+                    active_section="add",
+                    return_to=return_to,
+                )
+                return
+            if self.command == "POST":
+                self.handle_calendar_settings_create()
+                return
+        placeholder_pages = {
+            "discover": (
+                "Browse calendars of interest",
+                "Optional public calendars such as holidays and moon phases will be available here after their catalogue and update behaviour are designed.",
+            ),
+            "from-url": (
+                "From URL",
+                "Calendar subscriptions from a supplied URL will be available here after validation, refresh and offline behaviour are designed.",
+            ),
+            "import": (
+                "Import",
+                "Calendar import from ICS, VCS or CSV files will be added after the interface and interoperability tests are agreed.",
+            ),
+            "export": (
+                "Export",
+                "Calendar export to ICS, VCS or CSV files will be added after the interface and interoperability tests are agreed.",
+            ),
+        }
+        if len(parts) == 3 and parts[2] in placeholder_pages and self.command == "GET":
+            section = parts[2]
+            title, description = placeholder_pages[section]
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+            self.respond_calendar_settings(
+                title,
+                views.calendar_settings_placeholder_page(title, description),
+                calendars,
+                active_section=section,
+                return_to=return_to,
+            )
+            return
+        managed_id = self.parse_entity_id(parts[3]) if len(parts) in {4, 5} and parts[2] == "calendars" else None
+        if managed_id is None:
+            self.respond_not_found()
+            return
+        if len(parts) == 4 and self.command == "GET":
+            with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
+                calendar = get_calendar(connection, managed_id, include_archived=True)
+                configured = get_policy(connection, "calendar", managed_id, "event")
+            if calendar is None:
+                self.respond_not_found()
+                return
+            self.respond_calendar_settings(
+                calendar.name,
+                views.calendar_settings_edit_page(calendar, configured, return_to=return_to),
+                calendars,
+                active_section=f"calendar:{managed_id}",
+                return_to=return_to,
+                show_save_toast=query.get("saved") == "1",
+            )
+            return
+        if len(parts) == 4 and self.command == "POST":
+            self.handle_calendar_settings_edit(managed_id)
+            return
+        if len(parts) == 5 and self.command == "POST" and parts[4] in {"default", "archive", "unarchive", "delete"}:
+            self.handle_calendar_settings_action(managed_id, parts[4])
+            return
+        self.respond_not_found()
+
     def handle_calendar_event_create(self) -> None:
         values = self.read_form()
         try:
@@ -492,6 +550,13 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def calendar_return_url(self, value: str, marker: str) -> str:
         destination = self.calendar_return_to(value)
         return f"{destination}{'&' if '?' in destination else '?'}{marker}"
+
+    @staticmethod
+    def calendar_settings_url(path: str, return_to: str, *, saved: bool = False) -> str:
+        parameters = [("return_to", return_to)]
+        if saved:
+            parameters.append(("saved", "1"))
+        return f"/calendar/settings{path}?{urlencode(parameters)}"
 
     def handle_calendar_task_create(self) -> None:
         values = self.read_form()
@@ -621,20 +686,29 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             sessions = list_task_sessions(connection, task_id)
         self.respond_page(task.title, views.task_projection_page(task, task_list, relationships, history, audit_events, sessions), active_slug="tasks", show_save_toast=query.get("saved") == "1")
 
-    def handle_calendar_management_create(self) -> None:
+    def handle_calendar_settings_create(self) -> None:
         values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
         try:
             with connect(self.database_path) as connection:
-                create_calendar(connection, self.calendar_input_from_form(values))
+                calendar_id = create_calendar(connection, self.calendar_input_from_form(values))
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
-            self.respond_page("Manage Calendars", views.calendar_management_page(calendars, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            self.respond_calendar_settings(
+                "Create New Calendar",
+                views.calendar_settings_create_page([str(error)], return_to=return_to),
+                calendars,
+                active_section="add",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
             return
-        self.redirect("/calendar/manage")
+        self.redirect(self.calendar_settings_url(f"/calendars/{calendar_id}", return_to, saved=True))
 
-    def handle_calendar_management_edit(self, calendar_id: int) -> None:
+    def handle_calendar_settings_edit(self, calendar_id: int) -> None:
         values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
         try:
             reminder_timings = self.reminder_timings(values, "calendar_reminder")
             with connect(self.database_path) as connection:
@@ -645,15 +719,25 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     set_policy(connection, "calendar", calendar_id, "event", reminder_timings)
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
+                calendars = list_calendars(connection, include_archived=True)
                 calendar = get_calendar(connection, calendar_id, include_archived=True)
                 configured = get_policy(connection, "calendar", calendar_id, "event")
             if calendar is None:
                 self.respond_not_found(); return
-            self.respond_page("Edit Calendar", views.calendar_management_edit_page(calendar, configured, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+            self.respond_calendar_settings(
+                calendar.name,
+                views.calendar_settings_edit_page(calendar, configured, [str(error)], return_to=return_to),
+                calendars,
+                active_section=f"calendar:{calendar_id}",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
             return
-        self.redirect("/calendar/manage")
+        self.redirect(self.calendar_settings_url(f"/calendars/{calendar_id}", return_to, saved=True))
 
-    def handle_calendar_management_action(self, calendar_id: int, action: str) -> None:
+    def handle_calendar_settings_action(self, calendar_id: int, action: str) -> None:
+        values = self.read_form()
+        return_to = self.calendar_return_to(values.get("return_to", ""))
         try:
             with connect(self.database_path) as connection:
                 if action == "default":
@@ -667,9 +751,22 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         except (ValueError, sqlite3.Error) as error:
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
-            self.respond_page("Manage Calendars", views.calendar_management_page(calendars, [str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
+                calendar = get_calendar(connection, calendar_id, include_archived=True)
+                configured = get_policy(connection, "calendar", calendar_id, "event")
+            if calendar is None:
+                self.respond_not_found()
+                return
+            self.respond_calendar_settings(
+                calendar.name,
+                views.calendar_settings_edit_page(calendar, configured, [str(error)], return_to=return_to),
+                calendars,
+                active_section=f"calendar:{calendar_id}",
+                return_to=return_to,
+                status=HTTPStatus.BAD_REQUEST,
+            )
             return
-        self.redirect("/calendar/manage")
+        destination = "" if action == "delete" else f"/calendars/{calendar_id}"
+        self.redirect(self.calendar_settings_url(destination, return_to, saved=True))
 
     def handle_reminder_policy(self, context_kind: str, context_id: int, source_kind: str, title: str, back_url: str, *, active_slug: str) -> None:
         if self.command == "GET":
@@ -690,7 +787,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                         set_policy(connection, context_kind, context_id, source_kind, timings)
             except ValueError:
                 if context_kind == "calendar":
-                    retry_url = f"/calendar/manage/{context_id}/reminders"
+                    retry_url = f"/calendar/settings/calendars/{context_id}"
                 elif context_kind == "task_list":
                     retry_url = f"/tasks/lists/{context_id}/reminders"
                 else:
@@ -1845,6 +1942,31 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
+
+    def respond_calendar_settings(
+        self,
+        title: str,
+        content: str,
+        calendars,
+        *,
+        active_section: str,
+        return_to: str,
+        status: HTTPStatus = HTTPStatus.OK,
+        show_save_toast: bool = False,
+    ) -> None:
+        self.respond_page(
+            title,
+            content,
+            status,
+            show_save_toast=show_save_toast,
+            sidebar_variant="calendar-settings",
+            sidebar_content=views.calendar_settings_sidebar(
+                calendars,
+                active_section=active_section,
+                return_to=return_to,
+            ),
+            header_content=views.calendar_settings_header(return_to),
+        )
 
     def respond_json(self, payload: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
         encoded = json.dumps(payload).encode("utf-8")

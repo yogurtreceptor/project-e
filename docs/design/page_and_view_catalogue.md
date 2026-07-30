@@ -29,7 +29,8 @@ This module split is maintainable and worth preserving. Design work should impro
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
 | `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Useful launch/discovery patterns, but “Operation Eddy” branding and domain-count emphasis conflict with the Project E command-centre philosophy. Retain curated launch/discovery; add attention/upcoming summaries only with delivered capability. |
-| Every page | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell now exposes all current routes through Information, Connections and views, and System Tools groups; Super Key Go provides deterministic exact-alias navigation and an explicit Search fallback. |
+| Ordinary application pages | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell exposes current routes through Information, Connections and views, and System Tools groups; Super Key Go provides deterministic exact-alias navigation and an explicit Search fallback. |
+| `/calendar/settings` and children | Dedicated Calendar Settings shell with context-preserving return, local settings navigation and Calendar colour/name switching | `layout()`, `calendar_settings_sidebar()` | Deliberately omits the global Project E/Browse/Search frame while settings are being edited. General, discovery, URL and Calendar file-interchange destinations are visibly marked placeholders; existing local Calendar create/edit operations remain functional. |
 | Unknown route | Generic not-found response | `not_found_page()` | Needs designed missing/recycled distinctions where known and a route back to useful context. |
 
 ### Entity domains

@@ -78,7 +78,21 @@ from app.view_pages.search import (
 )
 from app.view_pages.events import event_projection_page
 from app.view_pages.tasks import task_form_page, task_projection_page, tasks_page
-from app.view_pages.calendar import calendar_header, calendar_management_edit_page, calendar_management_page, calendar_page, calendar_projection, calendar_sidebar, default_event_values, event_form_page, event_form_values
+from app.view_pages.calendar import (
+    calendar_header,
+    calendar_page,
+    calendar_projection,
+    calendar_settings_create_page,
+    calendar_settings_edit_page,
+    calendar_settings_general_page,
+    calendar_settings_header,
+    calendar_settings_placeholder_page,
+    calendar_settings_sidebar,
+    calendar_sidebar,
+    default_event_values,
+    event_form_page,
+    event_form_values,
+)
 from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
@@ -144,8 +158,12 @@ __all__ = [
     "calendar_page",
     "calendar_header",
     "calendar_sidebar",
-    "calendar_management_page",
-    "calendar_management_edit_page",
+    "calendar_settings_create_page",
+    "calendar_settings_edit_page",
+    "calendar_settings_general_page",
+    "calendar_settings_header",
+    "calendar_settings_placeholder_page",
+    "calendar_settings_sidebar",
     "calendar_projection",
     "event_form_page",
     "default_event_values",

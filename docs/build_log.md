@@ -4,9 +4,15 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-07-30
 
+### Calendar settings workspace
+
+- Activated the Calendar settings cog and added a stripped-back, context-preserving settings shell with a narrower navigation sidebar.
+- Moved existing local Calendar creation, editing, notification defaults and lifecycle controls into the settings workspace, with rapid colour-and-name switching between active Calendars and retained access to archived Calendars.
+- Added presentation-only General, calendar discovery, URL, Import and Export destinations while keeping external access and Calendar file interchange explicitly inactive.
+
 ### Calendar shell and live-time refinement
 
-- Moved Today, previous/next and the anchor date into the main Calendar column of the Project E header; grouped view selection immediately left of the future-settings affordance beside Search.
+- Moved Today, previous/next and the anchor date into the main Calendar column of the Project E header; grouped view selection immediately left of the settings affordance beside Search.
 - Replaced the Calendar management toolbar link with collapsible My calendars and Other calendars groups plus one Other-calendars creation control; disclosure arrows sit at the right of each heading and the Calendar sidebar scrolls independently.
 - Removed the remaining inset between the Calendar projection and its header/sidebar boundaries.
 - Made Month consume its fixed Calendar viewport without page-level vertical scrolling while retaining independently scrollable 24-hour Week and Day grids.

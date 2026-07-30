@@ -38,21 +38,21 @@ def calendar_sidebar(*, calendars: list[CalendarRecord], anchor_date: date, mini
     event_url = f'/calendar/events/new?{urlencode({"return_to": return_to})}'
     active_calendars = [calendar for calendar in calendars if not calendar.is_archived]
     calendar_filters = "".join(
-        f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span><a class="calendar-edit-control" href="/calendar/manage/{calendar.id}/edit" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a></label>'
+        f'<label class="calendar-sidebar-filter"><input type="checkbox" name="calendars" value="{calendar.id}"{" checked" if calendar.id in selected_calendar_ids else ""}> <span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}</span><a class="calendar-edit-control" href="{escape(_calendar_settings_url(f"/calendars/{calendar.id}", return_to))}" aria-label="Edit {escape(calendar.name)} calendar" title="Edit {escape(calendar.name)} calendar">⋮</a></label>'
         for calendar in active_calendars
     )
     my_calendars = f'''<section class="calendar-sidebar-calendars calendar-sidebar-group" aria-labelledby="my-calendars-title" data-calendar-group>
       <div class="calendar-sidebar-group-heading"><h2 id="my-calendars-title">My calendars</h2><div class="calendar-sidebar-group-actions"><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="my-calendars-list" aria-label="Collapse My calendars" data-calendar-group-label="My calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
       <div class="calendar-sidebar-group-content" id="my-calendars-list" data-calendar-group-content data-calendar-visibility-controls>{calendar_filters}<p class="visually-hidden" role="status" data-calendar-visibility-status></p></div>
     </section>'''
-    other_calendars = '''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
-      <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title">Other calendars</h2><div class="calendar-sidebar-group-actions"><a class="calendar-add-control" href="/calendar/manage#add-calendar" aria-label="Create calendar" title="Create calendar">+</a><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" aria-label="Collapse Other calendars" data-calendar-group-label="Other calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
+    other_calendars = f'''<section class="calendar-other-calendars calendar-sidebar-group" aria-labelledby="other-calendars-title" data-calendar-group>
+      <div class="calendar-sidebar-group-heading"><h2 id="other-calendars-title">Other calendars</h2><div class="calendar-sidebar-group-actions"><a class="calendar-add-control" href="{escape(_calendar_settings_url("/add", return_to))}" aria-label="Create calendar" title="Create calendar">+</a><button class="calendar-sidebar-group-toggle" type="button" aria-expanded="true" aria-controls="other-calendars-list" aria-label="Collapse Other calendars" data-calendar-group-label="Other calendars" data-calendar-group-toggle><span class="calendar-sidebar-group-chevron" aria-hidden="true">▾</span></button></div></div>
       <div class="calendar-sidebar-group-content" id="other-calendars-list" data-calendar-group-content><p>Additional calendar sources will appear here.</p></div>
     </section>'''
     return f'''<div class="calendar-sidebar-content"><a class="button" href="{event_url}" data-quick-create="event">Create event</a>{_mini_month_day_picker(anchor_date, mini_month_date, view, selected_calendar_ids)}{my_calendars}{other_calendars}</div>'''
 
 
-def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[int]) -> str:
+def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[int], return_to: str) -> str:
     """Render Calendar-only navigation in the shared Project E header."""
     _, _, previous, following, title = _calendar_period(view, anchor_date)
     selected = sorted(selected_calendar_ids)
@@ -77,7 +77,7 @@ def calendar_header(*, view: str, anchor_date: date, selected_calendar_ids: set[
       <h1 class="calendar-header-date">{escape(title)}</h1>
     </div><div class="calendar-header-tools">
       <details class="action-menu calendar-view-menu"><summary class="calendar-header-view">{escape(view.title())}<span class="menu-chevron" aria-hidden="true">▾</span></summary><div class="menu-panel"><ul>{view_options}</ul></div></details>
-      <button class="calendar-settings-control" type="button" aria-label="Calendar settings, coming soon" title="Coming soon!">{icon("settings")}</button>
+      <a class="calendar-settings-control" href="{escape(_calendar_settings_url("", return_to))}" aria-label="Calendar settings" title="Calendar settings">{icon("settings")}</a>
     </div>'''
 
 
@@ -335,29 +335,132 @@ def _recurrence_delete_scope_fields(occurrence_date: str) -> str:
     return f'''<input type="hidden" name="occurrence_date" value="{escape(occurrence_date)}"><input type="hidden" name="recurrence_scope" value="all" data-recurrence-delete-scope-value><dialog class="confirmation-dialog recurrence-scope-dialog" data-recurrence-delete-scope-dialog aria-labelledby="recurrence-delete-scope-title"><h2 id="recurrence-delete-scope-title">Delete recurring event</h2><div class="recurrence-scope-options" role="radiogroup" aria-label="Delete from"><button type="button" role="radio" value="this" aria-checked="false" data-recurrence-delete-scope-choice>This event</button><button type="button" role="radio" value="following" aria-checked="false" data-recurrence-delete-scope-choice>This and following</button><button type="button" role="radio" value="all" aria-checked="true" data-recurrence-delete-scope-choice>All events</button></div><div class="actions recurrence-scope-actions"><button class="button secondary" type="button" data-recurrence-delete-scope-cancel>Cancel</button><button class="button danger" type="button" data-recurrence-delete-scope-confirm>OK</button></div></dialog>'''
 
 
-def calendar_management_page(calendars: list[CalendarRecord], errors: list[str] | None = None) -> str:
+def calendar_settings_header(return_to: str) -> str:
+    """Render the settings-only header with a context-preserving Calendar return."""
+    return f'<a class="calendar-settings-back" href="{escape(return_to)}" aria-label="Back to Calendar"><span aria-hidden="true">‹</span> Settings</a>'
+
+
+def calendar_settings_sidebar(
+    calendars: list[CalendarRecord],
+    *,
+    active_section: str,
+    return_to: str,
+) -> str:
+    """Render navigation for the dedicated Calendar Settings shell."""
+
+    def settings_link(path: str, label: str, section: str, *, coming_soon: bool = False) -> str:
+        current = ' class="active" aria-current="page"' if active_section == section else ""
+        coming_soon_title = ' title="Coming soon!"' if coming_soon else ""
+        return f'<a{current} href="{escape(_calendar_settings_url(path, return_to))}"{coming_soon_title}>{escape(label)}</a>'
+
+    add_sections = {"add", "discover", "from-url"}
+    add_open = active_section in add_sections
+    add_children = "".join((
+        settings_link("/add", "Create New Calendar", "add"),
+        settings_link("/discover", "Browse calendars of interest", "discover", coming_soon=True),
+        settings_link("/from-url", "From URL", "from-url", coming_soon=True),
+    ))
+    interchange_open = active_section in {"import", "export"}
+    interchange_children = ""
+    if interchange_open:
+        interchange_children = f'''<div class="calendar-settings-subnav">
+          {settings_link("/import", "Import", "import", coming_soon=True)}
+          {settings_link("/export", "Export", "export", coming_soon=True)}
+        </div>'''
+
+    def calendar_link(calendar: CalendarRecord) -> str:
+        selected = active_section == f"calendar:{calendar.id}"
+        archived = '<small>Archived</small>' if calendar.is_archived else ""
+        return f'<a class="calendar-settings-calendar{" is-archived" if calendar.is_archived else ""}{" active" if selected else ""}" href="{escape(_calendar_settings_url(f"/calendars/{calendar.id}", return_to))}"{" aria-current=\"page\"" if selected else ""}><span class="calendar-colour" style="background:{escape(calendar.colour)}"></span><span>{escape(calendar.name)}{archived}</span></a>'
+
+    calendar_links = "".join(calendar_link(calendar) for calendar in calendars if not calendar.is_archived)
+    archived_links = "".join(calendar_link(calendar) for calendar in calendars if calendar.is_archived)
+    archived_section = f'''<div class="calendar-settings-archived">
+        <h3>Archived calendars</h3>
+        <div class="calendar-settings-calendar-list">{archived_links}</div>
+      </div>''' if archived_links else ""
+    return f'''<nav class="calendar-settings-nav" aria-label="Calendar settings navigation">
+      {settings_link("", "General", "general", coming_soon=True)}
+      <details class="calendar-settings-disclosure"{" open" if add_open else ""}>
+        <summary><span class="calendar-settings-disclosure-chevron" aria-hidden="true">›</span><span>Add Calendar</span></summary>
+        <div class="calendar-settings-subnav">{add_children}</div>
+      </details>
+      <section class="calendar-settings-interchange{" active" if interchange_open else ""}">
+        <a class="calendar-settings-parent-link{" active" if interchange_open else ""}" href="{escape(_calendar_settings_url("/import", return_to))}" aria-expanded="{"true" if interchange_open else "false"}"><span class="calendar-settings-disclosure-chevron" aria-hidden="true">›</span><span>Import/Export</span></a>
+        {interchange_children}
+      </section>
+    </nav>
+    <section class="calendar-settings-calendars" aria-labelledby="calendar-settings-calendars-title">
+      <h2 id="calendar-settings-calendars-title">Settings for my calendars</h2>
+      <div class="calendar-settings-calendar-list">{calendar_links}</div>
+      {archived_section}
+    </section>'''
+
+
+def calendar_settings_general_page() -> str:
+    return calendar_settings_placeholder_page(
+        "General",
+        "General Calendar preferences will live here once their behaviour is designed.",
+    )
+
+
+def calendar_settings_placeholder_page(title: str, description: str) -> str:
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Calendar settings</p><h1>{escape(title)}</h1></section>
+    <section class="panel calendar-settings-placeholder"><span class="status-badge">Coming soon!</span><h2>{escape(title)}</h2><p>{escape(description)}</p></section>'''
+
+
+def calendar_settings_create_page(
+    errors: list[str] | None = None,
+    *,
+    return_to: str = "/calendar",
+) -> str:
     errors = errors or []
-    rows = "".join(_calendar_management_row(calendar) for calendar in calendars)
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Manage Calendars</h1><p>Calendars set Event colour, display timezone, default duration and reminder defaults. Birthdays is a protected built-in calendar populated from People.</p></div><a class="button secondary" href="/calendar">Back to Calendar</a></section><section class="panel">{error_block(errors)}<div class="calendar-management-list">{rows}</div></section><section class="panel" id="add-calendar"><h2>Add Calendar</h2><form class="record-form calendar-management-form" method="post" action="/calendar/manage"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><button class="button" type="submit">Add Calendar</button></div></form></section>'''
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Add Calendar</p><h1>Create New Calendar</h1><p>Create a local Calendar for grouping Events and supplying their display defaults.</p></section>
+    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/add" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="#2563EB"></label>{timezone_picker("timezone", "Australia/Brisbane")}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="60" required></label><label><span>Order</span><input name="sort_order" type="number" value="0" required></label><div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Create Calendar</button></div></form></section>'''
 
 
-def calendar_management_edit_page(calendar: CalendarRecord, configured_timings: list[str] | None, errors: list[str] | None = None) -> str:
+def calendar_settings_edit_page(
+    calendar: CalendarRecord,
+    configured_timings: list[str] | None,
+    errors: list[str] | None = None,
+    *,
+    return_to: str = "/calendar",
+) -> str:
     errors = errors or []
-    return f'''<section class="page-heading split"><div><p class="eyebrow">Calendar</p><h1>Edit {escape(calendar.name)}</h1></div><a class="button secondary" href="/calendar/manage">Back to Calendars</a></section><section class="panel">{error_block(errors)}<form class="record-form calendar-management-form" method="post" action="/calendar/manage/{calendar.id}/edit"><label><span>Name</span><input name="name" required value="{escape(calendar.name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="{escape(calendar.colour)}"></label>{timezone_picker("timezone", calendar.timezone)}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="{calendar.default_event_duration_minutes}" required></label><label><span>Order</span><input name="sort_order" type="number" value="{calendar.sort_order}" required></label>{calendar_reminder_fields(configured_timings, allow_months=calendar.kind == "birthday")}<div class="actions"><a class="button secondary" href="/calendar/manage">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>'''
+    state = "Built-in Birthdays Calendar" if calendar.kind == "birthday" else "Default Calendar" if calendar.is_default else "Archived Calendar" if calendar.is_archived else "Active Calendar"
+    status_controls = _calendar_settings_status_controls(calendar, return_to)
+    status_panel = f'''<section class="panel calendar-settings-status"><div><p class="eyebrow">Calendar status</p><h2>{state}</h2><p>Calendar lifecycle changes retain existing Event assignments and use the established safeguards.</p></div><div class="actions">{status_controls}</div></section>''' if status_controls else f'''<section class="panel calendar-settings-status"><div><p class="eyebrow">Calendar status</p><h2>{state}</h2><p>This protected Calendar is managed from its source records.</p></div></section>'''
+    return f'''<section class="page-heading calendar-settings-page-heading"><p class="eyebrow">Calendar settings</p><h1>{escape(calendar.name)}</h1></section>
+    <section class="panel calendar-settings-form-panel">{error_block(errors)}<form class="record-form calendar-settings-form" method="post" action="/calendar/settings/calendars/{calendar.id}" data-dirty-form><input type="hidden" name="return_to" value="{escape(return_to)}"><label><span>Name</span><input name="name" required value="{escape(calendar.name)}"></label><label><span>Colour</span><input class="calendar-colour-picker" name="colour" type="color" value="{escape(calendar.colour)}"></label>{timezone_picker("timezone", calendar.timezone)}<label><span>Default duration (minutes)</span><input name="default_event_duration_minutes" type="number" min="1" value="{calendar.default_event_duration_minutes}" required></label><label><span>Order</span><input name="sort_order" type="number" value="{calendar.sort_order}" required></label>{calendar_reminder_fields(configured_timings, allow_months=calendar.kind == "birthday")}<div class="actions"><a class="button secondary" href="{escape(return_to)}">Cancel</a><button class="button" type="submit">Save Calendar</button></div></form></section>{status_panel}'''
 
 
-def _calendar_management_row(calendar: CalendarRecord) -> str:
-    state = "Built-in birthdays" if calendar.kind == "birthday" else "Default" if calendar.is_default else "Archived" if calendar.is_archived else "Active"
+def _calendar_settings_status_controls(calendar: CalendarRecord, return_to: str) -> str:
+    if calendar.kind == "birthday":
+        return ""
+    hidden_return = f'<input type="hidden" name="return_to" value="{escape(return_to)}">'
+    controls = []
+    if not calendar.is_default and not calendar.is_archived:
+        controls.append(
+            f'<form method="post" action="/calendar/settings/calendars/{calendar.id}/default" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Make this the default Calendar for new Events.">{hidden_return}<button class="button secondary" type="submit">Make default</button></form>'
+        )
     archive_action = "unarchive" if calendar.is_archived else "archive"
     archive_label = "Unarchive" if calendar.is_archived else "Archive"
-    default_action = "" if calendar.kind != "event" or calendar.is_default or calendar.is_archived else f'<form method="post" action="/calendar/manage/{calendar.id}/default" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Make this the default Calendar for new Events."><button class="button secondary" type="submit">Make default</button></form>'
-    delete_action = "" if calendar.is_default else f'<form method="post" action="/calendar/manage/{calendar.id}/delete" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Permanently delete this empty Calendar. Assigned Events prevent deletion."><button class="button danger" type="submit">Delete</button></form>'
-    archive_control = "" if calendar.kind == "birthday" else f'<form method="post" action="/calendar/manage/{calendar.id}/{archive_action}" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="{archive_label} this Calendar. Existing Event assignments are retained."><button class="button secondary" type="submit">{archive_label}</button></form>'
-    return f'<article class="calendar-management-row"><div><h2><span class="calendar-colour" style="background:{escape(calendar.colour)}"></span>{escape(calendar.name)}</h2><p>{escape(calendar.timezone)} · {calendar.default_event_duration_minutes} minutes · order {calendar.sort_order} · {state}</p></div><div class="actions"><a class="button secondary" href="/calendar/manage/{calendar.id}/edit">Edit</a>{default_action}{archive_control}{delete_action}</div></article>'
+    controls.append(
+        f'<form method="post" action="/calendar/settings/calendars/{calendar.id}/{archive_action}" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="{archive_label} this Calendar. Existing Event assignments are retained.">{hidden_return}<button class="button secondary" type="submit">{archive_label}</button></form>'
+    )
+    if not calendar.is_default:
+        controls.append(
+            f'<form method="post" action="/calendar/settings/calendars/{calendar.id}/delete" data-confirm-object="{escape(calendar.name)}" data-confirm-consequence="Permanently delete this empty Calendar. Assigned Events prevent deletion.">{hidden_return}<button class="button danger" type="submit">Delete</button></form>'
+        )
+    return "".join(controls)
 
 
 def _calendar_url(parameters: list[tuple[str, str]]) -> str:
     return "/calendar?" + urlencode(parameters)
+
+
+def _calendar_settings_url(path: str, return_to: str) -> str:
+    return f"/calendar/settings{path}?{urlencode({'return_to': return_to})}"
 
 
 def _calendar_url_with_query(query: str) -> str:

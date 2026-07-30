@@ -44,10 +44,24 @@ def layout(
         if show_save_toast else ""
     )
     calendar_shell = sidebar_variant == "calendar"
-    main_class = ' class="calendar-main"' if calendar_shell else ""
+    calendar_settings_shell = sidebar_variant == "calendar-settings"
     if calendar_shell:
+        shell_class = " calendar-shell"
+        main_class = ' class="calendar-main"'
         sidebar = f'<aside class="sidebar calendar-sidebar" aria-label="Calendar sidebar">{sidebar_content}</aside>'
+        header = f'''<header class="site-header">
+        <a class="brand" href="/" title="Project E — Home">{icon("e-mark", "Project E", "brand-mark")}<span class="brand-name">Project E</span></a>
+        {header_content}
+        <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
+      </header>'''
+    elif calendar_settings_shell:
+        shell_class = " calendar-settings-shell"
+        main_class = ' class="calendar-settings-main"'
+        sidebar = f'<aside class="sidebar calendar-settings-sidebar" aria-label="Calendar settings">{sidebar_content}</aside>'
+        header = f'<header class="site-header calendar-settings-header">{header_content}</header>'
     else:
+        shell_class = ""
+        main_class = ""
         sidebar = f'''<aside class="sidebar" aria-label="Browse">
         <button class="sidebar-super-key" type="button" aria-haspopup="dialog" aria-controls="super-key-dialog" data-super-key-open title="Go with Super Key">{icon("super-key")}<span class="nav-label">Super Key <kbd>Ctrl/Cmd K</kbd></span></button>
         <nav class="browse-nav" aria-label="Browse">
@@ -58,6 +72,11 @@ def layout(
         </nav>
         <button class="sidebar-toggle" type="button" aria-expanded="true" title="Collapse Browse" data-sidebar-toggle>{icon("overflow")}<span class="nav-label">Collapse</span></button>
       </aside>'''
+        header = f'''<header class="site-header">
+        <a class="brand" href="/" title="Project E — Home">{icon("e-mark", "Project E", "brand-mark")}<span class="brand-name">Project E</span></a>
+        {header_content}
+        <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
+      </header>'''
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -69,12 +88,8 @@ def layout(
 <body>
     {save_toast}
     <a class="skip-link" href="#main-content">Skip to main content</a>
-    <div class="app-shell{" calendar-shell" if calendar_shell else ""}" data-app-shell>
-      <header class="site-header">
-        <a class="brand" href="/" title="Project E — Home">{icon("e-mark", "Project E", "brand-mark")}<span class="brand-name">Project E</span></a>
-        {header_content}
-        <a class="global-search-link" href="/search">{icon("search")}<span>Search</span></a>
-      </header>
+    <div class="app-shell{shell_class}" data-app-shell>
+      {header}
       {sidebar}
       <main{main_class} id="main-content" tabindex="-1">{content}</main>
     </div>
