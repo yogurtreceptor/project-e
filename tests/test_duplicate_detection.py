@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 from app.db import connect, create_entity, get_entity, initialise_database, list_entities
 from app.duplicate_detection import find_duplicate_entities
 from app.entities import DEFINITIONS_BY_SLUG
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 class DuplicateDetectionTests(unittest.TestCase):
@@ -68,8 +68,7 @@ class DuplicateDetectionTests(unittest.TestCase):
 
     def test_http_create_warns_then_allows_explicit_confirmation(self) -> None:
         existing_id = self.create_person("Ada Lovelace", "ada@example.test")
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -108,8 +107,7 @@ class DuplicateDetectionTests(unittest.TestCase):
     def test_http_edit_excludes_self_and_warns_before_matching_another_record(self) -> None:
         self.create_person("Ada Lovelace")
         edited_id = self.create_person("Grace Hopper")
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:

@@ -22,6 +22,7 @@ from app.calendar_service import (
     next_calendar_sort_order,
 )
 from app.db_support import utc_now
+from app.defaults import DEFAULT_EVENT_DURATION_MINUTES, PLATFORM_TIMEZONE
 from app.event_recurrence import RecurrenceRule, get_recurrence, set_recurrence
 from app.event_service import EventInput, create_event, get_event, list_events
 
@@ -254,7 +255,7 @@ def inspect_icalendar_import(
         document,
         tuple(previews),
         proposed_name,
-        document.timezone or "Australia/Brisbane",
+        document.timezone or PLATFORM_TIMEZONE,
     )
 
 
@@ -371,7 +372,7 @@ def new_import_calendar_input(
         name=name,
         colour=colour,
         timezone=timezone,
-        default_event_duration_minutes=60,
+        default_event_duration_minutes=DEFAULT_EVENT_DURATION_MINUTES,
         sort_order=next_calendar_sort_order(connection),
     )
 

@@ -66,7 +66,7 @@ from app.view_pages.calendar import (
     calendar_settings_export_page,
 )
 from app.view_pages.inbox import inbox_page
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 FICTIONAL_ICS = b"""BEGIN:VCALENDAR\r
@@ -652,9 +652,9 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
         self.database_path = Path(self.directory.name) / "route.sqlite3"
         self.staging_path = Path(self.directory.name) / "staging"
         initialise_database(self.database_path)
-        EddyRequestHandler.database_path = self.database_path
-        EddyRequestHandler.import_staging_dir = self.staging_path
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        self.server = make_test_server(
+            self.database_path, import_staging_dir=self.staging_path
+        )
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
         self.client = http.client.HTTPConnection(

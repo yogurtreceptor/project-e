@@ -2,6 +2,13 @@ import sqlite3
 from pathlib import Path
 
 from app.db_support import allowed_entity_type_sql, sql_identifier, sql_literal, utc_now
+from app.defaults import (
+    BIRTHDAY_CALENDAR_COLOUR,
+    BIRTHDAY_EVENT_DURATION_MINUTES,
+    DEFAULT_CALENDAR_COLOUR,
+    DEFAULT_EVENT_DURATION_MINUTES,
+    PLATFORM_TIMEZONE,
+)
 from app.entities import ALL_ENTITY_DEFINITIONS, ENTITY_DEFINITIONS, EntityDefinition
 from app.reference_data import create_reference_data_tables
 from app.units import create_unit_tables
@@ -239,14 +246,32 @@ def create_calendar_table(connection: sqlite3.Connection) -> None:
             INSERT INTO calendars (
                 name, colour, timezone, default_event_duration_minutes,
                 sort_order, kind, is_default, created_at, updated_at
-            ) VALUES (
-                'General', '#2563EB', 'Australia/Brisbane', 60, 0, 'event', 1, ?, ?
-            )
+            ) VALUES (?, ?, ?, ?, 0, 'event', 1, ?, ?)
             """,
-            (now, now),
+            (
+                "General",
+                DEFAULT_CALENDAR_COLOUR,
+                PLATFORM_TIMEZONE,
+                DEFAULT_EVENT_DURATION_MINUTES,
+                now,
+                now,
+            ),
         )
     if connection.execute("SELECT 1 FROM calendars WHERE kind = 'birthday'").fetchone() is None:
-        connection.execute("INSERT INTO calendars (name, colour, timezone, default_event_duration_minutes, sort_order, kind, is_default, created_at, updated_at) VALUES ('Birthdays', '#DB2777', 'Australia/Brisbane', 1440, 1, 'birthday', 1, ?, ?)", (now, now))
+        connection.execute(
+            """INSERT INTO calendars (
+                   name, colour, timezone, default_event_duration_minutes,
+                   sort_order, kind, is_default, created_at, updated_at
+               ) VALUES (?, ?, ?, ?, 1, 'birthday', 1, ?, ?)""",
+            (
+                "Birthdays",
+                BIRTHDAY_CALENDAR_COLOUR,
+                PLATFORM_TIMEZONE,
+                BIRTHDAY_EVENT_DURATION_MINUTES,
+                now,
+                now,
+            ),
+        )
 
 
 def create_calendar_history_table(connection: sqlite3.Connection) -> None:
@@ -387,7 +412,7 @@ def create_event_recurrence_tables(connection: sqlite3.Connection) -> None:
 def create_calendar_interchange_tables(connection: sqlite3.Connection) -> None:
     """Create local interchange identity and read-only URL Calendar cache storage."""
     connection.executescript(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS event_icalendar_identities (
             event_id INTEGER PRIMARY KEY REFERENCES events(entity_id) ON DELETE CASCADE,
             source_uid TEXT NOT NULL COLLATE BINARY UNIQUE,
@@ -402,7 +427,7 @@ def create_calendar_interchange_tables(connection: sqlite3.Connection) -> None:
             final_url TEXT NOT NULL,
             name TEXT NOT NULL,
             colour TEXT NOT NULL,
-            timezone TEXT NOT NULL DEFAULT 'Australia/Brisbane',
+            timezone TEXT NOT NULL DEFAULT {sql_literal(PLATFORM_TIMEZONE)},
             enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
             sort_order INTEGER NOT NULL DEFAULT 0,
             etag TEXT NOT NULL DEFAULT '',

@@ -1,16 +1,12 @@
-import json
 import sqlite3
-from datetime import date, datetime, timedelta
-from email.parser import BytesParser
-from email.policy import default
+from datetime import date
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
-from zoneinfo import ZoneInfo
 
 from app import views
-from app.config import (BACKUP_DIR, DATABASE_PATH, DOCUMENT_STORAGE_DIR, IMPORT_STAGING_DIR, initialise_local_storage)
+from app.config import initialise_local_storage
 from app.db import (
     connect,
     count_entities,
@@ -35,7 +31,6 @@ from app.db import (
     list_relationships,
     list_relationships_for_entity,
     mark_entity_viewed,
-    normalise_form_values,
     normalise_relationship_direction,
     normalise_relationship_values,
     search_entities,
@@ -53,15 +48,13 @@ from app.db import (
     list_reference_items,
     list_units,
 )
-from app.document_storage import (
-    UploadedFile,
-    delete_stored_document,
-    format_file_size,
-    safe_file_name,
-    store_document_upload as persist_document_upload,
-    stored_document_path as resolve_document_path,
-)
 from app.document_lifecycle import delete_unreferenced_document_file
+from app.defaults import (
+    DEFAULT_CALENDAR_COLOUR,
+    DEFAULT_EVENT_DURATION_MINUTES,
+    DEFAULT_EXTERNAL_CALENDAR_COLOUR,
+    PLATFORM_TIMEZONE,
+)
 from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
 from app.audit import AuditFilters, list_audit_events
@@ -80,8 +73,13 @@ from app.calendar_subscription_service import (
     remove_subscription, reorder_subscriptions, set_subscription_enabled,
     stage_subscription_fetch, subscription_projection, update_subscription_settings,
 )
-from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
-from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series, until_date_after_occurrences
+from app.event_service import EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
+from app.event_recurrence import cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
+from app.event_forms import (
+    calendar_anchor_date,
+    event_input_from_form,
+    recurrence_rule_from_form,
+)
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
     clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
     list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
@@ -104,16 +102,16 @@ from app.icalendar_service import (
     inspect_icalendar_import, new_import_calendar_input, read_staged_icalendar,
     stage_icalendar,
 )
+from app.web_support import RequestSupportMixin
+from app.http_server import DEFAULT_HTTP_CONFIG, create_http_server
+from app.web_router import route_request as dispatch_request
 
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-
-
-class EddyRequestHandler(BaseHTTPRequestHandler):
-    database_path = DATABASE_PATH
-    document_storage_dir = DOCUMENT_STORAGE_DIR
-    backup_dir = BACKUP_DIR
-    import_staging_dir = IMPORT_STAGING_DIR
+class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
+    database_path = DEFAULT_HTTP_CONFIG.database_path
+    document_storage_dir = DEFAULT_HTTP_CONFIG.document_storage_dir
+    backup_dir = DEFAULT_HTTP_CONFIG.backup_dir
+    import_staging_dir = DEFAULT_HTTP_CONFIG.import_staging_dir
 
     def do_GET(self) -> None:
         self.route_request()
@@ -125,115 +123,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         print("%s - - %s" % (self.address_string(), format % args))
 
     def route_request(self) -> None:
-        parsed = urlparse(self.path)
-        parts = [part for part in parsed.path.split("/") if part]
-        query = {
-            key: ",".join(values) if key == "calendars" else values[0]
-            for key, values in parse_qs(parsed.query).items()
-        }
-
-        if parsed.path.startswith("/static/"):
-            self.serve_static(parsed.path.removeprefix("/static/"))
-            return
-
-        if not parts:
-            self.handle_dashboard()
-            return
-
-        if parts[0] == "search":
-            self.handle_search(query)
-            return
-
-        if parts[0] == "system-tools" and len(parts) == 1:
-            self.respond_page("System Tools", views.system_tools_page(), active_slug="system-tools")
-            return
-
-        if parts[:2] == ["system-tools", "audit"] and len(parts) == 2:
-            self.handle_system_audit(query)
-            return
-
-        if parts[:2] == ["system-tools", "jobs"]:
-            self.route_scheduled_jobs(parts)
-            return
-
-        if parts[:2] == ["system-tools", "automation"]:
-            self.route_automation(parts)
-            return
-
-        if parts[:2] == ["system-tools", "portability"]:
-            self.handle_portability(parts)
-            return
-
-        if parts[0] == "timeline":
-            self.handle_timeline(query)
-            return
-
-        if parts[0] == "inbox":
-            self.route_inbox_request(parts, query)
-            return
-
-        if parts[0] == "recycle-bin":
-            self.route_recycle_bin_request(parts)
-            return
-
-        if parts[0] == "data-quality":
-            self.handle_data_quality()
-            return
-
-        if parts[0] == "map":
-            self.handle_map(query)
-            return
-
-        if parts[0] == "geocoding" and len(parts) == 2 and parts[1] == "search":
-            self.handle_geocoding_search(query)
-            return
-
-        if parts[0] == "relationships":
-            self.route_relationship_request(parts, query)
-            return
-
-        if parts[0] == "taxonomies":
-            self.route_taxonomy_request(parts)
-            return
-
-        if parts[0] == "events":
-            if len(parts) == 2 and self.command == "GET":
-                self.handle_event_projection(parts[1])
-                return
-            self.respond_not_found()
-            return
-
-        if parts[0] == "calendar":
-            self.route_calendar_request(parts, query)
-            return
-
-        definition = DEFINITIONS_BY_SLUG.get(parts[0])
-        if definition is None:
-            self.respond_not_found()
-            return
-
-        if len(parts) == 1:
-            self.handle_list(definition, query)
-        elif len(parts) == 2 and parts[1] == "new":
-            self.handle_new(definition)
-        elif len(parts) == 2:
-            self.handle_detail(definition, parts[1], query)
-        elif len(parts) == 3 and parts[2] == "download" and definition.type == "document":
-            self.handle_document_download(parts[1])
-        elif len(parts) == 3 and parts[2] == "merge":
-            self.handle_merge(definition, parts[1], query)
-        elif len(parts) == 3 and parts[2] == "edit":
-            self.handle_edit(definition, parts[1])
-        elif len(parts) == 3 and parts[2] == "delete":
-            self.handle_delete(definition, parts[1])
-        elif len(parts) == 3 and parts[2] == "favourite":
-            self.handle_favourite(definition, parts[1])
-        elif definition.type == "person" and len(parts) == 3 and parts[2] == "journal":
-            self.handle_journal_create(parts[1])
-        elif definition.type == "person" and len(parts) == 5 and parts[2] == "journal":
-            self.handle_journal_action(parts[1], parts[3], parts[4])
-        else:
-            self.respond_not_found()
+        dispatch_request(self)
 
     def route_relationship_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1:
@@ -300,8 +190,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
     def route_calendar_request(self, parts: list[str], query: dict[str, str]) -> None:
         if len(parts) == 1 and self.command == "GET":
-            anchor_date = self.calendar_anchor_date(query.get("date", ""))
-            mini_month_date = self.calendar_anchor_date(query["mini_date"]) if query.get("mini_date") else anchor_date
+            anchor_date = calendar_anchor_date(query.get("date", ""))
+            mini_month_date = calendar_anchor_date(query["mini_date"]) if query.get("mini_date") else anchor_date
             with connect(self.database_path) as connection:
                 calendars = list_calendars(connection, include_archived=True)
                 events = list_events(connection)
@@ -454,7 +344,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             form_event = event
             if occurrence_date and recurrence:
                 try:
-                    target = self.calendar_anchor_date(occurrence_date)
+                    target = calendar_anchor_date(occurrence_date)
                     matches = occurrences_between(event, recurrence, target, target, exceptions)
                 except ValueError:
                     matches = []
@@ -650,9 +540,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         values = self.read_form()
         try:
             with connect(self.database_path) as connection:
-                event_id = create_event(connection, self.event_input_from_form(values))
+                event_id = create_event(connection, event_input_from_form(values))
                 event = get_event(connection, event_id, include_archived=True)
-                rule = self.recurrence_rule_from_form(values, event)
+                rule = recurrence_rule_from_form(values, event)
                 if rule is not None:
                     set_recurrence(connection, event, rule)
         except (ValueError, sqlite3.Error) as error:
@@ -687,9 +577,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     connection,
                     CalendarInput(
                         name=values.get("name", ""),
-                        colour=values.get("colour", "#2563EB"),
-                        timezone="Australia/Brisbane",
-                        default_event_duration_minutes=60,
+                        colour=values.get("colour", DEFAULT_CALENDAR_COLOUR),
+                        timezone=PLATFORM_TIMEZONE,
+                        default_event_duration_minutes=DEFAULT_EVENT_DURATION_MINUTES,
                         sort_order=next_calendar_sort_order(connection),
                     ),
                 )
@@ -765,8 +655,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     new_calendar = new_import_calendar_input(
                         connection,
                         values.get("new_name", ""),
-                        values.get("new_colour", "#7C3AED"),
-                        values.get("new_timezone", "Australia/Brisbane"),
+                        values.get("new_colour", DEFAULT_EXTERNAL_CALENDAR_COLOUR),
+                        values.get("new_timezone", PLATFORM_TIMEZONE),
                     )
                     result = apply_icalendar_import(
                         connection, content, new_calendar=new_calendar
@@ -884,7 +774,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 subscription_id = create_subscription(
                     connection,
                     fetched,
-                    colour=values.get("colour", "#7C3AED"),
+                    colour=values.get("colour", DEFAULT_EXTERNAL_CALENDAR_COLOUR),
                     display_name=values.get("display_name", ""),
                 )
         except (ValueError, sqlite3.Error) as error:
@@ -922,8 +812,8 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     subscription_id,
                     SubscriptionSettingsInput(
                         values.get("name", ""),
-                        values.get("colour", "#7C3AED"),
-                        values.get("timezone", "Australia/Brisbane"),
+                        values.get("colour", DEFAULT_EXTERNAL_CALENDAR_COLOUR),
+                        values.get("timezone", PLATFORM_TIMEZONE),
                     ),
                 )
                 if reminder_timings:
@@ -1025,9 +915,9 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     calendar_id,
                     CalendarInput(
                         values.get("name", ""),
-                        values.get("colour", "#2563EB"),
-                        values.get("timezone", "Australia/Brisbane"),
-                        int(values.get("default_event_duration_minutes", "60")),
+                        values.get("colour", DEFAULT_CALENDAR_COLOUR),
+                        values.get("timezone", PLATFORM_TIMEZONE),
+                        int(values.get("default_event_duration_minutes", str(DEFAULT_EVENT_DURATION_MINUTES))),
                         current.sort_order,
                         current.kind,
                     ),
@@ -1127,14 +1017,14 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 event = get_event(connection, event_id, include_archived=True)
                 if event is None:
                     self.respond_not_found(); return
-                event_input = self.event_input_from_form(values)
+                event_input = event_input_from_form(values)
                 definition = get_recurrence(connection, event_id)
                 occurrence_date = values.get("occurrence_date", "")
                 scope = values.get("recurrence_scope", "all")
                 if occurrence_date and definition and scope == "this":
                     override_occurrence(connection, event, definition, occurrence_date, event_input)
                 elif occurrence_date and definition and scope == "following" and not is_series_anchor(event, occurrence_date):
-                    rule = self.recurrence_rule_from_form(values, event, definition.rule)
+                    rule = recurrence_rule_from_form(values, event, definition.rule)
                     successor_id = split_series(connection, event, definition, occurrence_date, rule, event_input)
                     self.redirect(f"/calendar/events/{successor_id}/edit?saved=1")
                     return
@@ -1142,7 +1032,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                     update_event(connection, event_id, EventUpdate(event_input.title, event_input.calendar_id, event_input.notes))
                     reschedule_event(connection, event_id, EventSchedule(event_input.all_day, event_input.timezone, event_input.start_local, event_input.end_local, start_date=event_input.start_date, end_date=event_input.end_date))
                     updated = get_event(connection, event_id, include_archived=True)
-                    rule = self.recurrence_rule_from_form(values, updated, definition.rule if definition else None)
+                    rule = recurrence_rule_from_form(values, updated, definition.rule if definition else None)
                     if rule is None:
                         remove_recurrence(connection, event_id)
                     else:
@@ -1172,90 +1062,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             else:
                 delete_entity(connection, EVENT_DEFINITION, event_id)
         self.redirect(self.calendar_return_url(values.get("return_to", ""), "deleted=1"))
-
-    @staticmethod
-    def calendar_anchor_date(value: str):
-        from datetime import date
-        try:
-            return date.fromisoformat(value) if value else date.today()
-        except ValueError:
-            return date.today()
-
-    @staticmethod
-    def event_input_from_form(values: dict[str, str]) -> EventInput:
-        calendar_id = int(values["calendar_id"]) if values.get("calendar_id", "").isdigit() else None
-        return EventInput(values.get("title", ""), values.get("all_day") == "1", calendar_id, values.get("notes", ""), values.get("timezone", ""), values.get("start_local", ""), values.get("end_local", ""), start_date=values.get("start_date", ""), end_date=values.get("end_date", ""))
-
-    @staticmethod
-    def recurrence_rule_from_form(values: dict[str, str], event, fallback: RecurrenceRule | None = None) -> RecurrenceRule | None:
-        """Map the simple Event-form picker to canonical recurrence rules.
-
-        Retain support for legacy detailed-form submissions while Custom remains deferred.
-        """
-        preset = values.get("recurrence_preset")
-        if not preset:
-            if "recurrence_frequency" not in values:
-                return fallback
-            frequency = values.get("recurrence_frequency", "")
-            if not frequency:
-                return None
-            interval = int(values.get("recurrence_interval", "1"))
-            weekdays = tuple(int(day) for day in values.get("recurrence_weekdays", "").split(",") if day.isdigit())
-            return RecurrenceRule(frequency, interval, weekdays, int(values.get("recurrence_ordinal", "0")), int(values.get("recurrence_monthly_weekday", "-1")), values.get("recurrence_until", ""))
-        if preset == "none":
-            return None
-        if preset == "custom":
-            return EddyRequestHandler.custom_recurrence_rule_from_form(values, event)
-        anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
-        if preset == "daily":
-            return RecurrenceRule("daily")
-        if preset == "yearly":
-            return RecurrenceRule("yearly")
-        if preset == "weekdays":
-            return RecurrenceRule("weekly", weekdays=(0, 1, 2, 3, 4))
-        if preset == f"weekly_{anchor.weekday()}":
-            return RecurrenceRule("weekly", weekdays=(anchor.weekday(),))
-        parts = preset.split("_")
-        if len(parts) == 3 and parts[0] == "monthly" and parts[2].isdigit() and int(parts[2]) == anchor.weekday():
-            ordinal = -1 if parts[1] == "last" else int(parts[1]) if parts[1].isdigit() else 0
-            if ordinal in (-1, 1, 2, 3, 4, 5):
-                return RecurrenceRule("monthly", monthly_ordinal=ordinal, monthly_weekday=anchor.weekday())
-        raise ValueError("Recurrence choice is invalid.")
-
-    @staticmethod
-    def custom_recurrence_rule_from_form(values: dict[str, str], event) -> RecurrenceRule:
-        interval = int(values.get("recurrence_custom_interval", "1"))
-        if not 1 <= interval <= 999:
-            raise ValueError("Repeat interval must be between 1 and 999.")
-        frequency = {"day": "daily", "week": "weekly", "month": "monthly", "year": "yearly"}.get(values.get("recurrence_custom_frequency", ""))
-        if frequency is None:
-            raise ValueError("Custom recurrence frequency is invalid.")
-        weekdays = tuple(sorted({int(day) for day in values.get("recurrence_custom_weekdays", "").split(",") if day.isdigit() and int(day) in range(7)}))
-        ordinal = 0
-        monthly_weekday = -1
-        if frequency == "weekly" and not weekdays:
-            raise ValueError("Choose at least one weekday for a weekly recurrence.")
-        if frequency == "monthly" and values.get("recurrence_custom_monthly_pattern") in {"ordinal", "last"}:
-            anchor = date.fromisoformat(event.start_date) if event.is_all_day else datetime.fromisoformat(event.start_utc.removesuffix("Z") + "+00:00").astimezone(ZoneInfo(event.timezone)).date()
-            monthly_weekday = anchor.weekday()
-            if values.get("recurrence_custom_monthly_pattern") == "last":
-                if (anchor + timedelta(days=7)).month == anchor.month:
-                    raise ValueError("This Event date is not the last matching weekday of its month.")
-                ordinal = -1
-            else:
-                ordinal = (anchor.day - 1) // 7 + 1
-            if ordinal not in (-1, 1, 2, 3, 4):
-                raise ValueError("This Event date has no first-through-fourth weekday monthly pattern.")
-        rule = RecurrenceRule(frequency, interval, weekdays, ordinal, monthly_weekday)
-        ending = values.get("recurrence_custom_ends", "never")
-        if ending == "never":
-            return rule
-        if ending == "on":
-            return RecurrenceRule(**{**rule.__dict__, "until_date": values.get("recurrence_custom_until", "")})
-        if ending == "after":
-            count = int(values.get("recurrence_custom_count", "0"))
-            return RecurrenceRule(**{**rule.__dict__, "until_date": until_date_after_occurrences(event, rule, count)})
-        raise ValueError("Custom recurrence end condition is invalid.")
 
     def respond_calendar_event_form(self, values: dict[str, str], errors: list[str], event_id: int | None = None) -> None:
         with connect(self.database_path) as connection:
@@ -2085,230 +1891,12 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             return None
         return f"/{entity.slug}/{entity.id}"
 
-    def serve_static(self, relative_path: str) -> None:
-        content_types = {
-            "action-menus.js": "text/javascript; charset=utf-8",
-            "calendar-groups.js": "text/javascript; charset=utf-8",
-            "calendar-grid.js": "text/javascript; charset=utf-8",
-            "calendar-ordering.js": "text/javascript; charset=utf-8",
-            "calendar-export-selection.js": "text/javascript; charset=utf-8",
-            "calendar-visibility.js": "text/javascript; charset=utf-8",
-            "confirmation.js": "text/javascript; charset=utf-8",
-            "description-field.js": "text/javascript; charset=utf-8",
-            "dirty-form.js": "text/javascript; charset=utf-8",
-            "event-form.js": "text/javascript; charset=utf-8",
-            "foundation.css": "text/css; charset=utf-8",
-            "mini-month-picker.js": "text/javascript; charset=utf-8",
-            "reminder-timings.js": "text/javascript; charset=utf-8",
-            "quick-create.js": "text/javascript; charset=utf-8",
-            "shell.js": "text/javascript; charset=utf-8",
-            "super-key.js": "text/javascript; charset=utf-8",
-            "styles.css": "text/css; charset=utf-8",
-            "taxonomy.js": "text/javascript; charset=utf-8",
-            "timezone-picker.js": "text/javascript; charset=utf-8",
-        }
-        if relative_path.startswith("icons/") and relative_path.endswith(".svg"):
-            icon_name = relative_path.removeprefix("icons/").removesuffix(".svg")
-            if not icon_name or not icon_name.replace("-", "").isalnum():
-                self.respond_not_found()
-                return
-            path = STATIC_DIR / "icons" / f"{icon_name}.svg"
-            if not path.is_file():
-                self.respond_not_found()
-                return
-            content_type = "image/svg+xml"
-        elif relative_path in content_types:
-            path = STATIC_DIR / relative_path
-            content_type = content_types[relative_path]
-        else:
-            self.respond_not_found()
-            return
-        content = path.read_bytes()
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(content)))
-        self.end_headers()
-        self.wfile.write(content)
-
-    def read_form(self) -> dict[str, str]:
-        length = int(self.headers.get("Content-Length", "0"))
-        body = self.rfile.read(length).decode("utf-8")
-        parsed = parse_qs(body, keep_blank_values=True)
-        return {key: ",".join(values) for key, values in parsed.items()}
-
-    def read_entity_form(self, definition: EntityDefinition) -> tuple[dict[str, str], UploadedFile | None]:
-        if definition.type != "document" or not self.headers.get("Content-Type", "").startswith("multipart/form-data"):
-            raw_values = self.read_form()
-            values = normalise_form_values(definition, raw_values)
-            values["confirm_duplicate"] = raw_values.get("confirm_duplicate", "")
-            return values, None
-        raw_values, upload = self.read_multipart_form()
-        values = normalise_form_values(definition, raw_values)
-        values["confirm_duplicate"] = raw_values.get("confirm_duplicate", "")
-        if upload is not None:
-            values["file_name"] = upload.file_name
-            values["mime_type"] = upload.content_type
-            values["file_size"] = format_file_size(len(upload.data))
-            if not values.get("display_name"):
-                values["display_name"] = Path(upload.file_name).stem or upload.file_name
-        return values, upload
-
-    def read_multipart_form(self) -> tuple[dict[str, str], UploadedFile | None]:
-        length = int(self.headers.get("Content-Length", "0"))
-        body = self.rfile.read(length)
-        content_type = self.headers.get("Content-Type", "")
-        message = BytesParser(policy=default).parsebytes(
-            f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode("utf-8") + body
-        )
-        values: dict[str, str] = {}
-        upload = None
-        for item in message.iter_parts():
-            key = item.get_param("name", header="content-disposition")
-            if not key:
-                continue
-            file_name = item.get_filename()
-            data = item.get_payload(decode=True) or b""
-            if key == "upload" and file_name:
-                upload = UploadedFile(
-                    file_name=Path(file_name).name,
-                    content_type=item.get_content_type() or "application/octet-stream",
-                    data=data,
-                )
-            elif not file_name:
-                charset = item.get_content_charset() or "utf-8"
-                values[key] = data.decode(charset, errors="replace")
-        return values, upload
-
-    @staticmethod
-    def clear_document_file_values(values: dict[str, str]) -> None:
-        for field_name in ("file_name", "file_path", "mime_type", "file_size"):
-            values[field_name] = ""
-
-    @staticmethod
-    def restore_document_file_values(
-        values: dict[str, str], metadata: dict[str, str]
-    ) -> None:
-        for field_name in ("file_name", "file_path", "mime_type", "file_size"):
-            values[field_name] = metadata.get(field_name, "")
-
-    def store_document_upload(self, upload: UploadedFile) -> dict[str, str]:
-        return persist_document_upload(upload, self.document_storage_dir)
-
-    def stored_document_path(self, value: str) -> Path | None:
-        return resolve_document_path(value, self.document_storage_dir)
-
-    def delete_document_file(self, value: str) -> bool:
-        return delete_stored_document(value, self.document_storage_dir)
-
-    def respond_page(
-        self,
-        title: str,
-        content: str,
-        status: HTTPStatus = HTTPStatus.OK,
-        active_slug: str | None = None,
-        show_save_toast: bool = False,
-        sidebar_variant: str = "browse",
-        sidebar_content: str = "",
-        header_content: str = "",
-    ) -> None:
-        body = views.layout(
-            title,
-            content,
-            active_slug=active_slug,
-            show_save_toast=show_save_toast,
-            sidebar_variant=sidebar_variant,
-            sidebar_content=sidebar_content,
-            header_content=header_content,
-        )
-        encoded = body.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        self.wfile.write(encoded)
-
-    def respond_calendar_settings(
-        self,
-        title: str,
-        content: str,
-        calendars,
-        *,
-        active_section: str,
-        return_to: str,
-        status: HTTPStatus = HTTPStatus.OK,
-        show_save_toast: bool = False,
-    ) -> None:
-        with connect(self.database_path) as connection:
-            subscriptions = list_subscriptions(connection)
-        self.respond_page(
-            title,
-            content,
-            status,
-            show_save_toast=show_save_toast,
-            sidebar_variant="calendar-settings",
-            sidebar_content=views.calendar_settings_sidebar(
-                calendars,
-                subscriptions,
-                active_section=active_section,
-                return_to=return_to,
-            ),
-            header_content=views.calendar_settings_header(return_to),
-        )
-
-    def respond_json(self, payload: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
-        encoded = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        self.wfile.write(encoded)
-
-    def redirect(self, location: str) -> None:
-        self.send_response(HTTPStatus.SEE_OTHER)
-        self.send_header("Location", location)
-        self.end_headers()
-
-    def respond_not_found(self) -> None:
-        self.respond_page("Not found", views.not_found_page(), HTTPStatus.NOT_FOUND)
-
-    @staticmethod
-    def parse_entity_id(raw_id: str) -> int | None:
-        try:
-            return int(raw_id)
-        except ValueError:
-            return None
-
-    @staticmethod
-    def reminder_timings(values: dict[str, str], prefix: str) -> list[str]:
-        timings = []
-        units = {"m", "h", "d", "w", "mo"}
-        amount_prefix = f"{prefix}_amount_"
-        unit_prefix = f"{prefix}_unit_"
-        for key in values:
-            if key.startswith(amount_prefix) or key.startswith(unit_prefix):
-                suffix = key.rsplit("_", 1)[-1]
-                if not suffix.isdigit() or int(suffix) >= 10:
-                    raise ValueError("No more than 10 reminder notifications are allowed.")
-        for index in range(10):
-            amount = values.get(f"{prefix}_amount_{index}", "")
-            unit = values.get(f"{prefix}_unit_{index}", "")
-            if not amount and not unit:
-                continue
-            if not amount.isdigit() or int(amount) <= 0 or unit not in units:
-                raise ValueError("Each reminder needs a positive whole number and a valid unit.")
-            timings.append(f"{int(amount)}{unit}")
-        if len(set(timings)) != len(timings):
-            raise ValueError("Each reminder notification must use a different time.")
-        return timings
-
-
-
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     initialise_local_storage()
-    initialise_database(EddyRequestHandler.database_path)
-    scheduler = SchedulerRuntime(EddyRequestHandler.database_path)
+    initialise_database(DEFAULT_HTTP_CONFIG.database_path)
+    scheduler = SchedulerRuntime(DEFAULT_HTTP_CONFIG.database_path)
     scheduler.start()
-    server = ThreadingHTTPServer((host, port), EddyRequestHandler)
+    server = create_http_server((host, port), EddyRequestHandler)
     print(f"Project E running at http://{host}:{port}")
     try:
         server.serve_forever()

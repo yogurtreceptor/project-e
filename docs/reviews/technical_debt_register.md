@@ -43,6 +43,26 @@ Trigger: the local asset set becomes materially larger, page-load traces show av
 
 Direction: add conservative cache headers for versioned or fingerprinted static assets, with a deliberate invalidation strategy on application update. Do not implement session-only cache clearing: normal browser cache management and asset versioning are safer and avoid stale UI after an update.
 
+## Remaining HTTP domain-controller concentration
+
+Severity: medium
+
+Server creation, the top-level route map, transport/form support and Event-form parsing now have focused modules, but `app/web.py` still coordinates many unrelated domain workflows in one handler class. This is maintainable at the present scale but increases navigation cost and makes unrelated route edits more likely to overlap.
+
+Trigger: the next material route workflow change in Calendar, Relationships, System Tools or generic entity handling.
+
+Direction: move the affected domain controller methods into one focused route/controller module behind the existing handler and `app/web_router.py` boundaries. Keep request parsing and response mechanics in `app/web_support.py`; avoid introducing a second router or changing URLs solely to split the file.
+
+## Page-specific stylesheet concentration
+
+Severity: low
+
+`foundation.css` owns shared tokens and shell primitives, while `styles.css` still contains the accumulated page-specific rules. A broad mechanical CSS split without a feature-level visual verification pass would create churn without proving clearer ownership.
+
+Trigger: the next substantial page-style change, repeated selector collisions, or a stylesheet size that materially impedes review.
+
+Direction: extract styles alongside the owning page family with explicit load order and route-level visual checks. Preserve shared tokens in `foundation.css` and do not duplicate selectors or values across temporary compatibility files.
+
 ## Timeline is derived and limited
 
 Severity: low

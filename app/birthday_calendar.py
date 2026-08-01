@@ -9,7 +9,7 @@ from app.event_recurrence import RecurrenceRule, set_recurrence
 from app.event_service import get_event
 from app.entity_repository import list_entities
 from app.entities import DEFINITIONS_BY_TYPE
-from app.reminder_service import resolve_source_items
+from app.inbox_repository import resolve_source_items
 
 
 def sync_all_birthdays(connection: sqlite3.Connection) -> None:

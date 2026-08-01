@@ -10,19 +10,26 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from app.db_support import utc_now
+from app.defaults import DEFAULT_REMINDER_TIMINGS, MAX_EVENT_REMINDERS, PLATFORM_TIMEZONE
 from app.entity_repository import list_entities
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_service import list_events
 from app.event_recurrence import get_recurrence, occurrence_exceptions, occurrences_between
 from app.calendar_subscription_service import subscription_projection
+from app.inbox_repository import (
+    record_action as _record_action,
+    resolve_items as _resolve_items,
+    resolve_source_items,
+    resolve_source_items_after_occurrence,
+    resolve_source_items_for_occurrence,
+    transition_item as _transition_item,
+)
 
-PLATFORM_TIMEZONE = "Australia/Brisbane"
 DEFAULT_TIMINGS = {
-    "event": ["1h", "10m"],
-    "birthday": ["1mo", "2w", "1w", "3d", "1d", "12h"],
-    "document_expiry": ["1mo", "2w", "1w", "3d", "1d"],
+    source_kind: list(timings)
+    for source_kind, timings in DEFAULT_REMINDER_TIMINGS.items()
 }
-MAX_REMINDERS = 10
+MAX_REMINDERS = MAX_EVENT_REMINDERS
 
 @dataclass(frozen=True)
 class InboxItem:
@@ -194,20 +201,6 @@ def reactivate_next_open_snoozes(connection: sqlite3.Connection) -> None:
     connection.commit()
 
 
-def resolve_source_items(connection: sqlite3.Connection, source_kind: str, source_id: int) -> None:
-    _resolve_items(connection, "source no longer due", "source_lifecycle", "source_kind=? AND source_id=?", (source_kind, source_id))
-
-
-def resolve_source_items_after_occurrence(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str) -> None:
-    """Resolve pending source deliveries moved to a successor recurring series."""
-    _resolve_items(connection, "recurring series superseded", "series_split", "source_kind=? AND source_id=? AND occurrence_key>=?", (source_kind, source_id, occurrence_key))
-
-
-def resolve_source_items_for_occurrence(connection: sqlite3.Connection, source_kind: str, source_id: int, occurrence_key: str, *, note: str = "occurrence no longer due") -> None:
-    """Resolve pending attention for one cancelled or rescheduled derived occurrence."""
-    _resolve_items(connection, note, "occurrence_changed", "source_kind=? AND source_id=? AND occurrence_key=?", (source_kind, source_id, occurrence_key))
-
-
 def _reconcile_context_deliveries(connection: sqlite3.Connection, context_kind: str, context_id: int, source_kind: str) -> None:
     """Resolve active deliveries whose timing was removed by a context policy edit."""
     source_ids = connection.execute(
@@ -284,24 +277,8 @@ def list_inbox_actions_for_items(connection: sqlite3.Connection, item_ids: list[
     return result
 
 
-def _resolve_items(connection: sqlite3.Connection, note: str, action: str, clause: str, parameters: tuple[object, ...]) -> None:
-    rows = connection.execute("SELECT id, state FROM inbox_items WHERE " + clause + " AND state IN ('active', 'snoozed')", parameters).fetchall()
-    now = utc_now()
-    for row in rows:
-        _transition_item(connection, int(row["id"]), row["state"], "resolved", action, "", note, now)
-
-
 def _resolve_pending_reminder_items(connection: sqlite3.Connection, source_kind: str, source_id: int) -> None:
     _resolve_items(connection, "superseded by overdue condition", "overdue_condition", "source_kind=? AND source_id=? AND reason='reminder'", (source_kind, source_id))
-
-
-def _transition_item(connection: sqlite3.Connection, item_id: int, previous_state: str, resulting_state: str, action: str, next_attention_at: str, note: str, acted_at: str) -> None:
-    connection.execute("UPDATE inbox_items SET state=?, next_attention_at=?, acted_at=?, action_note=? WHERE id=?", (resulting_state, next_attention_at, acted_at, note, item_id))
-    _record_action(connection, item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at)
-
-
-def _record_action(connection: sqlite3.Connection, item_id: int, action: str, previous_state: str, resulting_state: str, next_attention_at: str, note: str, acted_at: str) -> None:
-    connection.execute("INSERT INTO inbox_item_actions (inbox_item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at) VALUES (?, ?, ?, ?, ?, ?, ?)", (item_id, action, previous_state, resulting_state, next_attention_at, note, acted_at))
 
 
 def _sources(connection, now):

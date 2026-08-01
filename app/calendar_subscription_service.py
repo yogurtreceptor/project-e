@@ -19,6 +19,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from app.audit import record_audit_event
 from app.calendar_service import CalendarRecord
 from app.db_support import utc_now
+from app.defaults import DEFAULT_EXTERNAL_CALENDAR_COLOUR, PLATFORM_TIMEZONE
 from app.event_recurrence import RecurrenceDefinition, RecurrenceRule
 from app.event_service import EventRecord
 from app.icalendar_service import ICalendarDocument, ICalendarEvent, MAX_ICALENDAR_BYTES, parse_icalendar
@@ -257,7 +258,7 @@ def create_subscription(
     connection: sqlite3.Connection,
     fetched: SubscriptionFetch,
     *,
-    colour: str = "#7C3AED",
+    colour: str = DEFAULT_EXTERNAL_CALENDAR_COLOUR,
     display_name: str = "",
 ) -> int:
     if fetched.document is None or fetched.not_modified:
@@ -446,7 +447,7 @@ def set_subscription_enabled(
         return False
     now = utc_now()
     if not enabled:
-        from app.reminder_service import resolve_source_items
+        from app.inbox_repository import resolve_source_items
         rows = connection.execute(
             "SELECT id FROM external_calendar_events WHERE subscription_id = ?",
             (subscription_id,),
@@ -465,7 +466,7 @@ def remove_subscription(connection: sqlite3.Connection, subscription_id: int) ->
     current = get_subscription(connection, subscription_id)
     if current is None:
         raise ValueError("Calendar subscription does not exist.")
-    from app.reminder_service import resolve_source_items
+    from app.inbox_repository import resolve_source_items
     event_ids = [
         -int(row["id"])
         for row in connection.execute(
@@ -632,7 +633,7 @@ def _replace_cache(
     subscription_id: int,
     events: tuple[ICalendarEvent, ...],
 ) -> None:
-    from app.reminder_service import resolve_source_items
+    from app.inbox_repository import resolve_source_items
 
     existing = {
         row["source_uid"]: row
@@ -716,7 +717,7 @@ def _normalise_metadata(
 ) -> tuple[str, str]:
     name = (display_name or document.name or "Subscribed Calendar").strip()
     name, _, timezone = _normalise_subscription_settings(
-        name, colour, document.timezone or "Australia/Brisbane"
+        name, colour, document.timezone or PLATFORM_TIMEZONE
     )
     return name, timezone
 

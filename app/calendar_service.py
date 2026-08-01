@@ -7,6 +7,11 @@ import sqlite3
 
 from app.audit import record_audit_event, set_provenance
 from app.db_support import utc_now
+from app.defaults import (
+    DEFAULT_CALENDAR_COLOUR,
+    DEFAULT_EVENT_DURATION_MINUTES,
+    PLATFORM_TIMEZONE,
+)
 from app.temporal import TemporalValueError, get_timezone
 
 
@@ -16,9 +21,9 @@ _COLOUR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
 @dataclass(frozen=True)
 class CalendarInput:
     name: str
-    colour: str = "#2563EB"
-    timezone: str = "Australia/Brisbane"
-    default_event_duration_minutes: int = 60
+    colour: str = DEFAULT_CALENDAR_COLOUR
+    timezone: str = PLATFORM_TIMEZONE
+    default_event_duration_minutes: int = DEFAULT_EVENT_DURATION_MINUTES
     sort_order: int = 0
     kind: str = "event"
 

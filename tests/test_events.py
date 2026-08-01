@@ -43,12 +43,13 @@ from app.event_service import (
     update_event,
 )
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, exception_dates, get_recurrence, occurrence_exceptions, occurrences_between, set_recurrence, split_series
+from app.event_forms import recurrence_rule_from_form
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.temporal import TemporalValueError
 from app import views
 from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
 from app.reminder_service import get_override, get_policy
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 class EventServiceTests(unittest.TestCase):
@@ -147,8 +148,7 @@ class EventServiceTests(unittest.TestCase):
 
     def test_event_projection_route_is_read_only(self) -> None:
         event_id = create_event(self.connection, EventInput(title="Read-only event", all_day=True, start_date="2026-08-10", end_date="2026-08-10"))
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -167,8 +167,7 @@ class EventServiceTests(unittest.TestCase):
             thread.join()
 
     def test_calendar_originates_event_creation_and_editing(self) -> None:
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -336,7 +335,7 @@ class EventServiceTests(unittest.TestCase):
         for index, (start_date, preset, expected) in enumerate(cases):
             event_id = create_event(self.connection, EventInput(f"Preset {index}", True, start_date=start_date, end_date=start_date))
             event = get_event(self.connection, event_id)
-            rule = EddyRequestHandler.recurrence_rule_from_form({"recurrence_preset": preset}, event)
+            rule = recurrence_rule_from_form({"recurrence_preset": preset}, event)
             definition = set_recurrence(self.connection, event, rule)
             self.assertEqual(expected, (definition.rule.frequency, definition.rule.weekdays, definition.rule.monthly_ordinal, definition.rule.monthly_weekday))
 
@@ -351,12 +350,12 @@ class EventServiceTests(unittest.TestCase):
 
         custom_event_id = create_event(self.connection, EventInput("Custom", True, start_date="2026-01-05", end_date="2026-01-05"))
         custom_event = get_event(self.connection, custom_event_id)
-        custom_rule = EddyRequestHandler.recurrence_rule_from_form({
+        custom_rule = recurrence_rule_from_form({
             "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "week",
             "recurrence_custom_weekdays": "0,2", "recurrence_custom_ends": "after", "recurrence_custom_count": "3",
         }, custom_event)
         self.assertEqual(("weekly", (0, 2), "2026-01-12"), (custom_rule.frequency, custom_rule.weekdays, custom_rule.until_date))
-        monthly_custom_rule = EddyRequestHandler.recurrence_rule_from_form({
+        monthly_custom_rule = recurrence_rule_from_form({
             "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "month",
             "recurrence_custom_monthly_pattern": "ordinal", "recurrence_custom_ends": "never",
         }, custom_event)
@@ -367,7 +366,7 @@ class EventServiceTests(unittest.TestCase):
         self.assertNotIn("data-custom-monthly-ordinal", first_monday)
         self.assertIn("on the last Monday", fourth_monday)
         last_monday_event_id = create_event(self.connection, EventInput("Last Monday", True, start_date="2026-09-28", end_date="2026-09-28"))
-        last_monday_rule = EddyRequestHandler.recurrence_rule_from_form({
+        last_monday_rule = recurrence_rule_from_form({
             "recurrence_preset": "custom", "recurrence_custom_interval": "1", "recurrence_custom_frequency": "month",
             "recurrence_custom_monthly_pattern": "last", "recurrence_custom_ends": "never",
         }, get_event(self.connection, last_monday_event_id))
@@ -405,8 +404,7 @@ class EventServiceTests(unittest.TestCase):
                 end_local="2026-09-16T02:00",
             ),
         )
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
@@ -495,8 +493,7 @@ class EventServiceTests(unittest.TestCase):
         event_id = create_event(self.connection, EventInput("Stand-up", True, start_date="2026-01-05", end_date="2026-01-05"))
         event = get_event(self.connection, event_id)
         definition = set_recurrence(self.connection, event, RecurrenceRule("weekly"))
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
@@ -554,8 +551,7 @@ class EventServiceTests(unittest.TestCase):
             server.shutdown(); server.server_close(); thread.join()
 
     def test_calendar_settings_shell_and_routes_use_calendar_services(self) -> None:
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)

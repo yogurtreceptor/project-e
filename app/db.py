@@ -60,11 +60,6 @@ from app.entity_repository import (
     count_entities,
     get_entity,
     get_entity_by_id,
-    create_entity,
-    update_entity,
-    delete_entity,
-    restore_entity,
-    permanent_delete_entity,
     list_deleted_entities,
     entity_dependency_counts,
     validate_entity_values,
@@ -72,6 +67,13 @@ from app.entity_repository import (
     insert_typed_row,
     update_typed_row,
     entity_matches_query,
+)
+from app.entity_service import (
+    create_entity,
+    delete_entity,
+    permanent_delete_entity,
+    restore_entity,
+    update_entity,
 )
 from app.relationship_repository import (
     list_relationships,

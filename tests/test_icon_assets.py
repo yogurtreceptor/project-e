@@ -1,14 +1,13 @@
 import threading
 import unittest
 import xml.etree.ElementTree as ET
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
 from app.view_pages.icons import DOMAIN_ICONS, icon
 from app.view_pages.layout import layout
-from app.web import EddyRequestHandler
+from tests.web_test_support import make_test_server
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,7 +53,7 @@ class IconAssetTests(unittest.TestCase):
         self.assertIn('alt="" aria-hidden="true"', icon("add"))
 
     def test_static_handler_serves_only_valid_existing_svg_assets(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:

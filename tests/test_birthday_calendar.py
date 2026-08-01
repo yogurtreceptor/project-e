@@ -51,7 +51,7 @@ class BirthdayCalendarTests(unittest.TestCase):
     def test_person_changes_keep_the_same_event_in_sync_and_lifecycle_safe(self) -> None:
         person_id = self.create_person()
         event_id = self.linked_event_id(person_id)
-        from app.entity_repository import update_entity
+        from app.entity_service import update_entity
         update_entity(self.connection, DEFINITIONS_BY_TYPE["person"], person_id, {
             "display_name": "Ada King", "given_name": "Ada", "middle_name": "",
             "family_name": "King", "sex": "Unknown", "birthday": "1815-12-11",

@@ -1,13 +1,12 @@
 import unittest
 import threading
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 import re
 from urllib.request import urlopen
 
 from app.view_pages.layout import layout
 from app.view_pages.forms import error_block
-from app.web import EddyRequestHandler
+from tests.web_test_support import make_test_server
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,7 +56,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn('a[title="Calendar"][href="/calendar"]', script)
 
     def test_foundation_file_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -74,7 +73,7 @@ class DesignFoundationTests(unittest.TestCase):
             thread.join()
 
     def test_quick_create_script_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -97,7 +96,7 @@ class DesignFoundationTests(unittest.TestCase):
             thread.join()
 
     def test_description_field_script_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -113,7 +112,7 @@ class DesignFoundationTests(unittest.TestCase):
             thread.join()
 
     def test_mini_month_picker_script_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -132,7 +131,7 @@ class DesignFoundationTests(unittest.TestCase):
             thread.join()
 
     def test_calendar_grid_script_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -145,7 +144,7 @@ class DesignFoundationTests(unittest.TestCase):
             thread.join()
 
     def test_calendar_visibility_script_is_allowed_by_static_handler(self) -> None:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:

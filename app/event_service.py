@@ -280,7 +280,7 @@ def reschedule_event(
         for field in temporal_fields:
             if history_before[field] != history_after[field]:
                 set_provenance(connection, "entity", event_id, field, "manual")
-        from app.reminder_service import resolve_source_items
+        from app.inbox_repository import resolve_source_items
         resolve_source_items(connection, "event", event_id)
         connection.commit()
         return True
@@ -320,7 +320,7 @@ def archive_event(connection: sqlite3.Connection, event_id: int) -> bool:
             after={"archived_at": archived_at},
             notes="Event archived",
         )
-        from app.reminder_service import resolve_source_items
+        from app.inbox_repository import resolve_source_items
         resolve_source_items(connection, "event", event_id)
         connection.commit()
         return True
@@ -546,7 +546,7 @@ def _change_event_status(
         )
         set_provenance(connection, "entity", event_id, "status", "manual")
         if replacement == "cancelled":
-            from app.reminder_service import resolve_source_items
+            from app.inbox_repository import resolve_source_items
             resolve_source_items(connection, "event", event_id)
         connection.commit()
         return True

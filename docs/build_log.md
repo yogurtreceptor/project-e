@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Runtime architecture compartmentalisation
+
+- Split server configuration, top-level routing, HTTP transport support and Event-form parsing into focused modules while preserving the existing local web surface.
+- Centralised stable product defaults, isolated route-test servers without mutable global handler state, separated entity lifecycle orchestration from persistence and removed cyclic service imports through a focused Inbox repository.
+
 ### Experimental Task subsystem retirement
 
 - Verified that the local runtime database contained no canonical Task records or Task-linked operational data, then removed the dormant Task services, pages, routes, relationships, reminders, automation proposals and legacy skipped tests.

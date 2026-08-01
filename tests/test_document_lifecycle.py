@@ -9,7 +9,7 @@ from app.db import connect, create_entity, delete_entity, get_entity, initialise
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.document_storage import UploadedFile, store_document_upload, stored_document_path
 from app.entities import DEFINITIONS_BY_SLUG
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 class DocumentLifecycleTests(unittest.TestCase):
@@ -50,9 +50,9 @@ class DocumentLifecycleTests(unittest.TestCase):
         self.assertTrue(stored_path.exists())
 
     def test_http_replacement_cleans_old_file_and_soft_delete_keeps_current_file(self) -> None:
-        EddyRequestHandler.database_path = self.database_path
-        EddyRequestHandler.document_storage_dir = self.storage_dir
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(
+            self.database_path, document_storage_dir=self.storage_dir
+        )
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -115,9 +115,9 @@ class DocumentLifecycleTests(unittest.TestCase):
                 connection, self.definition, {"display_name": "Existing", **metadata}
             )
 
-        EddyRequestHandler.database_path = self.database_path
-        EddyRequestHandler.document_storage_dir = self.storage_dir
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(
+            self.database_path, document_storage_dir=self.storage_dir
+        )
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:

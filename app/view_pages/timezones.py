@@ -3,13 +3,14 @@
 from html import escape
 
 from app.timezones import timezone_catalogue
+from app.defaults import PLATFORM_TIMEZONE
 
 
 def timezone_picker(
     field_id: str, value: str, *, name: str = "timezone", required: bool = True
 ) -> str:
     """Render an IANA timezone field that reveals choices only on demand."""
-    selected = value or "Australia/Brisbane"
+    selected = value or PLATFORM_TIMEZONE
     choices = []
     for timezone_name, countries, offset in timezone_catalogue():
         location = f" — {countries}" if countries else ""
