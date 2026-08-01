@@ -1,6 +1,6 @@
 # Page and View Catalogue
 
-Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-08-01. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
+Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-08-01. A curated README gallery is tracked under `docs/assets/screenshots/`; every image uses fictional records from a discarded isolated database. Structural, semantic, contrast and live-route evidence remains recorded in the readiness register.
 
 This catalogue bridges the Experience Philosophy, design standards and later implementation tasks. It is descriptive about current behaviour and normative only where it points to a responsible standard.
 

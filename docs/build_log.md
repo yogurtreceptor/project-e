@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Local README interface gallery
+
+- Replaced the single externally hosted Home image with four local, clickable screenshots of Home, a connected Person profile, Calendar and Family Tree.
+- Captured the gallery at a consistent desktop viewport from an isolated database containing only fictional demonstration records.
+
 ### Stylesheet ownership and visual verification
 
 - Replaced the accumulated application stylesheet with an explicit ordered manifest over focused shell, Calendar, component, record, discovery and specialist-view modules while preserving the established cascade and visual behaviour.

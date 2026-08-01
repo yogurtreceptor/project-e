@@ -44,9 +44,17 @@ The earlier experimental Task subsystem was retired on 2026-08-01 because it had
 
 ## See it
 
-The current Home screen uses the persistent Project E shell to open information domains, specialist views, favourites and recent records.
+These screenshots were captured from an isolated database containing fictional demonstration records. Select any image to open it at full size.
 
-<img width="1895" height="1077" alt="Project E Home page with the Browse sidebar, information-domain shortcuts, favourites and recent records." src="https://github.com/user-attachments/assets/86bf2c10-2101-43f7-8def-9a8664a0ae8d" />
+| Home | Connected Person |
+| :---: | :---: |
+| [![Project E Home page with the persistent navigation shell and shortcuts for each information domain.](docs/assets/screenshots/home.png)](docs/assets/screenshots/home.png) | [![A fictional Person profile connecting contact details, a location, an organisation and family relationships.](docs/assets/screenshots/person-profile.png)](docs/assets/screenshots/person-profile.png) |
+| **Home.** Open canonical information domains, specialist views, favourites and recent records. | **Person profile.** Read one canonical record in the context of its locations, organisation and family. |
+
+| Calendar | Family Tree |
+| :---: | :---: |
+| [![Project E Calendar showing a fictional month of community archive events.](docs/assets/screenshots/calendar.png)](docs/assets/screenshots/calendar.png) | [![Project E Family Tree showing a fictional derived family graph and its relationship legend.](docs/assets/screenshots/family-tree.png)](docs/assets/screenshots/family-tree.png) |
+| **Calendar.** Work with local Events through a focused Month, Week or Day projection. | **Family Tree.** Derive a navigable graph from the same first-class Relationships used everywhere else. |
 
 ## One source, many views
 
