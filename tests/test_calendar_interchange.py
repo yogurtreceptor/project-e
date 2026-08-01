@@ -745,6 +745,35 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
                 ),
             )
 
+        calendar_context = (
+            f"/calendar?view=week&date=2026-08-03&calendars=-{subscription_id}"
+        )
+        direct_settings_url = (
+            f"/calendar/settings/other-calendars/{subscription_id}"
+            f"?return_to=%2Fcalendar%3Fview%3Dweek%26date%3D2026-08-03"
+            f"%26calendars%3D-{subscription_id}"
+        )
+        self.client.request("GET", calendar_context)
+        response = self.client.getresponse()
+        calendar_page = response.read().decode()
+        self.assertEqual(200, response.status)
+        self.assertIn(
+            f'<span>Fictional Observances</span></label><a class="calendar-edit-control" href="{direct_settings_url}"',
+            calendar_page,
+        )
+        self.assertIn(
+            'aria-label="Edit Fictional Observances calendar"', calendar_page
+        )
+
+        self.client.request("GET", direct_settings_url)
+        response = self.client.getresponse()
+        direct_settings_page = response.read().decode()
+        self.assertEqual(200, response.status)
+        self.assertIn(
+            f'<a class="calendar-settings-back" href="/calendar?view=week&amp;date=2026-08-03&amp;calendars=-{subscription_id}"',
+            direct_settings_page,
+        )
+
         self.client.request("GET", "/calendar/settings/from-url")
         response = self.client.getresponse()
         page = response.read().decode()

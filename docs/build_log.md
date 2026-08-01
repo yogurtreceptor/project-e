@@ -4,6 +4,10 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Direct Other-calendar editing
+
+- Added a context-preserving edit shortcut to every enabled URL Calendar row, matching the direct General, Birthdays and local Calendar editing path without duplicating settings forms or services.
+
 ### Inbox reminder refinement
 
 - Replaced the reminder Inbox's manual evaluation, Upcoming preview and generic action cards with a chronological active queue, exact-occurrence Event opening, persistent Document-expiry handling, fixed ten-minute snooze, retained Archive and a locally refreshed semantic count badge.
