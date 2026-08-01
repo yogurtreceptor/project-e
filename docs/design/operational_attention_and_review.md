@@ -1,10 +1,10 @@
 # Operational Attention and Review
 
-Status: Current Inbox/reminder guidance and target standard for deferred operational workflows. Phase 1 supplies review precedents; the Inbox and reminder foundation are delivered in Phase 2C, while persistent System Health, scheduler and general approval infrastructure remain deferred.
+Status: Current Inbox, reminder and scheduler guidance plus target standards for deferred operational workflows. Persistent System Health, escalation and general approval infrastructure remain deferred.
 
 ## Purpose and authority
 
-Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019. Phase 2C delivers the Inbox and reminder foundation; Persistent System Health and escalation remain deferred until concrete condition producers and user actions are separately authorised.
+Project E should show the useful results of background work without becoming noisy or interrupt-driven. This document applies the Experience Philosophy's “alive, not chaotic” and human-approval principles together with the accepted Phase 2 distinctions in ADR-013 through ADR-019. Phase 2C delivered the Inbox and reminder foundation, and Phase 2D delivered the registered in-process scheduler and durable Job Runs. Persistent System Health, escalation and general approval infrastructure remain deferred until concrete condition producers and user actions are separately authorised.
 
 The central rule is semantic separation:
 

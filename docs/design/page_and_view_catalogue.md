@@ -18,7 +18,7 @@ This module split is maintainable and worth preserving. Design work should impro
 ### Foundation smoke checklist
 
 - Load Home and one entity detail page and confirm the existing stylesheet plus `/static/foundation.css` both return CSS successfully.
-- Confirm the horizontal shell, forms, tables, Map and Family Tree retain their existing composition while the foundation entry is still intentionally visual-neutral.
+- Confirm the persistent shell, forms, tables, Map and Family Tree retain their current composition in both supported system themes.
 - Check the browser console/network panel for missing local static assets.
 - Run the focused foundation tests to catch a missing import, malformed shared CSS block or the previously undefined Family Tree text token.
 
@@ -28,7 +28,7 @@ This module split is maintainable and worth preserving. Design work should impro
 
 | Route | Current purpose and principal actions | Shared implementation | Current assessment / intended direction |
 | --- | --- | --- | --- |
-| `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Useful launch/discovery patterns, but “Operation Eddy” branding and domain-count emphasis conflict with the Project E command-centre philosophy. Retain curated launch/discovery; add attention/upcoming summaries only with delivered capability. |
+| `/` | Dashboard; Search, Browse/Create each entity domain, Browse Relationships, open recent entities and favourites | `dashboard_page()` | Uses the Project E shell and restrained launch/discovery pattern. Attention summaries remain separate from the canonical Inbox unless a later scoped design establishes otherwise. |
 | Ordinary application pages | Persistent Project E header, labelled Search destination and session-collapsible Browse sidebar | `layout()` | Shared shell exposes current routes through Information, Connections and views, and System Tools groups; Super Key Go provides deterministic exact-alias navigation and an explicit Search fallback. |
 | `/calendar/settings` and children | Dedicated Calendar Settings shell with context-preserving return, settings navigation and separate colour/name lists for locally owned and URL-backed Calendars | `layout()`, `calendar_settings_sidebar()` | Deliberately omits the global Project E/Browse/Search frame while settings are being edited. General and discovery remain marked placeholders; **Settings for my calendars** and **Settings for other calendars** preserve the ownership distinction. |
 | `/calendar/settings/import` | Upload and validate one iCalendar file, preview mappings and diagnostics, then explicitly import into an existing or new local Calendar | `calendar_settings_import_page()` | Preview and cancellation make no canonical writes. Confirmation is atomic, repeat-safe by source UID and limited to the lossless all-day/recurrence subset. |
@@ -203,8 +203,8 @@ Active route families consume shared semantic colour roles; `styles.css` contain
 
 | Conflict | Evidence | Recommended direction |
 | --- | --- | --- |
-| Project E philosophy vs Operation Eddy UI identity | Experience Philosophy and repository naming; `layout.py`/Dashboard titles | Use Project E/E mark throughout the shell; the governing philosophy closes this choice. |
-| Persistent header/sidebar vs horizontal header | Philosophy; current `layout.py` | Implement shell/sidebar foundation while preserving route reachability. |
+| Historical prototype identity vs Project E | Experience Philosophy and repository naming | Resolved: Project E and the E mark are used throughout the shell. |
+| Historical horizontal header vs persistent shell | Philosophy and `layout.py` | Resolved: the persistent sidebar/header foundation preserves route reachability. |
 | Domain-specific pages vs generic shared profile | Philosophy; `entity_detail_page()`; architecture's inherited shared sections | Keep shared grammar/facade, replace uniform composition with domain-specific render strategies. Update architecture when implemented. |
 | Administrative lens vs default Metadata/Change History | Philosophy; current entity sidebar; `ui_principles.md` lists Metadata | Move full admin content to specialised Audit; keep only interpretively relevant provenance/warnings near facts. |
 | Home jumping-off point vs record-count/resumption dashboard | Philosophy; `dashboard_page()` | Retain launch/favourite/recent as secondary discovery. Inbox is the canonical attention destination; Home may provide a restrained link and small notification count/ticker rather than embedding attention content. |

@@ -14,19 +14,9 @@ Combining these intentions into one ambiguous field would conflict with the Expe
 
 ## Current implementation audit
 
-The current `layout()` renderer provides a stable header, domain links, global views, a System Tools entry, active-item styling and a header search form. This is a useful established frame and should be evolved without breaking route continuity.
+The current `layout()` renderer implements the Project E identity, persistent desktop sidebar, labelled and collapsed navigation states, distinct Super Key and Search controls, active-parent treatment and `aria-current` state. Calendar and Calendar Settings use deliberate shell variants while retaining the same rendering facade.
 
-The following are prototype limitations rather than standards:
-
-- The shell identifies the product as **Operation Eddy**, while the repository and governing philosophy identify it as **Project E**.
-- Navigation is one long horizontal row; there is no persistent left sidebar, nesting or icon-only state.
-- The compact header field is global Search, not a distinct Super Key.
-- Search is also presented on Home, but the two entry points are not differentiated by intent.
-- Child System Tools pages rely on an active top-level link and “Back to System Tools”; there are no breadcrumbs or local tool navigation.
-- The responsive fallback wraps or stacks the entire header. It does not define constrained-width hierarchy, overflow or context preservation.
-- Active navigation uses visual class styling but no documented `aria-current` contract.
-
-These conflicts should be addressed through a shell-specific implementation branch rather than piecemeal edits in unrelated feature work.
+The remaining known limitation is the collapsed sidebar's nested destinations: their accessible names and titles remain, but the visual interface does not yet provide the labelled flyout or temporary expansion required by the shell standard. That issue is tracked in the technical-debt register rather than treated as an unimplemented shell foundation.
 
 ## Target shell anatomy
 
@@ -55,7 +45,7 @@ Global Search is a clearly labelled global destination outside entity pages, not
 - Collapsed state shows the E mark with accessible name “Project E — Home”.
 - Identity links to Home.
 - Branding does not occupy content-page headings or compete with entity identity.
-- “Operation Eddy” should not remain as a second unexplained product name. The Experience Philosophy establishes Project E and the E mark as the shell identity.
+- Project E and the E mark are the sole shell identity; historical prototype naming is not a second product identity.
 
 ## Sidebar information architecture
 

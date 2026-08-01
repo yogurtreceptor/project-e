@@ -2,6 +2,13 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-08-01
+
+### Documentation consistency audit
+
+- Reconciled phase status wording and replaced stale prototype shell, branding and scheduler descriptions with the implemented Project E contracts.
+- Reclassified the completed design catch-up plan as historical evidence rather than current implementation authority.
+
 ## 2026-07-30
 
 ### Calendar interchange, subscriptions and date context

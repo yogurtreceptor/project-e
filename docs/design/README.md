@@ -23,10 +23,10 @@ The embedded SQLite database remains the source of canonical information. Design
 | [Application shell and navigation](application_shell_and_navigation.md) | Persistent frame, sidebar, breadcrumbs, Browse/Go/Search, context preservation and constrained widths | Implemented working standard; desktop shell, Super Key and entity-view access are in use |
 | [Entity pages and forms](entity_pages_and_forms.md) | Shared entity-page grammar, domain-specific composition, separate edit flows and deliberate data entry | Implemented working standard; representative Person, Document and Project compositions are in use |
 | [Data presentation patterns](data_presentation_patterns.md) | Tables, panels, lists, filters, timelines, relationships, maps, graphs, status and provenance | Working pattern catalogue; density and complex-view testing remain open |
-| [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Delivered Inbox/reminder guidance plus target standards for deferred System Health, scheduler and approvals |
+| [Operational attention and review](operational_attention_and_review.md) | Background work, approvals, inbox items, persistent issues, messages, severity and noise control | Delivered Inbox, reminder and scheduler guidance plus target standards for deferred System Health and future approvals |
 | [Page and view catalogue](page_and_view_catalogue.md) | Current routes, purposes, shared renderers, recurring patterns, inconsistencies and intended direction | Audited baseline for the current post-prototype UI |
 | [Implementation readiness](implementation_readiness.md) | Prototype evidence and design-foundation close-out record | Implementation evidence recorded; external Windows visual matrix remains |
-| [Design catch-up implementation plan](design_catchup_plan.md) | Authorised beginning-to-end, step-sized implementation work plan | Primary hand-off document for design catch-up work |
+| [Design catch-up implementation plan](design_catchup_plan.md) | Historical beginning-to-end implementation record | Completed reference; it no longer authorises work |
 
 Entity-page and form standards intentionally share one document. Both depend on the same domain definition, field order, view/edit boundary, context-return behaviour and validation model; splitting them now would duplicate rules. They may split later only if either section becomes difficult to navigate.
 
@@ -95,7 +95,7 @@ The page catalogue can be updated independently whenever routes or shared render
 
 The [implementation-readiness register](implementation_readiness.md) records the evidence and external visual/assistive-technology verification that remains after the design catch-up implementation. Do not treat an open verification item as permission to invent a competing design.
 
-For implementation work, use the [design catch-up plan](design_catchup_plan.md) after reading `AGENTS.md`. It authorises the ordered catch-up steps and gives their scope, acceptance checks, commit boundaries and stop conditions.
+The [design catch-up plan](design_catchup_plan.md) is retained as historical implementation evidence. Current work requires its own explicit prompt and follows `AGENTS.md`, the current design standards and the active phase workspace.
 
 ## Formalised decisions
 

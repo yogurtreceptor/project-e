@@ -6,13 +6,13 @@ This roadmap is directional guidance, not implementation authority or a rigid re
 
 Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local SQLite persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
 
-### Status: Original foundation complete; expansion active
+### Status: Complete
 
 Pull request #1 is closed and Phase 1 is complete enough to close as a development milestone. Its closure is based on representative verification, not exhaustive manual testing of every capability. Residual defects may still be found and are handled through normal maintenance without reopening Phase 1 as a whole. The closure record is the [Phase 1 review](docs/reviews/phase_1_exit_review.md).
 
 ## Phase 2 — Operational Time and Deterministic Automation
 
-### Status: Complete
+### Status: Foundation complete; refinement active
 
 Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 
