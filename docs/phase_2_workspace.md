@@ -548,17 +548,17 @@ This checklist governs closure of Phase 2 as a **development milestone**, using 
 - [x] The unsuccessful experimental Task subsystem is retired through a forward migration that preserves the append-only ledger and refuses to delete existing Task data.
 - [x] Current architecture, database, ontology, glossary, design and technical-debt documents describe the delivered local-first Event, reminder, Inbox, scheduler and registered-automation boundaries.
 - [x] Fresh-schema creation, forward migrations, recurrence and timezone behaviour, reminder and Inbox deduplication, scheduler recovery, automation idempotency, Calendar interchange and whole-platform portability have focused automated coverage.
-- [x] The full repository suite passed **286 tests** on 2026-08-01 with `python3 -m unittest discover -s tests`.
+- [x] The full repository suite passed **287 tests** on 2026-08-01 with `python3 -m unittest discover -s tests`.
 - [x] The application and tests passed `python3 -m compileall app run.py tests` on 2026-08-01.
 - [x] Unresolved engineering limitations remain explicit in the technical-debt register rather than being hidden as incomplete feature work.
 
 ### Repository closeout work still required
 
-- [ ] Reconcile the authoritative Phase 2 contract with the current Task-free product. Preserve Task delivery as superseded history, but remove it from current architectural principles and completion requirements; amend ADR-017 and ADR-020 where their Task, proposal or System Health wording no longer states the final boundary.
-- [ ] Replace the obsolete proposed-canonical-mutation step in the completion scenario with evidence that current registered automation is non-consequential, contains no executable user-authored code and cannot mutate a canonical Event. Any future consequential action requires a separately authorised review boundary.
-- [ ] Correct residual current-facing claims that consequential automation proposals can be approved, including the System Tools description, without rewriting legitimate historical records.
-- [ ] Perform and record one current-state integrated walkthrough on an isolated database after expansion entries 60–66. It must cover an Event related to a Project, People and a Location; recurrence and an occurrence exception; Birthday or Document-expiry temporal behaviour; Calendar and record reminder policy; one local Inbox delivery; startup recovery without duplication; separate Job Run, Automation Run, Inbox and audit identities; lifecycle distinctions; and whole-platform export/validation/import.
-- [ ] Perform representative human visual and keyboard checks of Calendar Month/Week/Day, Calendar Settings, Inbox, Scheduled Jobs and Deterministic Automation at the documented desktop baselines. Record accepted limitations rather than expanding the check into a redesign.
+- [x] Reconcile the authoritative Phase 2 contract with the current Task-free product. Preserve Task delivery as superseded history, but remove it from current architectural principles and completion requirements; amend ADR-017 and ADR-020 where their Task, proposal or System Health wording no longer states the final boundary.
+- [x] Replace the obsolete proposed-canonical-mutation step in the completion scenario with evidence that current registered automation is non-consequential, contains no executable user-authored code and cannot mutate a canonical Event. Any future consequential action requires a separately authorised review boundary.
+- [x] Correct residual current-facing claims that consequential automation proposals can be approved, including the System Tools description, without rewriting legitimate historical records.
+- [x] Perform and record one current-state integrated walkthrough on an isolated database after expansion entries 60–66. It must cover an Event related to a Project, People and a Location; recurrence and an occurrence exception; Birthday or Document-expiry temporal behaviour; Calendar and record reminder policy; one local Inbox delivery; startup recovery without duplication; separate Job Run, Automation Run, Inbox and audit identities; lifecycle distinctions; and whole-platform export/validation/import.
+- [x] Perform representative human visual and keyboard checks of Calendar Month/Week/Day, Calendar Settings, Inbox, Scheduled Jobs and Deterministic Automation at the documented desktop baselines. Record accepted limitations rather than expanding the check into a redesign.
 - [ ] Replace the 2026-07-25 Phase 2 completion review with a dated final closure review describing the current Task-free product, final evidence, accepted debt, exclusions and closure decision.
 - [ ] After the final review is accurate, change Phase 2 from active/closeout wording to complete in `AGENTS.md`, `PROJECT_GOAL.md`, `README.md`, `ROADMAP.md`, architecture documentation and this workspace; keep Phase 3 undefined until it is deliberately specified.
 - [ ] Run the full unit suite and compile check once more after all closeout edits, record the final counts in the closure review and confirm the tracked tree contains no runtime or private artifacts.
@@ -566,10 +566,10 @@ This checklist governs closure of Phase 2 as a **development milestone**, using 
 
 ### Explicit user approval still required
 
-- [ ] **Milestone meaning:** the user confirms that Phase 2 may close as a completed development milestone while ordinary maintenance and residual defects continue without reopening the phase.
+- [x] **Milestone meaning:** the user confirms that Phase 2 may close as a completed development milestone while ordinary maintenance and residual defects continue without reopening the phase.
 - [ ] **Delivered experience:** the user confirms that the current Calendar/Event, reminder/Inbox and local operational-runtime experience has enough practical polish to leave in place and return to months later.
-- [ ] **Accepted debt:** the user reviews the live technical-debt register and accepts its items as non-blocking for Phase 2 closure, with particular attention to collapsed-sidebar discoverability and visually noisy high-frequency runtime history.
-- [ ] **Deferred boundary:** the user confirms that Persistent System Health, future work management, mobile workflows, external notification channels, AI and autonomous external side effects remain outside Phase 2 rather than becoming last-minute closeout work.
+- [x] **Accepted debt:** the user reviews the live technical-debt register and accepts its items as non-blocking for Phase 2 closure, with particular attention to collapsed-sidebar discoverability and visually noisy high-frequency runtime history.
+- [x] **Deferred boundary:** the user confirms that Persistent System Health, future work management, mobile workflows, external notification channels, AI and autonomous external side effects remain outside Phase 2 rather than becoming last-minute closeout work.
 - [ ] **Final closure:** after reviewing the integrated walkthrough and final completion review, the user explicitly approves marking Phase 2 complete and merging the Phase 2 pull request into `main`.
 
 ## Completion criteria
