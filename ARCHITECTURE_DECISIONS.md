@@ -238,18 +238,18 @@ An Event or Task is not a Reminder. Birthdays and expiries can use policy-driven
 
 ## ADR-014: Separate actionable notifications from persistent issues
 
-Status: Accepted (Phase 2 target architecture)
+Status: Accepted separation; Persistent System Health implementation deferred
 
 Date: 2026-07-11
 
 Decision:
-The inbox holds actionable notifications; system-health conditions use durable current issue records. Persistent issues are deduplicated and escalated only on meaningful state or severity changes.
+The Inbox holds actionable notifications. If Persistent System Health is separately authorised later, its conditions must use durable current issue records rather than masquerading as Inbox reminders; issue deduplication and escalation behaviour are not delivered Phase 2 contracts.
 
 Reason:
 An unchanged condition is not a new event every day, and repeated noise obscures useful attention.
 
 Consequences:
-Notifications, persistent issues, audit events and job runs remain distinct record types and audit trails.
+Notifications, audit events, Job Runs and Automation Runs remain distinct delivered record types and audit trails. Persistent issues remain a deferred, separately designed record type.
 
 ## ADR-015: Separate scheduled jobs from calendar events and restrict handlers
 
@@ -279,7 +279,7 @@ Reason:
 Deterministic rules establish useful, explainable operational behaviour before introducing model uncertainty or agency.
 
 Consequences:
-Consequential actions may require approval states; no AI agents or autonomous AI-generated actions are introduced in initial Phase 2.
+The delivered registered action is non-consequential and cannot mutate canonical Events. Any future consequential action requires separately authorised review infrastructure; no AI agents or autonomous AI-generated actions are introduced in Phase 2.
 
 ## ADR-017: Define Phase 2 completion as integrated operational behaviour
 
@@ -288,13 +288,13 @@ Status: Accepted
 Date: 2026-07-11
 
 Decision:
-Phase 2 completes only after the agreed Event, Task, calendar, reminder, inbox, health, scheduler, automation, audit and provenance workflow works coherently and passes an end-to-end completion review.
+Phase 2 completes only after the delivered Event, Calendar, reminder, Inbox, scheduler, registered deterministic automation, audit, provenance and portability workflow works coherently and passes an end-to-end completion review. The retired Task subsystem remains historical evidence, and Persistent System Health is not a completion requirement.
 
 Reason:
 Isolated tables and pages do not prove an operational platform.
 
 Consequences:
-The implementation sequence and completion scenario in `docs/phase_2_workspace.md` govern closure review; starting Phase 2 does not imply completion.
+The current completion scenario and closeout gate in `docs/phase_2_workspace.md` govern closure review. Superseded delivery records do not restore retired or deferred capabilities to the completion boundary.
 
 ## ADR-018: Use a Brisbane platform timezone and deterministic calendar-grade recurrence
 
@@ -328,18 +328,18 @@ No email, SMS, push, operating-system notification, service manager or external 
 
 ## ADR-020: Keep automatic operations non-consequential
 
-Status: Accepted; Task-proposal consequences superseded by ADR-027
+Status: Accepted; current boundary clarified after ADR-027
 
 Date: 2026-07-19
 
 Decision:
-Phase 2 may automatically recalculate derived state and create or update notifications, persistent issues, audit records and job-run records. Creating, editing, completing or deleting a canonical Event or Task requires user approval; automation creates an actionable proposal when such a mutation is appropriate.
+Phase 2 automatic operations may evaluate derived state and create or update reminder deliveries, audit records, Job Runs and Automation Runs through registered application handlers. Database rules store registered trigger, action and condition data only, never executable user-authored code. The delivered action cannot create, edit, archive or delete a canonical Event.
 
 Reason:
-Operational assistance should be useful and reliable without silently changing the user's canonical commitments or work.
+Operational assistance should be useful and reliable without silently changing the user's canonical commitments.
 
 Consequences:
-Automation uses normal application services and approval-item workflows. Derived operational records remain auditable, while user approval remains the authority boundary for canonical Event and Task mutations.
+Automation uses normal application services and retains separate, idempotent run and audit history. General proposal/approval infrastructure is not delivered. Any future consequential automation action requires separately authorised product design and a review boundary before implementation.
 
 ## ADR-021: Recover scheduled work serially with per-job catch-up policy
 
@@ -378,13 +378,13 @@ Status: Accepted (Phase 2 target architecture)
 Date: 2026-07-19
 
 Decision:
-Stable identities deduplicate logical occurrences, reminder deliveries, recovered notifications, persistent issues and escalations. Database uniqueness constraints and atomic claims protect the corresponding action, including future external side effects, from concurrent duplicate execution. Each record contract defines material changes that create a new logical item rather than updating the existing one.
+Stable identities deduplicate logical occurrences, reminder deliveries, recovered notifications, Job Runs and Automation Runs. Database uniqueness constraints and atomic claims protect the corresponding action from concurrent duplicate execution. Each record contract defines material changes that create a new logical item rather than updating the existing one. Deferred persistent issues, escalations and external side effects require their own separately authorised identity contracts if introduced later.
 
 Reason:
 In-process execution is not a sufficient duplicate guarantee once recovery, crashes, restarts or later workers are involved.
 
 Consequences:
-The scheduler and notification services must claim work transactionally. A recurrence version change and escalation to a higher severity are examples of material changes that legitimately produce a new logical record.
+The scheduler and notification services must claim work transactionally. A recurrence version change is one delivered example of a material change that legitimately produces a new logical record.
 
 ## ADR-024: Model calendars as local Event configurations
 

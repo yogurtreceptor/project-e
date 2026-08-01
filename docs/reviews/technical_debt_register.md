@@ -12,6 +12,16 @@ Trigger: using Browse after collapsing the desktop sidebar.
 
 Direction: provide a labelled nested-destination flyout or temporary expansion on keyboard and pointer interaction, then verify it at both required desktop resolutions.
 
+## Calendar header Search icon loses its accessible name at 800 × 600
+
+Severity: low
+
+The constrained Calendar header hides the visible **Search** text while its icon remains deliberately decorative. The link therefore has no accessible name at the documented 800 × 600 Calendar baseline even though it remains visually recognisable and keyboard focusable. Wider Calendar layouts and the ordinary application shell retain the visible label.
+
+Trigger: using assistive technology with the Calendar at the constrained desktop baseline.
+
+Direction: retain a programmatic **Search** name when the visible text is hidden, then add a focused rendering check at the constrained Calendar breakpoint.
+
 
 ## Search is in-memory and linear
 

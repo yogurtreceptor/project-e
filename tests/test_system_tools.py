@@ -21,6 +21,8 @@ class SystemToolsViewTests(unittest.TestCase):
         ):
             self.assertIn(f'href="{href}"', html)
             self.assertIn(f"<h2>{label}</h2>", html)
+        self.assertIn("Inspect registered local reminder rules and their execution history.", html)
+        self.assertNotIn("approve consequential proposals", html)
 
     def test_portability_pages_require_preview_and_explicit_confirmation(self):
         page = views.portability_page()

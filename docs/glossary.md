@@ -300,7 +300,7 @@ See also: Entity, Organisation, Relationship.
 
 ### Persistent Issue
 
-A durable system-health or configuration condition whose one current record changes state over time. It is deduplicated and does not create recurring inbox items merely because it remains unresolved.
+A deferred operational concept for a durable system-health or configuration condition whose one current record would change state over time. It would be deduplicated rather than creating recurring Inbox items merely because it remains unresolved. Project E has no current Persistent Issue record type or System Health workflow.
 
 ### Phase 1
 

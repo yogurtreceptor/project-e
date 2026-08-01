@@ -22,11 +22,11 @@ The phase remains human-first, database-first, local-first and AI-independent. T
 
 ### Canonical records and shared platform boundaries
 
-SQLite remains the canonical store. Phase 2 schema work must use migration-safe evolution, conservative dependencies and the existing application-service boundaries. Events and Tasks are canonical first-class peer entities with stable identity, editing, global search, cross-domain navigation, Timeline integration, history, provenance, audit, recent-record behaviour, appropriate duplicate handling, the standard relationship system and the normal recoverable entity lifecycle.
+SQLite remains the canonical store. Phase 2 schema work must use migration-safe evolution, conservative dependencies and the existing application-service boundaries. Events are canonical first-class entities with stable identity, editing, global search, cross-domain navigation, Timeline integration, history, provenance, audit, recent-record behaviour, appropriate duplicate handling, the standard relationship system and the normal recoverable entity lifecycle.
 
-An **Event** represents something that occurs, occurred or is expected to occur. A **Task** represents work that should be performed. A Task is not an Event, and neither is a reminder. Connections among Events, Tasks, People, Organisations, Locations, Projects, Documents and Assets use normal Relationships; separate per-domain foreign keys or nested Event-Task types are not the default.
+An **Event** represents something that occurs, occurred or is expected to occur. An Event is not a reminder. Connections among Events, People, Organisations, Locations, Projects, Documents and Assets use normal Relationships; separate per-domain foreign keys are not the default.
 
-A **Project** is a peer entity and coordination hub, not the owner of its related records. It may gather Events, Tasks and other entities, but each related record remains independently canonical and may relate to no Project or more than one Project.
+A **Project** is a peer entity and coordination hub, not the owner of its related records. It may gather Events and other entities, but each related record remains independently canonical and may relate to no Project or more than one Project.
 
 ### Calendars, occurrences and projections
 
@@ -34,37 +34,36 @@ A **Calendar** is a first-class local Event grouping and configuration record. E
 
 A calendar view is a projection over canonical records and traceable derived occurrences:
 
-- A **canonical record** is a durable source record such as an Event, Task, Person or Document.
+- A **canonical record** is a durable source record such as an Event, Person or Document.
 - A **derived occurrence** is a deterministic temporal instance traceable to a canonical source and definition, such as a recurring Event instance or a Document expiry.
 - A **calendar projection** is the displayed time-based view of a canonical record or derived occurrence.
 
 Eligible dates owned by Events or other canonical records must enter Calendar, reminder and Inbox behaviour through one shared temporal-occurrence pipeline. Each source adapts its canonical fact into a stable, traceable occurrence consumed by shared projection, policy, delivery and reconciliation services; it does not gain a standalone reminder scanner or Inbox-delivery path. The source record retains ownership of its date, and using the pipeline does not require materialising a canonical Event. A literal Event remains appropriate only when the time record deliberately needs Event identity and lifecycle. Reminders without a meaningful temporal occurrence, including approvals and system failures, retain their own operational semantics.
 
-Displaying a Task deadline or session, birthday, anniversary, Document expiry, Project target, asset-maintenance date, scheduled Job Run or other system-generated occurrence does not convert it into an Event. Materialising a separate Event is permitted only when deliberately designed as a new canonical record with traceable source and provenance.
+Displaying a birthday, anniversary, Document expiry, Project target, asset-maintenance date, scheduled Job Run or other system-generated occurrence does not convert it into an Event. Materialising a separate Event is permitted only when deliberately designed as a new canonical record with traceable source and provenance.
 
 ### Operational records remain semantically separate
 
-A **reminder** is a policy attached to an Event, Task, derived occurrence or source-record policy. It is behaviour, not an independent domain entity. Delivery, acknowledgement, dismissal, snooze and failure history belong to notification or delivery records rather than the canonical reminder definition.
+A **reminder** is a policy attached to an Event, derived occurrence or source-record policy. It is behaviour, not an independent domain entity. Delivery, acknowledgement, dismissal, snooze and failure history belong to notification or delivery records rather than the canonical reminder definition.
 
 The operational record types are distinct:
 
 ```text
 Reminder policy → may produce → actionable notification
-Persistent issue → one durable current condition
 Audit event → a historical fact
 Job run → an execution attempt and result
-Review item → a proposed consequential decision
+Automation run → one registered deterministic execution
 ```
 
-These records may link to one another, but must not be flattened into one generic notification, history or job model.
+These records may link to one another, but must not be flattened into one generic notification, history or job model. Persistent issues, System Health and general review items remain deferred operational concepts rather than delivered Phase 2 record types.
 
 ### Idempotency, authority and portability
 
-Logical occurrences, reminder deliveries, recovered notifications, persistent issues, escalations and job runs have stable identities. Database uniqueness constraints and atomic claims enforce deduplication; in-process coordination alone is insufficient. Each persistence contract must identify which material changes update an existing logical record and which create a new identity.
+Logical occurrences, reminder deliveries, recovered notifications, job runs and automation runs have stable identities. Database uniqueness constraints and atomic claims enforce deduplication; in-process coordination alone is insufficient. Each persistence contract must identify which material changes update an existing logical record and which create a new identity.
 
-Deterministic automation uses the same validated application services as human interactions and retains normal provenance, audit and history. It may automatically recalculate derived state and create or update notifications, persistent issues, audit records and job-run records. Creating, editing, completing, archiving or deleting a canonical Event or Task requires explicit user approval; automation proposes such a mutation through an actionable review item.
+Current deterministic automation is registry-bound and non-consequential. Database rules select only application-registered trigger and action names, never user-authored or database-stored executable code. The delivered rule invokes reminder evaluation, creates operational delivery and execution history through ordinary validated services, and cannot create, edit, archive or delete a canonical Event. Any future consequential automation action requires separately authorised product design and a review boundary before implementation.
 
-Whole-platform export and import remain the portability boundary. Phase 2 canonical and operational records, their references and schema compatibility must be included in validation. Canonical Events and Tasks use the Recycle Bin lifecycle; derived occurrences, projections, notifications, delivery history, job runs and audit records are derived or historical records rather than Recycle Bin entities.
+Whole-platform export and import remain the portability boundary. Phase 2 canonical and operational records, their references and schema compatibility must be included in validation. Canonical Events use the Recycle Bin lifecycle; derived occurrences, projections, notifications, delivery history, job runs, automation runs and audit records are derived or historical records rather than Recycle Bin entities.
 
 ## Approved product behaviour
 
@@ -88,7 +87,7 @@ The active Phase 2 expansion workspace records the following delivered Calendar 
 - Event creation opens a compact quick-create panel in the Calendar rather than changing page. The panel has close, save and More options controls; More options serialises currently entered values into the complete form.
 - Quick-create panels do not dim the Calendar, can be repositioned by dragging their title bar and may dock into the sidebar, temporarily replacing sidebar navigation without overflowing its width.
 - While an Event is unsaved, the Calendar renders it as a distinct provisional projection. Timed previews use their actual duration, clip or continue across visible days, and render the typed title; the preview disappears when the panel closes.
-- Event and Task free text is named **Description** in the interface. It begins as an unobtrusive trigger and expands to a one-line textarea when selected, then grows with the entered content. The underlying canonical `notes` persistence field is unchanged.
+- Event free text is named **Description** in the interface. It begins as an unobtrusive trigger and expands to a one-line textarea when selected, then grows with the entered content. The underlying canonical `notes` persistence field is unchanged.
 - The browser session remembers the last explicit Calendar Month, Week or Day context, including anchor date and visible Calendar filter. Calendar navigation restores it. Creation, More options, Event preview edit, cancellation, save and deletion preserve the originating context through validated Calendar-only return targets.
 
 Every Event selects a Calendar and uses that Calendar's defaults. The default duration and Event timezone are overridable as approved; other default precedence remains unresolved below. The initial Calendar provides Month, Week and Day views, starts weeks on Monday, and preserves Calendar context:
@@ -104,7 +103,7 @@ The desktop baseline remains usable at 800 × 600. Phone responsiveness is defer
 
 #### Temporal semantics
 
-Phase 2 defines compatible temporal semantics and shared utilities before the full calendar. It does not require one universal temporal base table. Initial Events and Tasks record planned time only; actual start/end tracking is deferred.
+Phase 2 defines compatible temporal semantics and shared utilities before the full calendar. It does not require one universal temporal base table. Initial Events record planned time only; actual start/end tracking is deferred.
 
 A timed Event always has start and end instants. Point-in-time timed Events are not part of the initial model. An all-day Event uses date boundaries and may span multiple days. The user-facing all-day range is inclusive of its selected start and end dates; normalized temporal intervals and occurrence calculations are start-inclusive and end-exclusive. All-day values remain calendar dates rather than UTC instants.
 
@@ -135,7 +134,9 @@ create Event → relate it to multiple existing entities → find it in search
 → open it from related entity pages → inspect its history
 ```
 
-### Phase 2B — Work management
+### Phase 2B — Work management (retired historical contract)
+
+> The requirements in this subsection are superseded by expansion entry 60 and ADR-027. They are retained only as the historical contract against which the experimental Task subsystem was delivered before its data-safe retirement; they are not current product behaviour or Phase 2 completion requirements.
 
 A Task is a small but extensible canonical work record. It remains useful without a Project or Event and may relate independently to Events, Projects, People, Locations, Documents and Assets. Tasks connected to Events remain ordinary Tasks through normal Relationships.
 
@@ -173,13 +174,12 @@ Reminder edits on a recurring Event use the established scopes **this event only
 The initial default reminder timings are relative to the source's due instant or all-day 09:00 local-time anchor. Local Calendar, URL Calendar and record settings use repeatable positive-integer and unit controls, never a comma-separated text field. A Calendar can configure at most ten default notifications, and an Event can resolve to at most ten effective notifications after Calendar defaults, additions and suppressions are combined:
 
 - Events: 1 hour and 10 minutes before.
-- Task deadlines: 3 days, 2 days, 1 day, 6 hours and 1 hour before.
 - Birthdays: 1 calendar month, 2 weeks, 1 week, 3 days, 1 day and 12 hours before.
 - Document expiries: 1 calendar month, 2 weeks, 1 week, 3 days and 1 day before.
 
 All all-day reminder sources use 09:00 in the configured platform timezone as their due-time anchor rather than midnight. The platform timezone defaults to `Australia/Brisbane` (UTC+10) until a user configuration setting is introduced; that future setting must preserve existing reminder meaning. Calendar-month offsets retain calendar semantics rather than being treated as a fixed number of days.
 
-**Catch-up policy.** Reminder evaluation classifies sources as transient occurrences, persistent conditions or recurring dates. Canonical Events and cached read-only URL Calendar occurrences are transient: a delivery is created only while the occurrence remains upcoming; a past occurrence is not backfilled. Open Task deadlines and active Document expiries are persistent conditions: after their due anchor, normal pending reminder deliveries resolve and one durable overdue item remains until the condition changes or its source lifecycle suppresses it. Birthdays are recurring dates: past annual occurrences are not backfilled, and evaluation considers the next occurrence only. Phase 2D startup recovery applies these same rules.
+**Catch-up policy.** Reminder evaluation classifies sources as transient occurrences, persistent conditions or recurring dates. Canonical Events and cached read-only URL Calendar occurrences are transient: a delivery is created only while the occurrence remains upcoming; a past occurrence is not backfilled. Active Document expiries are persistent conditions: after their due anchor, normal pending reminder deliveries resolve and one durable overdue item remains until the condition changes or its source lifecycle suppresses it. Birthdays are recurring dates: past annual occurrences are not backfilled, and evaluation considers the next occurrence only. Phase 2D startup recovery applies these same rules.
 
 Deterministically recurring facts do not receive a new persistent reminder definition every year. Their occurrences remain traceable to the source fact and current policy. A Person birthday synchronises to one canonical yearly recurring all-day Event in the protected Birthdays Calendar; a Document expiry remains an all-day derived occurrence owned by its Document. A 29 February birthday Event follows the established month-end backward-shift rule and occurs on 28 February in a non-leap year. Approximate dates do not generate reminders in this milestone; a later design may introduce narrowly defined, explainable circumstances for them.
 
@@ -207,7 +207,7 @@ Acted-on items leave the active feed for an Archived view containing the 500 mos
 
 Persistent System Health is deferred from Phase 2C and Phase 2D. It should be introduced only after concrete condition producers and user actions are separately designed; the reminder and scheduler foundations must not add speculative health checks, a generic issue surface or escalation behaviour merely to fill that future role.
 
-Consequential review items show current and proposed state, evidence, consequences, reversibility and recovery before confirmation. Rejection records enough disposition to prevent useless resurfacing. Routine success stays in activity or process history.
+Future consequential review items would require a separately authorised design covering current and proposed state, evidence, consequences, reversibility and recovery before confirmation. No such general review infrastructure is delivered by Phase 2. Routine success stays in activity or process history.
 
 ### Phase 2D — Operational runtime
 
@@ -234,7 +234,7 @@ Startup recovery evaluates work and reminder delivery due while Project E was un
 
 Jobs may override the applicable default. Recovery remains deterministic and auditable after clean or unclean stops.
 
-Job failures update Job Run history for manual inspection and rerun. Persistent System Health and escalation remain deferred. The first scheduled maintenance checks beyond Event reminders and overdue Tasks remain unspecified; later design must define their record types, trigger conditions and lead times, derive attention from canonical records, and avoid duplicate Events.
+Job failures update Job Run history for manual inspection and rerun. Persistent System Health and escalation remain deferred. Scheduled maintenance beyond the registered reminder-delivery and external-Calendar-refresh boundaries remains unspecified; later design must define its record types, trigger conditions and lead times, derive attention from canonical records, and avoid duplicate Events.
 
 This phase does not add a separate worker, service manager, application launch or termination control, external queue or distributed runtime.
 
@@ -246,11 +246,9 @@ The first automation layer uses explicit, deterministic rules:
 Trigger → optional conditions → action
 ```
 
-The framework supports a deliberately small built-in set of triggers and registered actions. Rules may recalculate derived state; create or update notifications, audit events and Job Runs; identify an overdue Task; deliver a due reminder; or update findings from a data-quality scan. Persistent issues and escalation remain deferred.
+The delivered registry contains one built-in reminder-scan trigger and one registered `deliver_due_reminders` action. Database rows identify registered names and conditions only; they cannot contain Python, scripts or other user-authored executable code. Dispatch is idempotent for a logical trigger identity and retains a separate Automation Run plus audit history for every execution.
 
-When a rule proposes creating, editing, completing, archiving or deleting a canonical Event or Task—for example, creating work in response to a Document expiry or Project target—it creates an actionable review proposal. Only explicit user approval applies the canonical mutation through the same validated service used by the human interface.
-
-Every execution retains its trigger, conditions, registered action, source records, outcome, provenance and audit history. Automation does not bypass validation, relationships, lifecycle, idempotency or approval boundaries. AI-driven automation is deferred.
+The registered action evaluates reminder policy and may create operational Inbox delivery history. It cannot create, edit, archive or delete a canonical Event. Future registered actions may remain non-consequential within the documented operational boundaries; any consequential action or general proposal/approval workflow requires separately authorised design and implementation. AI-driven automation is deferred.
 
 ### Phase 2F — Stabilisation
 
@@ -258,11 +256,11 @@ Stabilisation integrates and verifies the preceding phases rather than adding an
 
 - cross-domain Calendar projections over canonical records and derived occurrences;
 - recurrence definitions, occurrence identities, exceptions, series splits and timezone behaviour;
-- data-quality rules for Events, Tasks, schedules and reminder policies;
+- data-quality rules for Events, schedules and reminder policies;
 - notification and job-run deduplication under restart and recovery;
 - whole-platform export/import of Phase 2 canonical and operational data;
 - end-to-end workflow and migration testing;
-- review of Inbox noise, approval boundaries, provenance and audit;
+- review of Inbox noise, automation authority boundaries, provenance and audit;
 - architecture, database, ontology, glossary, product and development documentation;
 - the formal Phase 2 completion review.
 
@@ -523,6 +521,8 @@ This brief records the direction approved and implemented on **2026-08-01**. The
 
 67. **Complete (2026-08-01) — establish the Phase 2 closeout gate:** record one explicit closeout checklist that distinguishes delivered repository evidence from remaining review work and product-owner approval. Stop treating an undefined Phase 3, deferred capabilities or unrelated triggered technical debt as reasons to add more Phase 2 features. Prepare the complete `dev` history for review against `main` through a draft Phase 2 pull request; the pull request must remain unmerged until the outstanding repository and owner gates below are resolved.
 
+68. **Complete (2026-08-01) — reconcile and verify the Task-free closeout contract:** remove the retired Task subsystem, Persistent System Health and consequential automation proposals from current Phase 2 principles and completion evidence while preserving their superseded history. Clarify that the sole registered automation evaluates due reminders, contains no executable user-authored code and cannot mutate canonical Events; correct System Tools copy accordingly. Add one repeatable isolated closeout walkthrough covering Event relationships, recurrence and an exception, Birthday recurrence, reminder precedence, deduplicated startup recovery, separate Job/Automation/Inbox/audit identities, distinct Event lifecycles and whole-platform round-trip portability. Inspect the required Calendar and operational pages across the constrained and ordinary desktop baselines in both colour schemes, retain the generated screenshots outside the repository and record the newly observed low-severity constrained-Calendar Search accessible-name limitation as accepted closeout debt.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Phase 2 closeout plan
@@ -586,34 +586,35 @@ Create a Project
 → deliver one useful actionable local notification
 → recover a missed due item without duplicate delivery
 → run a scheduled background check and record its Job Run separately
-→ present any proposed canonical Event mutation for explicit approval
-→ show generated records, decisions and actions in provenance and audit history
+→ run the registered non-consequential automation and record its Automation Run separately
+→ verify that registered rules contain no executable user-authored code and cannot mutate the canonical Event
+→ show generated operational records and actions in provenance and audit history
 → export and validate the integrated Phase 2 records through whole-platform portability
 ```
 
-The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events and Job Runs retain separate identities. Persistent System Health remains a separately authorised future capability.
+The review must also verify cancellation, archival and permanent deletion remain distinct; canonical records, derived occurrences and projections have not been conflated; and notifications, audit events, Job Runs and Automation Runs retain separate identities. Persistent System Health and consequential automation review remain separately authorised future capabilities.
 
-An Event table, rendered Calendar, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The active capabilities must work together as one operational system. The dormant Task implementation is not a current completion prerequisite.
+An Event table, rendered Calendar, isolated reminder, one scheduler function or one runnable automation rule is insufficient. The active capabilities must work together as one operational system. The retired Task implementation is historical evidence, not a current completion prerequisite.
 
 ## Explicit exclusions and staged follow-ups
 
 The following are outside initial Phase 2 scope:
 
 - AI agents, AI-generated autonomous actions, forwarding Inbox items to an AI agent, chat or goal-directed agent workflows.
-- Automatic creation, editing, completion, archival or deletion of canonical Events or Tasks without explicit user approval.
+- Automatic creation, editing, archival or deletion of canonical Events.
 - Autonomous external side effects.
 - A visual workflow canvas, arbitrary user-authored executable scripts or executable code stored in the database.
 - A separate worker, service manager, application launch/termination control, distributed execution, external queue, Redis, Celery or Temporal.
 - Two-way external Calendar synchronisation, authenticated Calendar accounts/APIs, CalDAV, write-back and external mutation remain excluded. The separately planned public-HTTPS, read-only iCalendar URL subscription is the sole scoped external-Calendar exception; email ingestion, email delivery, SMS, external push and operating-system notifications remain excluded.
-- Replacement of the existing Relationship system, special nested Event-Task types or Project ownership of related records.
+- Replacement of the existing Relationship system or Project ownership of related records.
 - A requirement that every dated record become an Event or that projections become canonical duplicates.
-- Actual start/end tracking for initial Events or Tasks.
+- Actual start/end tracking for Events.
 - Point-in-time timed Events without a bounded end.
-- Initial Task priority, In progress state, estimates, hierarchy, dependencies, recurring Tasks, nested lists, sharing, permissions or a separate workflow engine.
+- Any current Task or work-management capability; the retired experimental design creates no compatibility requirement for a future design.
 - Phone/mobile support.
 - Agenda/list Calendar views before the Week/Day workflow is stable.
 - Direct Week-view slot creation, drag-and-drop rescheduling and Event resizing before overlay creation and editing are stable.
-- Unspecified scheduled maintenance checks beyond Event reminders and overdue Tasks; those require later design within the existing Phase 2 boundaries.
+- Unspecified scheduled maintenance beyond registered reminder delivery and external-Calendar refresh; those require later design within the established runtime boundaries.
 - Destructive Inbox retention or automatic deletion of historic Inbox records.
 - Repeated Inbox items for unchanged conditions or routine successful background work.
 
@@ -626,7 +627,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
 - **Future work management.** The retired Task model creates no product commitment. Any later to-do capability requires separately authorised product design and may use different terminology, identity and workflows.
-- **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
+- **Later scheduled maintenance.** Checks beyond registered reminder delivery and external-Calendar refresh, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.
 
 The following are deliberate distinctions rather than contradictions:

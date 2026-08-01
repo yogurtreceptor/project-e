@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Phase 2 closeout evidence
+
+- Reconciled the current Phase 2 contract with the Task-free product and clarified that registered deterministic automation is non-consequential, code-free and unable to mutate canonical Events.
+- Added a repeatable isolated integrated walkthrough plus representative visual and keyboard evidence across the documented desktop baselines; recorded the remaining constrained-Calendar Search accessible-name limitation as non-blocking debt.
+
 ### Phase 2 closeout preparation
 
 - Marked authorised Phase 2 feature work complete and established one closeout checklist separating completed repository evidence, remaining review/documentation work and explicit product-owner approvals.
