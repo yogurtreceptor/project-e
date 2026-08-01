@@ -126,6 +126,19 @@ Possible actions include Open source, Review, Approve, Reject, Resolve, Acknowle
 
 Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact. A dismissed reminder remains historical; only a material source reschedule or reminder-policy change may create a fresh pending delivery, while a refresh or other immaterial change cannot redeliver it.
 
+### Planned reminder-queue refinement
+
+The next Inbox implementation is planned, but awaits explicit implementation approval. It narrows the delivered active surface to reminder attention while preserving **Inbox** as the future broader operational destination.
+
+- The active view is a chronological, date-grouped row list rather than an **Active items** card panel. It has no separate Upcoming projection and no manual reminder-evaluation control.
+- One source occurrence and reason has at most one visible active or snoozed item. A newly due configured timing supersedes the older visible timing without adding consolidation language to the interface; delivery and action history remain retained.
+- Reminder actions are source-specific. Event-like attention offers **Open event**, **Dismiss** and an icon-only, accessibly named **Snooze 10 minutes** control. Opening clears the current Event reminder; dismissing clears it without changing the Event; an untouched or snoozed item resolves when the occurrence ends.
+- Document-expiry attention offers **Open document**, **Dismiss** and **Snooze 10 minutes**. Opening the Document and passing the expiry date do not clear the item. It persists until explicit dismissal or a material source/lifecycle change removes the condition.
+- The navigation badge reports only currently visible reminder attention, disappears at zero and uses the shared semantic warning palette. A visibility-aware local poll may update it between navigations; the registered reminder scan remains authoritative.
+- Archive remains separate and retains delivery/action history. The generic reminder **Acknowledge** action, 30-minute snooze and next-open snooze are removed from the active interaction without rewriting historic records.
+
+The implementation must consume the shared temporal-occurrence provider boundary described above. This refinement does not add email addresses, users, agents, approvals, System Health or a requirement to turn every record-derived date into a canonical Event. The detailed staged brief and outstanding product decisions live in [Phase 2 Workspace](../phase_2_workspace.md).
+
 ## Severity and prioritisation
 
 Use the smallest vocabulary that changes treatment:
