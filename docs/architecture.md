@@ -24,7 +24,7 @@ The core application uses only the Python standard library. Map tiles, browser m
 - `TaxonomyChoice` is the shared presentation boundary for Organisation and Relationship comboboxes. It carries the submitted value, contextual label, complete path, depth and availability without changing either domain's persistence contract.
 - `/system-tools` is a navigation hub over Search, Data Quality, Taxonomies, Recycle Bin, Audit, and Import and Export; child pages share its active navigation state.
 - `instance/documents/` stores uploaded document files referenced by Document entity metadata.
-- `app/static/foundation.css` provides the shared visual foundation, tokens and theme roles; `app/static/styles.css` contains the remaining page-specific styling during the incremental conversion.
+- `app/static/styles.css` is the ordered application stylesheet manifest. It loads `foundation.css` for tokens, themes and global focus/motion policy, followed by focused modules for document defaults, application shells, Calendar, shared components, System Tools, records, discovery, specialist views and shared interactions. The local static handler safely serves valid top-level stylesheet modules without maintaining a parallel filename list.
 
 The [Experience Philosophy](experience_philosophy.md) and [design documentation](design/README.md) govern the intended experience. The persistent shell, shared foundation and representative Person, Document and Project page compositions are implemented; the [page catalogue](design/page_and_view_catalogue.md) distinguishes current renderers, remaining verification and future direction.
 

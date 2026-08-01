@@ -1,9 +1,10 @@
 import unittest
-from pathlib import Path
+import re
 
 from app import views
 from app.audit import AuditFilters
 from app.entities import DEFINITIONS_BY_SLUG, EntityRecord
+from tests.web_test_support import read_application_css
 
 
 def record(slug, metadata=None):
@@ -48,8 +49,7 @@ class RemainingRouteConversionTests(unittest.TestCase):
         self.assertNotIn("confirm(", html)
 
     def test_stylesheet_has_no_component_colour_literals_or_tool_translation(self):
-        css = Path("app/static/styles.css").read_text()
-        import re
+        css = read_application_css(include_foundation=False)
         self.assertEqual([], re.findall(r"#[0-9a-fA-F]{3,8}|rgba?\(", css))
         self.assertNotIn("translateY", css)
         self.assertIn(".table-compact", css)

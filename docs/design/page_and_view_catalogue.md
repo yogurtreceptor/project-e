@@ -1,6 +1,6 @@
 # Page and View Catalogue
 
-Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-07-30. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
+Status: Current implemented interface catalogue. Routes, renderers, static assets, entity definitions, UI tests and an isolated fictional-data running application were re-audited through 2026-08-01. No repository screenshots are tracked; structural, semantic, contrast and live-route evidence is recorded in the readiness register.
 
 This catalogue bridges the Experience Philosophy, design standards and later implementation tasks. It is descriptive about current behaviour and normative only where it points to a responsible standard.
 
@@ -10,14 +10,14 @@ This catalogue bridges the Experience Philosophy, design standards and later imp
 - `app/view_pages/entities.py` renders all six entity indexes, detail pages and entity forms through shared definitions.
 - `app/view_pages/forms.py` renders shared fields, progressive disclosure, taxonomy/reference controls and address lookup behaviour.
 - Focused modules render Dashboard, Relationships, Timeline, Search, Map, Taxonomies, Data Quality, Audit, Recycle Bin, portability and merge flows.
-- `app/static/styles.css` remains the global application stylesheet and imports `app/static/foundation.css` as the single incremental design-foundation entry point. `taxonomy.js` supplies the reusable taxonomy-combobox interaction. Several other behaviours are emitted as inline scripts by page renderers.
+- `app/static/styles.css` is the ordered global manifest. It imports `foundation.css` and focused modules for base document rules, shells, Calendar, shared components, System Tools, records, discovery, specialist views and interactions. `taxonomy.js` supplies the reusable taxonomy-combobox interaction. Several other behaviours are emitted as inline scripts by page renderers.
 - The stable public facade remains `app/views.py`.
 
 This module split is maintainable and worth preserving. Design work should improve renderers and route composition behind the facade rather than require a framework migration.
 
 ### Foundation smoke checklist
 
-- Load Home and one entity detail page and confirm the existing stylesheet plus `/static/foundation.css` both return CSS successfully.
+- Load Home and one entity detail page and confirm the stylesheet manifest and every imported local module return CSS successfully.
 - Confirm the persistent shell, forms, tables, Map and Family Tree retain their current composition in both supported system themes.
 - Check the browser console/network panel for missing local static assets.
 - Run the focused foundation tests to catch a missing import, malformed shared CSS block or the previously undefined Family Tree text token.
@@ -197,7 +197,7 @@ The shared accessible confirmation dialog handles concise recoverable entity/rel
 
 ### Delivered foundation state
 
-Active route families consume shared semantic colour roles; `styles.css` contains no literal component colours. Shared controls, statuses, tables, graph/map states, focus, reduced motion and both themes use the foundation roles. Route-specific selectors remain only where the task differs (for example taxonomy hierarchy, Map and Family Tree), not as a competing visual system. Desktop breakpoints and task-specific wide-view dimensions remain implementation values to validate in Step 11 rather than user-configurable settings.
+Active route families consume shared semantic colour roles; the component and page modules contain no literal colours. Shared controls, statuses, tables, graph/map states, focus, reduced motion and both themes use the foundation roles. Route-specific selectors remain only where the task differs (for example taxonomy hierarchy, Map and Family Tree), not as a competing visual system. The manifest makes cascade order explicit while module ownership keeps those specialist rules out of shared-component files. Desktop breakpoints and task-specific wide-view dimensions remain implementation values rather than user-configurable settings.
 
 ## Cross-document conflicts found
 

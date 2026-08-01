@@ -33,6 +33,7 @@ from app.duplicate_detection import find_duplicate_entities
 from app.geo import build_map_payload
 from app.relationships import relationship_types_for_pair
 from app.relationship_workflow import create_inline_relationship_target
+from tests.web_test_support import read_application_css
 
 
 class EntityDatabaseTests(unittest.TestCase):
@@ -541,7 +542,7 @@ class EntityDatabaseTests(unittest.TestCase):
             context_entity=organisation,
             target_type="person",
         )
-        css = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
+        css = read_application_css()
 
         self.assertIn('data-workflow-panel="create_new" hidden', existing_html)
         self.assertIn('data-workflow-panel="existing" hidden', new_html)

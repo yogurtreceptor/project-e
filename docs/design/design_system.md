@@ -1,10 +1,10 @@
 # Design System
 
-Status: Working foundation. This document defines reusable visual and component rules. `app/static/foundation.css` is the incremental implementation entry point; the accumulated `styles.css` remains transitional rather than authoritative. The first coherent local SVG set and original Project E mark are implemented under `app/static/icons/`.
+Status: Working foundation. This document defines reusable visual and component rules. `app/static/foundation.css` owns tokens and global state policy; `app/static/styles.css` is the ordered manifest for focused application stylesheet modules. The first coherent local SVG set and original Project E mark are implemented under `app/static/icons/`.
 
 ## Purpose and evidence
 
-The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The implemented foundation now provides the documented primitive and semantic roles, system-selected dark/light themes, typography and layout scales, keyboard focus, reduced-motion base and shared component-state contract. The transitional stylesheet still contains page-specific literal colours, mixed units and duplicated declarations; those move to the foundation as their numbered conversion steps are completed.
+The [Experience Philosophy](../experience_philosophy.md) calls for restrained professional software, adaptive density, Roboto, flat surfaces, clean borders, muted cool colour and text-first labelling. The implemented foundation provides the documented primitive and semantic roles, system-selected dark/light themes, typography and layout scales, keyboard focus, reduced-motion base and shared component-state contract. Page and component rules consume those roles from focused modules; mixed legacy units can be normalised incrementally when an owning component changes without rebuilding a monolithic cascade.
 
 ## Token policy
 

@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Stylesheet ownership and visual verification
+
+- Replaced the accumulated application stylesheet with an explicit ordered manifest over focused shell, Calendar, component, record, discovery and specialist-view modules while preserving the established cascade and visual behaviour.
+- Generalised safe top-level CSS serving, made design tests consume the manifest, and removed the resolved stylesheet-concentration debt after running-app desktop verification.
+
 ### Runtime architecture compartmentalisation
 
 - Split server configuration, top-level routing, HTTP transport support and Event-form parsing into focused modules while preserving the existing local web surface.

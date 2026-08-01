@@ -6,7 +6,11 @@ from urllib.request import urlopen
 
 from app.view_pages.layout import layout
 from app.view_pages.forms import error_block
-from tests.web_test_support import make_test_server
+from tests.web_test_support import (
+    application_stylesheet_paths,
+    make_test_server,
+    read_application_css,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,12 +41,27 @@ def mix(first: str, second: str, first_weight: float) -> str:
 
 
 class DesignFoundationTests(unittest.TestCase):
-    def test_application_stylesheet_imports_single_foundation_entry_first(self) -> None:
+    def test_application_stylesheet_manifest_imports_owned_modules_in_order(self) -> None:
         stylesheet = (STATIC_DIR / "styles.css").read_text()
+        paths = application_stylesheet_paths()
 
-        self.assertTrue(stylesheet.startswith('@import url("/static/foundation.css");'))
+        self.assertEqual(
+            [path.name for path in paths],
+            [
+                "foundation.css",
+                "base.css",
+                "shell.css",
+                "calendar.css",
+                "components.css",
+                "system-tools.css",
+                "records.css",
+                "discovery.css",
+                "specialist-views.css",
+                "interactions.css",
+            ],
+        )
         self.assertEqual(stylesheet.count("foundation.css"), 1)
-        self.assertTrue((STATIC_DIR / "foundation.css").is_file())
+        self.assertTrue(all(path.is_file() for path in paths))
 
     def test_shared_layout_keeps_the_existing_application_stylesheet(self) -> None:
         html = layout("Foundation smoke", "<h1>Foundation smoke</h1>")
@@ -55,18 +74,20 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("project-e-calendar-context", script)
         self.assertIn('a[title="Calendar"][href="/calendar"]', script)
 
-    def test_foundation_file_is_allowed_by_static_handler(self) -> None:
+    def test_stylesheet_modules_are_allowed_by_static_handler(self) -> None:
         server = make_test_server()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
-            with urlopen(
-                f"http://127.0.0.1:{server.server_port}/static/foundation.css",
-                timeout=5,
-            ) as response:
-                self.assertEqual(response.status, 200)
-                self.assertEqual(response.headers.get_content_type(), "text/css")
-                self.assertIn(b"Project E design foundation", response.read())
+            for path in (STATIC_DIR / "styles.css", *application_stylesheet_paths()):
+                with self.subTest(stylesheet=path.name):
+                    with urlopen(
+                        f"http://127.0.0.1:{server.server_port}/static/{path.name}",
+                        timeout=5,
+                    ) as response:
+                        self.assertEqual(response.status, 200)
+                        self.assertEqual(response.headers.get_content_type(), "text/css")
+                        self.assertTrue(response.read())
         finally:
             server.shutdown()
             server.server_close()
@@ -168,9 +189,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("invoker?.isConnected ? invoker", dirty_form)
 
     def test_shared_stylesheet_has_balanced_blocks_and_defined_custom_properties(self) -> None:
-        foundation = (STATIC_DIR / "foundation.css").read_text()
-        stylesheet = (STATIC_DIR / "styles.css").read_text()
-        combined = foundation + stylesheet
+        combined = read_application_css()
 
         self.assertEqual(combined.count("{"), combined.count("}"))
         self.assertNotIn("var(--ink)", combined)
@@ -220,7 +239,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("transition-duration: 0.01ms !important", foundation)
 
     def test_first_shared_component_slice_has_semantic_states(self) -> None:
-        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        stylesheet = read_application_css()
 
         for selector in (
             ".button.quiet",
@@ -237,7 +256,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn("0 0 0 3px var(--color-border-focus)", stylesheet)
 
     def test_shared_feedback_and_content_states_use_semantic_roles(self) -> None:
-        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        stylesheet = read_application_css()
 
         for selector in (
             ".empty-state",
@@ -271,7 +290,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn('url.searchParams.delete("saved")', saved_html)
         self.assertIn("history.replaceState", saved_html)
 
-        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        stylesheet = read_application_css()
         self.assertIn(".save-toast", stylesheet)
         self.assertIn("@keyframes save-toast-fade", stylesheet)
 
@@ -393,7 +412,7 @@ class DesignFoundationTests(unittest.TestCase):
         self.assertIn('class="status-row warning" role="status"', html)
         self.assertIn("Location evidence needs review.", html)
         self.assertIn('href="/locations/1/audit">Details</a>', html)
-        stylesheet = (STATIC_DIR / "styles.css").read_text()
+        stylesheet = read_application_css()
         self.assertIn(".status-row.warning", stylesheet)
 
 

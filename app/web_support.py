@@ -39,13 +39,11 @@ class RequestSupportMixin:
             "description-field.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",
             "event-form.js": "text/javascript; charset=utf-8",
-            "foundation.css": "text/css; charset=utf-8",
             "mini-month-picker.js": "text/javascript; charset=utf-8",
             "reminder-timings.js": "text/javascript; charset=utf-8",
             "quick-create.js": "text/javascript; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",
             "super-key.js": "text/javascript; charset=utf-8",
-            "styles.css": "text/css; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
             "timezone-picker.js": "text/javascript; charset=utf-8",
         }
@@ -59,6 +57,16 @@ class RequestSupportMixin:
                 self.respond_not_found()
                 return
             content_type = "image/svg+xml"
+        elif (
+            "/" not in relative_path
+            and relative_path.endswith(".css")
+            and relative_path.removesuffix(".css").replace("-", "").isalnum()
+        ):
+            path = STATIC_DIR / relative_path
+            if not path.is_file():
+                self.respond_not_found()
+                return
+            content_type = "text/css; charset=utf-8"
         elif relative_path in content_types:
             path = STATIC_DIR / relative_path
             content_type = content_types[relative_path]

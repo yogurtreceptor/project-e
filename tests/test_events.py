@@ -49,7 +49,7 @@ from app.temporal import TemporalValueError
 from app import views
 from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
 from app.reminder_service import get_override, get_policy
-from tests.web_test_support import make_test_server
+from tests.web_test_support import make_test_server, read_application_css
 
 
 class EventServiceTests(unittest.TestCase):
@@ -301,7 +301,7 @@ class EventServiceTests(unittest.TestCase):
 
     def test_calendar_visual_refinement_assets_preserve_view_state_and_scroll_boundaries(self) -> None:
         static_dir = Path(__file__).resolve().parents[1] / "app" / "static"
-        styles = (static_dir / "styles.css").read_text()
+        styles = read_application_css()
         groups = (static_dir / "calendar-groups.js").read_text()
         grid = (static_dir / "calendar-grid.js").read_text()
 
@@ -374,7 +374,7 @@ class EventServiceTests(unittest.TestCase):
         self.assertIn("Custom recurrence", fourth_monday)
         self.assertIn("Repeat every", fourth_monday)
         self.assertIn("occurrences", fourth_monday)
-        styles = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
+        styles = read_application_css()
         self.assertIn('.custom-recurrence-ends input[type="radio"] { flex: 0 0 auto;', styles)
         self.assertIn('max-width: 24rem;', styles)
         self.assertIn('height: 1.75rem;', styles)
@@ -507,7 +507,7 @@ class EventServiceTests(unittest.TestCase):
             self.assertIn("Delete recurring event", preview)
             self.assertIn("This and following", preview)
             self.assertNotIn('<select name="recurrence_scope">', preview)
-            styles = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
+            styles = read_application_css()
             self.assertIn('.recurrence-scope-dialog[open] { display: grid;', styles)
             self.assertNotIn('.recurrence-scope-dialog { display: grid;', styles)
             client.request("GET", f"/calendar/events/{event_id}/edit?occurrence=2026-01-19")
