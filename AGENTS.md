@@ -1,6 +1,6 @@
 Project Scope
 -------------
-Project E is a local-first Personal Information Platform for one private user. Phase 1 is complete and Phase 2 is in progress. The platform stores, organises and navigates canonical People, Organisations, Locations, Projects, Documents, Assets and Events, their Relationships, and local operational records such as Calendars, reminders and Inbox deliveries. Personal operational intelligence remains the longer-term direction.
+Project E is a local-first Personal Information Platform for one private user. Phases 1 and 2 are complete development milestones; Phase 3 remains undefined. The platform stores, organises and navigates canonical People, Organisations, Locations, Projects, Documents, Assets and Events, their Relationships, and local operational records such as Calendars, reminders and Inbox deliveries. Personal operational intelligence remains the longer-term direction.
 
 Quick Commands
 --------------
@@ -25,10 +25,10 @@ Design Principles
 - Prefer maintainable, simple architecture and free/open-source dependencies.
 - Use SQLite and conservative dependencies. Add a dependency only when the standard library and existing code cannot reasonably meet the need, and document the reason.
 
-Current Phase Boundaries
-------------------------
+Delivered Phase 2 Boundaries
+----------------------------
 - Implementation prompts define the authorised task. Plans and roadmap items provide context and boundaries, not permission to implement them.
-- Phase 2 may include explicitly authorised, local and deterministic reminders, scheduling, registered background jobs and trigger-condition-action automation as defined in `docs/phase_2_workspace.md`.
+- Phase 2 delivered the explicitly authorised local reminders, scheduling, registered background jobs and trigger-condition-action automation defined in `docs/phase_2_workspace.md`.
 - Deterministic maintenance may recalculate derived state and create operational or audit records within the documented contracts. Creating, editing, archiving or deleting a canonical Event requires explicit user approval.
 - Do not introduce AI or agent workflows, chat, AI decision support, AI-generated autonomous actions, autonomous external side effects, arbitrary executable code, external notification or calendar channels, distributed workers or queues, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies unless the user explicitly authorises a change in direction.
 

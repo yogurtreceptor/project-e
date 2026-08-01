@@ -310,7 +310,7 @@ See also: Deterministic Assistance, Local-first, Artificial Intelligence.
 
 ### Phase 2
 
-The in-progress operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
+The completed operational-time and deterministic-automation development milestone. It delivered coherent Calendar/Event, reminder/Inbox, scheduler and registered-automation behaviour after integrated completion review. AI remains outside this milestone.
 
 See also: Event, Calendar Projection, Reminder, Scheduled Job.
 

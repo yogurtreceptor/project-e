@@ -1,8 +1,8 @@
-# Phase 2 Candidate Closure Review
+# Phase 2 Completion Review
 
-Reviewed 2026-08-01. Evidence revision: `e3b5c2922edc2537f4f14e3524d7908dbcb60f10`.
+Reviewed and closed 2026-08-01. Evidence revision: `e3b5c2922edc2537f4f14e3524d7908dbcb60f10`. Reviewed PR head: `6517779a4c3b6e9bf4866f90f10f39ae6fd22654`. History-preserving merge commit: `bdc9e6bc4fcbf54dc7e5524adedef2f3dddbe3b2`.
 
-This is the candidate closure review for Phase 2. It records the integrated repository and agent-driven desktop evidence presented to the owner. Phase 2 remains active, PR #6 remains draft and the closure decision remains pending until the owner accepts the delivered experience and conditionally authorises the final status changes and merge.
+This is the final closure review for Phase 2. It records the integrated repository and agent-driven desktop evidence presented to the owner. The owner merged PR #6 with the exact reviewed head, then explicitly requested that repository documentation be corrected to record Phase 2 as closed. Because the merge occurred before the status update, the final documentation and validation record follow in a focused pull request rather than rewriting published history.
 
 ## Delivered boundary
 
@@ -29,7 +29,7 @@ The sole current registered automation invokes the reminder-delivery service. Ru
 
 The evidence revision passed focused automation, scheduler, System Tools, migration and closeout-walkthrough tests. It also passed the complete repository suite of **287 tests**, `python3 -m compileall app run.py tests` and `git diff --check` on 2026-08-01.
 
-Final verification must be rerun after the approved status edits. The final review will record that revision and result before merge.
+Final verification after the status edits passed **287 tests**, `python3 -m compileall app run.py tests` and `git diff --check` on 2026-08-01. The tracked-artifact scan found no database, export, backup, log, cache, credential, personal-data or runtime artifact. The focused follow-up contains no application, schema, route, service-interface or public-API change.
 
 ## Desktop visual and keyboard review
 
@@ -53,12 +53,12 @@ The owner accepted the complete current technical-debt register as non-blocking 
 
 Persistent System Health, future work management, phone/mobile workflows, external notification channels, AI, autonomous external side effects, arbitrary executable automation and automatic canonical Event mutation remain excluded. Phase 3 remains undefined and is not a prerequisite for closure.
 
-## Owner decisions and candidate conclusion
+## Owner decisions and closure conclusion
 
 - **Milestone meaning — accepted 2026-08-01.** Phase 2 may close as a completed development milestone while ordinary maintenance and residual defects continue without reopening it.
-- **Delivered experience — pending.** The owner must review this evidence and confirm that the current Calendar/Event, reminder/Inbox and local runtime experience has enough practical polish to leave in place.
+- **Delivered experience — accepted 2026-08-01.** The owner merged the reviewed delivery and asked to complete its status record.
 - **Accepted debt — accepted 2026-08-01.** The current debt register is non-blocking for closure.
 - **Deferred boundary — accepted 2026-08-01.** The exclusions above remain outside Phase 2.
-- **Final closure — pending.** The owner must conditionally authorise marking Phase 2 complete and merging PR #6 if final verification passes and the tested revision matches the PR head.
+- **Final closure — accepted 2026-08-01.** The owner merged PR #6 and explicitly requested the missing completion documentation.
 
-The repository evidence supports Phase 2 closure, but this candidate review does not itself close the phase. No completion status, ready-for-review state or merge gate may change until the two pending owner decisions are recorded.
+Phase 2 is closed as a completed development milestone. Ordinary residual defects remain normal maintenance and do not reopen the phase. Phase 3 remains undefined, and this closure creates no implementation authority for deferred capabilities.

@@ -32,7 +32,7 @@ The immediate goal is deliberately human: make private information useful, trust
 | Track | State | What that means |
 | --- | :---: | --- |
 | **Phase 1 · Information Platform** | **Complete** | Canonical records and Relationships, Search, Map, Timeline, local Documents, taxonomies, audit/history, data quality, reviewed inference, merging and recovery. |
-| **Phase 2 · Operational Time** | **Active** | Calendar and recurring Events, derived occurrences, reminder policies, durable Inbox delivery, startup recovery, registered scheduled jobs and deterministic automation are delivered and undergoing focused refinement. |
+| **Phase 2 · Operational Time** | **Complete** | Calendar and recurring Events, derived occurrences, reminder policies, durable Inbox delivery, startup recovery, registered scheduled jobs and deterministic automation form a completed development milestone. |
 | **Phase 3** | **Undefined** | AI, agent workflows, external notification channels, accounts and cloud-dependent operation are not current product scope. |
 
 Project E currently needs no account and remains useful without WAN access. Optional map tiles and address lookup use replaceable network services; canonical records and core workflows do not.
@@ -40,7 +40,7 @@ Project E currently needs no account and remains useful without WAN access. Opti
 The earlier experimental Task subsystem was retired on 2026-08-01 because it had no user data and had not proved useful. Any future to-do or work-management capability starts from a newly authorised design rather than compatibility with that implementation.
 
 > [!NOTE]
-> This is an active, source-available development project—not a stable release or an open-source distribution. The [Phase 2 workspace](docs/phase_2_workspace.md) is the detailed status authority.
+> This is an active, source-available development project—not a stable release or an open-source distribution. The [Phase 2 workspace](docs/phase_2_workspace.md) preserves the detailed delivery and closure record.
 
 ## See it
 

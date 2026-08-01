@@ -12,7 +12,7 @@ Pull request #1 is closed and Phase 1 is complete enough to close as a developme
 
 ## Phase 2 — Operational Time and Deterministic Automation
 
-### Status: Foundation complete; refinement active
+### Status: Complete
 
 Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 
@@ -20,7 +20,7 @@ Phase 2 establishes the platform's operational time and automation foundation. T
 structured information → relationships → temporal information → events → calendar projections → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
 ```
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Focused Event, Calendar and operational refinements continue in a living workspace until Phase 3 is deliberately defined. The unsuccessful experimental Task subsystem was retired on 2026-08-01; future work management is neither promised nor constrained by that design. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 workspace](docs/phase_2_workspace.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F and the authorised Event, Calendar and operational refinements closed after integrated review of Calendar/Event, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. The unsuccessful experimental Task subsystem was retired on 2026-08-01; future work management is neither promised nor constrained by that design. Persistent System Health, AI and external side effects remain outside this milestone. Residual defects continue through ordinary maintenance without reopening Phase 2. The canonical scope, delivery history, exclusions and completion evidence are in [the Phase 2 workspace](docs/phase_2_workspace.md). Phase 3 remains undefined until deliberately specified.
 
 ## Phase 3 — AI-assisted Platform
 
