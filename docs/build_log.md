@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Phase 2 closeout preparation
+
+- Marked authorised Phase 2 feature work complete and established one closeout checklist separating completed repository evidence, remaining review/documentation work and explicit product-owner approvals.
+- Prepared the complete `dev` delivery history for review against `main` without treating deferred capabilities or accepted technical debt as reasons to add further Phase 2 features.
+
 ### Direct Other-calendar editing
 
 - Added a context-preserving edit shortcut to every enabled URL Calendar row, matching the direct General, Birthdays and local Calendar editing path without duplicating settings forms or services.
