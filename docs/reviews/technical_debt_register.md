@@ -53,6 +53,16 @@ Trigger: the next material route workflow change in Calendar, Relationships, Sys
 
 Direction: move the affected domain controller methods into one focused route/controller module behind the existing handler and `app/web_router.py` boundaries. Keep request parsing and response mechanics in `app/web_support.py`; avoid introducing a second router or changing URLs solely to split the file.
 
+## Reminder sources are hardcoded in the evaluator
+
+Severity: medium
+
+`app/reminder_service.py` currently enumerates canonical Events, cached URL Calendar occurrences and Document expiries inside one source loop. Shared downstream policy, delivery and reconciliation services exist, but adding another record-derived temporal source would require editing the evaluator directly and risks growing source-specific reminder behaviour there.
+
+Trigger: the authorised Inbox/reminder redesign or the next record-derived Calendar/reminder source, whichever comes first.
+
+Direction: implement the ADR-028 temporal-occurrence provider boundary and migrate current sources to it before adding another source branch. Each provider supplies stable occurrence identity, canonical source/navigation, due boundaries and source-specific resolution behaviour; shared Calendar projection, reminder evaluation, delivery and Inbox services consume the result. Do not require every source fact to become a canonical Event, and do not route non-temporal approvals or system failures through the occurrence boundary.
+
 ## Timeline is derived and limited
 
 Severity: low

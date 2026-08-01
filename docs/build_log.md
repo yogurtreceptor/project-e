@@ -4,6 +4,10 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Shared temporal-occurrence direction
+
+- Adopted one extensible occurrence pipeline for Event schedules and eligible record-derived dates to reach Calendar, reminder and Inbox behaviour without standalone domain scanners or forced Event duplication; recorded the current hardcoded source enumeration as follow-up debt.
+
 ### Local README interface gallery
 
 - Replaced the single externally hosted Home image with four local, clickable screenshots of Home, a connected Person profile, Calendar and Family Tree.

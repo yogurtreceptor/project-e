@@ -445,3 +445,18 @@ The delivered Task model had no canonical user records and did not prove useful.
 
 Consequences:
 Project E has no current Task or to-do capability. Fresh databases apply the historical migrations and then remove their artifacts, while upgrades with real Task data stop without deleting it. Any future work-management capability begins with a newly authorised product model and forward migration; it is not required to preserve the retired design.
+
+## ADR-028: Route record-derived reminders through one temporal occurrence pipeline
+
+Status: Accepted
+
+Date: 2026-08-01
+
+Decision:
+Canonical record dates that need Calendar, reminder or Inbox behaviour must enter one shared temporal-occurrence pipeline. Each source domain adapts its canonical fact into a traceable occurrence contract consumed by shared Calendar projection, reminder-policy resolution, delivery, reconciliation and Inbox services. A Person, Document, Relationship or other source continues to own its date; adapting that date does not require copying it into a canonical Event. Materialising an Event remains a deliberate domain decision for a time record that needs Event identity and lifecycle, as with the protected birthday Event workflow, rather than the default way to gain reminder behaviour.
+
+Reason:
+Record-derived reminders are common platform behaviour. Implementing a separate scanner, timing model, delivery path and lifecycle reconciliation for each new dated field would duplicate logic and make Calendar, reminder and Inbox behaviour diverge. Keeping the source fact canonical while sharing its temporal projection provides reuse without creating competing sources of truth.
+
+Consequences:
+New record-derived reminder sources must register or adapt to the shared occurrence boundary instead of adding standalone source loops or delivery implementations. Event schedules, recurring Event instances, cached external occurrences and eligible record-derived dates may therefore use the same downstream reminder and Inbox machinery while retaining source-specific resolution rules; for example, an ordinary Event reminder may cease after the Event ends while a Document-expiry condition may remain actionable. Reminders without a meaningful temporal occurrence, such as a process approval or system failure, retain their own operational semantics and are not forced through this pipeline. The current hardcoded reminder-source enumeration is an implementation limitation to remove during the next authorised reminder/Inbox refactor; this decision does not claim that refactor is already complete.

@@ -11,7 +11,7 @@ The platform uses four complementary record categories:
 - **Derived temporal records** are deterministic, traceable time instances and views: derived occurrences and Calendar projections.
 - **Operational and historical records** support attention, execution and traceability: reminder policies, Notifications and their actions, Audit events, Scheduled Jobs and Job Runs, Automation Rules and Automation Runs.
 
-A Calendar view may display canonical records, derived occurrences and operational projections, but is never an independent Event store. A Person birthday, Document expiry, Project target date or Scheduled Job Run does not become an Event merely because it appears on a Calendar.
+A Calendar view may display canonical records, derived occurrences and operational projections, but is never an independent Event store. A Document expiry, Project target date or Scheduled Job Run does not become an Event merely because it appears on a Calendar. Person birthdays are canonical Events only because the protected Birthdays workflow deliberately materialises and synchronises them, not because Calendar display requires conversion.
 
 ## Canonical Entities
 
@@ -187,11 +187,13 @@ A Calendar Subscription is an explicitly configured, read-only public-HTTPS iCal
 
 ## Derived Temporal Records and Calendar Projections
 
-A **derived occurrence** is a deterministic temporal instance traceable to a canonical source and definition, such as a generated recurring Event occurrence, a birthday from `Person.birth_date`, or a Document expiry.
+A **derived occurrence** is a deterministic temporal instance traceable to a canonical source and definition, such as a generated recurring Event occurrence or a Document expiry.
 
 A **Calendar projection** is a displayed time-based view of a canonical record or derived occurrence. It is not a source of truth and does not convert every dated record into an Event.
 
 Calendar projections can display canonical Events, generated Event occurrences, birthdays, Document expiries, Project target dates and Scheduled Job Runs. Derived occurrences and projections remain traceable to their source records and use no duplicate canonical Event rows unless a separately designed workflow deliberately materialises a new Event with explicit provenance.
+
+Eligible record-derived dates enter Calendar and reminder behaviour through one shared temporal-occurrence contract. The adapter identifies the canonical source, stable logical occurrence, temporal boundary, navigation target and resolution behaviour; shared Calendar, reminder and Inbox services consume that contract. The source domain does not gain its own reminder scanner or delivery model. This shared route applies to temporal attention such as Event schedules, birthdays, Document expiries and future record-derived anniversaries, but does not force non-temporal approvals or system failures to masquerade as occurrences.
 
 ## Operational and Historical Records
 
@@ -200,6 +202,8 @@ Operational and historical records support deterministic attention, execution, r
 ### Reminders and Notifications
 
 A Reminder is a policy attached to an Event, cached URL Calendar occurrence, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Local Calendar, Calendar Subscription, record and occurrence contexts resolve the applicable reminder timings.
+
+Record-derived reminder policies are evaluated only after their source facts have been adapted into the shared temporal-occurrence contract. Source-specific persistence and resolution remain valid: an Event, Person, Document or Relationship continues to own its facts, and different occurrence kinds may stop being actionable under different conditions without bypassing shared delivery and Inbox behaviour.
 
 A Notification is the durable, actionable local Inbox delivery produced for a due condition. Delivery, acknowledgement, dismissal, snooze, resolution and failure history belong to the Notification and append-only action history, not to the Reminder definition.
 

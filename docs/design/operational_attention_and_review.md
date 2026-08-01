@@ -98,6 +98,8 @@ A reminder is a policy attached to an Event, cached URL Calendar occurrence or d
 source fact → occurrence → reminder policy → override → notification delivery
 ```
 
+Eligible dates owned by Events or other canonical records must reach this chain through one shared temporal-occurrence provider boundary. A new record-derived reminder source supplies its traceable occurrence and source-specific resolution behaviour; it does not add a separate scanner, reminder engine or Inbox-delivery path. The canonical source retains ownership of its date, so using the shared chain does not require materialising an Event. Attention without a meaningful temporal occurrence, including approvals and system failures, retains its separate operational model.
+
 The interface places reminder controls with the relevant Event, local Calendar, URL Calendar or source-policy context. A URL Calendar supplies only Calendar-level defaults because its cached items remain read-only and non-canonical. The system inbox may present the resulting attention item. Dismissal or snooze operates on delivery/attention state and does not silently change the underlying Event or source fact. When a source lifecycle change removes its due condition, future deliveries are suppressed and active reminder attention resolves; historic deliveries remain retained.
 
 ## System inbox

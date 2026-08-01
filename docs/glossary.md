@@ -124,7 +124,9 @@ See also: Archived, Recycle Bin.
 
 ### Derived Occurrence
 
-A deterministic, traceable temporal instance produced from a canonical record and definition, such as a yearly birthday from a Person birth date.
+A deterministic, traceable temporal instance produced from a canonical record and definition, such as a recurring Event instance or a Document expiry. Eligible record-derived occurrences enter Calendar, reminder and Inbox behaviour through the shared Temporal Occurrence Pipeline rather than through domain-specific scanners and delivery code.
+
+See also: Temporal Occurrence Pipeline, Calendar Projection, Reminder.
 
 ### Design System
 
@@ -405,6 +407,12 @@ The name of a retired experimental work-management entity. Migration `20260801_3
 ### Taxonomy
 
 A reusable local hierarchy containing Type, optional Subtype and optional Specific subtype. A record stores one selected terminal entry representing the whole path. Archived entries remain readable on existing records but are unavailable for new selection.
+
+### Temporal Occurrence Pipeline
+
+The shared route by which an Event schedule, cached external occurrence or eligible date owned by another canonical record becomes a stable, traceable occurrence for Calendar projection, reminder evaluation, delivery reconciliation and Inbox attention. The source record retains ownership of its date, and using the pipeline does not by itself create a canonical Event. Non-temporal approvals and system failures do not use this pipeline.
+
+See also: Derived Occurrence, Calendar Projection, Reminder, Notification.
 
 ### Timeline event
 
