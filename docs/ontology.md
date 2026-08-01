@@ -208,8 +208,9 @@ Record-derived reminder policies are evaluated only after their source facts hav
 A Notification is the durable, actionable local Inbox delivery produced for a due condition. Delivery, acknowledgement, dismissal, snooze, resolution and failure history belong to the Notification and append-only action history, not to the Reminder definition.
 
 - A delivery has a stable logical identity based on its source, occurrence, due instant, timing and reason. Re-evaluation of unchanged inputs does not duplicate it.
-- A material future change to an affected due condition, occurrence or applicable timing creates a new pending delivery only where needed; superseded active or snoozed attention is resolved. Historical delivery records are retained.
-- A Notification does not itself mutate its source Event or other canonical record. Snoozing, dismissing or acknowledging changes operational attention only.
+- One source occurrence and reason has at most one active or snoozed Notification. Each configured timing may deliver once; a later timing resolves older visible attention while historical delivery records remain retained.
+- Event Notifications carry the occurrence end boundary and resolve when the exact occurrence is opened or ends. A Document-expiry Notification is persistent and does not resolve merely because its Document is opened or the expiry date passes.
+- A Notification does not itself mutate its source Event or other canonical record. Snoozing or dismissing changes operational attention only; acknowledgement remains a historical state rather than a current reminder action.
 
 ### Audit Events
 

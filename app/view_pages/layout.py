@@ -12,10 +12,20 @@ def layout(
     sidebar_variant: str = "browse",
     sidebar_content: str = "",
     header_content: str = "",
+    inbox_count: int = 0,
 ) -> str:
-    def nav_link(href, label, icon_name, current=False):
+    def nav_link(href, label, icon_name, current=False, count_badge=False):
         state = ' class="active" aria-current="page"' if current else ""
-        return f'<a{state} href="{href}" title="{escape(label)}">{icon(icon_name)}<span class="nav-label">{escape(label)}</span></a>'
+        badge = ""
+        if count_badge:
+            count = max(0, inbox_count)
+            count_label = f"{count} active Inbox reminder{'s' if count != 1 else ''}"
+            badge = (
+                f'<span class="inbox-count-badge" data-inbox-count '
+                f'aria-label="{count_label}" title="{count_label}"'
+                f'{" hidden" if count == 0 else ""}>{count}</span>'
+            )
+        return f'<a{state} href="{href}" title="{escape(label)}">{icon(icon_name)}<span class="nav-label">{escape(label)}</span>{badge}</a>'
 
     entity_nav = "".join(
         nav_link(f"/{definition.slug}", definition.plural, DOMAIN_ICONS[definition.slug], definition.slug == active_slug)
@@ -24,7 +34,7 @@ def layout(
     connection_nav = "".join((
         nav_link("/relationships", "Relationships", "relationships", active_slug == "relationships"),
         nav_link("/calendar", "Calendar", "timeline", active_slug == "calendar"),
-        nav_link("/inbox", "Inbox", "system", active_slug == "inbox"),
+        nav_link("/inbox", "Inbox", "system", active_slug == "inbox", True),
         nav_link("/timeline", "Timeline", "timeline", active_slug == "timeline"),
         nav_link("/map", "Map", "map", active_slug == "map"),
     ))
@@ -121,6 +131,7 @@ def layout(
         </form>
     </dialog>
     <script src="/static/shell.js"></script>
+    <script src="/static/inbox-count.js"></script>
     <script src="/static/super-key.js"></script>
     <script src="/static/action-menus.js"></script>
     <script src="/static/taxonomy.js"></script>

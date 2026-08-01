@@ -46,6 +46,7 @@ from app.reminder_service import (
     evaluate_due_reminders,
     get_policy,
     list_inbox_items,
+    open_inbox_item,
     set_policy,
 )
 from app.icalendar_service import (
@@ -400,9 +401,16 @@ class CalendarInterchangeTests(unittest.TestCase):
         self.assertEqual("event", item.source_kind)
         self.assertEqual(-external_event_id, item.source_id)
         self.assertEqual("2026-07-30", item.occurrence_key)
-        self.assertIn(
-            f"external_preview=-{external_event_id}",
-            inbox_page([item], archived=False),
+        rendered = inbox_page(
+            [item],
+            archived=False,
+            now=datetime(2026, 7, 28, 23, 0, tzinfo=UTC),
+        )
+        self.assertIn(f'action="/inbox/{item.id}/open"', rendered)
+        self.assertIn("Open event", rendered)
+        self.assertEqual(
+            f"/calendar?date=2026-07-30&external_preview=-{external_event_id}&occurrence=2026-07-30",
+            open_inbox_item(self.connection, item.id),
         )
 
         renamed_feed = FICTIONAL_ICS.replace(

@@ -29,7 +29,7 @@ Established Phase 1 patterns provide evidence for the target design:
 - Audit and real-world Timeline are kept separate.
 - Recycle Bin and permanent delete distinguish reversible from irreversible consequences.
 
-The delivered shell has shared success, notice, warning and error presentation, including a passive save toast and quiet record warnings. Phase 2C adds a system Inbox for durable reminder attention, including active attention, Upcoming, archive and deep history. Persistent issues, a cross-tool severity vocabulary and general global attention placement remain deferred; they must not be approximated by scattered notification cards in current pages.
+The delivered shell has shared success, notice, warning and error presentation, including a passive save toast and quiet record warnings. The system Inbox provides durable chronological reminder attention, a semantic active-count badge, archive and deep history. Persistent issues, a cross-tool severity vocabulary and general global attention placement remain deferred; they must not be approximated by scattered notification cards in current pages.
 
 ## Attention model
 
@@ -108,7 +108,7 @@ The inbox is an operational queue, not a social-notification feed.
 
 ### Placement
 
-- Reachable through the delivered Inbox navigation destination. A restrained global header indicator remains a future enhancement.
+- Reachable through the delivered Inbox navigation destination. That navigation item carries the semantic count of currently visible reminder attention and updates through a small local poll; a separate global header indicator is unnecessary at present.
 - Home may later show a restrained Inbox link with a small count/ticker for all active, not-dismissed items; the Inbox remains the canonical attention destination. Dismissal and resolution are deliberate state changes, not merely hiding the count.
 - Entity pages may show related attention in context, but the canonical item remains in the inbox model.
 
@@ -124,11 +124,11 @@ The inbox is an operational queue, not a social-notification feed.
 
 Possible actions include Open source, Review, Approve, Reject, Resolve, Acknowledge, Dismiss and Snooze. Each item exposes only actions valid for its semantics. “Mark all read” is not a substitute for resolution.
 
-Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact. A dismissed reminder remains historical; only a material source reschedule or reminder-policy change may create a fresh pending delivery, while a refresh or other immaterial change cannot redeliver it.
+Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact. A dismissed reminder remains historical and cannot redeliver; a separately configured later timing for the same occurrence may still deliver once, and a material source reschedule or reminder-policy change may create a distinct future identity. A refresh or other immaterial change creates neither.
 
-### Planned reminder-queue refinement
+### Delivered reminder-queue refinement
 
-The next Inbox implementation is planned, but awaits explicit implementation approval. It narrows the delivered active surface to reminder attention while preserving **Inbox** as the future broader operational destination.
+The current Inbox narrows the delivered active surface to reminder attention while preserving **Inbox** as the future broader operational destination.
 
 - The active view is a chronological, date-grouped row list rather than an **Active items** card panel. It has no separate Upcoming projection and no manual reminder-evaluation control.
 - One source occurrence and reason has at most one visible active or snoozed item. A newly due configured timing supersedes the older visible timing without adding consolidation language to the interface; delivery and action history remain retained.
@@ -137,7 +137,7 @@ The next Inbox implementation is planned, but awaits explicit implementation app
 - The navigation badge reports only currently visible reminder attention, disappears at zero and uses the shared semantic warning palette. A visibility-aware local poll may update it between navigations; the registered reminder scan remains authoritative.
 - Archive remains separate and retains delivery/action history. The generic reminder **Acknowledge** action, 30-minute snooze and next-open snooze are removed from the active interaction without rewriting historic records.
 
-The implementation must consume the shared temporal-occurrence provider boundary described above. This refinement does not add email addresses, users, agents, approvals, System Health or a requirement to turn every record-derived date into a canonical Event. The detailed staged brief and outstanding product decisions live in [Phase 2 Workspace](../phase_2_workspace.md).
+The implementation consumes the shared temporal-occurrence provider boundary described above. This refinement does not add email addresses, users, agents, approvals, System Health or a requirement to turn every record-derived date into a canonical Event. The detailed implementation record lives in [Phase 2 Workspace](../phase_2_workspace.md).
 
 ## Severity and prioritisation
 

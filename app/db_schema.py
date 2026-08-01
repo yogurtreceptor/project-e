@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import calendar
 import sqlite3
 from pathlib import Path
 
@@ -619,11 +621,15 @@ def create_reminder_tables(connection: sqlite3.Connection) -> None:
             delivered_at TEXT NOT NULL,
             state TEXT NOT NULL CHECK (state IN ('active', 'acknowledged', 'dismissed', 'resolved', 'snoozed')) DEFAULT 'active',
             next_attention_at TEXT NOT NULL DEFAULT '',
+            attention_expires_at TEXT NOT NULL DEFAULT '',
             acted_at TEXT NOT NULL DEFAULT '',
             action_note TEXT NOT NULL DEFAULT ''
         );
         CREATE INDEX IF NOT EXISTS idx_inbox_active_attention ON inbox_items(state, next_attention_at, due_at, id);
         CREATE INDEX IF NOT EXISTS idx_inbox_source_active ON inbox_items(source_kind, source_id, state);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_inbox_one_active_occurrence
+            ON inbox_items(source_kind, source_id, occurrence_key, reason)
+            WHERE state IN ('active', 'snoozed');
     """)
 
 
@@ -691,6 +697,89 @@ def create_inbox_action_history_table(connection: sqlite3.Connection) -> None:
         )
     """)
     connection.execute("CREATE INDEX IF NOT EXISTS idx_inbox_item_actions_item ON inbox_item_actions(inbox_item_id, id)")
+
+
+def consolidate_active_inbox_attention(connection: sqlite3.Connection) -> None:
+    """Add occurrence expiry and enforce one visible item per logical reminder."""
+    create_initial_reminder_tables(connection)
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(inbox_items)")}
+    if "attention_expires_at" not in columns:
+        connection.execute(
+            "ALTER TABLE inbox_items ADD COLUMN attention_expires_at TEXT NOT NULL DEFAULT ''"
+        )
+    groups = connection.execute(
+        """SELECT source_kind, source_id, occurrence_key, reason, COUNT(*) AS item_count
+           FROM inbox_items
+           WHERE state IN ('active', 'snoozed')
+           GROUP BY source_kind, source_id, occurrence_key, reason
+           HAVING COUNT(*) > 1"""
+    ).fetchall()
+    now = utc_now()
+    has_actions = _table_exists(connection, "inbox_item_actions")
+    for group in groups:
+        rows = connection.execute(
+            """SELECT id, timing, due_at, delivered_at, state
+               FROM inbox_items
+               WHERE source_kind=? AND source_id=? AND occurrence_key=? AND reason=?
+                 AND state IN ('active', 'snoozed')""",
+            (
+                group["source_kind"],
+                group["source_id"],
+                group["occurrence_key"],
+                group["reason"],
+            ),
+        ).fetchall()
+        keep = max(rows, key=_migration_attention_sort_key)
+        for row in rows:
+            if row["id"] == keep["id"]:
+                continue
+            connection.execute(
+                """UPDATE inbox_items
+                   SET state='resolved', next_attention_at='', acted_at=?,
+                       action_note='replaced by later reminder timing'
+                   WHERE id=?""",
+                (now, row["id"]),
+            )
+            if has_actions:
+                connection.execute(
+                    """INSERT INTO inbox_item_actions
+                       (inbox_item_id, action, previous_state, resulting_state,
+                        next_attention_at, note, acted_at)
+                       VALUES (?, 'timing_superseded', ?, 'resolved', '',
+                               'replaced by later reminder timing', ?)""",
+                    (row["id"], row["state"], now),
+                )
+    connection.execute(
+        """CREATE UNIQUE INDEX IF NOT EXISTS idx_inbox_one_active_occurrence
+           ON inbox_items(source_kind, source_id, occurrence_key, reason)
+           WHERE state IN ('active', 'snoozed')"""
+    )
+
+
+def _migration_attention_sort_key(row: sqlite3.Row) -> tuple[str, int]:
+    try:
+        due = datetime.fromisoformat(row["due_at"].replace("Z", "+00:00"))
+        timing = row["timing"]
+        if timing.endswith("mo"):
+            months = int(timing[:-2])
+            total = due.year * 12 + due.month - 1 - months
+            year, month_index = divmod(total, 12)
+            attention = due.replace(
+                year=year,
+                month=month_index + 1,
+                day=min(due.day, calendar.monthrange(year, month_index + 1)[1]),
+            )
+        else:
+            amount = int(timing[:-1])
+            unit = timing[-1]
+            attention = due - timedelta(
+                minutes=amount if unit == "m" else 0,
+                hours=amount if unit == "h" else 0,
+                days=amount * (7 if unit == "w" else 1 if unit == "d" else 0),
+            )
+        return attention.isoformat(), int(row["id"])
+    except (AttributeError, TypeError, ValueError):
+        return row["delivered_at"], int(row["id"])
 
 
 def create_scheduler_tables(connection: sqlite3.Connection) -> None:
@@ -1393,6 +1482,7 @@ SCHEMA_MIGRATIONS = (
         expand_reminder_policy_contexts_for_external_calendars,
     ),
     ("20260801_31_retire_task_subsystem", retire_task_subsystem),
+    ("20260801_32_consolidate_inbox_attention", consolidate_active_inbox_attention),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

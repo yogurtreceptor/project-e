@@ -4,6 +4,12 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Inbox reminder refinement
+
+- Replaced the reminder Inbox's manual evaluation, Upcoming preview and generic action cards with a chronological active queue, exact-occurrence Event opening, persistent Document-expiry handling, fixed ten-minute snooze, retained Archive and a locally refreshed semantic count badge.
+- Implemented the shared temporal-occurrence provider boundary for Calendar/reminder sources, corrected long-lead Birthday evaluation, and added migration-safe one-active-item consolidation plus Event-end resolution.
+- Kept high-frequency Job/automation history unchanged and recorded its visual noise as a separate follow-up rather than promoting routine execution into Inbox attention.
+
 ### Shared temporal-occurrence direction
 
 - Adopted one extensible occurrence pipeline for Event schedules and eligible record-derived dates to reach Calendar, reminder and Inbox behaviour without standalone domain scanners or forced Event duplication; recorded the current hardcoded source enumeration as follow-up debt.

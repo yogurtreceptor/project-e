@@ -53,6 +53,7 @@ class DesignFoundationTests(unittest.TestCase):
                 "shell.css",
                 "calendar.css",
                 "components.css",
+                "inbox.css",
                 "system-tools.css",
                 "records.css",
                 "discovery.css",

@@ -9,7 +9,7 @@ from urllib.parse import parse_qs
 
 from app import views
 from app.calendar_subscription_service import list_subscriptions
-from app.db import connect, normalise_form_values
+from app.db import connect, inbox_count, normalise_form_values
 from app.defaults import MAX_EVENT_REMINDERS
 from app.document_storage import (
     UploadedFile,
@@ -39,6 +39,7 @@ class RequestSupportMixin:
             "description-field.js": "text/javascript; charset=utf-8",
             "dirty-form.js": "text/javascript; charset=utf-8",
             "event-form.js": "text/javascript; charset=utf-8",
+            "inbox-count.js": "text/javascript; charset=utf-8",
             "mini-month-picker.js": "text/javascript; charset=utf-8",
             "reminder-timings.js": "text/javascript; charset=utf-8",
             "quick-create.js": "text/javascript; charset=utf-8",
@@ -168,6 +169,8 @@ class RequestSupportMixin:
         sidebar_content: str = "",
         header_content: str = "",
     ) -> None:
+        with connect(self.database_path) as connection:
+            active_inbox_count = inbox_count(connection)
         body = views.layout(
             title,
             content,
@@ -176,6 +179,7 @@ class RequestSupportMixin:
             sidebar_variant=sidebar_variant,
             sidebar_content=sidebar_content,
             header_content=header_content,
+            inbox_count=active_inbox_count,
         )
         encoded = body.encode("utf-8")
         self.send_response(status)

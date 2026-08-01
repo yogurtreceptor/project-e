@@ -53,15 +53,15 @@ Trigger: the next material route workflow change in Calendar, Relationships, Sys
 
 Direction: move the affected domain controller methods into one focused route/controller module behind the existing handler and `app/web_router.py` boundaries. Keep request parsing and response mechanics in `app/web_support.py`; avoid introducing a second router or changing URLs solely to split the file.
 
-## Reminder sources are hardcoded in the evaluator
+## High-frequency runtime history is visually noisy
 
-Severity: medium
+Severity: low
 
-`app/reminder_service.py` currently enumerates canonical Events, cached URL Calendar occurrences and Document expiries inside one source loop. Shared downstream policy, delivery and reconciliation services exist, but adding another record-derived temporal source would require editing the evaluator directly and risks growing source-specific reminder behaviour there.
+The one-minute registered reminder job deliberately retains a Job Run and its registered automation executions even when no reminder is delivered. This execution proof supports recovery, failure inspection and idempotency, and routine runs do not create Inbox attention, but a long-running local instance can accumulate a visually noisy System Tools history dominated by successful no-op work.
 
-Trigger: the authorised Inbox/reminder redesign or the next record-derived Calendar/reminder source, whichever comes first.
+Trigger: runtime-history browsing becomes difficult, database growth becomes material, or the user asks to distinguish meaningful outcomes from routine heartbeat execution.
 
-Direction: implement the ADR-028 temporal-occurrence provider boundary and migrate current sources to it before adding another source branch. Each provider supplies stable occurrence identity, canonical source/navigation, due boundaries and source-specific resolution behaviour; shared Calendar projection, reminder evaluation, delivery and Inbox services consume the result. Do not require every source fact to become a canonical Event, and do not route non-temporal approvals or system failures through the occurrence boundary.
+Direction: assess Job Run, automation-run and global-audit presentation and retention together. Prefer a summarized routine-success projection, bounded presentation or documented compaction policy while preserving failures, meaningful deliveries, recovery checkpoints and enough durable execution identity to prove idempotency. Do not solve visual noise by forwarding routine runs to Inbox or silently removing execution evidence without a replacement contract.
 
 ## Timeline is derived and limited
 

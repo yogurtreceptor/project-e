@@ -7,15 +7,14 @@ from datetime import UTC, date, datetime, timedelta
 import hashlib
 import json
 import sqlite3
-from zoneinfo import ZoneInfo
+from urllib.parse import urlencode
 
 from app.db_support import utc_now
-from app.defaults import DEFAULT_REMINDER_TIMINGS, MAX_EVENT_REMINDERS, PLATFORM_TIMEZONE
-from app.entity_repository import list_entities
+from app.defaults import DEFAULT_REMINDER_TIMINGS, MAX_EVENT_REMINDERS
+from app.entity_repository import get_entity
 from app.entities import DEFINITIONS_BY_TYPE
-from app.event_service import list_events
-from app.event_recurrence import get_recurrence, occurrence_exceptions, occurrences_between
-from app.calendar_subscription_service import subscription_projection
+from app.event_service import get_event
+from app.calendar_subscription_service import get_external_projection_event
 from app.inbox_repository import (
     record_action as _record_action,
     resolve_items as _resolve_items,
@@ -24,6 +23,7 @@ from app.inbox_repository import (
     resolve_source_items_for_occurrence,
     transition_item as _transition_item,
 )
+from app.temporal_occurrences import TemporalOccurrence, reminder_occurrences
 
 DEFAULT_TIMINGS = {
     source_kind: list(timings)
@@ -35,13 +35,7 @@ MAX_REMINDERS = MAX_EVENT_REMINDERS
 class InboxItem:
     id: int; delivery_key: str; source_kind: str; source_id: int; occurrence_key: str
     reason: str; timing: str; title: str; due_at: str; delivered_at: str; state: str
-    next_attention_at: str; acted_at: str; action_note: str
-
-
-@dataclass(frozen=True)
-class UpcomingReminder:
-    source_kind: str; source_id: int; occurrence_key: str; title: str
-    due_at: str; attention_at: str; timing: str
+    next_attention_at: str; attention_expires_at: str; acted_at: str; action_note: str
 
 
 @dataclass(frozen=True)
@@ -116,21 +110,41 @@ def get_override(connection: sqlite3.Connection, source_kind: str, source_id: in
 
 
 def evaluate_due_reminders(connection: sqlite3.Connection, *, now: datetime | None = None) -> int:
-    """Materialise every currently due, eligible delivery exactly once."""
+    """Materialise the latest currently due timing for each eligible occurrence."""
     now = (now or datetime.now(UTC)).astimezone(UTC)
+    sources = reminder_occurrences(
+        connection,
+        now,
+        horizon_days=_timing_horizon_days(_all_configured_timings(connection)),
+    )
+    _refresh_event_expiry_boundaries(connection, sources)
+    _resolve_expired_event_attention(connection, now)
     created = 0
-    for kind, source_id, occurrence, title, due, context in _sources(connection, now):
-        if kind in {"event", "birthday"} and due <= now:
+    for source in sources:
+        if source.source_kind == "event" and source.due_at <= now:
             continue
-        if kind == "document_expiry" and due <= now:
-            _resolve_pending_reminder_items(connection, kind, source_id)
-            created += _deliver(connection, kind, source_id, occurrence, title, due, "overdue", "overdue", now)
+        if source.persistent and source.due_at <= now:
+            _resolve_pending_reminder_items(
+                connection, source.source_kind, source.source_id
+            )
+            created += _deliver(
+                connection, source, "overdue", "overdue", now
+            )
             continue
-        timings = _resolved_timings(connection, kind, source_id, context, occurrence)
-        for timing in timings:
-            attention = _subtract(due, timing)
-            if attention > now: continue
-            created += _deliver(connection, kind, source_id, occurrence, title, due, timing, "reminder", now)
+        due_timings = []
+        for timing in _resolved_timings(
+            connection,
+            source.source_kind,
+            source.source_id,
+            source.context,
+            source.occurrence_key,
+        ):
+            attention_at = _subtract(source.due_at, timing)
+            if attention_at <= now:
+                due_timings.append((attention_at, timing))
+        if due_timings:
+            timing = max(due_timings, key=lambda item: item[0])[1]
+            created += _deliver(connection, source, timing, "reminder", now)
     connection.commit()
     return created
 
@@ -159,38 +173,52 @@ def archived_inbox_count(connection: sqlite3.Connection) -> int:
     return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed'").fetchone()[0])
 
 
-def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | None = None, limit: int = 20) -> list[UpcomingReminder]:
-    """Preview future reminder attention without creating a delivery before it is due."""
-    now = (now or datetime.now(UTC)).astimezone(UTC)
-    results: list[UpcomingReminder] = []
-    for kind, source_id, occurrence, title, due, context in _sources(connection, now):
-        for timing in _resolved_timings(connection, kind, source_id, context, occurrence):
-            attention = _subtract(due, timing)
-            if attention <= now:
-                continue
-            key = _delivery_key(kind, source_id, occurrence, due, timing, "reminder")
-            row = connection.execute("SELECT 1 FROM inbox_items WHERE delivery_key=?", (key,)).fetchone()
-            if row is None:
-                results.append(UpcomingReminder(kind, source_id, occurrence, title, due.isoformat(timespec="seconds"), attention.isoformat(timespec="seconds"), timing))
-    return sorted(results, key=lambda item: (item.attention_at, item.due_at, item.source_kind, item.source_id))[:limit]
-
-
 def inbox_count(connection: sqlite3.Connection) -> int:
     return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state='active' OR (state='snoozed' AND next_attention_at <= ?)", (utc_now(),)).fetchone()[0])
 
 
-def act_on_inbox_item(connection: sqlite3.Connection, item_id: int, action: str) -> bool:
-    if action not in {"acknowledge", "dismiss", "snooze_30m", "snooze_next_open"}: raise ValueError("Inbox action is invalid.")
+def act_on_inbox_item(
+    connection: sqlite3.Connection,
+    item_id: int,
+    action: str,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    if action not in {"dismiss", "snooze_10m"}:
+        raise ValueError("Inbox action is invalid.")
     row = connection.execute("SELECT * FROM inbox_items WHERE id = ?", (item_id,)).fetchone()
     if row is None or row["state"] not in {"active", "snoozed"}: return False
-    now = datetime.now(UTC)
-    if action.startswith("snooze"):
-        next_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds") if action == "snooze_30m" else "9999-12-31T23:59:59+00:00"
-        _transition_item(connection, item_id, row["state"], "snoozed", action, next_at, action, now.isoformat(timespec="seconds"))
+    instant = (now or datetime.now(UTC)).astimezone(UTC)
+    if action == "snooze_10m":
+        next_at = (instant + timedelta(minutes=10)).isoformat(timespec="seconds")
+        _transition_item(connection, item_id, row["state"], "snoozed", action, next_at, "snoozed for 10 minutes", instant.isoformat(timespec="seconds"))
     else:
-        state = "acknowledged" if action == "acknowledge" else "dismissed"
-        _transition_item(connection, item_id, row["state"], state, action, "", action, now.isoformat(timespec="seconds"))
+        _transition_item(connection, item_id, row["state"], "dismissed", action, "", "dismissed by user", instant.isoformat(timespec="seconds"))
     connection.commit(); return True
+
+
+def open_inbox_item(connection: sqlite3.Connection, item_id: int) -> str | None:
+    """Validate and open a reminder, clearing only Event-like attention."""
+    row = connection.execute("SELECT * FROM inbox_items WHERE id = ?", (item_id,)).fetchone()
+    if row is None or row["state"] not in {"active", "snoozed"}:
+        return None
+    destination = _source_destination(connection, row)
+    if destination is None:
+        return None
+    if row["source_kind"] == "event":
+        now = utc_now()
+        _transition_item(
+            connection,
+            item_id,
+            row["state"],
+            "resolved",
+            "opened_source",
+            "",
+            "Event occurrence opened",
+            now,
+        )
+    connection.commit()
+    return destination
 
 
 def reactivate_next_open_snoozes(connection: sqlite3.Connection) -> None:
@@ -281,68 +309,6 @@ def _resolve_pending_reminder_items(connection: sqlite3.Connection, source_kind:
     _resolve_items(connection, "superseded by overdue condition", "overdue_condition", "source_kind=? AND source_id=? AND reason='reminder'", (source_kind, source_id))
 
 
-def _sources(connection, now):
-    zone = ZoneInfo(PLATFORM_TIMEZONE)
-    for event in list_events(connection):
-        if event.is_cancelled or event.is_archived or event.date_precision != "exact": continue
-        recurrence = get_recurrence(connection, event.id)
-        if recurrence is None:
-            occurrences = [event]
-        else:
-            local_today = now.astimezone(ZoneInfo(event.timezone or PLATFORM_TIMEZONE)).date()
-            exceptions = occurrence_exceptions(connection, recurrence)
-            occurrences = [item.event for item in occurrences_between(
-                event, recurrence, local_today - timedelta(days=1), local_today + timedelta(days=1), exceptions
-            )]
-        for occurrence in occurrences:
-            due = _parse_utc(occurrence.start_utc) if not occurrence.is_all_day else datetime.combine(date.fromisoformat(occurrence.start_date), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-            yield "event", event.id, occurrence.start_date or occurrence.start_utc, occurrence.title, due, ("calendar", event.calendar_id)
-    external = subscription_projection(connection)
-    for event in external.events:
-        if event.is_cancelled or event.date_precision != "exact":
-            continue
-        context = ("calendar_subscription", -event.calendar_id)
-        recurrence = external.recurrences.get(event.id)
-        if recurrence is None:
-            occurrences = [event]
-        else:
-            timings = _context_timings(connection, context, "event")
-            if not timings:
-                continue
-            local_today = now.astimezone(
-                ZoneInfo(event.timezone or PLATFORM_TIMEZONE)
-            ).date()
-            horizon = _timing_horizon_days(timings)
-            occurrences = [
-                item.event for item in occurrences_between(
-                    event,
-                    recurrence,
-                    local_today - timedelta(days=1),
-                    local_today + timedelta(days=horizon),
-                    [],
-                )
-            ]
-        for occurrence in occurrences:
-            due = datetime.combine(
-                date.fromisoformat(occurrence.start_date),
-                datetime.min.time(),
-                zone,
-            ).replace(hour=9).astimezone(UTC)
-            yield (
-                "event",
-                event.id,
-                occurrence.start_date,
-                occurrence.title,
-                due,
-                context,
-            )
-    for document in list_entities(connection, DEFINITIONS_BY_TYPE["document"]):
-        expiry = document.metadata.get("expiry_date", "")
-        if expiry:
-            due = datetime.combine(date.fromisoformat(expiry), datetime.min.time(), zone).replace(hour=9).astimezone(UTC)
-            yield "document_expiry", document.id, expiry, f"{document.title} expires", due, ("global", 0)
-
-
 def _resolved_timings(connection, kind, source_id, context, occurrence):
     row = connection.execute("SELECT * FROM reminder_overrides WHERE source_kind=? AND source_id=? AND occurrence_key IN (?, '') ORDER BY occurrence_key DESC LIMIT 1", (kind, source_id, occurrence)).fetchone()
     if row and row["mode"] == "disabled": return []
@@ -353,13 +319,124 @@ def _resolved_timings(connection, kind, source_id, context, occurrence):
     return sorted(set(timings))
 
 
-def _deliver(connection, kind, source_id, occurrence, title, due, timing, reason, now):
-    key = _delivery_key(kind, source_id, occurrence, due, timing, reason)
-    cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, timing, title, due_at, delivered_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (key, kind, source_id, occurrence, reason, timing, title, due.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
+def _deliver(
+    connection: sqlite3.Connection,
+    source: TemporalOccurrence,
+    timing: str,
+    reason: str,
+    now: datetime,
+) -> int:
+    key = _delivery_key(
+        source.source_kind,
+        source.source_id,
+        source.occurrence_key,
+        source.due_at,
+        timing,
+        reason,
+    )
+    _resolve_items(
+        connection,
+        "replaced by later reminder timing",
+        "timing_superseded",
+        "source_kind=? AND source_id=? AND occurrence_key=? AND reason=? AND delivery_key<>?",
+        (
+            source.source_kind,
+            source.source_id,
+            source.occurrence_key,
+            reason,
+            key,
+        ),
+    )
+    expires_at = (
+        source.attention_expires_at.isoformat(timespec="seconds")
+        if source.attention_expires_at
+        else ""
+    )
+    cursor = connection.execute("""INSERT OR IGNORE INTO inbox_items (delivery_key, source_kind, source_id, occurrence_key, reason, timing, title, due_at, delivered_at, attention_expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (key, source.source_kind, source.source_id, source.occurrence_key, reason, timing, source.title, source.due_at.isoformat(timespec="seconds"), now.isoformat(timespec="seconds"), expires_at))
     if cursor.rowcount:
         _record_action(connection, int(cursor.lastrowid), "delivered", "", "active", "", "local delivery created", now.isoformat(timespec="seconds"))
     return cursor.rowcount
+
+
+def _refresh_event_expiry_boundaries(
+    connection: sqlite3.Connection, sources: list[TemporalOccurrence]
+) -> None:
+    for source in sources:
+        if source.source_kind != "event" or source.attention_expires_at is None:
+            continue
+        connection.execute(
+            """UPDATE inbox_items
+               SET occurrence_key=?, attention_expires_at=?
+               WHERE source_kind='event' AND source_id=?
+                 AND (occurrence_key=? OR due_at=?)
+                 AND state IN ('active', 'snoozed')""",
+            (
+                source.occurrence_key,
+                source.attention_expires_at.isoformat(timespec="seconds"),
+                source.source_id,
+                source.occurrence_key,
+                source.due_at.isoformat(timespec="seconds"),
+            ),
+        )
+
+
+def _resolve_expired_event_attention(
+    connection: sqlite3.Connection, now: datetime
+) -> None:
+    rows = connection.execute(
+        """SELECT id, state FROM inbox_items
+           WHERE source_kind='event' AND state IN ('active', 'snoozed')
+             AND attention_expires_at<>'' AND attention_expires_at<=?""",
+        (now.isoformat(timespec="seconds"),),
+    ).fetchall()
+    acted_at = now.isoformat(timespec="seconds")
+    for row in rows:
+        _transition_item(
+            connection,
+            int(row["id"]),
+            row["state"],
+            "resolved",
+            "occurrence_ended",
+            "",
+            "Event occurrence ended",
+            acted_at,
+        )
+
+
+def _source_destination(
+    connection: sqlite3.Connection, row: sqlite3.Row
+) -> str | None:
+    source_id = int(row["source_id"])
+    occurrence = row["occurrence_key"]
+    occurrence_date = occurrence[:10]
+    if row["source_kind"] == "event":
+        if source_id < 0:
+            if get_external_projection_event(connection, source_id) is None:
+                return None
+            return "/calendar?" + urlencode(
+                {
+                    "date": occurrence_date,
+                    "external_preview": source_id,
+                    "occurrence": occurrence_date,
+                }
+            )
+        if get_event(connection, source_id) is None:
+            return None
+        return "/calendar?" + urlencode(
+            {
+                "date": occurrence_date,
+                "preview": source_id,
+                "occurrence": occurrence_date,
+            }
+        )
+    if row["source_kind"] == "document_expiry":
+        if get_entity(
+            connection, DEFINITIONS_BY_TYPE["document"], source_id
+        ) is None:
+            return None
+        return f"/documents/{source_id}"
+    return None
 
 
 def _delivery_key(kind, source_id, occurrence, due, timing, reason):
@@ -395,10 +472,34 @@ def _timing_horizon_days(timings: list[str]) -> int:
             days = max(days, 1)
     return days + 2
 
-def _parse_utc(value): return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+
+def _all_configured_timings(connection: sqlite3.Connection) -> list[str]:
+    timings = [
+        timing
+        for defaults in DEFAULT_TIMINGS.values()
+        for timing in defaults
+    ]
+    for row in connection.execute("SELECT timings_json FROM reminder_policies"):
+        timings.extend(json.loads(row["timings_json"]))
+    for row in connection.execute(
+        "SELECT custom_timings_json FROM reminder_overrides"
+    ):
+        timings.extend(json.loads(row["custom_timings_json"]))
+    return timings
+
+
 def _context_timings(connection, context, source_kind):
     policy = connection.execute("SELECT timings_json FROM reminder_policies WHERE context_kind=? AND context_id=? AND source_kind=?", (*context, source_kind)).fetchone()
-    return json.loads(policy[0]) if policy else list(DEFAULT_TIMINGS[source_kind])
+    if policy:
+        return json.loads(policy[0])
+    default_kind = source_kind
+    if source_kind == "event" and context[0] == "calendar":
+        calendar_row = connection.execute(
+            "SELECT kind FROM calendars WHERE id=?", (context[1],)
+        ).fetchone()
+        if calendar_row is not None and calendar_row["kind"] == "birthday":
+            default_kind = "birthday"
+    return list(DEFAULT_TIMINGS[default_kind])
 
 
 def _validate_timings(timings, *, maximum: int | None = None):

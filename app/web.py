@@ -71,7 +71,7 @@ from app.calendar_subscription_service import (
     get_subscription,
     list_subscriptions, read_staged_subscription, refresh_subscription,
     remove_subscription, reorder_subscriptions, set_subscription_enabled,
-    stage_subscription_fetch, subscription_projection, update_subscription_settings,
+    stage_subscription_fetch, update_subscription_settings,
 )
 from app.event_service import EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
 from app.event_recurrence import cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series
@@ -81,8 +81,8 @@ from app.event_forms import (
     recurrence_rule_from_form,
 )
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
-    clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
-    list_inbox_actions_for_items, list_inbox_items, list_upcoming_reminders,
+    clear_policy, get_override, get_policy, inbox_count, list_deep_archive_items,
+    list_inbox_actions_for_items, list_inbox_items, open_inbox_item,
     reactivate_next_open_snoozes, set_override, set_policy)
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
     list_scheduled_jobs, run_job_now, set_job_enabled)
@@ -104,6 +104,7 @@ from app.icalendar_service import (
 )
 from app.web_support import RequestSupportMixin
 from app.http_server import DEFAULT_HTTP_CONFIG, create_http_server
+from app.temporal_occurrences import calendar_temporal_projection
 from app.web_router import route_request as dispatch_request
 
 
@@ -148,6 +149,11 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             self.respond_not_found()
 
     def route_inbox_request(self, parts: list[str], query: dict[str, str]) -> None:
+        if parts[1:] == ["count"] and self.command == "GET":
+            with connect(self.database_path) as connection:
+                count = inbox_count(connection)
+            self.respond_json({"count": count})
+            return
         if parts[1:] == ["reminders"] and self.command == "GET":
             self.redirect("/calendar/settings")
             return
@@ -174,17 +180,19 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
                 archived_count = archived_inbox_count(connection) if archived else 0
                 items = list_deep_archive_items(connection) if deep_archive else list_inbox_items(connection, archived=archived, limit=page_size, offset=(page - 1) * page_size)
                 action_history = list_inbox_actions_for_items(connection, [item.id for item in items]) if archived else {}
-                upcoming = [] if archived else list_upcoming_reminders(connection)
-            created = int(query.get("created", "0")) if query.get("created", "0").isdigit() else 0
-            self.respond_page("Inbox", views.inbox_page(items, archived=archived, action_history=action_history, upcoming=upcoming, archived_count=archived_count, deep_archive=deep_archive, created=created, page_size=page_size, page=page), active_slug="inbox")
+            self.respond_page("Inbox", views.inbox_page(items, archived=archived, action_history=action_history, archived_count=archived_count, deep_archive=deep_archive, page_size=page_size, page=page), active_slug="inbox")
             return
-        if parts[1:] == ["evaluate"] and self.command == "POST":
-            with connect(self.database_path) as connection: created = evaluate_due_reminders(connection)
-            self.redirect(f"/inbox?created={created}"); return
         if len(parts) == 3 and self.command == "POST":
             item_id = self.parse_entity_id(parts[1])
             if item_id is not None:
-                with connect(self.database_path) as connection: act_on_inbox_item(connection, item_id, parts[2])
+                if parts[2] == "open":
+                    with connect(self.database_path) as connection:
+                        destination = open_inbox_item(connection, item_id)
+                    if destination:
+                        self.redirect(destination)
+                        return
+                else:
+                    with connect(self.database_path) as connection: act_on_inbox_item(connection, item_id, parts[2])
             self.redirect("/inbox"); return
         self.respond_not_found()
 
@@ -193,15 +201,17 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             anchor_date = calendar_anchor_date(query.get("date", ""))
             mini_month_date = calendar_anchor_date(query["mini_date"]) if query.get("mini_date") else anchor_date
             with connect(self.database_path) as connection:
-                calendars = list_calendars(connection, include_archived=True)
-                events = list_events(connection)
-                recurrences = {event.id: recurrence for event in events if (recurrence := get_recurrence(connection, event.id)) is not None}
-                recurrence_exceptions = {event_id: occurrence_exceptions(connection, recurrence) for event_id, recurrence in recurrences.items()}
+                temporal = calendar_temporal_projection(connection)
+                projection_calendars = list(temporal.calendars)
+                calendars = [
+                    calendar
+                    for calendar in projection_calendars
+                    if calendar.kind != "external"
+                ]
+                events = list(temporal.events)
+                recurrences = dict(temporal.recurrences)
+                recurrence_exceptions = dict(temporal.recurrence_exceptions)
                 subscriptions = list_subscriptions(connection, include_disabled=False)
-                external = subscription_projection(connection)
-                projection_calendars = [*calendars, *external.calendars]
-                projection_events = [*events, *external.events]
-                recurrences.update(external.recurrences)
                 created_id = self.parse_entity_id(query.get("created", ""))
                 created_event = get_event(connection, created_id) if created_id else None
                 preview_id = self.parse_entity_id(query.get("preview", ""))
@@ -222,7 +232,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             selected_ids = selected_ids or {
                 calendar.id for calendar in projection_calendars if not calendar.is_archived
             }
-            projection = views.calendar_projection(projection_events, projection_calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
+            projection = views.calendar_projection(events, projection_calendars, view=view, anchor_date=anchor_date, selected_calendar_ids=selected_ids, preview_event=preview_event, preview_occurrence=preview_occurrence, recurrences=recurrences, recurrence_exceptions=recurrence_exceptions)
             self.respond_page(
                 "Calendar",
                 views.calendar_page(calendars, events, return_to=self.path, created_event=created_event, projection=projection),

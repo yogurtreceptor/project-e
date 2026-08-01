@@ -268,7 +268,7 @@ See also: Canonical Unit, Structured Data.
 
 ### Notification
 
-An actionable local-inbox attention item, such as a due reminder or required approval. It persists until acted upon and is distinct from a Persistent Issue, Audit Event and Job Run. Startup may create one deduplicated recovered Notification for a missed due condition.
+An actionable local-Inbox attention item, currently produced for due reminders. One occurrence/reason has at most one active or snoozed item, and each configured timing may deliver once. Event reminder attention resolves when opened or when the occurrence ends; persistent Document-expiry attention requires dismissal or a source-condition change. A Notification is distinct from a Persistent Issue, Audit Event and Job Run.
 
 ### Notes
 

@@ -80,7 +80,10 @@ class SchemaMigrationTests(unittest.TestCase):
     def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:
         with connect(self.database_path) as connection:
             create_schema_migration_table(connection)
-            for migration_id, migration in SCHEMA_MIGRATIONS[:-1]:
+            retirement_id = "20260801_31_retire_task_subsystem"
+            for migration_id, migration in SCHEMA_MIGRATIONS:
+                if migration_id == retirement_id:
+                    break
                 migration(connection)
                 connection.execute(
                     "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, 'before')",
@@ -111,11 +114,59 @@ class SchemaMigrationTests(unittest.TestCase):
             ).fetchone()
             migration = connection.execute(
                 "SELECT 1 FROM schema_migrations WHERE migration_id = ?",
-                (SCHEMA_MIGRATION_IDS[-1],),
+                (retirement_id,),
             ).fetchone()
 
         self.assertEqual("Preserve me", retained["display_name"])
         self.assertIsNone(migration)
+
+    def test_inbox_attention_upgrade_consolidates_active_timings(self) -> None:
+        migration_id = "20260801_32_consolidate_inbox_attention"
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for current_id, migration in SCHEMA_MIGRATIONS:
+                if current_id == migration_id:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, 'before')",
+                    (current_id,),
+                )
+            for delivery_key, timing in (("earlier", "1h"), ("later", "10m")):
+                connection.execute(
+                    """INSERT INTO inbox_items (
+                           delivery_key, source_kind, source_id, occurrence_key,
+                           reason, timing, title, due_at, delivered_at
+                       ) VALUES (?, 'event', 42, '2026-08-02', 'reminder', ?,
+                                 'Planning', '2026-08-02T00:00:00+00:00', 'before')""",
+                    (delivery_key, timing),
+                )
+            connection.commit()
+
+            create_schema(connection)
+
+            rows = connection.execute(
+                "SELECT timing, state FROM inbox_items ORDER BY timing"
+            ).fetchall()
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(inbox_items)")
+            }
+            index = connection.execute(
+                """SELECT sql FROM sqlite_master
+                   WHERE type='index' AND name='idx_inbox_one_active_occurrence'"""
+            ).fetchone()
+            actions = connection.execute(
+                "SELECT action FROM inbox_item_actions WHERE action='timing_superseded'"
+            ).fetchall()
+
+        self.assertEqual(
+            [("10m", "active"), ("1h", "resolved")],
+            [(row["timing"], row["state"]) for row in rows],
+        )
+        self.assertIn("attention_expires_at", columns)
+        self.assertIn("WHERE state IN ('active', 'snoozed')", index["sql"])
+        self.assertEqual(1, len(actions))
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"
