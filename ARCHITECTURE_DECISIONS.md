@@ -193,7 +193,7 @@ Exports are complete local snapshots rather than partial CSV-style ingestion. Bu
 
 ## ADR-011: Treat Events and Tasks as first-class peer entities
 
-Status: Accepted (Phase 2 target architecture)
+Status: Superseded by ADR-027
 
 Date: 2026-07-11
 
@@ -208,7 +208,7 @@ Event and Task links to Projects, each other and other domains use normal relati
 
 ## ADR-012: Keep the Calendar a projection over canonical time information
 
-Status: Accepted (Phase 2 target architecture)
+Status: Accepted; Task-specific consequences superseded by ADR-027
 
 Date: 2026-07-11
 
@@ -223,7 +223,7 @@ Displaying a deadline, birthday or scheduled run does not change its source type
 
 ## ADR-013: Model reminders as policies and deliveries, not standalone domain entities
 
-Status: Accepted (Phase 2 target architecture)
+Status: Accepted; Task-specific consequences superseded by ADR-027
 
 Date: 2026-07-11
 
@@ -328,7 +328,7 @@ No email, SMS, push, operating-system notification, service manager or external 
 
 ## ADR-020: Keep automatic operations non-consequential
 
-Status: Accepted (Phase 2 target architecture)
+Status: Accepted; Task-proposal consequences superseded by ADR-027
 
 Date: 2026-07-19
 
@@ -430,3 +430,18 @@ These transitions have distinct temporal and historical meaning and will later a
 
 Consequences:
 General Event detail edits do not change schedule or status. Calendar projections can distinguish cancelled, archived and deleted records deterministically. Recycle Bin restoration clears only `entities.deleted_at`.
+
+## ADR-027: Retire the experimental Task subsystem
+
+Status: Accepted
+
+Date: 2026-08-01
+
+Decision:
+Remove the unused Task entity type, Task-list/deadline/session tables, Task services and pages, Task relationship taxonomy, Task reminder contexts, Task-only automation actions and proposal storage. Preserve the append-only historical migration ledger, and make the retirement migration refuse to proceed if it finds any Task entity, Task row, Task proposal or Task relationship.
+
+Reason:
+The delivered Task model had no canonical user records and did not prove useful. Keeping dormant runtime code, skipped tests and schema created a continuing maintenance burden and repeatedly misrepresented current product scope to contributors and coding agents.
+
+Consequences:
+Project E has no current Task or to-do capability. Fresh databases apply the historical migrations and then remove their artifacts, while upgrades with real Task data stop without deleting it. Any future work-management capability begins with a newly authorised product model and forward migration; it is not required to preserve the retired design.

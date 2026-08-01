@@ -52,9 +52,7 @@ def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
 def list_searchable_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
     """Return canonical records exposed through global Search.
 
-    Events have a dedicated operational workflow. Task records are retained
-    for future work-management design, but are deliberately dormant and do
-    not participate in current discovery.
+    Events have a dedicated operational workflow.
     """
     records = list_all_entities(connection)
     records.extend(list_entities(connection, EVENT_DEFINITION))
@@ -198,7 +196,7 @@ def delete_entity(
     if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
     connection.execute("UPDATE entities SET deleted_at = ?, updated_at = ? WHERE id = ? AND type = ? AND deleted_at = ''", (utc_now(), utc_now(), entity_id, definition.type))
     reminder_sources = {
-        "person": "birthday", "document": "document_expiry", "event": "event", "task": "task_deadline",
+        "person": "birthday", "document": "document_expiry", "event": "event",
     }
     if definition.type in reminder_sources:
         from app.reminder_service import resolve_source_items

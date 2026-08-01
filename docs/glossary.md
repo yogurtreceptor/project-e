@@ -52,7 +52,7 @@ See also: Deterministic Assistance, Phase 1, Decision Support, Artificial Intell
 
 ### Automation Rule
 
-A database-backed, explicit trigger-condition-action configuration that references only a registered local trigger and action. It is not executable user-authored code, a Scheduled Job, Event or Task.
+A database-backed, explicit trigger-condition-action configuration that references only a registered local trigger and action. It is not executable user-authored code, a Scheduled Job or Event.
 
 ### Automation Run
 
@@ -196,7 +196,7 @@ See also: Import, iCalendar, Local-first.
 
 ### IANA Timezone
 
-A named timezone from the installed IANA timezone database, such as `Australia/Brisbane` or `America/New_York`. Calendar, Event and timed Task controls select and store this identifier; the local selector can be searched by current UTC offset, country, place or identifier. It never stores a display label or a fixed offset in place of the identifier.
+A named timezone from the installed IANA timezone database, such as `Australia/Brisbane` or `America/New_York`. Calendar and Event controls select and store this identifier; the local selector can be searched by current UTC offset, country, place or identifier. It never stores a display label or a fixed offset in place of the identifier.
 
 ### iCalendar
 
@@ -310,7 +310,7 @@ See also: Deterministic Assistance, Local-first, Artificial Intelligence.
 
 The in-progress operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
 
-See also: Event, Task, Calendar Projection, Reminder, Scheduled Job.
+See also: Event, Calendar Projection, Reminder, Scheduled Job.
 
 ### Platform Timezone
 
@@ -372,10 +372,6 @@ The current repository docs and code that future contributors should rely on whe
 
 See also: Architecture Decision Record (ADR), Local-first.
 
-### Review Proposal
-
-An actionable operational record that describes a proposed consequential canonical Event or Task mutation, with evidence and approval state. It is not the mutation itself; explicit approval invokes the normal validated service.
-
 ## S
 
 ### Scheduled Job
@@ -404,15 +400,7 @@ See also: Experience Philosophy, Entity Page.
 
 ### Task
 
-A first-class entity representing work to be performed. A Task is neither an Event nor a Reminder and can relate independently to Projects, Events and other entities.
-
-### Task List
-
-A first-class local organisational record that groups Tasks by the user's intended category. It is not a Calendar, ownership boundary or separate classification layer. Archiving retains its assigned Tasks and prevents new assignment.
-
-### Task Session
-
-A repeatable planned all-day or bounded timed interval belonging to one canonical Task. It is a Calendar projection source, not an Event or separate canonical entity.
+The name of a retired experimental work-management entity. Migration `20260801_31_retire_task_subsystem` removed the Task entity type, lists, deadlines, sessions, relationships, reminders and proposal infrastructure after the local database was verified to contain no Task records. Task is not current product terminology; any future to-do capability requires a new design.
 
 ### Taxonomy
 

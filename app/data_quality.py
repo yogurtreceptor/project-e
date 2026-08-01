@@ -42,14 +42,10 @@ def orphans(c):
 @registry.register
 def operational_time_contracts(c):
  from app.event_service import validate_stored_event
- from app.task_service import validate_stored_task
  out=[]
  for row in c.execute("SELECT entity_id FROM events"):
   errors=validate_stored_event(c,int(row["entity_id"]))
   if errors:out.append(finding("event_temporal_contract","warning",f"Event #{row['entity_id']} is invalid: {'; '.join(errors)}.",(int(row["entity_id"]),)))
- for row in c.execute("SELECT entity_id FROM tasks"):
-  errors=validate_stored_task(c,int(row["entity_id"]))
-  if errors:out.append(finding("task_temporal_contract","warning",f"Task #{row['entity_id']} is invalid: {'; '.join(errors)}.",(int(row["entity_id"]),)))
  return out
 @registry.register
 def operational_configuration_contracts(c):

@@ -81,11 +81,6 @@ from app.calendar_subscription_service import (
     stage_subscription_fetch, subscription_projection, update_subscription_settings,
 )
 from app.event_service import EventInput, EventSchedule, EventUpdate, create_event, get_event, list_events, reschedule_event, update_event
-from app.task_service import (TaskInput, TaskListInput, archive_task, archive_task_list,
-    complete_task, create_task, create_task_list, get_task, get_task_list,
-    list_task_lists, list_tasks, reopen_task, set_default_task_list,
-    unarchive_task, unarchive_task_list, update_task, rename_task_list,
-    TaskSessionInput, add_task_session, delete_task_session, list_task_sessions)
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, is_series_anchor, occurrence_exceptions, occurrences_between, override_occurrence, remove_recurrence, set_recurrence, split_series, truncate_series, until_date_after_occurrences
 from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_inbox_count,
     clear_policy, evaluate_due_reminders, get_override, get_policy, list_deep_archive_items,
@@ -93,8 +88,7 @@ from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_i
     reactivate_next_open_snoozes, set_override, set_policy)
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
     list_scheduled_jobs, run_job_now, set_job_enabled)
-from app.automation_service import (approve_review_item, ensure_registered_rules, list_review_items,
-    list_rules, list_runs, reject_review_item, set_rule_enabled)
+from app.automation_service import ensure_registered_rules, list_rules, list_runs, set_rule_enabled
 from app.geo import build_map_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
@@ -113,20 +107,6 @@ from app.icalendar_service import (
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-
-
-def _default_task_list_value(task_lists) -> str:
-    default = next((item for item in task_lists if item.is_default), None)
-    return str(default.id) if default is not None else ""
-
-
-def _visible_relationships(relationships):
-    """Hide retained Task relationships while Task work management is dormant."""
-    return [item for item in relationships if item.source.type != "task" and item.target.type != "task"]
-
-
-def _relationship_involves_task(relationship) -> bool:
-    return relationship.source.type == "task" or relationship.target.type == "task"
 
 
 class EddyRequestHandler(BaseHTTPRequestHandler):
@@ -225,12 +205,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
 
         if parts[0] == "calendar":
             self.route_calendar_request(parts, query)
-            return
-
-        # Task work management is retained in storage but intentionally dormant.
-        # Do not expose legacy Task routes while Event-focused Phase 2 work continues.
-        if parts[0] == "tasks":
-            self.respond_not_found()
             return
 
         definition = DEFINITIONS_BY_SLUG.get(parts[0])
@@ -704,134 +678,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             parameters.append(("saved", "1"))
         return f"/calendar/settings{path}?{urlencode(parameters)}"
 
-    def handle_calendar_task_create(self) -> None:
-        values = self.read_form()
-        try:
-            with connect(self.database_path) as connection:
-                task_id = create_task(connection, TaskInput(
-                    values.get("title", ""),
-                    int(values["task_list_id"]) if values.get("task_list_id", "").isdigit() else None,
-                    values.get("notes", ""),
-                    values.get("deadline_date", ""), values.get("deadline_local", ""), values.get("deadline_timezone", "Australia/Brisbane"),
-                ))
-        except (ValueError, sqlite3.Error) as error:
-            with connect(self.database_path) as connection:
-                task_lists = list_task_lists(connection)
-            self.respond_page("Add Task", views.task_form_page(task_lists, values, errors=[str(error)]), HTTPStatus.BAD_REQUEST, active_slug="calendar")
-            return
-        self.redirect(self.calendar_return_url(values.get("return_to", ""), "created_task=1") if values.get("quick_create") == "1" else f"/tasks/{task_id}?saved=1")
-
-    def route_task_request(self, parts: list[str], query: dict[str, str]) -> None:
-        if len(parts) == 1 and self.command == "GET":
-            self.handle_tasks(query)
-            return
-        if len(parts) == 2 and parts[1] == "lists" and self.command == "POST":
-            try:
-                with connect(self.database_path) as connection:
-                    create_task_list(connection, TaskListInput(self.read_form().get("name", "")))
-            except (ValueError, sqlite3.Error):
-                self.redirect("/tasks")
-                return
-            self.redirect("/tasks")
-            return
-        policy_task_list_id = self.parse_entity_id(parts[2]) if len(parts) == 4 and parts[1] == "lists" and parts[3] == "reminders" else None
-        if policy_task_list_id is not None:
-            self.handle_reminder_policy(
-                "task_list", policy_task_list_id, "task_deadline", "Task-list reminder defaults", "/tasks", active_slug="tasks"
-            )
-            return
-        if len(parts) == 4 and parts[1] == "lists" and self.command == "POST":
-            task_list_id = self.parse_entity_id(parts[2])
-            if task_list_id is None:
-                self.respond_not_found(); return
-            try:
-                with connect(self.database_path) as connection:
-                    if parts[3] == "rename":
-                        rename_task_list(connection, task_list_id, self.read_form().get("name", ""))
-                    else:
-                        {"default": set_default_task_list, "archive": archive_task_list, "unarchive": unarchive_task_list}[parts[3]](connection, task_list_id)
-            except (KeyError, ValueError, sqlite3.Error):
-                self.redirect("/tasks"); return
-            self.redirect("/tasks")
-            return
-        task_id = self.parse_entity_id(parts[1]) if len(parts) >= 2 else None
-        if task_id is None:
-            self.respond_not_found(); return
-        if len(parts) == 2 and self.command == "GET":
-            self.handle_task_projection(task_id, query)
-            return
-        if len(parts) == 3 and parts[2] == "reminders":
-            if self.command == "GET":
-                with connect(self.database_path) as connection:
-                    task = get_task(connection, task_id, include_archived=True)
-                    override = get_override(connection, "task_deadline", task_id)
-                if task is None: self.respond_not_found(); return
-                self.respond_page("Task reminder settings", views.reminder_settings_page(task.title, f"/tasks/{task_id}", override), active_slug="tasks")
-                return
-            values = self.read_form()
-            try:
-                with connect(self.database_path) as connection:
-                    set_override(connection, "task_deadline", task_id, mode=values.get("mode", "default"), custom_timings=self.reminder_timings(values, "custom_reminder"), suppressed_timings=self.reminder_timings(values, "suppressed_reminder"))
-            except ValueError:
-                self.redirect(f"/tasks/{task_id}/reminders"); return
-            self.redirect(f"/tasks/{task_id}?saved=1"); return
-        if len(parts) == 3 and parts[2] == "sessions" and self.command == "POST":
-            values = self.read_form()
-            try:
-                with connect(self.database_path) as connection:
-                    add_task_session(connection, task_id, TaskSessionInput(values.get("all_day") == "1", values.get("start_date", ""), values.get("end_date", ""), values.get("start_local", ""), values.get("end_local", ""), values.get("timezone", "Australia/Brisbane")))
-            except (ValueError, sqlite3.Error):
-                self.redirect(f"/tasks/{task_id}"); return
-            self.redirect(f"/tasks/{task_id}"); return
-        if len(parts) == 4 and parts[2] == "sessions" and self.command == "POST":
-            with connect(self.database_path) as connection:
-                delete_task_session(connection, task_id, self.parse_entity_id(parts[3]) or 0)
-            self.redirect(f"/tasks/{task_id}"); return
-        if len(parts) == 3 and parts[2] == "edit" and self.command == "POST":
-            values = self.read_form()
-            with connect(self.database_path) as connection:
-                current = get_task(connection, task_id, include_archived=True)
-                if current is None: self.respond_not_found(); return
-                update_task(connection, task_id, TaskInput(values.get("title", current.title), current.task_list_id, values.get("notes", current.notes), values.get("deadline_date", ""), values.get("deadline_local", ""), values.get("deadline_timezone", "Australia/Brisbane")))
-            self.redirect(f"/tasks/{task_id}?saved=1"); return
-        if len(parts) == 3 and self.command == "POST":
-            try:
-                with connect(self.database_path) as connection:
-                    if parts[2] == "move":
-                        current = get_task(connection, task_id, include_archived=True)
-                        if current is None:
-                            raise ValueError("Task does not exist.")
-                        form = self.read_form()
-                        update_task(connection, task_id, TaskInput(current.title, int(form["task_list_id"]) if form.get("task_list_id", "").isdigit() else None, current.notes))
-                    else:
-                        {"complete": complete_task, "reopen": reopen_task, "archive": archive_task, "unarchive": unarchive_task}[parts[2]](connection, task_id)
-            except (KeyError, ValueError, sqlite3.Error):
-                self.respond_not_found(); return
-            self.redirect("/tasks")
-            return
-        self.respond_not_found()
-
-    def handle_tasks(self, query: dict[str, str]) -> None:
-        show_completed = query.get("completed") == "1"
-        show_archived = query.get("archived") == "1"
-        with connect(self.database_path) as connection:
-            tasks = list_tasks(connection, include_completed=show_completed, include_archived=show_archived)
-            task_lists = list_task_lists(connection, include_archived=True)
-        self.respond_page("Tasks", views.tasks_page(tasks, task_lists, show_completed=show_completed, show_archived=show_archived), active_slug="tasks")
-
-    def handle_task_projection(self, task_id: int, query: dict[str, str]) -> None:
-        with connect(self.database_path) as connection:
-            task = get_task(connection, task_id, include_archived=True)
-            if task is None:
-                self.respond_not_found(); return
-            mark_entity_viewed(connection, task_id)
-            task_list = get_task_list(connection, task.task_list_id, include_archived=True)
-            relationships = list_relationships_for_entity(connection, task_id)
-            history = list_entity_history(connection, task_id)
-            audit_events = list_audit_events(connection, "entity", task_id)
-            sessions = list_task_sessions(connection, task_id)
-        self.respond_page(task.title, views.task_projection_page(task, task_list, relationships, history, audit_events, sessions), active_slug="tasks", show_save_toast=query.get("saved") == "1")
-
     def handle_calendar_settings_create(self) -> None:
         values = self.read_form()
         return_to = self.calendar_return_to(values.get("return_to", ""))
@@ -1261,8 +1107,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             except ValueError:
                 if context_kind == "calendar":
                     retry_url = f"/calendar/settings/calendars/{context_id}"
-                elif context_kind == "task_list":
-                    retry_url = f"/tasks/lists/{context_id}/reminders"
                 else:
                     retry_url = f"/inbox/reminders/{'birthdays' if source_kind == 'birthday' else 'document-expiries'}"
                 self.redirect(retry_url)
@@ -1475,22 +1319,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         self.respond_not_found()
 
     def route_automation(self, parts: list[str]) -> None:
-        if len(parts) == 3 and parts[2] == "reviews" and self.command == "GET":
-            with connect(self.database_path) as connection:
-                items = list_review_items(connection)
-            self.respond_page("Automation review proposals", views.automation_reviews_page(items), active_slug="system-tools")
-            return
-        if len(parts) == 5 and parts[2] == "reviews" and self.command == "POST":
-            item_id = self.parse_entity_id(parts[3])
-            if item_id is None or parts[4] not in {"approve", "reject"}:
-                self.respond_not_found(); return
-            with connect(self.database_path) as connection:
-                if parts[4] == "approve":
-                    approve_review_item(connection, item_id)
-                else:
-                    reject_review_item(connection, item_id, self.read_form().get("note", ""))
-            self.redirect("/system-tools/automation/reviews")
-            return
         if len(parts) == 4 and self.command == "POST" and parts[3] in {"enable", "disable"}:
             rule_id = self.parse_entity_id(parts[2])
             if rule_id is None:
@@ -1619,8 +1447,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_search(self, query: dict[str, str]) -> None:
         search_query = query.get("q", "")
         entity_type = query.get("type", "")
-        if entity_type == "task":
-            entity_type = ""
         favourites_only = query.get("favourites") == "1"
         filter_key = query.get("filter", "")
         filter_value = query.get("filter_value", "")
@@ -1709,7 +1535,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
             if record is not None:
                 mark_entity_viewed(connection, entity_id)
                 record = get_entity(connection, definition, entity_id)
-            relationships = _visible_relationships(list_relationships_for_entity(connection, entity_id)) if record else []
+            relationships = list_relationships_for_entity(connection, entity_id) if record else []
             integrity_warnings = warnings_for_entity(audit_relationships(connection), entity_id) if record else []
             history = list_entity_history(connection, entity_id) if record else []
             audit_events = list_audit_events(connection, "entity", entity_id) if record else []
@@ -2042,7 +1868,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
     def handle_relationship_list(self) -> None:
         with connect(self.database_path) as connection:
             integrity_warnings = audit_relationships(connection)
-            relationships = _visible_relationships(list_relationships(connection))
+            relationships = list_relationships(connection)
         self.respond_page(
             "Relationships",
             views.relationship_list_page(relationships, integrity_warnings),
@@ -2057,9 +1883,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         with connect(self.database_path) as connection:
             relationship = get_relationship(connection, relationship_id)
         if relationship is None:
-            self.respond_not_found()
-            return
-        if relationship.source.type == "task" or relationship.target.type == "task":
             self.respond_not_found()
             return
         self.respond_page(
@@ -2077,9 +1900,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
                 inline_errors = self.create_inline_relationship_target(connection, values, raw_form, query)
                 normalise_relationship_direction(connection, values)
                 errors = validate_relationship_values(connection, values)
-                endpoint_ids = [self.parse_entity_id(values.get(key, "")) for key in ("source_entity_id", "target_entity_id")]
-                if any(entity_id is not None and (record := get_entity_by_id(connection, entity_id)) is not None and record.type == "task" for entity_id in endpoint_ids):
-                    errors.append("Task relationships are unavailable while work management is deferred.")
                 errors = inline_errors + errors
                 entities = list_all_entities(connection)
                 if not errors:
@@ -2118,10 +1938,6 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         if relationship is None:
             self.respond_not_found()
             return
-        if _relationship_involves_task(relationship):
-            self.respond_not_found()
-            return
-
         if self.command == "POST":
             values = normalise_relationship_values(self.read_form())
             with connect(self.database_path) as connection:
@@ -2152,7 +1968,7 @@ class EddyRequestHandler(BaseHTTPRequestHandler):
         redirect_to = "/relationships"
         with connect(self.database_path) as connection:
             relationship = get_relationship(connection, relationship_id)
-            if relationship is None or _relationship_involves_task(relationship):
+            if relationship is None:
                 self.respond_not_found()
                 return
             context_entity = self.relationship_context_entity(connection, query, {})

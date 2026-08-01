@@ -42,7 +42,6 @@ def _source_link(item: InboxItem) -> str:
                 "external_preview": item.source_id,
             })
         return f"/events/{item.source_id}"
-    if item.source_kind == "task_deadline": return f"/tasks/{item.source_id}"
     return f"/{'people' if item.source_kind == 'birthday' else 'documents'}/{item.source_id}"
 
 

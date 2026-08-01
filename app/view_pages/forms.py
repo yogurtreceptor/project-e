@@ -22,7 +22,7 @@ def error_block(errors: list[str], error_fields: list[str | None] | None = None)
 
 
 def description_field(value: str = "", *, field_id: str = "notes") -> str:
-    """Render the Event/Task description control without changing stored notes data."""
+    """Render the Event description control without changing stored notes data."""
     escaped_value = escape(value)
     expanded = bool(value)
     return (

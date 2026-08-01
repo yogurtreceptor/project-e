@@ -3,7 +3,7 @@ import unittest
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.automation_service import dispatch, list_review_items, list_rules
+from app.automation_service import dispatch, list_rules
 from app.db import connect, initialise_database
 
 
@@ -25,9 +25,8 @@ class AutomationTests(unittest.TestCase):
         rows = self.connection.execute("SELECT status FROM automation_runs WHERE trigger_key='scan-1'").fetchall()
         self.assertEqual(["completed"], [row["status"] for row in rows])
 
-    def test_task_automation_and_proposals_are_dormant(self):
+    def test_only_registered_automation_is_exposed(self):
         self.assertEqual(["deliver-due-reminders"], [rule.rule_key for rule in list_rules(self.connection)])
-        self.assertEqual([], list_review_items(self.connection))
 
 
 if __name__ == "__main__":

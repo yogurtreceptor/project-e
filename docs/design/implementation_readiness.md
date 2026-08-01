@@ -30,7 +30,7 @@ Answers update the responsible design standard and are then removed from this re
 - Project pages lead with status and milestones.
 - Edit and Delete are directly visible entity actions; Merge is contextual/overflow work.
 - Application-owned graph and map rendering follows the Project E palette. Exact category assignments wait for the first real layers/relationship categories.
-- Inbox count shows all active, not-dismissed items. Dismissal, resolution and conversion to a task must update the item state deliberately.
+- Inbox count shows all active, not-dismissed items. Dismissal and resolution must update the item state deliberately.
 - Super Key uses `Ctrl+K` on Windows/Linux and `Cmd+K` on macOS.
 - Person Overviews prioritise contact-card information: birthday, phone numbers, email addresses and locations. Addresses derive from Location relationships and their relationship type.
 - Long forms use one readable vertical column.

@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 from app.config import initialise_local_storage
 from app.db import connect, initialise_database
-from app.db_schema import SCHEMA_MIGRATION_IDS, create_schema
+from app.db_schema import (
+    SCHEMA_MIGRATIONS,
+    SCHEMA_MIGRATION_IDS,
+    create_schema,
+    create_schema_migration_table,
+)
 
 
 class SchemaMigrationTests(unittest.TestCase):
@@ -47,6 +52,8 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("event_icalendar_identities", tables)
         self.assertIn("calendar_subscriptions", tables)
         self.assertIn("external_calendar_events", tables)
+        self.assertTrue({"task_lists", "tasks", "task_deadlines", "task_sessions"}.isdisjoint(tables))
+        self.assertNotIn("automation_review_items", tables)
         with connect(self.database_path) as connection:
             entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
             project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
@@ -57,12 +64,58 @@ class SchemaMigrationTests(unittest.TestCase):
                 """SELECT sql FROM sqlite_master
                    WHERE type = 'table' AND name = 'reminder_policies'"""
             ).fetchone()["sql"]
+            entity_sql = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entities'"
+            ).fetchone()["sql"]
         self.assertIn("deleted_at", entity_columns)
         self.assertIn("ended_at", project_columns)
         self.assertTrue({"identifier", "expiry_date"} <= document_columns)
         self.assertTrue({"manufacturer", "model"} <= asset_columns)
         self.assertIn("deleted_at", relationship_columns)
         self.assertIn("'calendar_subscription'", reminder_policy_sql)
+        self.assertNotIn("'task_list'", reminder_policy_sql)
+        self.assertNotIn("'task_deadline'", reminder_policy_sql)
+        self.assertNotIn("'task'", entity_sql)
+
+    def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for migration_id, migration in SCHEMA_MIGRATIONS[:-1]:
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, 'before')",
+                    (migration_id,),
+                )
+            task_list_id = int(connection.execute(
+                "SELECT id FROM task_lists WHERE is_default = 1"
+            ).fetchone()[0])
+            connection.execute("PRAGMA ignore_check_constraints = ON")
+            cursor = connection.execute(
+                """INSERT INTO entities (
+                       type, display_name, summary, notes, created_at, updated_at
+                   ) VALUES ('task', 'Preserve me', '', '', 'before', 'before')"""
+            )
+            task_id = int(cursor.lastrowid)
+            connection.execute(
+                "INSERT INTO tasks (entity_id, task_list_id) VALUES (?, ?)",
+                (task_id, task_list_id),
+            )
+            connection.execute("PRAGMA ignore_check_constraints = OFF")
+            connection.commit()
+
+            with self.assertRaisesRegex(RuntimeError, "Task retirement migration refused"):
+                create_schema(connection)
+
+            retained = connection.execute(
+                "SELECT display_name FROM entities WHERE id = ?", (task_id,)
+            ).fetchone()
+            migration = connection.execute(
+                "SELECT 1 FROM schema_migrations WHERE migration_id = ?",
+                (SCHEMA_MIGRATION_IDS[-1],),
+            ).fetchone()
+
+        self.assertEqual("Preserve me", retained["display_name"])
+        self.assertIsNone(migration)
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"

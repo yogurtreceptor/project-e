@@ -73,7 +73,7 @@ System Tools
   Import and Export
 ```
 
-Group labels are orientation aids, not destinations unless they have a real hub page. System Tools already has a useful hub and may remain both a group and a destination. Phase 2 may add Calendar, Tasks, Inbox and System Health only when those capabilities are authorised and delivered; roadmap entries do not populate current navigation in advance.
+Group labels are orientation aids, not destinations unless they have a real hub page. System Tools already has a useful hub and may remain both a group and a destination. Calendar and Inbox are delivered; any further global domain, including System Health, requires authorised product work before it appears in navigation. Roadmap entries do not populate current navigation in advance.
 
 ### Expanded state
 

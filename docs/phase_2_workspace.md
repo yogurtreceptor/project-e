@@ -4,15 +4,15 @@
 
 **Phase 1 — Complete.** Pull request #1 is closed. Phase 1 closed as a development milestone after representative, rather than exhaustive, manual and automated verification. Later residual defects are ordinary maintenance work and do not reopen Phase 1 as a whole.
 
-**Phase 2 — Event-focused and active.** Calendar and Event work, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, portability and data-quality coverage remain active. The previously delivered Task work-management implementation is retained but dormant pending a later, user-led to-do design; it has no normal routes, navigation, search, Calendar projection, Inbox delivery or automation interaction. This workspace remains the living record for Phase 2 refinements and hardening until Phase 3 is deliberately defined. Persistent System Health remains deferred; neither the original closeout nor this workspace authorises it.
+**Phase 2 — Event-focused and active.** Calendar and Event work, reminder delivery and recovery, scheduled Job Runs, registered deterministic automation, portability and data-quality coverage remain active. The experimental Task implementation was retired on 2026-08-01 after the local database was verified to contain no Task records. This workspace remains the living record for Phase 2 refinements and hardening until Phase 3 is deliberately defined. Persistent System Health remains deferred; neither the original closeout nor this workspace authorises it.
 
-> **Task-work-management deferral (2026-07-26).** Historical Task requirements and delivery entries below record the work that was completed before this decision; they are not current user-facing behaviour. Existing Task records, migrations, services and validation remain preserved for future reconsideration, rather than being deleted or moved into an archive directory.
+> **Task-work-management retirement (2026-08-01).** Task requirements and delivery entries below are preserved only as historical decision and delivery evidence. They are superseded by expansion entry 60 and do not describe current behaviour or constrain a future to-do design. Historical migration IDs remain append-only, while current Task code, schema, tests and relationships have been removed.
 
 Phase 2 establishes Project E's operational time and deterministic-automation foundation:
 
 ```text
 structured information → relationships → temporal information → Events
-→ calendar projections → Tasks → reminders and attention management
+→ calendar projections → reminders and attention management
 → scheduling → deterministic automation → later AI-assisted operations
 ```
 
@@ -464,6 +464,8 @@ The following Calendar date-context refinement was implemented on **2026-07-30**
 
 59. **Complete (2026-07-30) — Other-calendar settings and notifications:** give each URL-backed Calendar the same applicable edit controls as a local Calendar: name, colour, IANA timezone and repeatable Calendar-level Event notifications, alongside its existing refresh, enable/disable and removal controls. Deliberately omit default Event duration because users do not create or schedule Events in an externally owned source. Store the notification policy in the shared reminder-policy boundary under a distinct URL Calendar context; cached items remain non-canonical and receive no record-level reminder controls. Reminder evaluation treats their stable source-UID-backed occurrences as transient Events, creates deduplicated local Inbox deliveries, opens the read-only Calendar preview from Inbox, and resolves pending attention when a source item materially changes, disappears, is disabled or is removed. Refresh preserves user-edited settings and stable cache-row identity for unchanged source UIDs.
 
+60. **Complete (2026-08-01) — retire the experimental Task subsystem:** verify the local runtime database contains no canonical Task records, Task relationships, deadline/session rows, reminder deliveries, overrides or review proposals, then remove the Task entity definition, service/page modules, dormant HTTP paths, relationship catalogue entries, Task reminder contexts, Task-only automation actions, proposal storage and skipped legacy tests. Add forward migration `20260801_31_retire_task_subsystem`, retaining the append-only historical migration ledger while removing Task tables and constraints from the current schema. The migration refuses before deletion if any Task record, proposal or relationship exists. Future work management requires a fresh authorised design and migration rather than compatibility with this retired model.
+
 Journey planning is deferred to the informal [Phase 3 notes](phase_3_notes.md). It is not a Phase 2 closeout requirement and authorises no implementation within this phase.
 
 ## Completion criteria
@@ -519,7 +521,7 @@ The user-facing Calendar, Event, Task, reminder, Inbox, System Health and archiv
 
 The following interactions remain deliberately unresolved and must be settled through authorised design work rather than inferred during implementation:
 
-- **Task product redesign.** Calendar-originated Task capture, deadlines, sessions and Calendar projections are historical implementation work and dormant as of 2026-07-26. A user-led Phase 3 redesign must settle the Task model before any route, projection, reminder or automation interaction returns.
+- **Future work management.** The retired Task model creates no product commitment. Any later to-do capability requires separately authorised product design and may use different terminology, identity and workflows.
 - **Later scheduled maintenance.** Checks beyond Event reminders and overdue Tasks, including their source records, trigger conditions and lead times, remain unspecified.
 - **Detailed implementation mechanics.** Table shapes, route paths, service names, recurrence encoding, exception schema, archive retrieval mechanics and UI details beyond those stated here remain implementation-design work.
 

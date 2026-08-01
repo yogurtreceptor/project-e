@@ -127,14 +127,6 @@ from app.calendar_service import (
     update_calendar,
     validate_stored_calendar,
 )
-from app.task_service import (
-    TaskInput, TaskListInput, TaskListRecord, TaskRecord,
-    archive_task, archive_task_list, complete_task, create_task, create_task_list,
-    get_task, get_task_list, list_task_lists, list_tasks, reopen_task,
-    rename_task_list, set_default_task_list, unarchive_task, unarchive_task_list,
-    update_task, validate_stored_task, TaskSessionInput, TaskSessionRecord,
-    add_task_session, delete_task_session, list_task_sessions,
-)
 from app.reminder_service import (
     InboxItem, act_on_inbox_item, evaluate_due_reminders, get_override, inbox_count,
     list_inbox_items, set_override, set_policy,
@@ -245,14 +237,6 @@ __all__ = [
     "unarchive_calendar",
     "update_calendar",
     "validate_stored_calendar",
-    "TaskInput", "TaskListInput", "TaskListRecord", "TaskRecord",
-    "archive_task", "archive_task_list", "complete_task", "create_task",
-    "create_task_list", "get_task", "get_task_list", "list_task_lists",
-    "list_tasks", "reopen_task", "rename_task_list", "set_default_task_list",
-    "unarchive_task", "unarchive_task_list", "update_task",
-    "validate_stored_task",
-    "TaskSessionInput", "TaskSessionRecord", "add_task_session",
-    "delete_task_session", "list_task_sessions",
     "InboxItem", "act_on_inbox_item", "evaluate_due_reminders", "get_override", "inbox_count",
     "JobRun", "ScheduledJob", "ensure_registered_jobs", "list_job_runs", "list_scheduled_jobs",
     "recover_at_startup", "run_due_jobs", "run_job_now", "set_job_enabled",

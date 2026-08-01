@@ -19,7 +19,6 @@ from app.calendar_subscription_service import subscription_projection
 PLATFORM_TIMEZONE = "Australia/Brisbane"
 DEFAULT_TIMINGS = {
     "event": ["1h", "10m"],
-    "task_deadline": ["3d", "2d", "1d", "6h", "1h"],
     "birthday": ["1mo", "2w", "1w", "3d", "1d", "12h"],
     "document_expiry": ["1mo", "2w", "1w", "3d", "1d"],
 }
@@ -116,7 +115,7 @@ def evaluate_due_reminders(connection: sqlite3.Connection, *, now: datetime | No
     for kind, source_id, occurrence, title, due, context in _sources(connection, now):
         if kind in {"event", "birthday"} and due <= now:
             continue
-        if kind in {"task_deadline", "document_expiry"} and due <= now:
+        if kind == "document_expiry" and due <= now:
             _resolve_pending_reminder_items(connection, kind, source_id)
             created += _deliver(connection, kind, source_id, occurrence, title, due, "overdue", "overdue", now)
             continue
@@ -137,20 +136,20 @@ def list_inbox_items(connection: sqlite3.Connection, *, archived: bool = False, 
     if limit == 0:
         return []
     order = "delivered_at DESC, id DESC" if archived else "CASE WHEN reason='overdue' THEN 0 ELSE 1 END, due_at ASC, delivered_at ASC, id ASC"
-    rows = connection.execute(f"SELECT * FROM inbox_items WHERE source_kind <> 'task_deadline' AND {where} ORDER BY {order} LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
+    rows = connection.execute(f"SELECT * FROM inbox_items WHERE {where} ORDER BY {order} LIMIT ? OFFSET ?", (*params, limit, offset)).fetchall()
     return [InboxItem(**dict(row)) for row in rows]
 
 
 def list_deep_archive_items(connection: sqlite3.Connection) -> list[InboxItem]:
     rows = connection.execute(
-        "SELECT * FROM inbox_items WHERE source_kind <> 'task_deadline' AND state <> 'active' AND state <> 'snoozed' "
+        "SELECT * FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed' "
         "ORDER BY delivered_at DESC, id DESC LIMIT -1 OFFSET 500"
     ).fetchall()
     return [InboxItem(**dict(row)) for row in rows]
 
 
 def archived_inbox_count(connection: sqlite3.Connection) -> int:
-    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE source_kind <> 'task_deadline' AND state <> 'active' AND state <> 'snoozed'").fetchone()[0])
+    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state <> 'active' AND state <> 'snoozed'").fetchone()[0])
 
 
 def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | None = None, limit: int = 20) -> list[UpcomingReminder]:
@@ -170,13 +169,13 @@ def list_upcoming_reminders(connection: sqlite3.Connection, *, now: datetime | N
 
 
 def inbox_count(connection: sqlite3.Connection) -> int:
-    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE source_kind <> 'task_deadline' AND (state='active' OR (state='snoozed' AND next_attention_at <= ?))", (utc_now(),)).fetchone()[0])
+    return int(connection.execute("SELECT COUNT(*) FROM inbox_items WHERE state='active' OR (state='snoozed' AND next_attention_at <= ?)", (utc_now(),)).fetchone()[0])
 
 
 def act_on_inbox_item(connection: sqlite3.Connection, item_id: int, action: str) -> bool:
     if action not in {"acknowledge", "dismiss", "snooze_30m", "snooze_next_open"}: raise ValueError("Inbox action is invalid.")
     row = connection.execute("SELECT * FROM inbox_items WHERE id = ?", (item_id,)).fetchone()
-    if row is None or row["source_kind"] == "task_deadline" or row["state"] not in {"active", "snoozed"}: return False
+    if row is None or row["state"] not in {"active", "snoozed"}: return False
     now = datetime.now(UTC)
     if action.startswith("snooze"):
         next_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds") if action == "snooze_30m" else "9999-12-31T23:59:59+00:00"
@@ -258,9 +257,6 @@ def _context_for_source(connection: sqlite3.Connection, source_kind: str, source
             ) if row is not None else None
         row = connection.execute("SELECT calendar_id FROM events WHERE entity_id=?", (source_id,)).fetchone()
         return ("calendar", int(row["calendar_id"])) if row is not None else None
-    if source_kind == "task_deadline":
-        row = connection.execute("SELECT task_list_id FROM tasks WHERE entity_id=?", (source_id,)).fetchone()
-        return ("task_list", int(row["task_list_id"])) if row is not None else None
     if source_kind == "document_expiry":
         return ("global", 0)
     return None

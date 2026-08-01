@@ -4,6 +4,12 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-01
 
+### Experimental Task subsystem retirement
+
+- Verified that the local runtime database contained no canonical Task records or Task-linked operational data, then removed the dormant Task services, pages, routes, relationships, reminders, automation proposals and legacy skipped tests.
+- Added a forward retirement migration that removes Task schema artifacts while preserving historical migration IDs and refusing to proceed when Task data exists.
+- Reframed future work management as a fresh product-design decision rather than a compatibility obligation.
+
 ### Documentation consistency audit
 
 - Reconciled phase status wording and replaced stale prototype shell, branding and scheduler descriptions with the implemented Project E contracts.

@@ -6,12 +6,12 @@ Project E models real-world information as canonical entities and Relationships,
 
 The platform uses four complementary record categories:
 
-- **Canonical entities** are durable records for meaningful real-world objects or work: Person, Organisation, Location, Project, Document, Asset, Event and Task.
-- **Configuration records** set local organisation and behaviour without becoming entities: Calendars and Task lists.
+- **Canonical entities** are durable records for meaningful real-world objects or work: Person, Organisation, Location, Project, Document, Asset and Event.
+- **Configuration records** set local organisation and behaviour without becoming entities: Calendars and Calendar Subscriptions.
 - **Derived temporal records** are deterministic, traceable time instances and views: derived occurrences and Calendar projections.
-- **Operational and historical records** support attention, execution and traceability: reminder policies, Notifications and their actions, Audit events, Scheduled Jobs and Job Runs, Automation Rules and Automation Runs, and Review Proposals.
+- **Operational and historical records** support attention, execution and traceability: reminder policies, Notifications and their actions, Audit events, Scheduled Jobs and Job Runs, Automation Rules and Automation Runs.
 
-A Calendar view may display canonical records, derived occurrences and operational projections, but is never an independent Event store. A Task deadline or session, Person birthday, Document expiry, Project target date or Scheduled Job Run does not become an Event merely because it appears on a Calendar.
+A Calendar view may display canonical records, derived occurrences and operational projections, but is never an independent Event store. A Person birthday, Document expiry, Project target date or Scheduled Job Run does not become an Event merely because it appears on a Calendar.
 
 ## Canonical Entities
 
@@ -26,7 +26,6 @@ The current canonical entity types are:
 - Document
 - Asset
 - Event
-- Task
 
 Each real-world object should have one canonical entity record. Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields, but users may explicitly save when distinct real objects genuinely share those values.
 
@@ -93,9 +92,9 @@ Maps are a derived view over Location data, not the foundation of the Location m
 
 ### Projects
 
-A Project represents ongoing work or an area of responsibility. It coordinates information and Relationships; it does not own related records. Its overview may project related upcoming Events and open Tasks, but those records remain independent canonical peers.
+A Project represents ongoing work or an area of responsibility. It coordinates information and Relationships; it does not own related records. Its overview may project related upcoming Events, but those records remain independent canonical peers.
 
-Projects can relate to People, Organisations, Locations, Documents, Assets, Events, Tasks and other Projects.
+Projects can relate to People, Organisations, Locations, Documents, Assets, Events and other Projects.
 
 Current fields include:
 
@@ -117,17 +116,7 @@ An Event represents something that occurs, occurred or is expected to occur. It 
 - Its planned time is either a precise, bounded timed interval or an all-day date interval, never both. Timed values retain their selected IANA timezone; all-day intervals retain calendar-date boundaries.
 - A recurring Event has one canonical source and deterministic, traceable occurrences. Occurrence-specific exceptions and prospective series splits do not create duplicate Event entities.
 - Cancellation records that an Event will not occur, archive removes it from ordinary views, and Recycle Bin deletion identifies an erroneous record. These states are independent; restoring a deleted Event preserves its cancellation and archive state.
-- Event links to People, Organisations, Locations, Projects, Documents, Assets, Tasks and other Events use the shared recoverable Relationship lifecycle. There are no special embedded Event foreign keys or nested ownership models.
-
-### Tasks
-
-A Task represents work to be performed. It is neither an Event nor a Reminder, and may relate independently to every appropriate canonical peer through normal Relationships.
-
-- Every Task belongs to one Task list selected by the user. The list is a personal organisational category, not ownership or a second classification system.
-- A Task is Open or Completed; completion is a lifecycle fact with a timestamp. Archive is independent of completion, and Recycle Bin deletion is a separate recoverable lifecycle state.
-- A Task may have an optional all-day or timed deadline. A deadline is a due fact, not a Calendar interval.
-- A Task may have repeatable planned sessions. A session is a planned all-day or bounded timed interval projected into the Calendar without becoming an Event or separate canonical entity.
-- Completing a Task removes its future sessions while retaining past session history.
+- Event links to People, Organisations, Locations, Projects, Documents, Assets and other Events use the shared recoverable Relationship lifecycle. There are no special embedded Event foreign keys or nested ownership models.
 
 ### Documents
 
@@ -156,7 +145,7 @@ Document purpose is controlled with custom values allowed. It describes what the
 
 An Asset represents a physical or digital thing such as a vehicle, laptop, phone, appliance or smart device. A passport, receipt, certificate, manual or similar record is a Document, not an Asset.
 
-Assets can relate to People, Organisations, Locations, Projects, Documents, Events and Tasks. They may also carry direct coordinates when that is the most accurate available geographic information.
+Assets can relate to People, Organisations, Locations, Projects, Documents and Events. They may also carry direct coordinates when that is the most accurate available geographic information.
 
 Current fields include:
 
@@ -196,21 +185,13 @@ A Calendar Subscription is an explicitly configured, read-only public-HTTPS iCal
 - Cached items remain non-canonical and have no relationships, item-level reminder override, edit history or Recycle Bin lifecycle. A Calendar-level policy may still create a durable local Notification for an upcoming cached occurrence.
 - Disabling or removing the subscription suppresses future delivery and resolves active reminder attention without deleting retained Inbox history.
 
-### Task Lists
-
-A Task list is a first-class local organisational record that groups Tasks by the user's intended category. It is not a Calendar, ownership boundary or separate classification layer.
-
-- A fresh installation provides one active default Tasks list.
-- Every Task references one active Task list when it is created or reassigned.
-- Archiving a Task list retains assigned Tasks and prevents new assignment. Task-list deletion is not implemented.
-
 ## Derived Temporal Records and Calendar Projections
 
 A **derived occurrence** is a deterministic temporal instance traceable to a canonical source and definition, such as a generated recurring Event occurrence, a birthday from `Person.birth_date`, or a Document expiry.
 
 A **Calendar projection** is a displayed time-based view of a canonical record or derived occurrence. It is not a source of truth and does not convert every dated record into an Event.
 
-Calendar projections can display canonical Events, generated Event occurrences, Task deadlines and sessions, birthdays, Document expiries, Project target dates and Scheduled Job Runs. Derived occurrences and projections remain traceable to their source records and use no duplicate canonical Event rows unless a separately designed workflow deliberately materialises a new Event with explicit provenance.
+Calendar projections can display canonical Events, generated Event occurrences, birthdays, Document expiries, Project target dates and Scheduled Job Runs. Derived occurrences and projections remain traceable to their source records and use no duplicate canonical Event rows unless a separately designed workflow deliberately materialises a new Event with explicit provenance.
 
 ## Operational and Historical Records
 
@@ -218,13 +199,13 @@ Operational and historical records support deterministic attention, execution, r
 
 ### Reminders and Notifications
 
-A Reminder is a policy attached to an Event, cached URL Calendar occurrence, Task deadline, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Local Calendar, Calendar Subscription, Task-list, record and occurrence contexts resolve the applicable reminder timings.
+A Reminder is a policy attached to an Event, cached URL Calendar occurrence, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Local Calendar, Calendar Subscription, record and occurrence contexts resolve the applicable reminder timings.
 
 A Notification is the durable, actionable local Inbox delivery produced for a due condition. Delivery, acknowledgement, dismissal, snooze, resolution and failure history belong to the Notification and append-only action history, not to the Reminder definition.
 
 - A delivery has a stable logical identity based on its source, occurrence, due instant, timing and reason. Re-evaluation of unchanged inputs does not duplicate it.
 - A material future change to an affected due condition, occurrence or applicable timing creates a new pending delivery only where needed; superseded active or snoozed attention is resolved. Historical delivery records are retained.
-- A Notification does not itself mutate its source Event, Task or other canonical record. Snoozing, dismissing or acknowledging changes operational attention only.
+- A Notification does not itself mutate its source Event or other canonical record. Snoozing, dismissing or acknowledging changes operational attention only.
 
 ### Audit Events
 
@@ -236,13 +217,11 @@ A Scheduled Job is database-backed local background work using a registered appl
 
 A Job Run is one execution attempt and result for a Scheduled Job. Job definitions and Runs retain their own identities even when a Calendar projects scheduled or completed work. Jobs use explicit local catch-up and lease behaviour so recovery remains deterministic and deduplicated.
 
-### Automation Rules, Automation Runs and Review Proposals
+### Automation Rules and Automation Runs
 
-An Automation Rule is an explicit, deterministic trigger-condition-action configuration referencing only registered local triggers and actions. It is not executable user-authored code, a Scheduled Job, Event or Task.
+An Automation Rule is an explicit, deterministic trigger-condition-action configuration referencing only registered local triggers and actions. It is not executable user-authored code, a Scheduled Job or Event.
 
 An Automation Run is one idempotent execution for a stable logical trigger identity. It records inputs, outcome and failure state separately from a Job Run.
-
-A Review Proposal is an actionable operational record describing a consequential proposed Event or Task mutation, together with its evidence and approval state. It is not the mutation itself: explicit user approval invokes the normal validated service, while rejection is durable. Automation may recalculate derived state and create or update operational records, but it cannot automatically create, edit, complete, archive or delete a canonical Event or Task.
 
 ## Controlled Values
 
@@ -329,9 +308,6 @@ Current pair-aware groups include:
 - Document to Asset or Project: belongs to, receipt/manual/references where relevant and Other.
 - Event to Person, Organisation, Location, Project, Document and Asset: involvement, venue, related-project and reference connections where relevant.
 - Event to Event: related Event.
-- Task to Person, Organisation, Location, Project, Document and Asset: assignee, involvement, location, related-project and reference connections where relevant.
-- Task to Event: related Event.
-- Task to Task: related Task.
 
 Person-to-Person family definitions follow these rules:
 
@@ -403,6 +379,6 @@ The Map is a view over these canonical entities:
 - Person markers represent People connected to a coordinate-bearing Location.
 - Asset markers represent Assets with valid direct coordinates or Assets connected to a coordinate-bearing Location.
 
-Missing coordinates do not invalidate a Location; they only prevent that record, and entities relying on it, from appearing as markers. Projects, Documents, Events and Tasks never appear as map markers.
+Missing coordinates do not invalidate a Location; they only prevent that record, and entities relying on it, from appearing as markers. Projects, Documents and Events never appear as map markers.
 
 Detailed Phase 2 delivery status remains in the [Phase 2 workspace](phase_2_workspace.md). Persistence, migration and service mechanics remain in the [database design](database_design.md) and [architecture](architecture.md) documents.

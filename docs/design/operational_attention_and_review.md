@@ -40,7 +40,7 @@ An actionable notification tells the user that something happened or needs a dec
 Examples:
 
 - a due reminder;
-- an overdue Task;
+- an overdue source condition;
 - an approval or import requiring review;
 - a failed background job requiring intervention;
 - an expiring Document requiring a decision;
@@ -92,13 +92,13 @@ Examples:
 
 ## Reminders are behaviour, not entities
 
-A reminder is a policy attached to an Event, cached URL Calendar occurrence, Task or derived occurrence, potentially governed by a Calendar, source or global default and entity override. It must not appear as a standalone domain in the sidebar or page catalogue.
+A reminder is a policy attached to an Event, cached URL Calendar occurrence or derived occurrence, potentially governed by a Calendar, source or global default and entity override. It must not appear as a standalone domain in the sidebar or page catalogue.
 
 ```text
 source fact → occurrence → reminder policy → override → notification delivery
 ```
 
-The interface places reminder controls with the relevant Event, local Calendar, URL Calendar, Task or source-policy context. A URL Calendar supplies only Calendar-level defaults because its cached items remain read-only and non-canonical. The system inbox may present the resulting attention item. Dismissal or snooze operates on delivery/attention state and does not silently change the underlying Event, Task or source fact. When a source lifecycle change removes its due condition, future deliveries are suppressed and active reminder attention resolves; historic deliveries remain retained.
+The interface places reminder controls with the relevant Event, local Calendar, URL Calendar or source-policy context. A URL Calendar supplies only Calendar-level defaults because its cached items remain read-only and non-canonical. The system inbox may present the resulting attention item. Dismissal or snooze operates on delivery/attention state and does not silently change the underlying Event or source fact. When a source lifecycle change removes its due condition, future deliveries are suppressed and active reminder attention resolves; historic deliveries remain retained.
 
 ## System inbox
 
@@ -120,7 +120,7 @@ The inbox is an operational queue, not a social-notification feed.
 
 ### Item actions
 
-Possible actions include Open source, Review, Approve, Reject, Resolve, Acknowledge, Dismiss, Snooze and Convert to Task. Each item exposes only actions valid for its semantics. “Mark all read” is not a substitute for resolution.
+Possible actions include Open source, Review, Approve, Reject, Resolve, Acknowledge, Dismiss and Snooze. Each item exposes only actions valid for its semantics. “Mark all read” is not a substitute for resolution.
 
 Snooze must retain the original due time and record the chosen next-attention time. Dismiss must not resolve a persistent issue or mutate a source fact. A dismissed reminder remains historical; only a material source reschedule or reminder-policy change may create a fresh pending delivery, while a refresh or other immaterial change cannot redeliver it.
 
