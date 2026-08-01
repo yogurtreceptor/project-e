@@ -2,6 +2,8 @@
 
 Date: 2026-07-05
 
+Status: Historical audit. Its recommended form decluttering and small field additions were subsequently implemented where recorded in the build history: Organisation aliases, Project ended date, Document identifier/expiry date, and Asset manufacturer/model. Remaining recommendations require separate authorisation; this audit is not a current implementation plan.
+
 ## Scope and conclusion
 
 This audit compares the active entity definitions, validation, shared form renderer, typed and external storage, taxonomy and reference stores, relationship catalogue, journal, timeline, and current documentation. It proposes no new domain and makes no application change.
@@ -140,7 +142,7 @@ Recommendation:
 - Deprecate Issuer / created by for new structured entry once relationship selection can be integrated conveniently into the Document workflow. Preserve and display legacy text until deliberately migrated; never auto-create an Organisation from it.
 - Remove file-format choices from Document type only through a compatibility-aware controlled-value cleanup. MIME type remains the format source of truth.
 - Add optional **Document identifier / reference number** and **Expiry date** as the first new Document fields. Both are definition-driven scalar fields; expiry is a validated date and timeline source. Avoid type-specific fields such as passport number until identifier semantics prove insufficient.
-- Ownership, holder, issuer, creator, subject, related Asset, and related Project are relationships. Renewal reminders or workflows would cross current Stage 1 boundaries; an expiry date itself does not.
+- Ownership, holder, issuer, creator, subject, related Asset, and related Project are relationships. Renewal reminders or workflows would have crossed the current Phase 1 boundaries; an expiry date itself did not.
 
 ### Assets
 
@@ -238,4 +240,4 @@ This order prioritises high-value, reversible improvements and avoids cementing 
 
 ## Documentation impact
 
-No current behaviour changed in this audit, so the Stage 1 specification, architecture, database design, ontology, glossary, UI principles, technical-debt register, and build log remain accurate. If Iteration 1 is implemented, update at least `docs/ui_principles.md`, `docs/architecture.md`, `docs/stage_1_spec.md`, and `docs/ontology.md`; schema-bearing iterations also require `docs/database_design.md` and `docs/build_log.md` updates.
+No current behaviour changed at the time of this audit. Subsequent implementation updated the relevant reference documentation and build history. Any future work drawn from the remaining recommendations must update the Phase 1 specification, architecture, database design, ontology, glossary, UI principles and build log as applicable.

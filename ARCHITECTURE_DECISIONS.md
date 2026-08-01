@@ -11,7 +11,7 @@ Examples of decisions worth recording:
 * changing the entity model
 * changing the relationship model
 * adding a new major domain
-* changing the Stage 1 scope
+* changing the Phase 1 scope
 * introducing authentication
 * introducing external integrations
 * postponing AI, automation or decision support
@@ -66,7 +66,7 @@ Decision:
 Project E will keep OpenStreetMap Nominatim as the current lightweight address lookup fallback and treat Australia's Geocoded National Address File (G-NAF) as an optional future local address index for higher-accuracy Australian house-level geocoding.
 
 Reason:
-Most expected addresses are Australian, and G-NAF is the strongest fit for house-level Australian address coordinates. However, the dataset is large and should not become a mandatory Stage 1 dependency or be imported directly into the main application database before the address-index workflow is deliberately designed.
+Most expected addresses are Australian, and G-NAF is the strongest fit for house-level Australian address coordinates. However, the dataset is large and should not become a mandatory Phase 1 dependency or be imported directly into the main application database before the address-index workflow is deliberately designed.
 
 Consequences:
 Location creation can continue with Nominatim, manual coordinate editing and external lookup when needed. Future G-NAF support should be implemented as a separate local data pack or plugin-style index, with written setup instructions and a compact derived SQLite search database. The main entity database should store only selected Location entity data, not the full G-NAF dataset. The address lookup UI may later offer a fallback action such as "Can't find what you're looking for? Search with OpenStreetMap" when a local G-NAF index is installed but does not find a match.
@@ -125,13 +125,13 @@ Status: Accepted
 Date: 2026-06-28
 
 Decision:
-Stage 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. A capability is inside the Stage 1 boundary when its behaviour is rule-based and auditable, requires explicit confirmation before a consequential mutation, performs no scheduled or autonomous goal-directed workflow, creates no autonomous external side effect, and does not require WAN access for core operation. Capabilities that cross these tests require explicit scope approval.
+Phase 1 may use deterministic, local and explainable assistance or internal maintenance when it preserves user control. A capability is inside the Phase 1 boundary when its behaviour is rule-based and auditable, requires explicit confirmation before a consequential mutation, performs no scheduled or autonomous goal-directed workflow, creates no autonomous external side effect, and does not require WAN access for core operation. Capabilities that cross these tests require explicit scope approval.
 
 Reason:
 Useful information-management behaviour often performs work automatically without becoming autonomous automation. Treating every derived value, warning or housekeeping action as prohibited would conflict with the implemented platform and obscure the actual safety boundary: whether the system acts consequentially or externally without the user's informed control.
 
 Consequences:
-Deterministic relationship inference, duplicate warnings, derived views, automatic display-name maintenance and review-batch archival remain valid Stage 1 behaviour. Inference may recompute candidates automatically, but a candidate cannot become a canonical relationship until the user confirms it. AI, decision support, scheduling, autonomous goal-directed workflows, unreviewed consequential actions and autonomous external side effects remain outside Stage 1. Optional network aids remain acceptable only when core records and workflows work without them.
+Deterministic relationship inference, duplicate warnings, derived views, automatic display-name maintenance and review-batch archival remain valid Phase 1 behaviour. Inference may recompute candidates automatically, but a candidate cannot become a canonical relationship until the user confirms it. AI, decision support, scheduling, autonomous goal-directed workflows, unreviewed consequential actions and autonomous external side effects remain outside Phase 1. Optional network aids remain acceptable only when core records and workflows work without them.
 
 ## ADR-007: Separate taxonomy hierarchy from domain behavior
 
@@ -146,7 +146,7 @@ Reason:
 Organisation and relationship classifications need the same path, search, reuse and archive behavior, while only relationships require directional semantics. Separating these concerns keeps the taxonomy reusable and the relationship model explicit.
 
 Consequences:
-Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Stage 1 type systems are unchanged until separately authorised.
+Organisation and relationship rows gain taxonomy foreign keys. Legacy Organisation text and relationship keys remain compatibility snapshots during migration. Archived branches remain readable but unavailable for new selection. Other Phase 1 type systems are unchanged until separately authorised.
 
 ## ADR-008: Keep document semantics relational and separate records from things
 
@@ -176,17 +176,287 @@ Consequences:
 Legacy `relationship_change` rows remain readable through a small presentation normalization layer. Deleted relationships retain their canonical row and audit references, disappear from active timeline derivation, and reappear with their original real-world dates after restoration. Future operational capabilities extend the audit vocabulary and record references rather than redesigning the page.
 
 
-## ADR-010: Use validated snapshot bundles for Stage 1 portability and recovery
+## ADR-010: Use validated snapshot bundles for Phase 1 portability and recovery
 
 Status: Accepted
 
 Date: 2026-07-05
 
 Decision:
-Use a versioned, checksummed ZIP containing a consistent SQLite backup plus referenced uploaded documents as the Stage 1 export and recovery format. Validate the manifest, every member checksum, current schema/migrations, SQLite integrity, foreign keys, canonical entity/relationship structure and document membership before preview or apply. Normal import applies only to an empty target after explicit confirmation; recovery replacement remains a separately confirmed maintenance command.
+Use a versioned, checksummed ZIP containing a consistent SQLite backup plus referenced uploaded documents as the Phase 1 export and recovery format. Validate the manifest, every member checksum, current schema/migrations, SQLite integrity, foreign keys, canonical entity/relationship structure and document membership before preview or apply. Normal import applies only to an empty target after explicit confirmation; recovery replacement remains a separately confirmed maintenance command.
 
 Reason:
 The SQLite database already contains the canonical graph, custom taxonomies, normalized measurements/references, provenance and append-only audit history. Re-serializing a subset into a parallel interchange model would risk semantic loss and duplicate sources of truth. SQLite's standard-library backup API provides a consistent local snapshot without a new dependency.
 
 Consequences:
-Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Stage 1 scope.
+Exports are complete local snapshots rather than partial CSV-style ingestion. Bundle format changes require a versioned migration policy. Imported identities, audit and provenance are preserved; a new import audit event records ownership transfer into the local installation. Import, merge and permanent deletion create Git-ignored recovery bundles first. Conflict-aware import into a populated database remains out of Phase 1 scope.
+
+## ADR-011: Treat Events and Tasks as first-class peer entities
+
+Status: Superseded by ADR-027
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 will add Events and Tasks as canonical peer entities using the shared entity lifecycle and relationship system. Projects coordinate them but do not own them.
+
+Reason:
+Time occurrences and work require stable identity, history, search and cross-domain relationships without creating special nested models.
+
+Consequences:
+Event and Task links to Projects, each other and other domains use normal relationships; neither an event-task type nor per-domain link columns are the default model.
+
+## ADR-012: Keep the Calendar a projection over canonical time information
+
+Status: Accepted; Task-specific consequences superseded by ADR-027
+
+Date: 2026-07-11
+
+Decision:
+Calendar views derive from canonical records and traceable derived occurrences; they do not maintain a duplicate event store.
+
+Reason:
+One source of truth preserves lifecycle, audit and relationship semantics across Events, Tasks and other dated records.
+
+Consequences:
+Displaying a deadline, birthday or scheduled run does not change its source type. Shared temporal semantics precede calendar implementation.
+
+## ADR-013: Model reminders as policies and deliveries, not standalone domain entities
+
+Status: Accepted; Task-specific consequences superseded by ADR-027
+
+Date: 2026-07-11
+
+Decision:
+Reminders are attached policies, with global defaults and entity-level overrides. Deterministically derived occurrences remain traceable to source facts; delivery, acknowledgement and snooze history are separate notification records.
+
+Reason:
+This avoids annual duplicate reminder definitions while allowing meaningful user control and delivery audit.
+
+Consequences:
+An Event or Task is not a Reminder. Birthdays and expiries can use policy-driven occurrences without becoming independent canonical reminder records.
+
+## ADR-014: Separate actionable notifications from persistent issues
+
+Status: Accepted separation; Persistent System Health implementation deferred
+
+Date: 2026-07-11
+
+Decision:
+The Inbox holds actionable notifications. If Persistent System Health is separately authorised later, its conditions must use durable current issue records rather than masquerading as Inbox reminders; issue deduplication and escalation behaviour are not delivered Phase 2 contracts.
+
+Reason:
+An unchanged condition is not a new event every day, and repeated noise obscures useful attention.
+
+Consequences:
+Notifications, audit events, Job Runs and Automation Runs remain distinct delivered record types and audit trails. Persistent issues remain a deferred, separately designed record type.
+
+## ADR-015: Separate scheduled jobs from calendar events and restrict handlers
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Scheduled jobs use database-backed schedules, registered handlers and persistent run history. Calendar display of a run is optional projection only; database-stored executable code is prohibited.
+
+Reason:
+Background execution has recovery, retry, concurrency and failure semantics that Events do not have, while registered capabilities preserve safety and maintainability.
+
+Consequences:
+The initial local scheduler avoids distributed queues, Redis, Celery and Temporal unless later evidence requires them.
+
+## ADR-016: Establish deterministic automation before AI automation
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 automation uses explicit trigger-condition-action rules and calls ordinary application services with normal validation, provenance and audit. AI automation is deferred.
+
+Reason:
+Deterministic rules establish useful, explainable operational behaviour before introducing model uncertainty or agency.
+
+Consequences:
+The delivered registered action is non-consequential and cannot mutate canonical Events. Any future consequential action requires separately authorised review infrastructure; no AI agents or autonomous AI-generated actions are introduced in Phase 2.
+
+## ADR-017: Define Phase 2 completion as integrated operational behaviour
+
+Status: Accepted
+
+Date: 2026-07-11
+
+Decision:
+Phase 2 completes only after the delivered Event, Calendar, reminder, Inbox, scheduler, registered deterministic automation, audit, provenance and portability workflow works coherently and passes an end-to-end completion review. The retired Task subsystem remains historical evidence, and Persistent System Health is not a completion requirement.
+
+Reason:
+Isolated tables and pages do not prove an operational platform.
+
+Consequences:
+The current completion scenario and closeout gate in `docs/phase_2_workspace.md` govern closure review. Superseded delivery records do not restore retired or deferred capabilities to the completion boundary.
+
+## ADR-018: Use a Brisbane platform timezone and deterministic calendar-grade recurrence
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Initial Phase 2 calendars default to `Australia/Brisbane` as their IANA timezone, and individual timed Events may select another IANA timezone. Precise instants use backend-safe UTC storage. Recurrence supports calendar-grade daily, weekly, monthly and yearly intervals, selected weekdays, ordinal weekdays and bounded date ranges; monthly and yearly rules use the selected calendar day and shift backward to the last valid day when that day is unavailable.
+
+Reason:
+The current product has one private user in Brisbane, so a single explicit IANA zone supplies clear temporal meaning without premature multi-zone configuration. Deterministic calendar-grade recurrence gives users familiar flexibility while preserving traceable derived occurrences.
+
+Consequences:
+Selecting the 29th–31st requires a warning about shorter-period shifting. Derived occurrences remain traceable and do not create duplicate canonical Event records. A later multi-zone design can extend the temporal boundary without changing existing record semantics.
+
+## ADR-019: Deliver initial notifications locally and keep the scheduler separable
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-11
+
+Decision:
+Initial notification delivery creates local actionable inbox items only. Items persist until acted upon; startup creates one deduplicated recovered item for a due reminder or job-triggered notice missed while the application was unavailable. The scheduler runs in-process while the application is running, with schedules, handlers, locking and run history exposed through an application-runtime boundary suitable for a later local worker.
+
+Reason:
+This provides reliable local attention management without external delivery dependencies or a second process, while preserving a direct evolution path for continuous local operation.
+
+Consequences:
+No email, SMS, push, operating-system notification, service manager or external queue is introduced initially. Recovery preserves the original due time and prevents duplicate delivery; a later worker reuses registered handlers and schedule definitions rather than creating a second scheduling model.
+
+## ADR-020: Keep automatic operations non-consequential
+
+Status: Accepted; current boundary clarified after ADR-027
+
+Date: 2026-07-19
+
+Decision:
+Phase 2 automatic operations may evaluate derived state and create or update reminder deliveries, audit records, Job Runs and Automation Runs through registered application handlers. Database rules store registered trigger, action and condition data only, never executable user-authored code. The delivered action cannot create, edit, archive or delete a canonical Event.
+
+Reason:
+Operational assistance should be useful and reliable without silently changing the user's canonical commitments.
+
+Consequences:
+Automation uses normal application services and retains separate, idempotent run and audit history. General proposal/approval infrastructure is not delivered. Any future consequential automation action requires separately authorised product design and a review boundary before implementation.
+
+## ADR-021: Recover scheduled work serially with per-job catch-up policy
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Record clean shutdown and startup when possible, retain a durable scheduler checkpoint, and recover work due during unavailability in scheduled order, one completed run at a time. Each registered job declares whether recovery runs every missed occurrence, coalesces missed work into one current run, or skips stale work.
+
+Reason:
+Serial recovery prevents overlapping work, while a declared policy prevents a high-frequency job from replaying days of obsolete checks after downtime.
+
+Consequences:
+Recovery remains deterministic and auditable after clean or unclean stops. Job registration, not ad hoc scheduler guessing, owns stale-work behaviour.
+
+## ADR-022: Require bounded timed Events and calendar defaults
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+A timed Event always has start and end instants; an all-day Event has date boundaries only. Intervals are start-inclusive and end-exclusive. Calendar settings provide overridable defaults for Event duration and reminder preferences.
+
+Reason:
+Every timed calendar commitment needs an unambiguous occupied interval, while different calendar contexts have legitimately different typical duration and reminder needs.
+
+Consequences:
+The Event form uses its selected calendar's defaults but lets the user override them. Point-in-time timed Events are not part of the initial model.
+
+## ADR-023: Enforce logical idempotency in the database
+
+Status: Accepted (Phase 2 target architecture)
+
+Date: 2026-07-19
+
+Decision:
+Stable identities deduplicate logical occurrences, reminder deliveries, recovered notifications, Job Runs and Automation Runs. Database uniqueness constraints and atomic claims protect the corresponding action from concurrent duplicate execution. Each record contract defines material changes that create a new logical item rather than updating the existing one. Deferred persistent issues, escalations and external side effects require their own separately authorised identity contracts if introduced later.
+
+Reason:
+In-process execution is not a sufficient duplicate guarantee once recovery, crashes, restarts or later workers are involved.
+
+Consequences:
+The scheduler and notification services must claim work transactionally. A recurrence version change is one delivered example of a material change that legitimately produces a new logical record.
+
+## ADR-024: Model calendars as local Event configurations
+
+Status: Superseded by ADR-025
+
+Date: 2026-07-19
+
+Decision:
+Calendars are first-class local Event grouping/configuration records, comparable to Google Calendar calendars. Every Event belongs to one calendar, which supplies name, colour, IANA timezone, default Event duration and reminder preferences. Events may override the calendar timezone. Initial Events and Tasks store planned time only; actual start/end tracking is deferred.
+
+Reason:
+Calendar-specific defaults support useful personal, work and other contexts without creating a second Event store. Deferring actual time preserves a simple initial temporal model.
+
+Consequences:
+The calendar is the source of Event presentation preferences, while Events remain canonical records. Actual-time tracking remains a documented future extension for shifts, travel, maintenance or time-tracking workflows.
+
+## ADR-025: Use Calendars as the sole Event grouping and configuration model
+
+Status: Accepted
+
+Date: 2026-07-19
+
+Decision:
+Every canonical Event belongs to exactly one Calendar. Calendars alone provide Event grouping, name, colour, default IANA timezone, default duration, ordering, archive state, filtering and future default reminder policy. A fresh installation has one default General Calendar. There is no separate Event classification or colour-override layer.
+
+Reason:
+This matches the intended basic Google Calendar structure and avoids two competing grouping/configuration systems whose colour, defaults, filtering and management semantics would overlap.
+
+Consequences:
+Event colour always derives from its Calendar. The category-bearing development schema is removed through a forward-only corrective migration while its historical migration identifiers remain append-only. Archiving a Calendar retains its Event assignments and prevents new selection; it cannot be the active default, and deletion is limited to empty non-default Calendars so no Event is silently reassigned. Future broad reminder precedence is occurrence override, Event override, Calendar policy, then global policy; reminder storage remains deferred to Phase 2C.
+
+## ADR-026: Use semantic Event lifecycle operations
+
+Status: Accepted
+
+Date: 2026-07-19
+
+Decision:
+Retain persisted Event status while routing cancellation, reinstatement and rescheduling through dedicated `cancel_event`, `reinstate_event` and `reschedule_event` service operations. Keep Event archive state independent from platform Recycle Bin deletion; restoring a deleted Event preserves its archive and cancellation state.
+
+Reason:
+These transitions have distinct temporal and historical meaning and will later affect recurrence and reminder identity. Dedicated operations preserve clear validation, audit and provenance without introducing a separate lifecycle record model.
+
+Consequences:
+General Event detail edits do not change schedule or status. Calendar projections can distinguish cancelled, archived and deleted records deterministically. Recycle Bin restoration clears only `entities.deleted_at`.
+
+## ADR-027: Retire the experimental Task subsystem
+
+Status: Accepted
+
+Date: 2026-08-01
+
+Decision:
+Remove the unused Task entity type, Task-list/deadline/session tables, Task services and pages, Task relationship taxonomy, Task reminder contexts, Task-only automation actions and proposal storage. Preserve the append-only historical migration ledger, and make the retirement migration refuse to proceed if it finds any Task entity, Task row, Task proposal or Task relationship.
+
+Reason:
+The delivered Task model had no canonical user records and did not prove useful. Keeping dormant runtime code, skipped tests and schema created a continuing maintenance burden and repeatedly misrepresented current product scope to contributors and coding agents.
+
+Consequences:
+Project E has no current Task or to-do capability. Fresh databases apply the historical migrations and then remove their artifacts, while upgrades with real Task data stop without deleting it. Any future work-management capability begins with a newly authorised product model and forward migration; it is not required to preserve the retired design.
+
+## ADR-028: Route record-derived reminders through one temporal occurrence pipeline
+
+Status: Accepted
+
+Date: 2026-08-01
+
+Decision:
+Canonical record dates that need Calendar, reminder or Inbox behaviour must enter one shared temporal-occurrence pipeline. Each source domain adapts its canonical fact into a traceable occurrence contract consumed by shared Calendar projection, reminder-policy resolution, delivery, reconciliation and Inbox services. A Person, Document, Relationship or other source continues to own its date; adapting that date does not require copying it into a canonical Event. Materialising an Event remains a deliberate domain decision for a time record that needs Event identity and lifecycle, as with the protected birthday Event workflow, rather than the default way to gain reminder behaviour.
+
+Reason:
+Record-derived reminders are common platform behaviour. Implementing a separate scanner, timing model, delivery path and lifecycle reconciliation for each new dated field would duplicate logic and make Calendar, reminder and Inbox behaviour diverge. Keeping the source fact canonical while sharing its temporal projection provides reuse without creating competing sources of truth.
+
+Consequences:
+New record-derived reminder sources must register or adapt to the shared occurrence boundary instead of adding standalone source loops or delivery implementations. Event schedules, recurring Event instances, cached external occurrences and eligible record-derived dates may therefore use the same downstream reminder and Inbox machinery while retaining source-specific resolution rules; for example, an ordinary Event reminder may cease after the Event ends while a Document-expiry condition may remain actionable. Reminders without a meaningful temporal occurrence, such as a process approval or system failure, retain their own operational semantics and are not forced through this pipeline. The current hardcoded reminder-source enumeration is an implementation limitation to remove during the next authorised reminder/Inbox refactor; this decision does not claim that refactor is already complete.

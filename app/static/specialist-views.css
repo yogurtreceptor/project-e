@@ -1,0 +1,175 @@
+/* Geography, Map, Family Tree and relationship-inference views. */
+.geography-section table {
+    margin-top: 8px;
+}
+
+.location-form input[type="number"] {
+    max-width: 260px;
+}
+
+.address-lookup-field {
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 10px;
+    padding-bottom: 16px;
+}
+
+.address-lookup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.address-lookup-status {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.address-results ul {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.address-results li {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 10px 12px;
+}
+
+.address-results span {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.address-result-button {
+    color: var(--accent);
+    text-align: left;
+}
+
+.map-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.map-layers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.map-shell {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-height: 620px;
+    overflow: hidden;
+    position: relative;
+}
+
+.eddy-map {
+    height: 620px;
+    width: 100%;
+}
+
+.map-empty {
+    background: var(--color-surface-panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    left: 20px;
+    margin: 0;
+    padding: 10px 12px;
+    position: absolute;
+    top: 20px;
+    z-index: 500;
+}
+
+.leaflet-popup-content a {
+    font-weight: 700;
+}
+
+@media (max-width: 720px) {
+    .map-shell {
+        min-height: 460px;
+    }
+
+    .eddy-map {
+        height: 460px;
+    }
+}
+
+
+.map-marker-list ul {
+    display: grid;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.map-marker-list li {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.map-marker-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.map-marker-list span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+
+.family-tree-panel { padding: 12px; }
+.family-tree-scroll { overflow: auto; }
+.family-tree { display: block; min-height: 220px; min-width: 100%; }
+.family-tree path { fill: none; stroke: var(--line); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.family-tree .family-edge-casing { stroke: var(--panel); stroke-width: 8; }
+.family-tree .family-edge-peer-strong { stroke-width: 4; }
+.family-tree .family-edge-cyclic { stroke: var(--color-status-danger); stroke-dasharray: 3 5; }
+.family-tree-legend { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 10px 14px; }
+.family-tree-legend span { align-items: center; color: var(--muted); display: inline-flex; font-size: 13px; gap: 8px; }
+.legend-line { border-top: 2px solid var(--line); display: inline-block; width: 34px; }
+.legend-partner { border-top-width: 4px; }
+.legend-parent { border-left: 2px solid var(--line); border-top: 0; height: 20px; width: 0; }
+.family-tree rect { fill: var(--color-surface-panel); stroke: var(--color-series-1); stroke-width: 2; }
+.family-tree a:hover rect, .family-tree a:focus rect { fill: var(--color-action-primary-subtle); }
+.family-tree .family-node-selected rect { fill: var(--color-status-warning-surface); stroke-width: 4; }
+.family-tree text { fill: var(--text); font-size: 14px; font-weight: 700; text-anchor: middle; }
+
+
+.origin-badge, .status-badge { display: inline-block; padding: .15rem .45rem; border-radius: 999px; font-size: .75rem; background: var(--color-surface-inset); color: var(--color-text-secondary); }
+.origin-inferred { background: var(--color-status-success-surface); color: var(--color-status-success); }
+.inference-batch { margin-bottom: 1rem; }
+.inference-card { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1.25rem; }
+.inference-card h3 { font-size: 1.5rem; margin: .35rem 0 1rem; }
+.inference-progress { color: var(--muted); display: flex; font-size: .875rem; justify-content: space-between; margin-bottom: 1rem; }
+.inference-reason { background: var(--color-surface-inset); border-left: 4px solid var(--color-border-focus); margin: 1rem 0; padding: .85rem 1rem; }
+.inference-reason p:last-child { color: var(--muted); font-size: .875rem; margin-bottom: 0; }
+.inference-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
+.inference-complete { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.warning-text { background: var(--color-status-warning-surface); border-left: 4px solid var(--color-status-warning-border); padding: .75rem 1rem; }
+
+.inference-history { margin-top: 1.5rem; }
+.history-batch { border-top: 1px solid var(--line); padding: .85rem 0; }
+.history-batch h3 { font-size: 1rem; margin: 0; }
+.inference-history-controls { margin-top: 1.5rem; }
+.history-batch ul { list-style: none; margin: .75rem 0 0; padding: 0; }
+.history-batch li { align-items: center; border-top: 1px solid var(--color-border-subtle); display: flex; gap: 1rem; justify-content: space-between; padding: .65rem 0; }
+.history-batch small { color: var(--muted); display: block; margin-top: .2rem; }

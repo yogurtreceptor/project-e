@@ -1,0 +1,323 @@
+/* System Tools, taxonomy management and shared feedback states. */
+.system-tool-card {
+    color: var(--text);
+    display: grid;
+    gap: 8px;
+    margin-bottom: 0;
+    min-height: 170px;
+    transition: border-color 120ms ease;
+}
+
+.system-tool-card:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+
+}
+
+.system-tool-card h2,
+.system-tool-card p {
+    margin: 0;
+}
+
+.system-tool-card p {
+    color: var(--muted);
+}
+
+.system-tool-card span {
+    align-self: end;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.taxonomy-management {
+    display: grid;
+    gap: 24px;
+}
+
+.taxonomy-manager {
+    padding: 24px;
+}
+
+.taxonomy-manager-header,
+.taxonomy-manager-toolbar,
+.taxonomy-counts,
+.taxonomy-create-basics,
+.taxonomy-label-grid {
+    display: flex;
+    gap: 16px;
+}
+
+.taxonomy-manager-header {
+    align-items: start;
+    justify-content: space-between;
+}
+
+.taxonomy-manager-header h2,
+.taxonomy-manager-header p {
+    margin-bottom: 4px;
+}
+
+.taxonomy-manager-header p {
+    color: var(--muted);
+}
+
+.taxonomy-counts {
+    flex: 0 0 auto;
+}
+
+.taxonomy-counts span,
+.status-badge,
+.taxonomy-level {
+    background: var(--color-surface-inset);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+}
+
+.taxonomy-manager-toolbar {
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    margin: 18px 0 0;
+    padding-bottom: 16px;
+}
+
+.taxonomy-manager-toolbar > label:first-child {
+    flex: 1;
+}
+
+.taxonomy-archive-toggle {
+    padding-bottom: 10px;
+}
+
+.taxonomy-tree-row {
+    align-items: center;
+    border-bottom: 1px solid var(--color-border-subtle);
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(210px, 1.1fr) minmax(220px, 1.4fr) auto 70px;
+    min-height: 54px;
+    padding: 8px 4px;
+}
+
+.taxonomy-tree-entry {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    padding-left: calc(var(--taxonomy-depth, 0) * 22px);
+}
+
+.taxonomy-tree-branch::before {
+    color: var(--line);
+    content: "└";
+    display: inline-block;
+    width: 10px;
+}
+
+.taxonomy-tree-row[style="--taxonomy-depth:0"] .taxonomy-tree-branch {
+    display: none;
+}
+
+.taxonomy-tree-path {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.status-badge.active {
+    background: var(--color-status-success-surface);
+    color: var(--color-status-success);
+}
+
+.field-error {
+    color: var(--color-status-danger);
+    display: block;
+    font-size: var(--font-size-label);
+    font-weight: 600;
+    margin-top: var(--space-1);
+}
+
+.errors a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.status-badge.archived {
+    background: var(--color-surface-inset);
+    color: var(--color-text-secondary);
+}
+
+.taxonomy-tree-action form {
+    margin: 0;
+}
+
+.taxonomy-create-panel {
+    border-top: 1px solid var(--line);
+    margin-top: 18px;
+    padding-top: 16px;
+}
+
+.taxonomy-create-panel summary {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.taxonomy-create-panel form {
+    margin-top: 16px;
+}
+
+.taxonomy-create-basics > label,
+.taxonomy-label-grid > label {
+    flex: 1;
+}
+
+.taxonomy-relationship-fields {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+}
+
+.taxonomy-label-grid {
+    flex-wrap: wrap;
+}
+
+.taxonomy-label-grid > label {
+    flex-basis: calc(50% - 8px);
+}
+
+.taxonomy-manager-empty {
+    color: var(--muted);
+    padding: 18px 4px;
+}
+
+dl {
+    display: grid;
+    gap: 8px 20px;
+    grid-template-columns: 180px 1fr;
+    margin: 0;
+}
+
+dd {
+    margin: 0;
+}
+
+.eyebrow {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.metadata h2 {
+    margin-bottom: 14px;
+}
+
+.empty,
+.notes {
+    color: var(--muted);
+    margin-bottom: 0;
+    white-space: pre-wrap;
+}
+
+.empty-state,
+.loading-state,
+.failure-state {
+    border: 1px dashed var(--color-border-default);
+    border-radius: var(--radius-panel);
+    color: var(--color-text-secondary);
+    padding: var(--space-5);
+}
+
+.loading-state {
+    background: var(--color-status-info-surface);
+    border-color: var(--color-status-info-border);
+    color: var(--color-status-info);
+}
+
+.failure-state {
+    background: var(--color-status-danger-surface);
+    border-color: var(--color-status-danger-border);
+    color: var(--color-status-danger);
+}
+
+.errors {
+    background: var(--color-status-danger-surface);
+    border: 1px solid var(--color-status-danger-border);
+    border-radius: 8px;
+    color: var(--danger);
+    margin-bottom: 18px;
+    padding: 12px 14px;
+}
+
+.errors ul {
+    margin-bottom: 0;
+}
+
+.notice {
+    background: var(--color-status-success-surface);
+    border: 1px solid var(--color-status-success-border);
+    border-radius: var(--radius-panel);
+    color: var(--color-status-success);
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+}
+
+.notice p:last-child {
+    margin-bottom: 0;
+}
+
+.warnings {
+    background: var(--color-status-warning-surface);
+    border: 1px solid var(--color-status-warning-border);
+    border-radius: 8px;
+    color: var(--color-status-warning);
+    margin-bottom: 18px;
+    padding: 12px 14px;
+}
+
+.warnings p {
+    margin: 6px 0;
+}
+
+.warnings ul {
+    margin-bottom: 0;
+}
+
+.warnings li span {
+    color: var(--muted);
+    display: block;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+    dl {
+        grid-template-columns: 1fr;
+    }
+
+    .row-actions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .taxonomy-manager-header,
+    .taxonomy-manager-toolbar,
+    .taxonomy-create-basics,
+    .taxonomy-label-grid {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .taxonomy-tree-row {
+        grid-template-columns: 1fr auto;
+    }
+
+    .taxonomy-tree-path {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        padding-left: calc(var(--taxonomy-depth, 0) * 22px);
+    }
+}

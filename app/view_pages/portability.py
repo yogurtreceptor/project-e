@@ -2,11 +2,11 @@ from html import escape
 
 
 def portability_page(error: str = "", message: str = "") -> str:
-    error_html = f'<div class="warnings"><p>{escape(error)}</p></div>' if error else ""
+    error_html = f'<div class="status-row warning"><p>{escape(error)}</p></div>' if error else ""
     message_html = f'<div class="notice"><p>{escape(message)}</p></div>' if message else ""
-    return f"""<section class="page-heading"><p class="eyebrow">System Tools</p>
+    return f"""<section class="page-heading split"><div><p class="eyebrow">System Tools</p>
     <h1>Import and export</h1>
-    <p>Move a complete, checksummed copy of canonical records, relationships, provenance, audit history, and stored documents.</p></section>
+    <p>Move a complete, checksummed copy of canonical records, relationships, provenance, audit history, and stored documents.</p></div><a class="button secondary" href="/system-tools">Back to System Tools</a></section>
     {error_html}{message_html}
     <section class="panel"><h2>Export</h2>
     <p>Download a versioned ZIP bundle. Export is read-only and creates a consistent SQLite snapshot.</p>
@@ -28,7 +28,7 @@ def import_preview_page(preview, token: str) -> str:
       <div><dt>Relationships</dt><dd>{preview.relationships} ({preview.deleted_relationships} recycled)</dd></div>
       <div><dt>Stored documents</dt><dd>{preview.documents}</dd></div>
     </dl>
-    <div class="warnings"><strong>Import is consequential.</strong> It is allowed only into an empty target and will create a recovery backup before replacing local storage.</div>
+    <div class="status-row warning"><strong>Import is consequential.</strong> It is allowed only into an empty target and will create a recovery backup before replacing local storage.</div>
     <form method="post" action="/system-tools/portability/import">
       <input type="hidden" name="token" value="{escape(token)}">
       <label class="inline-check"><input type="checkbox" name="confirm" value="yes" required> I reviewed this preview and want to import the bundle.</label>

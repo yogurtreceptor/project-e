@@ -1,10 +1,12 @@
-# Phase 1 Exit Review
+# Phase 1 Closure Review
 
-Status: Candidate implementation prepared; maintainer confirmation pending.
+Status: Closed. Phase 1 development milestone complete; residual defects handled normally.
 
 Date: 2026-07-05
 
-This review records the evidence prepared for PR #1. It does not declare Phase 1 complete or authorize merging. The maintainer must review the behavior, evidence and remaining limitations and make that decision.
+This review records the closure decision for Phase 1 and the evidence prepared for PR #1. PR #1 has been closed. Phase 1 is complete enough to close as a development milestone, and Phase 2 is planned.
+
+Closure does not assert exhaustive manual testing of every capability or the absence of residual defects. Defects discovered later should be triaged and fixed through normal maintenance; they do not reopen Phase 1 as a whole. Beginning Phase 2 work likewise does not mean Phase 2 is complete: that phase requires its own agreed capabilities to work coherently and to pass its end-to-end completion review.
 
 ## Required exit evidence
 
@@ -28,4 +30,4 @@ The fictional Smoke Person workflow completed create, detail and search while ma
 - Remote Leaflet assets, map tiles and Nominatim remain optional WAN resources; fully offline map assets retain their documented trigger.
 - Python-filtered discovery and other scale optimizations retain their documented representative-data triggers.
 
-No Phase 1-blocking defect was found after the smoke-test correction. PR #1 should remain draft and Phase 1 should remain unconfirmed until the maintainer reviews this evidence and explicitly decides whether the exit criteria are satisfied.
+No Phase 1-blocking defect was found after the smoke-test correction. The evidence was sufficient to close PR #1 and close Phase 1 as a development milestone, while recognising that testing was representative rather than exhaustive.

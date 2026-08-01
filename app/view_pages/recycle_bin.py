@@ -9,7 +9,7 @@ def recycle_bin_page(records: list[EntityRecord], relationships: list = None) ->
         f"""<tr><td>{escape(record.title)}</td><td>{escape(record.definition.singular)}</td>
         <td>{escape(record.deleted_at)}</td><td class="row-actions">
         <form method="post" action="/recycle-bin/{record.id}/restore"><button class="link-button" type="submit">Restore</button></form>
-        <a class="danger-link" href="/recycle-bin/{record.id}/permanent-delete">Permanently delete</a>
+        <a class="button quiet" href="/recycle-bin/{record.id}/permanent-delete">Permanently delete</a>
         </td></tr>"""
         for record in records
     )
@@ -19,8 +19,8 @@ def recycle_bin_page(records: list[EntityRecord], relationships: list = None) ->
     )
     all_rows = rows + relationship_rows
     content = (
-        f"<table><thead><tr><th>Name</th><th>Type</th><th>Deleted</th><th></th></tr></thead><tbody>{all_rows}</tbody></table>"
-        if all_rows else '<p class="empty">The Recycle Bin is empty.</p>'
+        f'<div class="table-scroll" tabindex="0" role="region" aria-label="Recycled records"><table><thead><tr><th>Name</th><th>Type</th><th>Deleted</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>{all_rows}</tbody></table></div>'
+        if all_rows else '<div class="empty-state"><h2>Recycle Bin is empty</h2><p>Deleted records will appear here until restored or permanently removed.</p></div>'
     )
     return f"""<section class="page-heading split"><div><p class="eyebrow">System Tools</p><h1>Recycle Bin</h1>
     <p>Deleted entities and relationships are hidden throughout the platform but can be restored here. Archived records remain active platform records and do not appear here.</p></div><a class="button secondary" href="/system-tools">Back to System Tools</a></section>
@@ -40,7 +40,7 @@ def permanent_delete_confirmation_page(record: EntityRecord, dependencies: dict[
             parts.append(f"{relationship_count} relationship{'s' if relationship_count != 1 else ''} ({relationship_detail})")
         if journal_count:
             parts.append(f"{journal_count} journal entr{'ies' if journal_count != 1 else 'y'}")
-        warning = f'<div class="warnings"><strong>Dependencies will also be permanently removed:</strong> {escape(" and ".join(parts))}.</div>'
+        warning = f'<div class="status-row warning"><strong>Dependencies will also be permanently removed:</strong> {escape(" and ".join(parts))}.</div>'
     return f"""<section class="page-heading"><h1>Permanently delete {escape(record.title)}?</h1></section>
     <section class="panel">{warning}<p>This cannot be undone. The record, its relationships, and dependent data will be removed. Audit history will be preserved.</p>
     <form method="post" action="/recycle-bin/{record.id}/permanent-delete">

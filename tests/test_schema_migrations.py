@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 from app.config import initialise_local_storage
 from app.db import connect, initialise_database
-from app.db_schema import SCHEMA_MIGRATION_IDS, create_schema
+from app.db_schema import (
+    SCHEMA_MIGRATIONS,
+    SCHEMA_MIGRATION_IDS,
+    create_schema,
+    create_schema_migration_table,
+)
 
 
 class SchemaMigrationTests(unittest.TestCase):
@@ -44,17 +49,124 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("relationships", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
+        self.assertIn("event_icalendar_identities", tables)
+        self.assertIn("calendar_subscriptions", tables)
+        self.assertIn("external_calendar_events", tables)
+        self.assertTrue({"task_lists", "tasks", "task_deadlines", "task_sessions"}.isdisjoint(tables))
+        self.assertNotIn("automation_review_items", tables)
         with connect(self.database_path) as connection:
             entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
             project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
             document_columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
             asset_columns = {row["name"] for row in connection.execute("PRAGMA table_info(assets)")}
             relationship_columns = {row["name"] for row in connection.execute("PRAGMA table_info(relationships)")}
+            reminder_policy_sql = connection.execute(
+                """SELECT sql FROM sqlite_master
+                   WHERE type = 'table' AND name = 'reminder_policies'"""
+            ).fetchone()["sql"]
+            entity_sql = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entities'"
+            ).fetchone()["sql"]
         self.assertIn("deleted_at", entity_columns)
         self.assertIn("ended_at", project_columns)
         self.assertTrue({"identifier", "expiry_date"} <= document_columns)
         self.assertTrue({"manufacturer", "model"} <= asset_columns)
         self.assertIn("deleted_at", relationship_columns)
+        self.assertIn("'calendar_subscription'", reminder_policy_sql)
+        self.assertNotIn("'task_list'", reminder_policy_sql)
+        self.assertNotIn("'task_deadline'", reminder_policy_sql)
+        self.assertNotIn("'task'", entity_sql)
+
+    def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            retirement_id = "20260801_31_retire_task_subsystem"
+            for migration_id, migration in SCHEMA_MIGRATIONS:
+                if migration_id == retirement_id:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, 'before')",
+                    (migration_id,),
+                )
+            task_list_id = int(connection.execute(
+                "SELECT id FROM task_lists WHERE is_default = 1"
+            ).fetchone()[0])
+            connection.execute("PRAGMA ignore_check_constraints = ON")
+            cursor = connection.execute(
+                """INSERT INTO entities (
+                       type, display_name, summary, notes, created_at, updated_at
+                   ) VALUES ('task', 'Preserve me', '', '', 'before', 'before')"""
+            )
+            task_id = int(cursor.lastrowid)
+            connection.execute(
+                "INSERT INTO tasks (entity_id, task_list_id) VALUES (?, ?)",
+                (task_id, task_list_id),
+            )
+            connection.execute("PRAGMA ignore_check_constraints = OFF")
+            connection.commit()
+
+            with self.assertRaisesRegex(RuntimeError, "Task retirement migration refused"):
+                create_schema(connection)
+
+            retained = connection.execute(
+                "SELECT display_name FROM entities WHERE id = ?", (task_id,)
+            ).fetchone()
+            migration = connection.execute(
+                "SELECT 1 FROM schema_migrations WHERE migration_id = ?",
+                (retirement_id,),
+            ).fetchone()
+
+        self.assertEqual("Preserve me", retained["display_name"])
+        self.assertIsNone(migration)
+
+    def test_inbox_attention_upgrade_consolidates_active_timings(self) -> None:
+        migration_id = "20260801_32_consolidate_inbox_attention"
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for current_id, migration in SCHEMA_MIGRATIONS:
+                if current_id == migration_id:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, 'before')",
+                    (current_id,),
+                )
+            for delivery_key, timing in (("earlier", "1h"), ("later", "10m")):
+                connection.execute(
+                    """INSERT INTO inbox_items (
+                           delivery_key, source_kind, source_id, occurrence_key,
+                           reason, timing, title, due_at, delivered_at
+                       ) VALUES (?, 'event', 42, '2026-08-02', 'reminder', ?,
+                                 'Planning', '2026-08-02T00:00:00+00:00', 'before')""",
+                    (delivery_key, timing),
+                )
+            connection.commit()
+
+            create_schema(connection)
+
+            rows = connection.execute(
+                "SELECT timing, state FROM inbox_items ORDER BY timing"
+            ).fetchall()
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(inbox_items)")
+            }
+            index = connection.execute(
+                """SELECT sql FROM sqlite_master
+                   WHERE type='index' AND name='idx_inbox_one_active_occurrence'"""
+            ).fetchone()
+            actions = connection.execute(
+                "SELECT action FROM inbox_item_actions WHERE action='timing_superseded'"
+            ).fetchall()
+
+        self.assertEqual(
+            [("10m", "active"), ("1h", "resolved")],
+            [(row["timing"], row["state"]) for row in rows],
+        )
+        self.assertIn("attention_expires_at", columns)
+        self.assertIn("WHERE state IN ('active', 'snoozed')", index["sql"])
+        self.assertEqual(1, len(actions))
 
     def test_fresh_local_storage_creates_document_directory(self) -> None:
         documents_path = Path(self.temp_dir.name) / "instance" / "documents"
@@ -71,6 +183,62 @@ class SchemaMigrationTests(unittest.TestCase):
         initialise_database(self.database_path)
 
         self.assertEqual(self.migration_rows(), first_rows)
+
+    def test_external_calendar_reminder_context_upgrade_preserves_policies(
+        self,
+    ) -> None:
+        initialise_database(self.database_path)
+        with connect(self.database_path) as connection:
+            connection.execute(
+                """INSERT INTO reminder_policies (
+                    context_kind, context_id, source_kind,
+                    timings_json, updated_at
+                ) VALUES ('calendar', 1, 'event', '["2h"]', 'before')"""
+            )
+            connection.executescript(
+                """
+                ALTER TABLE reminder_policies
+                    RENAME TO reminder_policies_current;
+                CREATE TABLE reminder_policies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    context_kind TEXT NOT NULL
+                        CHECK (context_kind IN (
+                            'global', 'calendar', 'task_list'
+                        )),
+                    context_id INTEGER NOT NULL DEFAULT 0,
+                    source_kind TEXT NOT NULL
+                        CHECK (source_kind IN (
+                            'event', 'task_deadline', 'birthday',
+                            'document_expiry'
+                        )),
+                    timings_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE (context_kind, context_id, source_kind)
+                );
+                INSERT INTO reminder_policies
+                SELECT * FROM reminder_policies_current;
+                DROP TABLE reminder_policies_current;
+                DELETE FROM schema_migrations
+                WHERE migration_id =
+                    '20260730_30_external_calendar_reminders';
+                """
+            )
+            create_schema(connection)
+            retained = connection.execute(
+                """SELECT timings_json FROM reminder_policies
+                   WHERE context_kind = 'calendar'
+                     AND context_id = 1 AND source_kind = 'event'"""
+            ).fetchone()
+            connection.execute(
+                """INSERT INTO reminder_policies (
+                    context_kind, context_id, source_kind,
+                    timings_json, updated_at
+                ) VALUES (
+                    'calendar_subscription', 7, 'event', '["1d"]', 'after'
+                )"""
+            )
+
+        self.assertEqual('["2h"]', retained["timings_json"])
 
     def test_existing_database_is_adopted_without_losing_data(self) -> None:
         with sqlite3.connect(self.database_path) as connection:
@@ -103,8 +271,27 @@ class SchemaMigrationTests(unittest.TestCase):
             existing = connection.execute(
                 "SELECT display_name, created_at FROM entities WHERE id = 1"
             ).fetchone()
+            interchange_tables = {
+                row["name"]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type = 'table' AND name IN ("
+                    "'event_icalendar_identities', "
+                    "'calendar_subscriptions', "
+                    "'external_calendar_events'"
+                    ")"
+                )
+            }
         self.assertEqual(existing["display_name"], "Existing Person")
         self.assertEqual(existing["created_at"], "before")
+        self.assertEqual(
+            interchange_tables,
+            {
+                "event_icalendar_identities",
+                "calendar_subscriptions",
+                "external_calendar_events",
+            },
+        )
 
     def test_existing_typed_tables_gain_new_domain_columns_additively(self) -> None:
         with sqlite3.connect(self.database_path) as connection:

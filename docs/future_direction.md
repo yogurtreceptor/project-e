@@ -1,6 +1,6 @@
 # Future Platform Direction
 
-This document describes Project E's intended long-term evolution. It complements the current [architecture](architecture.md) and [Stage 1 specification](stage_1_spec.md); it does not authorise implementation or claim that future capabilities exist today.
+This document describes Project E's intended long-term evolution. It complements the current [architecture](architecture.md) and [Phase 1 specification](phase_1_spec.md); it does not authorise implementation or claim that future capabilities exist today.
 
 ## Platform before intelligence
 
@@ -64,4 +64,4 @@ The System Audit begins with mutations already recorded by the local platform. I
 
 Relationship confidence, source attribution, evidence, richer provenance and verification state require an explicit knowledge model rather than unrelated optional columns. Advanced graph traversal, indirect relationship discovery, querying and analytics likewise belong to later operational work. Both directions must preserve the canonical relationship record, explain where an assertion came from and keep derived conclusions distinguishable from user-confirmed facts.
 
-Operational Intelligence should first use deterministic, explainable signals: duplicate or merge suggestions, missing fields or relationships, stale information, integrity analysis, rule-based recommendations, scheduled health checks and operational notifications. AI-assisted interpretation remains a later phase and must enter through the same platform capability and audit boundaries.
+Phase 2 is the operational time and deterministic-automation foundation, with an active expansion workspace for focused refinements: temporal semantics, Events, calendar projections, reminder policies, attention management, a lightweight local scheduler and deterministic rules. It remains AI-independent. AI-assisted interpretation remains a later phase and must enter through the same platform capability and audit boundaries. See [the Phase 2 workspace](phase_2_workspace.md) for the approved scope.

@@ -1,6 +1,6 @@
-# Stage 1 Specification
+# Phase 1 Specification
 
-Stage 1 establishes Project E as a local-first structured information platform.
+Phase 1 establishes Project E as a local-first structured information platform.
 
 ## Goals
 
@@ -13,7 +13,7 @@ Stage 1 establishes Project E as a local-first structured information platform.
 
 ## Non-Goals
 
-Stage 1 does not include:
+Phase 1 does not include:
 
 - AI
 - chat interfaces
@@ -43,7 +43,7 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 
 Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
-Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Representative workflow review and maintainer confirmation remain part of Phase 1 exit evaluation; this specification defines current behavior rather than task priority.
+Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Phase 1 is complete as a development milestone and PR #1 is closed. Its verification was representative rather than exhaustive; residual defects are normal maintenance work and do not reopen Phase 1 as a whole. This specification documents delivered Phase 1 behaviour, not current task priority. Phase 2 continues through its [living workspace](phase_2_workspace.md).
 
 The current product serves one private user without authentication. This is a present scope choice, not a permanent prohibition on future trusted multi-user support.
 
@@ -67,9 +67,9 @@ The current product serves one private user without authentication. This is a pr
 - System Tools can export a versioned, checksummed bundle containing the canonical SQLite store and referenced uploaded files. Import validates schema, integrity, relationships, checksums and document membership, previews counts, requires an empty target and explicit confirmation, creates a recovery backup, and records the import in audit history.
 - Confirmed entity merges, permanent entity deletion and import create recovery bundles under local Git-ignored storage. The bundled recovery command validates first and replaces current storage only with an explicit flag.
 - The platform remains usable without WAN access; geocoding and remote map resources may fail without preventing local entity, relationship or coordinate-backed map use.
-- Stage 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
+- Phase 1 features do not require AI, autonomous automation, login, scheduling or WAN access.
 
-Relationship creation and navigation are implemented as reusable Stage 1 platform features.
+Relationship creation and navigation are implemented as reusable Phase 1 platform features.
 
 Organisation classification and Relationship types are database-backed taxonomy paths containing Type, optional Subtype and optional Specific subtype. The local Taxonomies page creates and archives reusable entries. Archived branches remain visible on existing records but unavailable for new selection; archiving never rewrites canonical records. Relationship definitions retain one canonical stored direction and derive inverse display from metadata attached to their taxonomy entry.
 
@@ -79,7 +79,7 @@ People browse pages show name and date of birth. Person journals are intentional
 
 ## Maps Acceptance
 
-The Maps milestone adds a geographic view without changing the Stage 1 boundaries.
+The Maps milestone adds a geographic view without changing the Phase 1 boundaries.
 
 Implemented scope:
 
@@ -98,9 +98,9 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-Project E is in a Platform Maturity / Pre-Operational Intelligence stage: the information platform is largely established, while remaining Phase 1 work focuses on portability and proven lifecycle gaps rather than expanding CRUD domains.
+The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 continues through its expanded workspace; detailed delivery status and remaining scope belong in [the Phase 2 workspace](phase_2_workspace.md).
 
-Stage 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
+Phase 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 
 ### Family graph view
 

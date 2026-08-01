@@ -16,7 +16,7 @@ from pathlib import Path, PurePosixPath
 
 from app.audit import record_audit_event
 from app.db_schema import SCHEMA_MIGRATION_IDS, connect
-from app.entities import DEFINITIONS_BY_TYPE
+from app.entities import ALL_DEFINITIONS_BY_TYPE
 from app.entity_repository import validate_entity_values
 from app.relationships import DATE_PRECISIONS, RELATIONSHIP_STATUSES
 from app.structured_values import validate_structured_value
@@ -246,8 +246,27 @@ def _validate_database(connection: sqlite3.Connection) -> None:
     }
     if not set(SCHEMA_MIGRATION_IDS) <= migrations:
         raise ValueError("Imported database is not at the current supported schema.")
+    from app.calendar_service import validate_stored_calendar
+    calendars = list(connection.execute("SELECT id FROM calendars"))
+    if not calendars:
+        raise ValueError("Imported database has no Calendar.")
+    default_counts = list(connection.execute(
+        """SELECT kind,
+                  SUM(CASE WHEN is_default = 1 AND archived_at = '' THEN 1 ELSE 0 END)
+                     AS active_defaults
+           FROM calendars
+           GROUP BY kind"""
+    ))
+    if any(int(row["active_defaults"]) != 1 for row in default_counts):
+        raise ValueError(
+            "Imported database must have one active default Calendar per kind."
+        )
+    for row in calendars:
+        errors = validate_stored_calendar(connection, int(row["id"]))
+        if errors:
+            raise ValueError(f"Calendar {row['id']} is invalid: {'; '.join(errors)}")
     for row in connection.execute("SELECT id,type FROM entities"):
-        definition = DEFINITIONS_BY_TYPE.get(row["type"])
+        definition = ALL_DEFINITIONS_BY_TYPE.get(row["type"])
         if definition is None:
             raise ValueError(f"Entity {row['id']} has an unknown type.")
         if not connection.execute(
@@ -257,6 +276,9 @@ def _validate_database(connection: sqlite3.Connection) -> None:
         errors = validate_entity_values(
             definition, _entity_values_for_validation(connection, row["id"], definition), connection
         )
+        if row["type"] == "event":
+            from app.event_service import validate_stored_event
+            errors.extend(validate_stored_event(connection, int(row["id"])))
         if errors:
             raise ValueError(f"Entity {row['id']} is invalid: {'; '.join(errors)}")
     entity_types = {

@@ -1,20 +1,23 @@
 # Ontology
 
-Project E models real-world information as entities and relationships.
+Project E models real-world information as canonical entities and Relationships, with separate configuration, derived temporal, and operational records. These categories have different identities and lifecycles; they must not be collapsed into one generic record model.
 
-## Entities
+## Model Map
 
-An entity is the canonical record for one real-world object.
+The platform uses four complementary record categories:
 
-Every entity has:
+- **Canonical entities** are durable records for meaningful real-world objects or work: Person, Organisation, Location, Project, Document, Asset and Event.
+- **Configuration records** set local organisation and behaviour without becoming entities: Calendars and Calendar Subscriptions.
+- **Derived temporal records** are deterministic, traceable time instances and views: derived occurrences and Calendar projections.
+- **Operational and historical records** support attention, execution and traceability: reminder policies, Notifications and their actions, Audit events, Scheduled Jobs and Job Runs, Automation Rules and Automation Runs.
 
-- a stable identifier
-- an entity type
-- a display name
-- notes or descriptive fields where useful
-- creation and update timestamps
+A Calendar view may display canonical records, derived occurrences and operational projections, but is never an independent Event store. A Document expiry, Project target date or Scheduled Job Run does not become an Event merely because it appears on a Calendar. Person birthdays are canonical Events only because the protected Birthdays workflow deliberately materialises and synchronises them, not because Calendar display requires conversion.
 
-Stage 1 entity types are:
+## Canonical Entities
+
+An entity is the canonical record for one real-world object or meaningful work item. Each has a stable identifier, entity type, display name, descriptive fields where useful, and creation and update timestamps.
+
+The current canonical entity types are:
 
 - Person
 - Organisation
@@ -22,13 +25,11 @@ Stage 1 entity types are:
 - Project
 - Document
 - Asset
+- Event
 
-Each real-world object should have one canonical entity record.
+Each real-world object should have one canonical entity record. Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields, but users may explicitly save when distinct real objects genuinely share those values.
 
-- Create and edit flows warn about possible matches using normalized names and a small set of strong domain fields.
-- Users may explicitly save anyway when two real objects genuinely share those values.
-
-## People
+### People
 
 A Person represents a real person.
 
@@ -45,11 +46,11 @@ Field semantics and presentation rules are:
 - Ethnicity is self-identified and must never be inferred from other Person data.
 - Short observations are separate timestamped journal entries linked to the Person. The legacy shared Notes field remains in storage but is not the Person detail-page observation stream.
 - A Person's internal display name is generated from given name plus family name. Middle name, alias and nickname are stored but are not part of the normal display name.
-- Preferred name is not modelled in Stage 1.
-- Sex is optional and used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling.
-- Email and phone remain direct Person fields for Stage 1 simplicity. Contact methods may later become first-class related records if the model needs richer communication history or multiple contact points.
+- Preferred name is not currently modelled.
+- Sex is optional and is used only where it can improve relationship display labels, such as father/mother/parent or brother/sister/sibling.
+- Email and phone remain direct Person fields. Contact methods may later become first-class related records if richer communication history or multiple contact points justify them.
 
-## Organisations
+### Organisations
 
 An Organisation represents a company, institution, group, team or other organisation.
 
@@ -63,13 +64,11 @@ Current fields include:
 - email
 - notes
 
-Classification is one reusable path of up to three levels rather than unrelated broad and specific text values.
+Classification is one reusable path of up to three levels rather than unrelated broad and specific text values. Other names are normalized rows, one value per alias; they cover alternate, former, trading and abbreviated names and participate in search and duplicate review.
 
-Other names are normalized rows, one value per alias. They cover alternate, former, trading and abbreviated names and participate in search and duplicate review.
+Website, phone and email remain direct Organisation fields. They may later become contact-method or communication-related records when the model needs them.
 
-Website, phone and email remain direct Organisation fields for Stage 1 simplicity; they may later become contact-method or communication-related records.
-
-## Locations
+### Locations
 
 A Location represents a place, address or meaningful area.
 
@@ -91,14 +90,11 @@ Current fields include:
 
 Maps are a derived view over Location data, not the foundation of the Location model.
 
-## Projects
+### Projects
 
-A Project represents ongoing work or an area of responsibility.
+A Project represents ongoing work or an area of responsibility. It coordinates information and Relationships; it does not own related records. Its overview may project related upcoming Events, but those records remain independent canonical peers.
 
-- Projects organise information and relationships.
-- Projects are not task-management records.
-
-Projects can relate to People, Organisations, Locations, Documents, Assets and other Projects.
+Projects can relate to People, Organisations, Locations, Documents, Assets, Events and other Projects.
 
 Current fields include:
 
@@ -110,12 +106,19 @@ Current fields include:
 - ended / completed date
 - notes
 
-Controlled-value rules are:
+Project type is controlled with custom values allowed. Status is controlled and uses Active, Paused, Completed or Abandoned.
 
-- Project type is controlled with custom values allowed.
-- Status is controlled and uses Active, Paused, Completed or Abandoned.
+### Events
 
-## Documents
+An Event represents something that occurs, occurred or is expected to occur. It is a broad, user-owned time record, not only an appointment or meeting, and may relate to every appropriate canonical peer through normal Relationships.
+
+- Every Event has one stable canonical entity identity and belongs to exactly one Calendar.
+- Its planned time is either a precise, bounded timed interval or an all-day date interval, never both. Timed values retain their selected IANA timezone; all-day intervals retain calendar-date boundaries.
+- A recurring Event has one canonical source and deterministic, traceable occurrences. Occurrence-specific exceptions and prospective series splits do not create duplicate Event entities.
+- Cancellation records that an Event will not occur, archive removes it from ordinary views, and Recycle Bin deletion identifies an erroneous record. These states are independent; restoring a deleted Event preserves its cancellation and archive state.
+- Event links to People, Organisations, Locations, Projects, Documents, Assets and other Events use the shared recoverable Relationship lifecycle. There are no special embedded Event foreign keys or nested ownership models.
+
+### Documents
 
 A Document represents a first-class document record, optionally backed by a locally uploaded file.
 
@@ -124,7 +127,7 @@ The Document owns that file:
 - Replacement removes the superseded unreferenced file.
 - Deleting the final referencing Document removes it from local storage.
 
-Documents should be linked to other entities through relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
+Documents should be linked to other entities through Relationships. A passport, receipt, manual or contract is a Document entity and should not be stored inside the Person, Asset, Organisation or Project it concerns.
 
 Current fields include:
 
@@ -136,15 +139,13 @@ Current fields include:
 - notes
 - optional local file metadata
 
-Document purpose is controlled with custom values allowed. It describes what the record is; uploaded MIME metadata describes file format.
+Document purpose is controlled with custom values allowed. It describes what the record is; uploaded MIME metadata describes file format. Issuer and creator are relationship concepts linked to canonical People or Organisations; the Document model has no duplicate issuer/creator text field.
 
-Issuer and creator are relationship concepts linked to canonical People or Organisations. The Document model has no duplicate issuer/creator text field.
-
-## Assets
+### Assets
 
 An Asset represents a physical or digital thing such as a vehicle, laptop, phone, appliance or smart device. A passport, receipt, certificate, manual or similar record is a Document, not an Asset.
 
-Assets can relate to People, Organisations, Locations, Projects and Documents. Assets may also carry direct coordinates when that is the most accurate available geographic information.
+Assets can relate to People, Organisations, Locations, Projects, Documents and Events. They may also carry direct coordinates when that is the most accurate available geographic information.
 
 Current fields include:
 
@@ -159,10 +160,73 @@ Current fields include:
 - latitude and longitude
 - notes
 
-Field rules are:
+Asset type and status are controlled with custom values allowed. Value is stored as whole-number text and displayed with a dollar sign on read pages.
 
-- Asset type and status are controlled with custom values allowed.
-- Value is stored as whole-number text and displayed with a dollar sign on read pages.
+## Configuration Records
+
+Configuration records are local organisational or behavioural settings. They have stable identity and history, but are not canonical entities or a second source of truth for the records they configure.
+
+### Calendars
+
+A Calendar is the sole local Event grouping and configuration record. It supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; it is not an independent Event store or a second Event classification layer.
+
+- Every Event belongs to one Calendar and derives its colour from that Calendar. Event-specific colour overrides are not part of the model.
+- A fresh installation provides the default General Calendar and the protected Birthdays Calendar. Each Person birthday synchronises to one linked, canonical, yearly recurring all-day Event in the Birthdays Calendar; it remains an Event rather than a derived Event type.
+- Archiving a Calendar retains its Event assignments and prevents new or changed assignment to it. It neither archives nor moves existing Events.
+- Exactly one active default Calendar is maintained for each Calendar kind. Before archiving a default Calendar, the user selects another active default of that kind.
+- A Calendar with active or recycled Event assignments cannot be deleted.
+
+### Calendar Subscriptions
+
+A Calendar Subscription is an explicitly configured, read-only public-HTTPS iCalendar source shown under **Other calendars**. It is an operational configuration record rather than a local Calendar or canonical Event owner.
+
+- Its local settings provide name, colour, IANA timezone, ordering, enabled state and a default Event-notification policy. It has no default Event duration because users do not create or schedule its items.
+- Its source-scoped UIDs identify items in a last-known-good operational cache. Refresh reconciles that cache without creating `Calendar`, `Entity` or `Event` rows.
+- Cached items remain non-canonical and have no relationships, item-level reminder override, edit history or Recycle Bin lifecycle. A Calendar-level policy may still create a durable local Notification for an upcoming cached occurrence.
+- Disabling or removing the subscription suppresses future delivery and resolves active reminder attention without deleting retained Inbox history.
+
+## Derived Temporal Records and Calendar Projections
+
+A **derived occurrence** is a deterministic temporal instance traceable to a canonical source and definition, such as a generated recurring Event occurrence or a Document expiry.
+
+A **Calendar projection** is a displayed time-based view of a canonical record or derived occurrence. It is not a source of truth and does not convert every dated record into an Event.
+
+Calendar projections can display canonical Events, generated Event occurrences, birthdays, Document expiries, Project target dates and Scheduled Job Runs. Derived occurrences and projections remain traceable to their source records and use no duplicate canonical Event rows unless a separately designed workflow deliberately materialises a new Event with explicit provenance.
+
+Eligible record-derived dates enter Calendar and reminder behaviour through one shared temporal-occurrence contract. The adapter identifies the canonical source, stable logical occurrence, temporal boundary, navigation target and resolution behaviour; shared Calendar, reminder and Inbox services consume that contract. The source domain does not gain its own reminder scanner or delivery model. This shared route applies to temporal attention such as Event schedules, birthdays, Document expiries and future record-derived anniversaries, but does not force non-temporal approvals or system failures to masquerade as occurrences.
+
+## Operational and Historical Records
+
+Operational and historical records support deterministic attention, execution, review and traceability. They are distinct from canonical entities and from one another.
+
+### Reminders and Notifications
+
+A Reminder is a policy attached to an Event, cached URL Calendar occurrence, derived occurrence or source-record policy; it is behaviour, not an independent domain entity. Local Calendar, Calendar Subscription, record and occurrence contexts resolve the applicable reminder timings.
+
+Record-derived reminder policies are evaluated only after their source facts have been adapted into the shared temporal-occurrence contract. Source-specific persistence and resolution remain valid: an Event, Person, Document or Relationship continues to own its facts, and different occurrence kinds may stop being actionable under different conditions without bypassing shared delivery and Inbox behaviour.
+
+A Notification is the durable, actionable local Inbox delivery produced for a due condition. Delivery, acknowledgement, dismissal, snooze, resolution and failure history belong to the Notification and append-only action history, not to the Reminder definition.
+
+- A delivery has a stable logical identity based on its source, occurrence, due instant, timing and reason. Re-evaluation of unchanged inputs does not duplicate it.
+- One source occurrence and reason has at most one active or snoozed Notification. Each configured timing may deliver once; a later timing resolves older visible attention while historical delivery records remain retained.
+- Event Notifications carry the occurrence end boundary and resolve when the exact occurrence is opened or ends. A Document-expiry Notification is persistent and does not resolve merely because its Document is opened or the expiry date passes.
+- A Notification does not itself mutate its source Event or other canonical record. Snoozing or dismissing changes operational attention only; acknowledgement remains a historical state rather than a current reminder action.
+
+### Audit Events
+
+An Audit event is an append-only historical fact about a canonical-data mutation or finding resolution. It records traceability without becoming a Timeline event, Notification, Job Run or canonical entity.
+
+### Scheduled Jobs and Job Runs
+
+A Scheduled Job is database-backed local background work using a registered application handler, schedule and run history. It is not an Event, Reminder or arbitrary executable user-authored code.
+
+A Job Run is one execution attempt and result for a Scheduled Job. Job definitions and Runs retain their own identities even when a Calendar projects scheduled or completed work. Jobs use explicit local catch-up and lease behaviour so recovery remains deterministic and deduplicated.
+
+### Automation Rules and Automation Runs
+
+An Automation Rule is an explicit, deterministic trigger-condition-action configuration referencing only registered local triggers and actions. It is not executable user-authored code, a Scheduled Job or Event.
+
+An Automation Run is one idempotent execution for a stable logical trigger identity. It records inputs, outcome and failure state separately from a Job Run.
 
 ## Controlled Values
 
@@ -183,7 +247,7 @@ Current controlled fields are:
 
 ## Relationships
 
-A relationship is a first-class record connecting two canonical entities. Its identity and canonical facts survive soft deletion and restoration; recycled relationships are excluded from active graph views.
+A Relationship is a first-class record connecting two canonical entities. Its identity and canonical facts survive soft deletion and restoration; recycled Relationships are excluded from active graph views.
 
 Relationships support:
 
@@ -203,19 +267,15 @@ Relationship duration is presented as follows:
 
 - Relationships are treated as ongoing unless they are explicitly marked as former or have an end date.
 - Displays show an end date only when one is recorded.
-- An ongoing relationship with a start date is shown as `Since [start date]`.
+- An ongoing Relationship with a start date is shown as `Since [start date]`.
 
 Navigation and editing work as follows:
 
 - Relationships are editable and directly navigable from entity pages and the relationship browser.
 - Creation and day-to-day editing should happen primarily from an entity page, because users usually think from one known entity outward.
-- A single relationship can connect any two canonical entities, regardless of entity type.
+- A single Relationship can connect any two canonical entities, regardless of entity type.
 
-Relationship storage and display follow these rules:
-
-- The database stores one relationship row.
-- Its taxonomy-backed definition supplies canonical endpoint direction and natural inverse labels, so bidirectional navigation is derived rather than duplicated.
-- Entity pages group relationships by connected entity type across the current domains.
+The database stores one Relationship row. Its taxonomy-backed definition supplies canonical endpoint direction and natural inverse labels, so bidirectional navigation is derived rather than duplicated. Entity pages group Relationships by connected entity type across all current domains.
 
 Relationship creation is entity-first and perspective-based:
 
@@ -224,7 +284,7 @@ Relationship creation is entity-first and perspective-based:
 3. They answer one question using explicit names: `What is [connected entity] in relation to [current entity]?`
    - For existing entities, the connected entity name is shown directly.
    - For new entities, the question updates live as the name is typed.
-4. Saving returns to the original entity page, and the relationship appears from both connected entities.
+4. Saving returns to the original entity page, and the Relationship appears from both connected entities.
 
 Each entity profile labels the connected entity's resolved role from that profile's perspective; storage direction remains canonical and unchanged.
 
@@ -236,24 +296,9 @@ Runtime responsibilities are divided as follows:
 
 - `relationship_type_definitions` stores the authoritative runtime definitions.
 - `app/relationship_catalog.py` supplies deterministic seeds and legacy compatibility.
-- `app/relationships.py` remains the behavior facade.
+- `app/relationships.py` remains the behaviour facade.
 
-Each definition includes:
-
-- allowed source entity type
-- allowed target entity type
-- a taxonomy path of up to three levels
-- forward display label
-- reverse display label
-- whether direction matters
-- optional usage notes
-- whether the type is selectable for new relationships
-
-The UI uses these definitions as follows:
-
-- It filters relationship options after it knows the two endpoint entity types.
-- Creation happens from the current entity page and asks what the named connected entity is in relation to the named current entity.
-- The selected role is translated into the canonical source -> target direction so users never choose both sides manually.
+Each definition includes allowed endpoint entity types, a taxonomy path of up to three levels, forward and reverse display labels, whether direction matters, optional usage notes, and whether the type is selectable for new Relationships. The UI filters options after it knows the two endpoint types and translates the selected perspective role into canonical storage direction.
 
 Current pair-aware groups include:
 
@@ -266,6 +311,8 @@ Current pair-aware groups include:
 - Asset to Location: stored at, located at, last known at and Other.
 - Document to Person or Organisation: belongs to, created by, issued to/by, references and Other.
 - Document to Asset or Project: belongs to, receipt/manual/references where relevant and Other.
+- Event to Person, Organisation, Location, Project, Document and Asset: involvement, venue, related-project and reference connections where relevant.
+- Event to Event: related Event.
 
 Person-to-Person family definitions follow these rules:
 
@@ -276,20 +323,20 @@ Person-to-Person family definitions follow these rules:
 
 Legacy relationship keys are handled as follows:
 
-- Generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing relationships still load.
-- They are not offered for new pair-specific relationship creation.
-- Safe legacy location relationships continue to feed Geography and Map views.
+- Generic or gendered keys such as `located_at`, `mother_of`, `father_of`, `child_of`, `related_to` and `associated_with` are preserved so existing Relationships still load.
+- They are not offered for new pair-specific Relationship creation.
+- Safe legacy location Relationships continue to feed Geography and Map views.
 
 Contact information follows these boundaries:
 
-- Phone numbers, emails and websites remain simple direct fields in Stage 1.
+- Phone numbers, emails and websites remain simple direct fields.
 - The recommended future approach is a lightweight Contact Method model linked to any entity, with method type, value, label, preferred status, validity dates and notes.
 - That model should be introduced only when multiple contact points or richer communication history justify it.
-- It should not become a Communications domain during Stage 1.
+- It should not become a Communications domain without separately authorised product work.
 
 ## Deterministic Family Inference
 
-Manual parent/child relationships are source facts.
+Manual parent/child Relationships are source facts.
 
 The Inference Review Queue receives only safe bloodline candidates derived by the deterministic inference engine:
 
@@ -298,40 +345,24 @@ The Inference Review Queue receives only safe bloodline candidates derived by th
 - aunt/uncle with niece/nephew
 - cousin
 
-It does not infer:
-
-- step relationships
-- adoptive relationships
-- half relationships
-- foster relationships
-- guardian relationships
-- in-law relationships
-- partner relationships
+It does not infer step, adoptive, half, foster, guardian, in-law or partner Relationships.
 
 Inference review follows these rules:
 
-- Suggestions are not relationships until confirmed.
-- Confirmation creates a normal editable relationship while preserving its rule, source batch, supporting relationship IDs, evidence fingerprint and timestamps.
+- Suggestions are not Relationships until confirmed.
+- Confirmation creates a normal editable Relationship while preserving its rule, source batch, supporting Relationship IDs, evidence fingerprint and timestamps.
 - Rejection suppresses the same evidence fingerprint.
-- Later source changes invalidate pending suggestions but only flag changed evidence on confirmed relationships.
+- Later source changes invalidate pending suggestions but only flag changed evidence on confirmed Relationships.
 
 Evidence requirements are:
 
 - Full-sibling evidence requires the same complete known parent set with at least two parents.
-- Direct-generation dates may use the younger person’s DOB alone.
+- Direct-generation dates may use the younger person's DOB alone.
 - Peer and collateral dates require both DOBs.
 
-## Relationship Dates
+## Relationship Dates and Certainty
 
-Relationship dates support exact calendar dates plus certainty metadata.
-
-Current certainty values are:
-
-- exact
-- approximate
-- unknown
-
-This preserves uncertainty without blocking structured date entry.
+Relationship dates support exact calendar dates plus certainty metadata. Current certainty values are exact, approximate and unknown. An approximate date stores the closest known calendar date marked as approximate; it is not a date range or partial date.
 
 ## Geographic Ontology
 
@@ -344,10 +375,7 @@ It may have:
 - optional latitude/longitude
 - a geocoding source
 
-When place information is known:
-
-- People and Organisations should be connected to Locations with `located_at` relationships.
-- They should not duplicate address fields.
+When place information is known, People and Organisations should be connected to Locations with `located_at` Relationships rather than duplicate address fields.
 
 The Map is a view over these canonical entities:
 
@@ -356,9 +384,6 @@ The Map is a view over these canonical entities:
 - Person markers represent People connected to a coordinate-bearing Location.
 - Asset markers represent Assets with valid direct coordinates or Assets connected to a coordinate-bearing Location.
 
-Missing coordinates:
+Missing coordinates do not invalidate a Location; they only prevent that record, and entities relying on it, from appearing as markers. Projects, Documents and Events never appear as map markers.
 
-- do not invalidate a Location
-- only prevent that record, and entities relying on it, from appearing as markers
-
-Projects and Documents never appear as map markers.
+Detailed Phase 2 delivery status remains in the [Phase 2 workspace](phase_2_workspace.md). Persistence, migration and service mechanics remain in the [database design](database_design.md) and [architecture](architecture.md) documents.

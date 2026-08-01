@@ -4,7 +4,8 @@ from typing import Any
 
 from app.db_support import sql_identifier, utc_now
 from app.entities import (
-    DEFINITIONS_BY_TYPE,
+    ALL_DEFINITIONS_BY_TYPE,
+    EVENT_DEFINITION,
     ENTITY_DEFINITIONS,
     EntityDefinition,
     EntityRecord,
@@ -48,6 +49,16 @@ def list_all_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
     return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
 
 
+def list_searchable_entities(connection: sqlite3.Connection) -> list[EntityRecord]:
+    """Return canonical records exposed through global Search.
+
+    Events have a dedicated operational workflow.
+    """
+    records = list_all_entities(connection)
+    records.extend(list_entities(connection, EVENT_DEFINITION))
+    return sorted(records, key=lambda record: (record.display_name.lower(), record.id))
+
+
 def count_entities(connection: sqlite3.Connection) -> dict[str, int]:
     rows = connection.execute(
         "SELECT type, COUNT(*) AS count FROM entities WHERE deleted_at = '' GROUP BY type"
@@ -81,7 +92,7 @@ def get_entity_by_id(connection: sqlite3.Connection, entity_id: int, include_del
     row = connection.execute(f"SELECT id, type FROM entities WHERE id = ? {clause}", (entity_id,)).fetchone()
     if row is None:
         return None
-    definition = DEFINITIONS_BY_TYPE.get(row["type"])
+    definition = ALL_DEFINITIONS_BY_TYPE.get(row["type"])
     if definition is None:
         return None
     return get_entity(connection, definition, entity_id, include_deleted=include_deleted)
@@ -136,6 +147,7 @@ def update_entity(
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],
+    commit: bool = True,
 ) -> None:
     values = with_canonical_person_name(definition, values)
     before = get_entity(connection, definition, entity_id)
@@ -159,38 +171,34 @@ def update_entity(
     if before is not None:
         from app.audit import record_audit_event
         record_audit_event(connection, "edit", [("entity", entity_id)], before=before.to_form_values(), after=values)
-    if definition.type == "person" and before is not None and before.metadata.get("birthday", "") != values.get("birthday", ""):
-        from app.relationship_inference import recompute_inferences
-        recompute_inferences(connection, "person_date_updated", entity_id)
-    else:
+    if commit:
         connection.commit()
 
 
 def delete_entity(
-    connection: sqlite3.Connection, definition: EntityDefinition, entity_id: int
+    connection: sqlite3.Connection,
+    definition: EntityDefinition,
+    entity_id: int,
+    commit: bool = True,
 ) -> None:
     before = get_entity(connection, definition, entity_id)
     from app.audit import record_audit_event
     if before: record_audit_event(connection, "delete", [("entity", entity_id)], before=before.to_form_values())
     connection.execute("UPDATE entities SET deleted_at = ?, updated_at = ? WHERE id = ? AND type = ? AND deleted_at = ''", (utc_now(), utc_now(), entity_id, definition.type))
-    if definition.type == "person":
-        from app.relationship_inference import recompute_inferences
-        recompute_inferences(connection, "person_deleted", entity_id)
-    else:
+    if commit:
         connection.commit()
 
 
-def restore_entity(connection: sqlite3.Connection, entity_id: int) -> bool:
+def restore_entity(
+    connection: sqlite3.Connection, entity_id: int, commit: bool = True
+) -> bool:
     before = get_entity_by_id(connection, entity_id, include_deleted=True)
     if before is None or not before.is_deleted:
         return False
     connection.execute("UPDATE entities SET deleted_at = '', updated_at = ? WHERE id = ?", (utc_now(), entity_id))
     from app.audit import record_audit_event
     record_audit_event(connection, "restore", [("entity", entity_id)], before={"deleted_at": before.deleted_at}, after={"deleted_at": ""}, notes="Entity restored from Recycle Bin")
-    if before.type == "person":
-        from app.relationship_inference import recompute_inferences
-        recompute_inferences(connection, "person_restored", entity_id)
-    else:
+    if commit:
         connection.commit()
     return True
 

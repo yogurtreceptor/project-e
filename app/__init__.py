@@ -1,2 +1,1 @@
-"""Operation Eddy application package."""
-
+"""Project E application package."""

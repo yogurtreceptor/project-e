@@ -15,7 +15,7 @@ def map_page(payload: dict[str, object], focused_entity_id: str = "") -> str:
         f'<li><a href="{escape(marker["url"])}">{escape(marker["title"])}</a><span>{escape(marker["entityLabel"])} at {escape(marker["locationTitle"])}</span></li>'
         for marker in payload["markers"]
     )
-    marker_list = f'<section class="panel map-marker-list"><h2>Mapped entities</h2><ul>{marker_links}</ul></section>' if marker_links else ""
+    marker_list = f'<section class="panel map-marker-list" aria-labelledby="mapped-entities-heading"><h2 id="mapped-entities-heading">Mapped entities</h2><ul>{marker_links}</ul></section>' if marker_links else ""
     return f"""
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <section class="page-heading split">
@@ -29,7 +29,8 @@ def map_page(payload: dict[str, object], focused_entity_id: str = "") -> str:
         <div class="map-layers">{layer_controls}</div>
     </section>
     <section class="map-shell">
-        <div id="eddy-map" class="eddy-map" aria-label="Entity map"></div>
+        <div id="eddy-map" class="eddy-map" role="region" tabindex="0" aria-label="Entity map" aria-describedby="map-remote-status"></div>
+        <div id="map-remote-status" class="map-remote-status" role="status"><strong>Interactive map unavailable.</strong> The mapped-record list and canonical coordinates remain available below.</div>
         {empty}
     </section>
     {marker_list}
@@ -40,6 +41,7 @@ def map_page(payload: dict[str, object], focused_entity_id: str = "") -> str:
         const focusedEntityId = {focused_json};
         const mapElement = document.getElementById('eddy-map');
         if (!mapElement || !window.L) return;
+        document.getElementById('map-remote-status')?.setAttribute('hidden', '');
         const center = payload.defaultCenter;
         const map = L.map(mapElement).setView([center.latitude, center.longitude], center.zoom);
         L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{

@@ -16,7 +16,7 @@ from app.relationships import (
 )
 from app.taxonomy import TaxonomyChoice
 from app.view_pages.common import format_date_with_precision
-from app.view_pages.forms import entity_form_fields, error_block, input_field, select_field, taxonomy_field
+from app.view_pages.forms import associate_field_errors, entity_form_fields, error_block, input_field, select_field, taxonomy_field
 from app.graph_layout import GraphLayout
 
 
@@ -50,15 +50,22 @@ def family_tree_page(tree: GraphLayout) -> str:
                 path = f"M {source.x} {start_y} V {midpoint_y} H {target.x} V {end_y}"
             lines.append(f'<path class="{css_class}" d="{path}" />')
         nodes = "".join(f'<a href="{escape(node.href)}" class="{"family-node-selected" if node.selected else "family-node"}"><rect x="{node.x - 72}" y="{node.y - 26}" width="144" height="52" rx="8"/><text x="{node.x}" y="{node.y + 5}">{escape(node.label)}</text></a>' for node in tree.nodes)
-        visual = f'<div class="family-tree-scroll"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
+        visual = f'<div class="family-tree-scroll" tabindex="0" role="region" aria-label="Scrollable family relationship tree"><svg class="family-tree" viewBox="0 0 {tree.width} {tree.height}" width="{tree.width}" height="{tree.height}" role="img" aria-label="Family relationship tree">{"".join(lines)}{nodes}</svg></div>'
+    node_names = {node.id: node.label for node in tree.nodes}
+    relationship_items = "".join(
+        f'<li><a href="{escape(next(node.href for node in tree.nodes if node.id == edge.source_id))}">{escape(node_names.get(edge.source_id, "Unknown person"))}</a> <span>{escape(edge.label)}</span> <a href="{escape(next(node.href for node in tree.nodes if node.id == edge.target_id))}">{escape(node_names.get(edge.target_id, "Unknown person"))}</a>{" <strong>Contradictory/cyclic</strong>" if edge.cyclic else ""}</li>'
+        for edge in tree.edges if edge.source_id in node_names and edge.target_id in node_names
+    )
+    text_alternative = f'<ul class="family-relationship-list">{relationship_items}</ul>' if relationship_items else '<p class="empty">No included relationships.</p>'
+    cycle_warning = '<div class="status-row warning"><span>Contradictory or cyclic family relationships are present.</span> Inspect the relationships below.</div>' if any(edge.cyclic for edge in tree.edges) else ""
     return f"""
     <section class="page-heading split">
         <div><p class="eyebrow">Relationship visualisation</p><h1>Family tree</h1><p>A derived view of existing family relationships. No separate family data is stored.</p></div>
         <a class="button secondary" href="/relationships">Back to relationships</a>
     </section>
-    <section class="panel family-tree-panel">{visual}</section>
+    {cycle_warning}<section class="panel family-tree-panel">{visual}</section>
     <section class="family-tree-legend" aria-label="Family tree connector key"><strong>Connector key</strong><span><i class="legend-line legend-partner"></i>Partner / spouse</span><span><i class="legend-line legend-parent"></i>Parent / child</span></section>
-    <section class="panel"><h2>Included relationships</h2><p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling connections are inferred only from shared parent-set connectors; no separate sibling lines are drawn. Spouse and partner links are shown directly on the same generation. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
+    <section class="panel"><h2>Included relationships</h2>{text_alternative}<p>Parent/child links connect adjacent generations, with children grouped only when their complete recorded parent sets match; each group uses an independent connector. Sibling connections are inferred only from shared parent-set connectors; no separate sibling lines are drawn. Spouse and partner links are shown directly on the same generation. Relationships spanning multiple generations remain stored but are shown through the parent/child chain instead of redundant direct lines.</p></section>
     """
 
 
@@ -216,20 +223,17 @@ def relationship_list_page(relationships: list[RelationshipRecord], integrity_wa
                     <td><a href="/{relationship.source.slug}/{relationship.source.id}">{escape(relationship.source.title)}</a></td>
                     <td><a href="/{relationship.target.slug}/{relationship.target.id}">{escape(relationship.target.title)}</a></td>
                     <td>{escape(relationship.status)} {('<span class="origin-badge origin-inferred">created from inference</span>' if relationship.created_from_inference else '')}</td>
-                    <td class="row-actions">
-                        <a href="/relationships/{relationship.id}/edit">Edit</a>
-                        <form method="post" action="/relationships/{relationship.id}/delete"><button class="link-button" type="submit">Delete</button></form>
-                    </td>
+                    <td class="row-actions"><a href="/relationships/{relationship.id}/edit">Edit</a></td>
                 </tr>
                 """
             )
         content = (
             """
-            <table>
-                <thead><tr><th>Type</th><th>Source</th><th>Target</th><th>Status</th><th></th></tr></thead>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Relationship records"><table>
+                <thead><tr><th>Type</th><th>Source</th><th>Target</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
                 <tbody>"""
             + "".join(rows)
-            + "</tbody></table>"
+            + "</tbody></table></div>"
         )
     return f"""
     <section class="page-heading split">
@@ -260,6 +264,8 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
         <div class="actions">
             <a class="button secondary" href="/relationships">Back</a>
             <a class="button" href="/relationships/{relationship.id}/edit">Edit</a>
+            <form method="post" action="/relationships/{relationship.id}/delete" data-confirm-object="{escape(relationship.source.title)} — {escape(relationship.target.title)}" data-confirm-consequence="Move this relationship to the Recycle Bin. It can be restored later."><button class="button secondary" type="submit">Delete</button></form>
+            <a class="button quiet" href="/system-tools/audit?record_kind=relationship&amp;record_id={relationship.id}">Audit</a>
         </div>
     </section>
     <section class="panel">
@@ -279,13 +285,6 @@ def relationship_detail_page(relationship: RelationshipRecord) -> str:
     <section class="panel">
         <h2>Notes</h2>
         <p class="notes">{escape(relationship.notes) if relationship.notes else 'No notes yet.'}</p>
-    </section>
-    <section class="panel metadata">
-        <h2>Metadata</h2>
-        <dl>
-            <dt>Created</dt><dd>{escape(relationship.created_at)}</dd>
-            <dt>Updated</dt><dd>{escape(relationship.updated_at)}</dd>
-        </dl>
     </section>
     """
 
@@ -316,6 +315,7 @@ def relationship_form_page(
     connected_sex = selected_target.metadata.get("sex", "Unknown") if selected_target else "Unknown"
     workflow_mode = values.get("workflow_mode") or values.get("target_mode") or "existing"
 
+    error_fields = relationship_error_fields(errors)
     fields = []
     if context_entity is not None:
         fields.append(f'<div class="readonly-field"><span>Current entity</span><strong>{escape(context_entity.title)}</strong></div>')
@@ -336,9 +336,9 @@ def relationship_form_page(
         <h1>{escape(action)} Relationship</h1>
     </section>
     <section class="panel">
-        {error_block(errors)}
-        <form class="record-form relationship-form" method="post" action="{form_action}">
-            {''.join(fields)}
+        {error_block(errors, error_fields)}
+        <form class="record-form relationship-form" method="post" data-dirty-form action="{form_action}">
+            {associate_field_errors(''.join(fields), errors, error_fields)}
             <div class="actions">
                 <a class="button secondary" href="{'/' + context_entity.slug + '/' + str(context_entity.id) if context_entity else '/relationships'}">Cancel</a>
                 <button class="button" type="submit">Save</button>
@@ -347,6 +347,32 @@ def relationship_form_page(
     </section>
     {relationship_form_script(entities, target_type, source_entity)}
     """
+
+
+def relationship_error_fields(errors: list[str]) -> list[str | None]:
+    prefixes = (
+        ("Source entity", "source_entity_id"),
+        ("Target entity", "target_entity_id"),
+        ("Connected entity type", "new_entity_type"),
+        ("Choose Person", "new_entity_type"),
+        ("Relationship type", "type"),
+        ("Relationship status", "status"),
+        ("Start date certainty", "started_at_precision"),
+        ("End date certainty", "ended_at_precision"),
+        ("Started", "started_at"),
+        ("Ended", "ended_at"),
+    )
+    fields = []
+    for error in errors:
+        field = next((name for prefix, name in prefixes if error.startswith(prefix)), None)
+        if error.startswith("New ") and ": " in error:
+            nested = error.split(": ", 1)[1]
+            if nested.startswith("Given name"):
+                field = "new_given_name"
+            elif " name " in nested:
+                field = "new_display_name"
+        fields.append(field)
+    return fields
 
 
 def relationship_workflow_selector(workflow_mode: str) -> str:

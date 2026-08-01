@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 from app.db import connect, create_entity, get_entity, initialise_database, list_entities
 from app.duplicate_detection import find_duplicate_entities
 from app.entities import DEFINITIONS_BY_SLUG
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 class DuplicateDetectionTests(unittest.TestCase):
@@ -68,8 +68,7 @@ class DuplicateDetectionTests(unittest.TestCase):
 
     def test_http_create_warns_then_allows_explicit_confirmation(self) -> None:
         existing_id = self.create_person("Ada Lovelace", "ada@example.test")
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -102,14 +101,13 @@ class DuplicateDetectionTests(unittest.TestCase):
         self.assertIn(f'/people/{existing_id}', first_body)
         self.assertEqual(count_after_warning, 1)
         self.assertEqual(second_status, 303)
-        self.assertEqual(second_headers["Location"], "/people/2")
+        self.assertEqual(second_headers["Location"], "/people/2?saved=1")
         self.assertEqual(count_after_confirmation, 2)
 
     def test_http_edit_excludes_self_and_warns_before_matching_another_record(self) -> None:
         self.create_person("Ada Lovelace")
         edited_id = self.create_person("Grace Hopper")
-        EddyRequestHandler.database_path = self.database_path
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(self.database_path)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -137,7 +135,7 @@ class DuplicateDetectionTests(unittest.TestCase):
         self.assertIn("Possible duplicate records found", warning_body)
         self.assertEqual(after_warning.display_name, "Grace Hopper")
         self.assertEqual(confirmed_status, 303)
-        self.assertEqual(confirmed_headers["Location"], f"/people/{edited_id}")
+        self.assertEqual(confirmed_headers["Location"], f"/people/{edited_id}?saved=1")
         self.assertEqual(after_confirmation.display_name, "Ada Lovelace")
 
     @staticmethod

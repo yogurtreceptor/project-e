@@ -2,11 +2,32 @@
 
 This is the live list of unresolved engineering debt. Completed work is recorded in the build history and should not remain here as an active warning.
 
+## Collapsed sidebar exposes nested destinations as unexplained icons
+
+Severity: low
+
+In the 56px collapsed sidebar state, nested navigation labels are visually hidden and no labelled flyout or temporary expanded panel is supplied. The HTML titles and accessible names remain, but the visual interface does not satisfy the shell standard for discoverable nested destinations.
+
+Trigger: using Browse after collapsing the desktop sidebar.
+
+Direction: provide a labelled nested-destination flyout or temporary expansion on keyboard and pointer interaction, then verify it at both required desktop resolutions.
+
+## Calendar header Search icon loses its accessible name at 800 × 600
+
+Severity: low
+
+The constrained Calendar header hides the visible **Search** text while its icon remains deliberately decorative. The link therefore has no accessible name at the documented 800 × 600 Calendar baseline even though it remains visually recognisable and keyboard focusable. Wider Calendar layouts and the ordinary application shell retain the visible label.
+
+Trigger: using assistive technology with the Calendar at the constrained desktop baseline.
+
+Direction: retain a programmatic **Search** name when the visible text is hidden, then add a focused rendering check at the constrained Calendar breakpoint.
+
+
 ## Search is in-memory and linear
 
 Severity: medium
 
-Entity and relationship search loads local records and filters in Python. This is appropriate for the current small-data Stage 1 application but may become slow after large imports.
+Entity and relationship search loads local records and filters in Python. This is appropriate for the current small-data Phase 1 application but may become slow after large imports.
 
 Trigger: representative data shows noticeable latency or memory use, or a large import is planned.
 
@@ -22,13 +43,35 @@ Trigger: the map becomes a core offline workflow.
 
 Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
 
-## Domain list pages are generic
+## Local static-asset cache policy
 
 Severity: low
 
-Browse tables do not yet expose the most useful structured fields for every domain.
+Application icons, stylesheets and scripts are same-origin local HTTP resources; they are not WAN/HTTPS traffic. The local static handler currently sends no explicit browser cache policy, so repeated page loads may request each small asset again. This is acceptable for the current small asset set and makes local development immediately reflect changes.
 
-Direction: derive list columns from entity metadata so, for example, project status and document or asset type can be scanned without opening each record.
+Trigger: the local asset set becomes materially larger, page-load traces show avoidable repeat transfers, or packaging the application for routine use needs a predictable offline performance policy.
+
+Direction: add conservative cache headers for versioned or fingerprinted static assets, with a deliberate invalidation strategy on application update. Do not implement session-only cache clearing: normal browser cache management and asset versioning are safer and avoid stale UI after an update.
+
+## Remaining HTTP domain-controller concentration
+
+Severity: medium
+
+Server creation, the top-level route map, transport/form support and Event-form parsing now have focused modules, but `app/web.py` still coordinates many unrelated domain workflows in one handler class. This is maintainable at the present scale but increases navigation cost and makes unrelated route edits more likely to overlap.
+
+Trigger: the next material route workflow change in Calendar, Relationships, System Tools or generic entity handling.
+
+Direction: move the affected domain controller methods into one focused route/controller module behind the existing handler and `app/web_router.py` boundaries. Keep request parsing and response mechanics in `app/web_support.py`; avoid introducing a second router or changing URLs solely to split the file.
+
+## High-frequency runtime history is visually noisy
+
+Severity: low
+
+The one-minute registered reminder job deliberately retains a Job Run and its registered automation executions even when no reminder is delivered. This execution proof supports recovery, failure inspection and idempotency, and routine runs do not create Inbox attention, but a long-running local instance can accumulate a visually noisy System Tools history dominated by successful no-op work.
+
+Trigger: runtime-history browsing becomes difficult, database growth becomes material, or the user asks to distinguish meaningful outcomes from routine heartbeat execution.
+
+Direction: assess Job Run, automation-run and global-audit presentation and retention together. Prefer a summarized routine-success projection, bounded presentation or documented compaction policy while preserving failures, meaningful deliveries, recovery checkpoints and enough durable execution identity to prove idempotency. Do not solve visual noise by forwarding routine runs to Inbox or silently removing execution evidence without a replacement contract.
 
 ## Timeline is derived and limited
 
@@ -58,7 +101,7 @@ Person and Organisation phone, email and website values are direct fields. This 
 
 Trigger: a real workflow requires multiple contact points or lifecycle metadata.
 
-Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain in Stage 1.
+Direction: consider a lightweight Contact Method entity or related record; do not introduce a broad Communications domain merely to extend the Phase 1 direct-field model.
 
 ## Soft-deletable record consistency review
 

@@ -10,7 +10,7 @@ TAXONOMY_SECTIONS = (
 
 
 def taxonomies_page(entries_by_key: dict, error: str = "") -> str:
-    error_html = f'<div class="errors"><p>{escape(error)}</p></div>' if error else ""
+    error_html = f'<div class="errors" role="alert"><p>{escape(error)}</p></div>' if error else ""
     sections = [taxonomy_section(key, title, description, entries_by_key.get(key, [])) for key, title, description in TAXONOMY_SECTIONS]
     return f"""
     <section class="page-heading split">
@@ -68,7 +68,7 @@ def taxonomy_entry_row(entry) -> str:
     status = '<span class="status-badge archived">Archived</span>' if archived else '<span class="status-badge active">Active</span>'
     action = "" if archived else (
         f'<form method="post" action="/taxonomies/{entry.id}/archive" '
-        f'onsubmit="return confirm(\'Archive this taxonomy entry? Existing records will retain it.\')">'
+        f'data-confirm-object="{escape(entry.path)}" data-confirm-consequence="Archive this taxonomy entry. Existing records retain it, but it cannot be selected for new records.">'
         '<button class="link-button" type="submit">Archive</button></form>'
     )
     return f"""

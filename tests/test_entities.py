@@ -33,6 +33,7 @@ from app.duplicate_detection import find_duplicate_entities
 from app.geo import build_map_payload
 from app.relationships import relationship_types_for_pair
 from app.relationship_workflow import create_inline_relationship_target
+from tests.web_test_support import read_application_css
 
 
 class EntityDatabaseTests(unittest.TestCase):
@@ -144,18 +145,17 @@ class EntityDatabaseTests(unittest.TestCase):
 
         html = views.entity_detail_page(record, [])
 
-        for heading in (
-            "Overview",
-            "Relationships",
-            "Related Entities",
-            "Journal",
-            "Documents",
-            "Timeline",
-            "Metadata",
-        ):
+        for heading in ("Contact", "Locations", "Relationships", "Journal", "Documents", "Timeline"):
             self.assertIn(heading, html)
+        self.assertNotIn("Related Entities", html)
+        self.assertNotIn("Metadata", html)
         self.assertIn("1815-12-10", html)
         self.assertNotIn("Summary", html)
+
+    def test_entity_index_renders_without_record_context(self) -> None:
+        html = views.entity_list_page(self.definition, [])
+        self.assertIn("<h1>People</h1>", html)
+        self.assertNotIn('aria-label="Breadcrumb"', html)
 
     def test_relationships_connect_any_entity_types_bidirectionally(self) -> None:
         organisation_definition = DEFINITIONS_BY_SLUG["organisations"]
@@ -542,7 +542,7 @@ class EntityDatabaseTests(unittest.TestCase):
             context_entity=organisation,
             target_type="person",
         )
-        css = (Path(__file__).resolve().parents[1] / "app" / "static" / "styles.css").read_text()
+        css = read_application_css()
 
         self.assertIn('data-workflow-panel="create_new" hidden', existing_html)
         self.assertIn('data-workflow-panel="existing" hidden', new_html)

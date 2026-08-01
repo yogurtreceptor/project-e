@@ -9,7 +9,7 @@ from app.db import connect, create_entity, delete_entity, get_entity, initialise
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.document_storage import UploadedFile, store_document_upload, stored_document_path
 from app.entities import DEFINITIONS_BY_SLUG
-from app.web import EddyRequestHandler, ThreadingHTTPServer
+from tests.web_test_support import make_test_server
 
 
 class DocumentLifecycleTests(unittest.TestCase):
@@ -50,9 +50,9 @@ class DocumentLifecycleTests(unittest.TestCase):
         self.assertTrue(stored_path.exists())
 
     def test_http_replacement_cleans_old_file_and_soft_delete_keeps_current_file(self) -> None:
-        EddyRequestHandler.database_path = self.database_path
-        EddyRequestHandler.document_storage_dir = self.storage_dir
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(
+            self.database_path, document_storage_dir=self.storage_dir
+        )
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -63,7 +63,7 @@ class DocumentLifecycleTests(unittest.TestCase):
                 "original.txt",
                 b"original",
             )
-            document_id = int(create_headers["Location"].rsplit("/", 1)[1])
+            document_id = int(create_headers["Location"].rsplit("/", 1)[1].partition("?")[0])
             with connect(self.database_path) as connection:
                 original_record = get_entity(connection, self.definition, document_id)
             original_path = stored_document_path(
@@ -115,9 +115,9 @@ class DocumentLifecycleTests(unittest.TestCase):
                 connection, self.definition, {"display_name": "Existing", **metadata}
             )
 
-        EddyRequestHandler.database_path = self.database_path
-        EddyRequestHandler.document_storage_dir = self.storage_dir
-        server = ThreadingHTTPServer(("127.0.0.1", 0), EddyRequestHandler)
+        server = make_test_server(
+            self.database_path, document_storage_dir=self.storage_dir
+        )
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -132,7 +132,7 @@ class DocumentLifecycleTests(unittest.TestCase):
                     "file_size": "5 B",
                 },
             )
-            created_id = int(create_headers["Location"].rsplit("/", 1)[1])
+            created_id = int(create_headers["Location"].rsplit("/", 1)[1].partition("?")[0])
             edit_status, _edit_headers = self.post_urlencoded(
                 server.server_port,
                 f"/documents/{existing_id}/edit",

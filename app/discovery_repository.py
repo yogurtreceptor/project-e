@@ -2,7 +2,11 @@ import sqlite3
 
 from app.db_support import utc_now
 from app.entities import EntityRecord
-from app.entity_repository import entity_matches_query, get_entity_by_id, list_all_entities
+from app.entity_repository import (
+    entity_matches_query,
+    get_entity_by_id,
+    list_searchable_entities,
+)
 from app.relationship_repository import list_relationships_for_entity
 from app.relationships import RelationshipRecord
 from app.structured_filters import apply_structured_filter
@@ -61,7 +65,7 @@ def search_entities(
     filter_value: str = "",
 ) -> list[dict[str, object]]:
     query = query.strip()
-    records = list_all_entities(connection)
+    records = list_searchable_entities(connection)
     from app.query_engine import registry as query_registry
     records, query = query_registry.apply(connection, records, query)
     if entity_type:

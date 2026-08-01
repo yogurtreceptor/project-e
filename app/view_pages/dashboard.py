@@ -37,7 +37,7 @@ def dashboard_page(counts: dict[str, int], relationship_count: int, recent_entit
 
     return """
     <section class="page-heading">
-        <h1>Operation Eddy</h1>
+        <h1>Project E</h1>
         <p>Local-first structured information centred on entities and relationships.</p>
     </section>
     <section class="panel dashboard-search">

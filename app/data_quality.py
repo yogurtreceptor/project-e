@@ -1,4 +1,5 @@
 import hashlib
+import json
 from dataclasses import dataclass
 from app.audit import record_audit_event
 from app.db_support import utc_now
@@ -38,6 +39,26 @@ def graph_health(c):return [finding("graph_consistency",w.severity,w.message,w.e
 @registry.register
 def orphans(c):
  return [finding("orphan_detection","info",f"{r.title} has no relationships.",(r.id,)) for r in list_all_entities(c) if not c.execute("SELECT 1 FROM relationships WHERE deleted_at='' AND (source_entity_id=? OR target_entity_id=?)",(r.id,r.id)).fetchone()]
+@registry.register
+def operational_time_contracts(c):
+ from app.event_service import validate_stored_event
+ out=[]
+ for row in c.execute("SELECT entity_id FROM events"):
+  errors=validate_stored_event(c,int(row["entity_id"]))
+  if errors:out.append(finding("event_temporal_contract","warning",f"Event #{row['entity_id']} is invalid: {'; '.join(errors)}.",(int(row["entity_id"]),)))
+ return out
+@registry.register
+def operational_configuration_contracts(c):
+ from app.reminder_service import _validate_timings
+ from app.scheduler_service import REMINDER_DELIVERY_JOB
+ out=[]
+ for row in c.execute("SELECT id,timings_json FROM reminder_policies"):
+  try:_validate_timings(json.loads(row["timings_json"]))
+  except (ValueError,TypeError,json.JSONDecodeError):out.append(finding("reminder_policy_contract","warning",f"Reminder policy #{row['id']} has invalid timings."))
+ for row in c.execute("SELECT id,handler_name,enabled,status FROM scheduled_jobs"):
+  if row["handler_name"] != REMINDER_DELIVERY_JOB:out.append(finding("schedule_contract","warning",f"Scheduled job #{row['id']} references an unregistered handler."))
+  if not row["enabled"] and row["status"] != "disabled":out.append(finding("schedule_contract","warning",f"Scheduled job #{row['id']} is disabled but has inconsistent status."))
+ return out
 def resolve_finding(c,key,status,notes=""):
  if status not in {"reviewed","ignored","intentional","resolved","accepted","rejected"}:raise ValueError("Invalid finding status.")
  c.execute("INSERT INTO data_quality_finding_state VALUES(?,?,?,?) ON CONFLICT(finding_key) DO UPDATE SET status=excluded.status,notes=excluded.notes,updated_at=excluded.updated_at",(key,status,notes,utc_now()))

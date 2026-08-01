@@ -5,13 +5,14 @@ from app.db_support import utc_now
 
 
 EVENT_TYPES = {
-    "create", "edit", "delete", "restore", "permanent_delete",
+    "create", "edit", "archive", "unarchive", "delete", "restore",
+    "permanent_delete", "cancel", "reinstate", "reschedule", "complete", "reopen",
     "relationship_change", "inference", "validation", "merge", "import",
-    "manual_override",
+    "manual_override", "automation", "review_proposal", "approve", "reject",
 }
 PROVENANCE_TYPES = {
     "manual", "inferred", "imported", "document", "contact_import",
-    "user_confirmed", "unknown",
+    "user_confirmed", "unknown", "automation",
 }
 
 
@@ -19,6 +20,7 @@ PROVENANCE_TYPES = {
 class AuditFilters:
     event_type: str = ""
     record_kind: str = ""
+    record_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -74,10 +76,14 @@ def list_audit_events(connection, record_kind=None, record_id=None, filters=None
         sql += " JOIN audit_event_records selected_record ON selected_record.event_id=a.id"
         clauses.extend(("selected_record.record_kind=?", "selected_record.record_id=?"))
         params.extend((record_kind, record_id))
-    if selected.record_kind:
+    if selected.record_kind or selected.record_id is not None:
         sql += " JOIN audit_event_records filtered_record ON filtered_record.event_id=a.id"
-        clauses.append("filtered_record.record_kind=?")
-        params.append(selected.record_kind)
+        if selected.record_kind:
+            clauses.append("filtered_record.record_kind=?")
+            params.append(selected.record_kind)
+        if selected.record_id is not None:
+            clauses.append("filtered_record.record_id=?")
+            params.append(selected.record_id)
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
     result = []

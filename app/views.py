@@ -76,6 +76,26 @@ from app.view_pages.search import (
     search_page,
     search_result_card,
 )
+from app.view_pages.events import event_projection_page
+from app.view_pages.calendar import (
+    calendar_header,
+    calendar_page,
+    calendar_projection,
+    calendar_settings_create_page,
+    calendar_settings_edit_page,
+    calendar_settings_general_page,
+    calendar_settings_header,
+    calendar_settings_import_page,
+    calendar_settings_export_page,
+    calendar_settings_from_url_page,
+    calendar_settings_placeholder_page,
+    calendar_settings_sidebar,
+    calendar_settings_subscription_page,
+    calendar_sidebar,
+    default_event_values,
+    event_form_page,
+    event_form_values,
+)
 from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
@@ -84,9 +104,12 @@ from app.view_pages.merge import merge_select_page, merge_preview_page
 from app.view_pages.recycle_bin import recycle_bin_page, permanent_delete_confirmation_page
 from app.view_pages.timeline import universal_timeline_page
 from app.view_pages.taxonomies import taxonomies_page
-from app.view_pages.system_tools import system_tools_page
+from app.view_pages.system_tools import system_tools_page, scheduled_jobs_page
+from app.view_pages.automation import automation_page
 from app.view_pages.audit import system_audit_page
 from app.view_pages.portability import portability_page, import_preview_page
+from app.view_pages.inbox import global_reminder_policies_page, inbox_page
+from app.view_pages.reminders import reminder_policy_page, reminder_settings_page
 
 INLINE_RELATIONSHIP_ENTITY_TYPES = {"person", "organisation", "location"}
 
@@ -131,6 +154,24 @@ __all__ = [
     "date_precision_options",
     "search_page",
     "search_result_card",
+    "event_projection_page",
+    "calendar_page",
+    "calendar_header",
+    "calendar_sidebar",
+    "calendar_settings_create_page",
+    "calendar_settings_edit_page",
+    "calendar_settings_general_page",
+    "calendar_settings_header",
+    "calendar_settings_import_page",
+    "calendar_settings_export_page",
+    "calendar_settings_from_url_page",
+    "calendar_settings_placeholder_page",
+    "calendar_settings_sidebar",
+    "calendar_settings_subscription_page",
+    "calendar_projection",
+    "event_form_page",
+    "default_event_values",
+    "event_form_values",
     "not_found_page",
     "recycle_bin_page",
     "permanent_delete_confirmation_page",
@@ -144,8 +185,14 @@ __all__ = [
     "select_field",
     "taxonomies_page",
     "system_tools_page",
+    "scheduled_jobs_page",
+    "automation_page",
     "system_audit_page",
     "portability_page",
+    "inbox_page",
+    "global_reminder_policies_page",
+    "reminder_policy_page",
+    "reminder_settings_page",
     "import_preview_page",
     "existing_location_action",
     "address_lookup_field",

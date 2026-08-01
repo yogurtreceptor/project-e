@@ -5,7 +5,7 @@ from app.entities import EntityRecord
 
 def merge_select_page(survivor: EntityRecord, candidates: list[EntityRecord], error: str = "") -> str:
     options = "".join(f'<option value="{item.id}">{escape(item.title)}</option>' for item in candidates)
-    error_html = f'<div class="warnings"><p>{escape(error)}</p></div>' if error else ""
+    error_html = f'<div class="status-row warning"><p>{escape(error)}</p></div>' if error else ""
     empty = '<p class="empty">There are no other records of this type to merge.</p>' if not candidates else ""
     form = f"""
     <form class="record-form" method="get" action="/{survivor.slug}/{survivor.id}/merge">
@@ -26,7 +26,7 @@ def merge_preview_page(preview) -> str:
     return f"""
     <section class="page-heading"><p class="eyebrow">Merge preview</p><h1>{escape(preview.duplicate.title)} → {escape(preview.survivor.title)}</h1>
     <p>Review the exact field and relationship effects before committing.</p></section>
-    <section class="panel"><table><thead><tr><th>Field</th><th>Survivor</th><th>Duplicate</th><th>Result</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section>
+    <section class="panel"><div class="table-scroll" tabindex="0" role="region" aria-label="Merge field comparison"><table><thead><tr><th>Field</th><th>Survivor</th><th>Duplicate</th><th>Result</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div></section>
     <section class="panel"><h2>Relationship changes</h2><p>{preview.active_relationships_to_repoint} active and {preview.recycled_relationships_to_repoint} recycled relationship(s) will be repointed; {preview.duplicate_relationships_to_remove} duplicate or self-referencing relationship(s) will be permanently removed.</p>
     <p>The duplicate snapshot, conflicts, and prior history will remain in the survivor’s edit history.</p>
     <form method="post" action="/{preview.survivor.slug}/{preview.survivor.id}/merge"><input type="hidden" name="duplicate_id" value="{preview.duplicate.id}">

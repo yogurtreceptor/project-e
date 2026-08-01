@@ -24,3 +24,9 @@ The maintainer will acknowledge and assess reports as availability permits, may 
 Reports about Project E's own code and default configuration are in scope. Vulnerabilities in third-party software or services should normally be reported to their respective maintainers, unless Project E uses them in a way that creates a distinct vulnerability.
 
 General bugs and feature requests belong in the public issue templates, provided they contain no sensitive information.
+
+## Calendar interchange and subscriptions
+
+iCalendar uploads and URL-subscription responses are untrusted input. The application bounds their size and Event count, validates supported Calendar semantics before writes, and stages previews only under ignored local runtime storage. Public subscriptions accept HTTPS only, reject credentials and non-public destinations, revalidate redirects, limit redirect count and response time, and retain the last validated cache if refresh fails.
+
+Calendar subscription query values may contain sensitive tokens. Vulnerability reports, logs and screenshots should redact complete subscription URLs; routine audit notes identify only the source host.
