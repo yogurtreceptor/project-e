@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); detailed Phase 2 status, scope and sequence belong in [the Phase 2 workspace](docs/phase_2_workspace.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
+This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); completed Phase 2 scope and evidence belong in [the Phase 2 workspace](docs/phase_2_workspace.md); evolving Phase 3 direction belongs in [the Spatial Intelligence planning workspace](docs/phase_3_spatial_intelligence_planning.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
 ## Phase 1 — Information Platform
 
@@ -12,25 +12,27 @@ Pull request #1 is closed and Phase 1 is complete enough to close as a developme
 
 ## Phase 2 — Operational Time and Deterministic Automation
 
-### Status: Foundation complete; refinement active
+### Status: Complete
 
 Phase 2 establishes the platform's operational time and automation foundation. The direction is:
 
 ```text
-structured information → relationships → temporal information → events → calendar projections → reminders and attention management → scheduling → deterministic automation → later AI-assisted operations
+structured information → relationships → temporal information → events → calendar projections → reminders and attention management → scheduling → deterministic automation
 ```
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F are complete after an integrated review of Calendar/Event, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. Focused Event, Calendar and operational refinements continue in a living workspace until Phase 3 is deliberately defined. The unsuccessful experimental Task subsystem was retired on 2026-08-01; future work management is neither promised nor constrained by that design. Persistent System Health, AI and external side effects remain outside this milestone. The canonical scope, detailed status, architecture, sequence, exclusions and completion criteria are in [the Phase 2 workspace](docs/phase_2_workspace.md).
+The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F and the authorised Event, Calendar and operational refinements closed after integrated review of Calendar/Event, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. The unsuccessful experimental Task subsystem was retired on 2026-08-01; future work management is neither promised nor constrained by that design. Persistent System Health, AI and external side effects remain outside the completed milestone. The canonical scope, delivery record, exclusions and closure evidence are in [the Phase 2 workspace](docs/phase_2_workspace.md) and [Phase 2 closure review](docs/reviews/phase_2_exit_review.md).
 
-## Phase 3 — AI-assisted Platform
+## Phase 3 — Spatial Intelligence
 
-Add bounded, attributable assistance such as natural-language retrieval, summarisation, classification, extraction, drafting and proposed actions. AI suggestions and actions must be reviewable, grounded in canonical records and visible in system audit. AI must not become a competing source of truth or bypass confirmation and validation.
+### Status: Planning in progress
 
-Informal ideas and assertions for a future Phase 3 are collected in [Phase 3 notes](docs/phase_3_notes.md). That document is not a specification or implementation authority.
+Make location, geometry, distance, movement, travel time and reachability useful operational concepts across Project E. The intended direction includes stronger Location semantics, rich local spatial data, Map 2.0, journey planning, personal mobility profiles, explainable routing policies, travel-time and reachability tools, and integration with Events and other canonical records.
 
-## Phase 4 — AI/Agent Platform
+The phase is framed by a desired end state rather than a fixed implementation sequence. Capabilities may be revised, dropped or added as authorised work and real use establish what is practical. The [Phase 3 Spatial Intelligence planning workspace](docs/phase_3_spatial_intelligence_planning.md) records accepted direction, candidate capabilities and open questions; it is not implementation authority.
 
-Explore goal-directed assistance only after the platform is independently useful, coherently machine-readable, safely machine-writable and supported by explicit authority and recovery boundaries. [Odysseus](docs/future_direction.md#odysseus) remains a possible future integration or fork target, not a present dependency.
+## Unnumbered future directions
+
+AI assistance and agent workflows are postponed indefinitely as a primary focus rather than promised for Phase 4 or another numbered milestone. Small, bounded and attributable capabilities may still be considered through explicit authorisation when they solve a demonstrated need and remain grounded in canonical records, validation, privacy, audit, recovery and user control. [Odysseus](docs/future_direction.md#odysseus) remains a possible future integration or fork target, not a present dependency.
 
 ## Deferred relationship evolution
 
@@ -40,6 +42,6 @@ Do not treat richer relationship evidence as an incidental field addition. Confi
 
 - SQLite and the local database remain the canonical source of truth.
 - Core operation remains local-first; optional services must be replaceable.
-- Human users, deterministic operations and future AI converge on shared platform capabilities.
+- Human users, deterministic operations and any future explicitly authorised assistance converge on shared platform capabilities.
 - Validation, relationships, audit history, provenance, recovery and user control remain strategic infrastructure.
 - Roadmap entries never authorise implementation on their own.

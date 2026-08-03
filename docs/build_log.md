@@ -2,6 +2,14 @@
 
 Historical summary only. Current behaviour is defined by the implemented code and reference documents; phase plans and the roadmap define authorised boundaries and direction but do not themselves authorise implementation; the technical-debt register contains unresolved work.
 
+## 2026-08-03
+
+### Phase 2 closure and Phase 3 spatial planning
+
+- Closed Phase 2 as a completed development milestone after the owner accepted the delivered experience and authorised final status alignment; retained ordinary residual defects as maintenance rather than reopening the phase.
+- Established Spatial Intelligence as the Phase 3 planning focus, with an evolving end-state workspace covering canonical Locations, regional spatial data, Map 2.0, journey planning, mobility profiles, routing policies and spatial decision tools without authorising implementation.
+- Removed numbered promises for AI and agent phases; those capabilities are postponed indefinitely as a primary focus and remain available only through bounded, explicit future authorisation.
+
 ## 2026-08-01
 
 ### Phase 2 closeout evidence
@@ -108,7 +116,7 @@ Retained Task storage, migrations, services and validation for a future user-led
 
 ### Phase 3 note collection
 
-Moved the tentative local-first journey-planning proof slice out of Phase 2 closeout requirements and into a new informal Phase 3 notes document for future assertions and open questions.
+Moved the tentative local-first journey-planning proof slice out of Phase 2 closeout requirements and into the document now maintained as the Phase 3 Spatial Intelligence planning workspace.
 
 ### Event recurrence picker
 

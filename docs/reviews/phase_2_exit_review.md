@@ -1,8 +1,8 @@
-# Phase 2 Candidate Closure Review
+# Phase 2 Closure Review
 
-Reviewed 2026-08-01. Evidence revision: `e3b5c2922edc2537f4f14e3524d7908dbcb60f10`.
+Evidence reviewed 2026-08-01 and closure approved 2026-08-03. Implementation evidence revision: `e3b5c2922edc2537f4f14e3524d7908dbcb60f10`.
 
-This is the candidate closure review for Phase 2. It records the integrated repository and agent-driven desktop evidence presented to the owner. Phase 2 remains active, PR #6 remains draft and the closure decision remains pending until the owner accepts the delivered experience and conditionally authorises the final status changes and merge.
+This is the final closure review for Phase 2. It records the integrated repository and agent-driven desktop evidence presented to the owner. On 2026-08-03 the owner accepted the delivered experience and explicitly authorised marking Phase 2 complete and aligning the repository documentation. The milestone is complete; publishing or merging the `dev` history remains a separate repository operation and was not requested or performed by this closure pass.
 
 ## Delivered boundary
 
@@ -29,7 +29,7 @@ The sole current registered automation invokes the reminder-delivery service. Ru
 
 The evidence revision passed focused automation, scheduler, System Tools, migration and closeout-walkthrough tests. It also passed the complete repository suite of **287 tests**, `python3 -m compileall app run.py tests` and `git diff --check` on 2026-08-01.
 
-Final verification must be rerun after the approved status edits. The final review will record that revision and result before merge.
+The approved status and planning edits passed the complete repository suite of **287 tests** in 203.483 seconds and `python3 -m compileall app run.py tests` on 2026-08-03. `git diff --check` and a tracked/untracked artifact inspection also passed before commit. This final verification remains independent of any later branch publication or merge operation.
 
 ## Desktop visual and keyboard review
 
@@ -51,14 +51,14 @@ One new low-severity limitation was identified: at exactly 800 × 600, the Calen
 
 The owner accepted the complete current technical-debt register as non-blocking on 2026-08-01, including collapsed-sidebar discoverability, visually noisy high-frequency runtime history and the constrained-Calendar Search accessible-name defect discovered during this review. These items remain ordinary maintenance work and do not represent hidden Phase 2 features.
 
-Persistent System Health, future work management, phone/mobile workflows, external notification channels, AI, autonomous external side effects, arbitrary executable automation and automatic canonical Event mutation remain excluded. Phase 3 remains undefined and is not a prerequisite for closure.
+Persistent System Health, future work management, phone/mobile workflows, external notification channels, AI, autonomous external side effects, arbitrary executable automation and automatic canonical Event mutation remain excluded from Phase 2. Phase 3 now has a separately governed Spatial Intelligence planning direction; it was not a Phase 2 completion prerequisite and does not retroactively expand this delivered boundary.
 
-## Owner decisions and candidate conclusion
+## Owner decisions and conclusion
 
 - **Milestone meaning — accepted 2026-08-01.** Phase 2 may close as a completed development milestone while ordinary maintenance and residual defects continue without reopening it.
-- **Delivered experience — pending.** The owner must review this evidence and confirm that the current Calendar/Event, reminder/Inbox and local runtime experience has enough practical polish to leave in place.
+- **Delivered experience — accepted 2026-08-03.** The owner confirmed that the current Calendar/Event, reminder/Inbox and local runtime experience may remain in place as the completed Phase 2 foundation.
 - **Accepted debt — accepted 2026-08-01.** The current debt register is non-blocking for closure.
 - **Deferred boundary — accepted 2026-08-01.** The exclusions above remain outside Phase 2.
-- **Final closure — pending.** The owner must conditionally authorise marking Phase 2 complete and merging PR #6 if final verification passes and the tested revision matches the PR head.
+- **Final closure — accepted 2026-08-03.** The owner authorised marking Phase 2 complete and committing the aligned documentation on `dev`. This approval did not request or perform a merge.
 
-The repository evidence supports Phase 2 closure, but this candidate review does not itself close the phase. No completion status, ready-for-review state or merge gate may change until the two pending owner decisions are recorded.
+The repository evidence, accepted debt and owner decisions support Phase 2 closure as a completed development milestone. Ordinary residual defects remain maintenance work and do not reopen the phase. Phase 3 planning proceeds separately and continues to require explicit implementation authorisation.

@@ -1,6 +1,6 @@
 Project Scope
 -------------
-Project E is a local-first Personal Information Platform for one private user. Phase 1 is complete and Phase 2 is in progress. The platform stores, organises and navigates canonical People, Organisations, Locations, Projects, Documents, Assets and Events, their Relationships, and local operational records such as Calendars, reminders and Inbox deliveries. Personal operational intelligence remains the longer-term direction.
+Project E is a local-first Personal Information Platform for one private user. Phases 1 and 2 are complete development milestones, and Phase 3 spatial-intelligence planning is in progress. The platform stores, organises and navigates canonical People, Organisations, Locations, Projects, Documents, Assets and Events, their Relationships, and local operational records such as Calendars, reminders and Inbox deliveries. Personal operational intelligence remains the longer-term direction.
 
 Quick Commands
 --------------
@@ -28,9 +28,10 @@ Design Principles
 Current Phase Boundaries
 ------------------------
 - Implementation prompts define the authorised task. Plans and roadmap items provide context and boundaries, not permission to implement them.
-- Phase 2 may include explicitly authorised, local and deterministic reminders, scheduling, registered background jobs and trigger-condition-action automation as defined in `docs/phase_2_workspace.md`.
+- Phase 2 is complete. Its delivered local and deterministic Calendar, Event, reminder, Inbox, scheduling and registered-automation behaviour remains current architecture as defined in `docs/phase_2_workspace.md`.
+- Phase 3 focuses on Spatial Intelligence. `docs/phase_3_spatial_intelligence_planning.md` records an evolving desired end state, candidate capabilities and open questions; it is not implementation authority or a rigid release checklist.
 - Deterministic maintenance may recalculate derived state and create operational or audit records within the documented contracts. Creating, editing, archiving or deleting a canonical Event requires explicit user approval.
-- Do not introduce AI or agent workflows, chat, AI decision support, AI-generated autonomous actions, autonomous external side effects, arbitrary executable code, external notification or calendar channels, distributed workers or queues, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies unless the user explicitly authorises a change in direction.
+- AI assistance and agent workflows are postponed indefinitely as a primary focus rather than assigned to a numbered phase. Do not introduce them, autonomous external side effects, arbitrary executable code, external notification or calendar channels, distributed workers or queues, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies without a separate explicit authorisation. A small bounded AI capability may be considered when explicitly authorised for a demonstrated need and kept within canonical-data, validation, privacy, audit and user-control boundaries.
 
 Repository-First Workflow
 -------------------------
@@ -50,7 +51,8 @@ Documentation is part of implementation. Proactively update every existing docum
 Repository documents have distinct responsibilities:
 - `PROJECT_GOAL.md`: durable product purpose, scope and principles.
 - `docs/phase_1_spec.md`: delivered Phase 1 behaviour and acceptance criteria.
-- `docs/phase_2_workspace.md`: living Phase 2 scope, delivery record, completion criteria and exclusions; not implementation authority.
+- `docs/phase_2_workspace.md`: completed Phase 2 scope, delivery record, completion evidence and exclusions.
+- `docs/phase_3_spatial_intelligence_planning.md`: evolving Phase 3 direction, candidate capability envelope, decisions and open questions; not implementation authority.
 - `ROADMAP.md`: phased capability direction and priorities; not implementation authority.
 - `docs/future_direction.md`: long-term platform, AI and Odysseus direction; not current architecture.
 - `docs/architecture.md`: current application structure and boundaries.

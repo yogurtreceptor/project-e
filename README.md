@@ -25,22 +25,22 @@ Project E keeps People, Organisations, Locations, Projects, Documents, Assets an
 | --- | --- | --- |
 | Model real things once and link them through first-class Relationships. | Turn the same records into search, temporal, geographic and attention workflows. | Keep the database, documents, audit trail, exports and recovery bundles on the local machine. |
 
-The immediate goal is deliberately human: make private information useful, trustworthy and pleasant to work with. Deterministic automation builds on validation, provenance and explicit control. AI is a later consumer of the platform, not its organising principle.
+The immediate goal is deliberately human: make private information useful, trustworthy and pleasant to work with. Deterministic automation and spatial intelligence build on validation, provenance and explicit control. AI and agents are postponed indefinitely as a primary focus rather than treated as the platform's organising principle.
 
 ## Current state
 
 | Track | State | What that means |
 | --- | :---: | --- |
 | **Phase 1 · Information Platform** | **Complete** | Canonical records and Relationships, Search, Map, Timeline, local Documents, taxonomies, audit/history, data quality, reviewed inference, merging and recovery. |
-| **Phase 2 · Operational Time** | **Active** | Calendar and recurring Events, derived occurrences, reminder policies, durable Inbox delivery, startup recovery, registered scheduled jobs and deterministic automation are delivered and undergoing focused refinement. |
-| **Phase 3** | **Undefined** | AI, agent workflows, external notification channels, accounts and cloud-dependent operation are not current product scope. |
+| **Phase 2 · Operational Time** | **Complete** | Calendar and recurring Events, derived occurrences, reminder policies, durable Inbox delivery, startup recovery, registered scheduled jobs and deterministic automation. |
+| **Phase 3 · Spatial Intelligence** | **Planning** | An evolving direction for richer Locations, local spatial data, Map 2.0, journey planning, personal mobility and explainable routing policy. Planning does not authorise implementation. |
 
 Project E currently needs no account and remains useful without WAN access. Optional map tiles and address lookup use replaceable network services; canonical records and core workflows do not.
 
 The earlier experimental Task subsystem was retired on 2026-08-01 because it had no user data and had not proved useful. Any future to-do or work-management capability starts from a newly authorised design rather than compatibility with that implementation.
 
 > [!NOTE]
-> This is an active, source-available development project—not a stable release or an open-source distribution. The [Phase 2 workspace](docs/phase_2_workspace.md) is the detailed status authority.
+> This is an active, source-available development project—not a stable release or an open-source distribution. The [Phase 2 workspace](docs/phase_2_workspace.md) records the completed operational-time milestone; the [Phase 3 planning workspace](docs/phase_3_spatial_intelligence_planning.md) records the current direction.
 
 ## See it
 
@@ -109,7 +109,7 @@ python3 -m compileall app run.py tests
 | --- | --- |
 | [Project goal](PROJECT_GOAL.md) | [Architecture](docs/architecture.md) · [Database design](docs/database_design.md) · [Ontology](docs/ontology.md) |
 | [Phase 1 specification](docs/phase_1_spec.md) | [Architecture decisions](ARCHITECTURE_DECISIONS.md) · [Glossary](docs/glossary.md) |
-| [Phase 2 workspace](docs/phase_2_workspace.md) | [Experience philosophy](docs/experience_philosophy.md) · [Design system](docs/design/README.md) |
+| [Phase 2 workspace](docs/phase_2_workspace.md) · [Phase 3 planning](docs/phase_3_spatial_intelligence_planning.md) | [Experience philosophy](docs/experience_philosophy.md) · [Design system](docs/design/README.md) |
 | [Roadmap](ROADMAP.md) · [Future direction](docs/future_direction.md) | [Build history](docs/build_log.md) · [Technical debt](docs/reviews/technical_debt_register.md) |
 | [Contributing](CONTRIBUTING.md) · [Agent workflow](AGENTS.md) | [Security policy](SECURITY.md) · [Copyright](COPYRIGHT.md) |
 
