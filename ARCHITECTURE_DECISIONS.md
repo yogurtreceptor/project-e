@@ -1,45 +1,10 @@
 # Architecture Decisions
 
-This file records important architecture decisions for Project E.
+This file preserves long-term structural choices and their rationale. Search its headings by topic or ADR number rather than loading it for current implementation detail; current contracts live in the focused reference documents.
 
-Use it when a decision affects the long-term structure, direction or maintainability of the project.
+New decisions are appended with Status, Date, Decision, Reason and Consequences. Do not record small implementation choices. If replaced, retain the old entry as Superseded and append its replacement.
 
-Examples of decisions worth recording:
-
-* choosing a backend framework
-* choosing a database
-* changing the entity model
-* changing the relationship model
-* adding a new major domain
-* changing the Phase 1 scope
-* introducing authentication
-* introducing external integrations
-* postponing AI, automation or decision support
-
-Do not record tiny implementation details.
-
-Each decision should use this format:
-
-```text
-## ADR-000: Short decision title
-
-Status: Proposed / Accepted / Superseded
-
-Date: YYYY-MM-DD
-
-Decision:
-Briefly state the decision.
-
-Reason:
-Explain why this decision was made.
-
-Consequences:
-Explain what this enables, limits or changes.
-```
-
-New decisions should be added to the bottom of this file.
-
-If a decision is replaced later, do not delete the old decision. Mark it as superseded and add a new decision below it.
+The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027) and the shared temporal-occurrence boundary (ADR-028).
 
 ## ADR-001: Map as an entity view
 

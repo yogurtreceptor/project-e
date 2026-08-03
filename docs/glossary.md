@@ -1,419 +1,82 @@
 # Glossary
 
-This glossary is the shared vocabulary for Project E. Use it when project terminology is unclear or when future implementation work needs consistent wording.
-
-## Index
-
-[A](#a) · B · [C](#c) · [D](#d) · [E](#e) · F · G · H · [I](#i) · [J](#j) · K · [L](#l) · [M](#m) · [N](#n) · [O](#o) · [P](#p) · Q · [R](#r) · [S](#s) · [T](#t) · U · V · W · X · Y · Z
-
-## A
-
-### Alias
-
-A repeatable alternate name for a canonical entity. Organisation aliases include former, trading and abbreviated names; they are normalized values used by search and duplicate review, not comma-separated text.
-
-### Approximate Date
-
-A closest known calendar date marked as approximate. It does not represent a date range or a partial year/month value.
-
-### Architecture Decision Record (ADR)
-
-A short record of an important architecture decision, why it was made and its consequences.
-
-See also: Repository Source of Truth.
-
-### Archived
-
-An inactive record or workflow item that remains part of its normal platform domain and may be shown through an archive-specific control. Archiving is not deletion and archived items do not enter the Recycle Bin.
-
-See also: Deleted, Recycle Bin.
-
-### Artificial Intelligence
-
-Future-phase capability where models may consume, interpret or propose changes to platform data through shared, governed capabilities. AI is not part of Phase 1 and is not the platform's foundation.
-
-See also: Phase 1, Decision Support, Automation, Odysseus.
-
-### Asset
-
-An entity representing a physical or digital item, such as a vehicle, appliance, device, tool or important possession.
-
-See also: Entity, Document, Location.
-
-### Audit event
-
-An operational record of a canonical-data mutation or finding resolution.
-
-### Automation
-
-Autonomous, goal-directed execution that can schedule work, perform consequential actions without review or create external side effects. This form of automation is not part of Phase 1. Ordinary deterministic application behaviour and reviewed assistance are not automation in this sense.
-
-See also: Deterministic Assistance, Phase 1, Decision Support, Artificial Intelligence.
-
-### Automation Rule
-
-A database-backed, explicit trigger-condition-action configuration that references only a registered local trigger and action. It is not executable user-authored code, a Scheduled Job or Event.
-
-### Automation Run
-
-One idempotent execution of an Automation Rule for a stable logical trigger identity. It records inputs, outcome and failure state separately from a Job Run.
-
-## C
-
-### Calendar
-
-A first-class local Event grouping and configuration record, comparable to a Google Calendar calendar. Every Event belongs to exactly one Calendar. A Calendar supplies a name, colour, IANA timezone, default Event duration, ordering, archive state and default reminder policy; its edit form keeps the compact colour control and repeatable reminder rows beside those defaults. A Calendar has at most ten notification timings. It is not an independent Event store. The protected Birthdays Calendar is a built-in category populated by linked canonical birthday Events from People. Archiving retains Event assignments and prevents new selection; an assigned Calendar cannot be deleted.
-
-### Calendar Subscription
-
-An explicitly configured, read-only public-HTTPS iCalendar source shown under Other calendars. Its local settings provide name, colour, IANA timezone, ordering, enabled state and default Event notifications, but no default Event duration because users do not create its items. External items remain non-canonical and uneditable. Project E retains a stable-UID, last-known-good local cache so Calendar rendering and reminder evaluation stay usable without WAN access, but the source is still externally owned.
-
-See also: Calendar, Calendar Projection, iCalendar.
-
-### Calendar Projection
-
-A time-based display derived from a canonical record or derived occurrence. It is not a source of truth or a conversion of every dated record into an Event.
-
-### Canonical Record
-
-The single preferred record for one real-world object. Duplicate records should be avoided or resolved so each important person, organisation, place, document, asset or project has one main record.
-
-See also: Entity, Repository Source of Truth.
-
-### Canonical Unit
-
-The designated storage unit for a measurement category. Values entered in another unit are converted to the canonical unit for persistence and converted back through a selected display unit for presentation.
-
-See also: Measurement, Structured Data.
-
-### Controlled Field
-
-A structured field with known allowed or suggested values, such as status or type. Some controlled fields may allow a custom value when the preset list is too narrow.
-
-See also: Structured Data, Custom Value.
-
-### Custom Value
-
-A user-entered value accepted by a controlled field when the built-in options are not enough.
-
-See also: Controlled Field.
-
-## D
-
-### Dashboard
-
-The main navigation and overview surface for the local information platform. It should help users move into entities, relationships and other views without becoming a command or chat interface.
-
-See also: Entity Page, Map Layer.
-
-### Data-quality finding
-
-A deterministic, explainable observation produced by a registered validation rule.
-
-### Decision Support
-
-Future-phase capability that helps interpret information or support decisions. It is separate from Phase 1 storage, navigation and relationship modelling.
-
-See also: Phase 1, Artificial Intelligence, Automation.
-
-### Deleted
-
-The recoverable state of an entity hidden from normal platform views, search and relationship navigation. A deleted entity remains stored until restored or permanently deleted from the Recycle Bin.
-
-See also: Archived, Recycle Bin.
-
-### Derived Occurrence
-
-A deterministic, traceable temporal instance produced from a canonical record and definition, such as a recurring Event instance or a Document expiry. Eligible record-derived occurrences enter Calendar, reminder and Inbox behaviour through the shared Temporal Occurrence Pipeline rather than through domain-specific scanners and delivery code.
-
-See also: Temporal Occurrence Pipeline, Calendar Projection, Reminder.
-
-### Design System
-
-The reusable visual and component rules that apply the Experience Philosophy consistently, including semantic tokens, typography, spacing, states, density, responsiveness and accessibility. It does not define domain-specific workflows or replace the Experience Philosophy.
-
-See also: Experience Philosophy, Entity Page.
-
-### Detail Page
-
-A page that shows one record in detail. In Project E, the primary detail page for an entity is the entity page.
-
-See also: Entity Page.
-
-### Deterministic Assistance
-
-Local, rule-based and explainable behaviour that preserves user control. It may calculate suggestions, warnings, derived views or internal maintenance state, but a consequential mutation requires explicit user confirmation. Deterministic assistance is permitted in Phase 1 and is distinct from autonomous automation.
-
-See also: Automation, Inference Review Queue, Phase 1.
-
-### Document
-
-An entity representing a document record, optionally backed by a local uploaded file. Documents should be linked to other entities through relationships rather than embedded inside them.
-
-See also: Entity, Relationship, Asset.
-
-### Domain
-
-A meaningful area of records in the platform, usually represented by an entity type such as People, Organisations, Locations, Projects, Documents or Assets.
-
-See also: Entity, Phase 1.
-
-## E
-
-### Entity
-
-A canonical record for one real-world object or meaningful thing in the platform.
-
-See also: Canonical Record, Domain, Relationship.
-
-### Entity Page
-
-The main page for viewing and working from a single entity. It should expose structured fields, relationships, notes and related views for that entity.
-
-See also: Detail Page, Relationship, Notes.
-
-### Evidence Fingerprint
-
-A stable digest of an inference rule, inferred date and supporting relationship rows. It identifies material evidence changes and prevents an unchanged rejected suggestion from reappearing.
-
-See also: Inference Review Queue, Relationship.
-
-### Event
-
-A first-class entity representing something that occurs, occurred or is expected to occur at an instant or over an interval. An Event may be physical, remote, virtual, inferred or derived and may relate to any suitable entity through Relationships.
-
-### Experience Philosophy
-
-The experience-level authority describing why Project E should feel and behave as it does. It guides navigation, information layers, page architecture and visual character without defining low-level tokens or component specifications.
-
-See also: Design System, Entity Page, Super Key.
-
-### Export
-
-Either a whole-platform portability bundle or a Calendar interchange download. The portability export is a versioned, checksummed local ZIP containing a consistent canonical database snapshot and its referenced uploaded documents. Calendar export is a selected ZIP of ordinary iCalendar members for interoperability and is not a backup.
-
-See also: Import, iCalendar, Local-first.
-
-## I
-
-### IANA Timezone
-
-A named timezone from the installed IANA timezone database, such as `Australia/Brisbane` or `America/New_York`. Calendar and Event controls select and store this identifier; the local selector can be searched by current UTC offset, country, place or identifier. It never stores a display label or a fixed offset in place of the identifier.
-
-### iCalendar
-
-The RFC-style Calendar interchange format used by `.ics` and `.ical` files. Project E previews and validates a deliberately lossless supported subset before importing canonical local Events or exporting Calendar members. It is distinct from whole-platform portability and from renewable Calendar subscriptions.
-
-See also: Calendar Subscription, Export, Import.
-
-### Import
-
-Either a confirmed whole-platform restoration or a previewed Calendar interchange operation. Portability import restores a validated bundle into an empty Project E target. Calendar import explicitly adds supported iCalendar Events to a selected local Calendar, optionally creating that Calendar, and never creates a subscription.
-
-See also: Export, Canonical Record, iCalendar.
-
-### Inference-created Relationship
-
-A normal editable relationship created when a user confirms a deterministic suggestion. It behaves like a manually entered relationship while retaining inference provenance and evidence-health metadata for auditability.
-
-See also: Inference Review Queue, Relationship.
-
-### Inference Review Queue
-
-A review workspace containing deterministic relationship suggestions that are not relationship records until confirmed. Completed batches archive automatically; one archive control reveals fully expanded searchable history with per-decision undo.
-
-See also: Evidence Fingerprint, Inference-created Relationship, Relationship.
-
-## J
-
-### Job Run
-
-One execution attempt of a Scheduled Job and its result.
-
-### Journal Entry
-
-A timestamped plain-text observation stored as an individual record against a Person. Journal entries appear chronologically and may be edited, archived or permanently deleted. Archiving hides an entry from the active journal without deleting it.
-
-See also: Person, Notes.
-
-## L
-
-### Local-first
-
-The principle that the user's local database and files are the primary source of truth, and the platform remains useful without WAN or cloud services.
-
-See also: Repository Source of Truth, Phase 1.
-
-### Location
-
-An entity representing a place, address or meaningful area. Locations are the canonical home for address and coordinate information.
-
-See also: Entity, Map Layer, Relationship.
-
-## M
-
-### Map Layer
-
-A map view grouping derived from canonical entities and relationships. A map layer should not create a separate source of truth.
-
-See also: Dashboard, Location, Relationship.
-
-### Measurement
-
-A numeric value associated with a unit and category, such as length, mass or temperature. Measurements are stored in their category's canonical unit independently of how they are displayed.
-
-See also: Canonical Unit, Structured Data.
-
-## N
-
-### Notification
-
-An actionable local-Inbox attention item, currently produced for due reminders. One occurrence/reason has at most one active or snoozed item, and each configured timing may deliver once. Event reminder attention resolves when opened or when the occurrence ends; persistent Document-expiry attention requires dismissal or a source-condition change. A Notification is distinct from a Persistent Issue, Audit Event and Job Run.
-
-### Notes
-
-Free-text supporting information attached to an entity or relationship. Notes are useful for context, but important categories and statuses should be structured fields where practical.
-
-See also: Structured Data, Controlled Field.
-
-## O
-
-### Odysseus
-
-The leading candidate for Project E's future AI/agent layer and a possible integration or fork target. It is not part of the current architecture; future work should adapt Odysseus to a mature Project E platform rather than restructure Project E around it.
-
-See also: Artificial Intelligence, Phase 1.
-
-### Organisation
-
-An entity representing a company, institution, group, agency, club, team or other organised body.
-
-See also: Entity, Person, Location.
-
-## P
-
-### Person
-
-An entity representing a real person.
-
-See also: Entity, Organisation, Relationship.
-
-### Persistent Issue
-
-A deferred operational concept for a durable system-health or configuration condition whose one current record would change state over time. It would be deduplicated rather than creating recurring Inbox items merely because it remains unresolved. Project E has no current Persistent Issue record type or System Health workflow.
-
-### Phase 1
-
-The completed foundational phase of Project E: a local-first Personal Information Platform for entities, relationships, navigation, forms and storage. It permitted deterministic assistance that preserves user control, but excluded AI, chat, dispatcher architecture, decision support, autonomous automation and scheduling.
-
-See also: Deterministic Assistance, Local-first, Artificial Intelligence.
-
-### Phase 2
-
-The in-progress operational time and deterministic-automation phase. It is not complete until its agreed capabilities work coherently and pass an end-to-end completion review. AI is excluded from its initial implementation.
-
-See also: Event, Calendar Projection, Reminder, Scheduled Job.
-
-### Platform Timezone
-
-The initial single-user time interpretation and display zone, `Australia/Brisbane`. Calendars default to this IANA zone, while individual timed Events may select another IANA timezone. Precise instants are stored in UTC and displayed through the selected timezone.
-
-### Project
-
-An entity representing ongoing work, an area of responsibility or an organising context. A Project is not a task-management record in Phase 1.
-
-See also: Entity, Relationship.
-
-### Provenance
-
-A lightweight origin classification for a field or relationship.
-
-## R
-
-### Recycle Bin
-
-The platform-wide view of soft-deleted entities and relationships. It supports selective restore; entities may also be permanently deleted after explicit confirmation, active/recycled dependency warnings and recovery backup creation.
-
-See also: Deleted, Archived.
-
-### Reference Data
-
-Shared controlled records, such as countries, languages, currencies or measurement units, that entity fields link to instead of duplicating labels as text.
-
-See also: Controlled Field, Structured Data.
-
-### Relationship
-
-A first-class record connecting two entities. Relationships should be stored, displayed, edited and navigated directly.
-
-See also: Entity, Relationship Category, Relationship Type.
-
-### Relationship Category
-
-A broad grouping for relationship types, such as Family, Location, Document, Role or Other. Categories help organise relationship choices and display.
-
-### Relationship Type
-
-A specific kind of relationship between two entities, including its direction and display labels where needed.
-
-See also: Relationship, Relationship Category.
-
-### Relationship type definition
-
-Relationship-specific behavior attached to a selectable Relationship Type taxonomy entry: valid endpoint types, canonical direction or symmetry, perspective roles and natural inverse display labels.
-
-See also: Relationship, Relationship Type.
-
-### Reminder
-
-A notification or attention policy attached to a record, cached external occurrence or derived occurrence. Calendar and record controls use repeatable positive-integer/unit rows, rather than comma-separated text or a policy-state picker. A canonical Event without specific rows inherits its linked local Calendar timings; a cached URL Calendar occurrence uses its Calendar Subscription timings without gaining an item-level override. An Event can resolve to at most ten effective reminders. Delivery history is a notification record, not the reminder's canonical definition.
-
-### Repository Source of Truth
-
-The current repository docs and code that future contributors should rely on when deciding how Project E works. Previous chat sessions are not source of truth unless reflected in the repository.
-
-See also: Architecture Decision Record (ADR), Local-first.
-
-## S
-
-### Scheduled Job
-
-Database-backed executable background work using a registered application handler, schedule and run history. A Scheduled Job is not a Calendar Event or Reminder.
-
-### Specialised View
-
-A focused page rendering of a canonical entity or connected information for a particular task, such as Relationships, Family Tree, Timeline, Documents, Map or Audit. It is a view over existing records, not a duplicate source of truth.
-
-See also: Entity Page, Canonical Record.
-
-### Structured Data
-
-Information captured in named fields or relationships rather than only in free text. Structured data should be used for facts that need filtering, validation, navigation or reuse.
-
-See also: Notes, Controlled Field.
-
-### Super Key
-
-A persistent deterministic quick-navigation control for short codes, concise destination names and one-step navigation. It is the **Go** intention and remains distinct from browsing the platform, global information Search, natural-language assistance and consequential commands.
-
-See also: Experience Philosophy, Entity Page.
-
-## T
-
-### Task
-
-The name of a retired experimental work-management entity. Migration `20260801_31_retire_task_subsystem` removed the Task entity type, lists, deadlines, sessions, relationships, reminders and proposal infrastructure after the local database was verified to contain no Task records. Task is not current product terminology; any future to-do capability requires a new design.
-
-### Taxonomy
-
-A reusable local hierarchy containing Type, optional Subtype and optional Specific subtype. A record stores one selected terminal entry representing the whole path. Archived entries remain readable on existing records but are unavailable for new selection.
-
-### Temporal Occurrence Pipeline
-
-The shared route by which an Event schedule, cached external occurrence or eligible date owned by another canonical record becomes a stable, traceable occurrence for Calendar projection, reminder evaluation, delivery reconciliation and Inbox attention. The source record retains ownership of its date, and using the pipeline does not by itself create a canonical Event. Non-temporal approvals and system failures do not use this pipeline.
-
-See also: Derived Occurrence, Calendar Projection, Reminder, Notification.
-
-### Timeline event
-
-A derived real-world occurrence, separate from operational audit history.
+Use this document for Project E terms whose meanings are easy to confuse. Canonical domain meaning belongs in [Ontology](ontology.md); current runtime and storage details belong in [Architecture](architecture.md) and [Database Design](database_design.md).
+
+## Identity and lifecycle
+
+| Term | Meaning |
+| --- | --- |
+| **Canonical record** | The single preferred record for one real-world object. Views and caches may project it but do not become competing truth. |
+| **Entity** | A canonical Person, Organisation, Location, Project, Document, Asset or Event with stable shared identity and typed data. |
+| **Relationship** | A first-class canonical assertion connecting two entities. Reverse navigation is derived from one stored direction. |
+| **Relationship Type definition** | Taxonomy-backed endpoint, direction and perspective-label rules for a selectable Relationship Type. |
+| **Archived** | Inactive within a record's normal domain; retained and not placed in the Recycle Bin. |
+| **Deleted** | Soft-deleted, hidden from ordinary platform use and recoverable from the Recycle Bin. |
+| **Recycle Bin** | The platform view for restoring deleted entities/Relationships or entering confirmed permanent entity deletion. |
+| **Alias** | A normalized repeatable alternate entity name used by retrieval and duplicate review. |
+| **Approximate date** | The closest known date plus an uncertainty marker—not a date range or partial date. |
+
+## Classification and structured values
+
+| Term | Meaning |
+| --- | --- |
+| **Controlled field** | A structured domain field with known allowed or suggested values; custom values exist only where explicitly permitted. |
+| **Reference data** | Stable reusable flat catalogue values, such as languages or regions, linked instead of copied as text. |
+| **Taxonomy** | A reusable local hierarchy of Type, optional Subtype and optional Specific subtype. A record selects one terminal path. |
+| **Measurement / canonical unit** | A numeric fact stored in its category's standard unit while retaining the user's display unit. |
+| **Structured data** | Named typed fields, references or Relationships used when validation, filtering, navigation or reuse matters. |
+| **Notes** | Supporting free text; important categories or statuses should remain structured where practical. |
+
+## Time and attention
+
+| Term | Meaning |
+| --- | --- |
+| **Event** | A canonical real-world occurrence with one local Calendar, bounded timed or all-day schedule and ordinary Relationships. |
+| **Calendar** | The sole local Event grouping/configuration record. It is not an independent Event store. |
+| **Calendar Subscription** | A configured read-only public-HTTPS iCalendar source with operational settings and last-known-good cache; its items are not canonical Events. |
+| **Calendar projection** | A time display derived from Events or other traceable occurrences; display does not grant Event identity. |
+| **Temporal occurrence** | A stable logical instance adapted from a source fact for Calendar, reminder and Inbox processing. The source retains ownership of its date. |
+| **Reminder** | Policy deciding when an occurrence should attract attention; it is behaviour, not an entity or delivered item. |
+| **Inbox item / notification** | Durable actionable attention produced for a due condition, distinct from its source and reminder definition. |
+| **Persistent issue** | A deferred concept for one durable current system/configuration condition. No current Persistent Issue or System Health record exists. |
+| **IANA timezone** | A named regional timezone such as `Australia/Brisbane`; precise instants persist in UTC. |
+| **iCalendar** | The `.ics` interchange format used for bounded preview-first Calendar import/export and read-only external sources. |
+
+## Derived, operational and historical records
+
+| Term | Meaning |
+| --- | --- |
+| **Derived projection** | Reproducible output such as a Timeline item, marker, recurring occurrence or data-quality finding; not independently edited truth. |
+| **Timeline item** | A derived real-world chronological fact, separate from operational audit history. |
+| **Audit event** | Append-only history of a platform mutation or finding disposition; not a canonical Event. |
+| **Data-quality finding** | A deterministic recalculated warning; only user disposition/notes persist. |
+| **Scheduled Job** | Registered local background work with schedule, recovery policy and run history; not a Calendar Event or arbitrary code. |
+| **Job Run** | One execution attempt for a Scheduled Job. |
+| **Automation Rule** | Registered deterministic trigger/action configuration containing no executable user code. |
+| **Automation Run** | One idempotent execution of an Automation Rule for a stable trigger identity. |
+| **Provenance** | Attributable origin information for a fact, record or derived proposal. |
+| **Journal entry** | A timestamped observation linked to an entity; currently exposed for People only. |
+
+## Review and assistance
+
+| Term | Meaning |
+| --- | --- |
+| **Inference suggestion** | A non-canonical, reviewable candidate Relationship derived from existing evidence. |
+| **Evidence fingerprint** | Stable identity for the evidence supporting an inference, used to suppress unchanged rejection and detect change. |
+| **Inference-created Relationship** | An ordinary confirmed Relationship retaining its rule, evidence and source suggestion. |
+| **Deterministic assistance** | Explainable rule-based help or maintenance that stays within documented validation and user-control boundaries. |
+| **Artificial intelligence / agent capability** | A separately authorised future capability using model interpretation or agency. It is not Project E's foundation or current primary focus. |
+| **Odysseus** | A possible future integration/fork target, not a current dependency or promise. |
+
+## Navigation, project and repository terms
+
+| Term | Meaning |
+| --- | --- |
+| **Local-first** | Core records and workflows remain useful without WAN access; optional network aids are replaceable. |
+| **Super Key / Go** | Deterministic quick navigation to one known route, distinct from Browse, Search, chat and commands. |
+| **Specialised view** | A focused representation such as Timeline, Map, Family Tree or Audit over existing canonical/operational sources. |
+| **Architecture Decision Record (ADR)** | A retained decision explaining an important structural choice, rationale and consequence. |
+| **Repository source of truth** | Current code and repository documentation, not prior chat handoffs. |
+| **Task** | A retired experimental entity removed by migration `20260801_31_retire_task_subsystem`; future work management requires a new design. |
+
+Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is planning only. Their detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.

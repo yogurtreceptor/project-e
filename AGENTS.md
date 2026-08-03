@@ -47,7 +47,7 @@ Load only the documents relevant to the task:
 - Purpose and direction: `PROJECT_GOAL.md`, `ROADMAP.md`.
 - Delivered phases and active planning: `docs/phase_1_spec.md`, `docs/phase_2_workspace.md`, `docs/phase_3_spatial_intelligence_planning.md`.
 - Current technical contracts: `docs/architecture.md`, `docs/database_design.md`, `docs/ontology.md`, `docs/glossary.md`, `ARCHITECTURE_DECISIONS.md`.
-- Experience and UI: `docs/experience_philosophy.md`, `docs/design/`, `docs/ui_principles.md`.
+- Experience and UI: `docs/experience_philosophy.md` for principles, then only the responsible file under `docs/design/`.
 - Operations: `SECURITY.md`, `docs/reviews/technical_debt_register.md`, `docs/build_log.md`.
 
 Use headings and search terms to open the relevant section before loading a long reference wholesale. In particular, search ADR titles, glossary terms and recent build-log dates rather than reading those files end to end.

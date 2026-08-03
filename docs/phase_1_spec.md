@@ -43,7 +43,7 @@ Projects, Documents and Assets are included to prove the entity architecture sca
 
 Delivered foundations include architecture, the shared entity model, relationships, entity pages, search, maps, additional domains, schema governance, data-quality safeguards, entity-local and universal derived timelines, and deterministic family inference.
 
-Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Phase 1 is complete as a development milestone and PR #1 is closed. Its verification was representative rather than exhaustive; residual defects are normal maintenance work and do not reopen Phase 1 as a whole. This specification documents delivered Phase 1 behaviour, not current task priority. Phase 2 continues through its [living workspace](phase_2_workspace.md).
+Portable import/export, recovery backups and the recycled-relationship consolidation policy are implemented. Phase 1 is complete as a development milestone and PR #1 is closed. Its verification was representative rather than exhaustive; residual defects are normal maintenance work and do not reopen Phase 1 as a whole. This specification documents delivered Phase 1 behaviour, not current task priority. Phase 2 is also complete; its delivered operational-time boundary is recorded in the [Phase 2 workspace](phase_2_workspace.md).
 
 The current product serves one private user without authentication. This is a present scope choice, not a permanent prohibition on future trusted multi-user support.
 
@@ -98,7 +98,7 @@ Projects and Documents are never map markers.
 
 ## Platform-derived views
 
-The Information Platform delivered by Phase 1 is complete as a development milestone. Phase 2 continues through its expanded workspace; detailed delivery status and remaining scope belong in [the Phase 2 workspace](phase_2_workspace.md).
+The Information Platform delivered by Phase 1 is complete as a development milestone. The completed Phase 2 operational-time boundary belongs in [the Phase 2 workspace](phase_2_workspace.md); current direction belongs in the [Roadmap](../ROADMAP.md).
 
 Phase 1 includes generic mutation audit events and lightweight provenance; registry-driven advanced query filters; deterministic data-quality findings with saved dispositions; and entity-local plus Universal Timeline views derived from canonical dates and relationships. The Universal Timeline de-duplicates relationship events, links every entry to its canonical entity or relationship, and supports simple entity/date/direct-relation filters. Audit and timeline histories remain separate.
 
