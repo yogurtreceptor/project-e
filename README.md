@@ -110,7 +110,7 @@ python3 -m compileall app run.py tests
 | [Project goal](PROJECT_GOAL.md) | [Architecture](docs/architecture.md) · [Database design](docs/database_design.md) · [Ontology](docs/ontology.md) |
 | [Phase 1 specification](docs/phase_1_spec.md) | [Architecture decisions](ARCHITECTURE_DECISIONS.md) · [Glossary](docs/glossary.md) |
 | [Phase 2 workspace](docs/phase_2_workspace.md) · [Phase 3 planning](docs/phase_3_spatial_intelligence_planning.md) | [Experience philosophy](docs/experience_philosophy.md) · [Design system](docs/design/README.md) |
-| [Roadmap](ROADMAP.md) · [Future direction](docs/future_direction.md) | [Build history](docs/build_log.md) · [Technical debt](docs/reviews/technical_debt_register.md) |
+| [Roadmap and future direction](ROADMAP.md) | [Build history](docs/build_log.md) · [Technical debt](docs/reviews/technical_debt_register.md) |
 | [Contributing](CONTRIBUTING.md) · [Agent workflow](AGENTS.md) | [Security policy](SECURITY.md) · [Copyright](COPYRIGHT.md) |
 
 ## Portability and recovery

@@ -8,6 +8,7 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 - Replaced repeated full migration replay in ordinary database-backed tests with isolated copies of one current-schema fixture; retained real fresh/upgrade paths in migration tests and kept all 287 behavioural tests.
 - Consolidated completed design planning/evidence into the design index, compressed the completed Phase 2 diary into its delivered contract and grouped ledger, and shortened agent instructions with task-specific documentation routing.
+- Rewrote architecture, database and ontology references around current ownership, invariants and meaning; merged the overlapping future-direction document into a single horizon-based roadmap; condensed the historical domain-form audit and current route catalogue.
 
 ### Phase 2 closure and Phase 3 spatial planning
 

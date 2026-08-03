@@ -1,47 +1,100 @@
-# Roadmap
+# Roadmap and Future Direction
 
-This roadmap is directional guidance, not implementation authority or a rigid release checklist. Delivered Phase 1 behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md); completed Phase 2 scope and evidence belong in [the Phase 2 workspace](docs/phase_2_workspace.md); evolving Phase 3 direction belongs in [the Spatial Intelligence planning workspace](docs/phase_3_spatial_intelligence_planning.md); unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
+This document combines phased direction and longer-term possibilities. It is context, not implementation authority or a release checklist. An implementation prompt must explicitly authorise work.
 
-## Phase 1 — Information Platform
+Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md) and [Phase 2 record](docs/phase_2_workspace.md). Evolving Phase 3 detail belongs in its [planning workspace](docs/phase_3_spatial_intelligence_planning.md). Unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
-Phase 1 establishes canonical People, Organisations, Locations, Projects, Documents, Assets and Relationships; local SQLite persistence; reusable profiles and retrieval; maps and local documents; journals and timelines; taxonomies and reference data; audit history and provenance; duplicate merging; explainable data-quality checks and reviewed deterministic inference; and recoverable entity and relationship lifecycles.
+## Phase status
 
-### Status: Complete
+| Phase | Status | Outcome |
+| --- | --- | --- |
+| 1 · Information Platform | Complete | Canonical entities and Relationships; local documents; Search, Map and Timeline; taxonomies/reference data; audit/provenance; data quality, reviewed inference, merge and recovery. |
+| 2 · Operational Time | Complete | Canonical Events and Calendars; recurrence; reminder policies and durable Inbox attention; registered scheduling and deterministic automation; Calendar interchange and portability. |
+| 3 · Spatial Intelligence | Planning | Richer Location semantics, local spatial data, Map 2.0, journey planning, mobility/routing policy, travel-time and reachability tools. |
 
-Pull request #1 is closed and Phase 1 is complete enough to close as a development milestone. Its closure is based on representative verification, not exhaustive manual testing of every capability. Residual defects may still be found and are handled through normal maintenance without reopening Phase 1 as a whole. The closure record is the [Phase 1 review](docs/reviews/phase_1_exit_review.md).
+Phase closure means a representative development milestone is complete. It does not claim exhaustive verification, a stable public release or absence of ordinary maintenance defects.
 
-## Phase 2 — Operational Time and Deterministic Automation
+The experimental Task subsystem was retired during Phase 2 after it produced no useful user data. Future work management requires a fresh authorised design and is not constrained by that model.
 
-### Status: Complete
+## Current direction: Spatial Intelligence
 
-Phase 2 establishes the platform's operational time and automation foundation. The direction is:
+Phase 3 aims to make place, geometry, distance, movement, travel time and reachability useful across existing canonical records without turning maps or routing data into a rival source of truth.
 
-```text
-structured information → relationships → temporal information → events → calendar projections → reminders and attention management → scheduling → deterministic automation
-```
+Candidate outcomes include:
 
-The work is human-first, database-first, local-first and AI-independent. Phases 2A–2F and the authorised Event, Calendar and operational refinements closed after integrated review of Calendar/Event, reminder/Inbox, scheduler, deterministic automation, portability and recovery behaviour. The unsuccessful experimental Task subsystem was retired on 2026-08-01; future work management is neither promised nor constrained by that design. Persistent System Health, AI and external side effects remain outside the completed milestone. The canonical scope, delivery record, exclusions and closure evidence are in [the Phase 2 workspace](docs/phase_2_workspace.md) and [Phase 2 closure review](docs/reviews/phase_2_exit_review.md).
+- stronger canonical Location and address semantics;
+- optional regional spatial data packs;
+- richer map layers and spatial record views;
+- journey planning linked to Events and destinations;
+- personal mobility profiles and explainable routing policies;
+- travel-time matrices, nearby exploration, reachability and location comparison.
 
-## Phase 3 — Spatial Intelligence
+The desired end state can change as authorised work and real use expose better priorities. The Phase 3 workspace records decisions and open questions; it does not grant permission to implement its candidates.
 
-### Status: Planning in progress
+## Platform before intelligence
 
-Make location, geometry, distance, movement, travel time and reachability useful operational concepts across Project E. The intended direction includes stronger Location semantics, rich local spatial data, Map 2.0, journey planning, personal mobility profiles, explainable routing policies, travel-time and reachability tools, and integration with Events and other canonical records.
+Project E is a Personal Information Platform, not an AI application with a database attached. Its first obligation is dependable human use: trustworthy capture, clear navigation, durable relationships, strong retrieval and safe maintenance of private information.
 
-The phase is framed by a desired end state rather than a fixed implementation sequence. Capabilities may be revised, dropped or added as authorised work and real use establish what is practical. The [Phase 3 Spatial Intelligence planning workspace](docs/phase_3_spatial_intelligence_planning.md) records accepted direction, candidate capabilities and open questions; it is not implementation authority.
+AI and agent workflows are postponed indefinitely as a primary focus and are not assigned to a numbered phase. A small bounded capability may be considered only when it solves a demonstrated need and is explicitly authorised.
 
-## Unnumbered future directions
+Any future human interface, deterministic integration or AI capability should use one shared capability surface:
 
-AI assistance and agent workflows are postponed indefinitely as a primary focus rather than promised for Phase 4 or another numbered milestone. Small, bounded and attributable capabilities may still be considered through explicit authorisation when they solve a demonstrated need and remain grounded in canonical records, validation, privacy, audit, recovery and user control. [Odysseus](docs/future_direction.md#odysseus) remains a possible future integration or fork target, not a present dependency.
+- canonical entities and Relationships;
+- validated domain operations;
+- provenance and append-only audit;
+- data-quality and review workflows;
+- consequence-appropriate confirmation and authority;
+- recoverable writes and local data ownership.
 
-## Deferred relationship evolution
+There must be no privileged “AI path” that bypasses business rules or creates a parallel source of truth. Search indexes, summaries, embeddings or model context—if ever introduced—are disposable traceable projections.
 
-Do not treat richer relationship evidence as an incidental field addition. Confidence scores, confidence/source attribution, evidence/provenance, richer provenance and verification workflows require a deliberate model that distinguishes asserted facts, supporting material and review state. They are planned after the Phase 1 foundation unless a concrete foundational need changes that priority.
+## Decision gates for bounded AI or agency
 
-## Across every phase
+Before authorising an AI/agent capability, require:
 
-- SQLite and the local database remain the canonical source of truth.
-- Core operation remains local-first; optional services must be replaceable.
-- Human users, deterministic operations and any future explicitly authorised assistance converge on shared platform capabilities.
-- Validation, relationships, audit history, provenance, recovery and user control remain strategic infrastructure.
-- Roadmap entries never authorise implementation on their own.
+1. a concrete problem that deterministic or ordinary UI work cannot reasonably solve;
+2. representative human use of the affected domain;
+3. stable machine-readable queries and validated write operations;
+4. complete provenance, mutation audit and recovery for the proposed action;
+5. a clear authority, review and failure model;
+6. an acceptable local/offline and private-data boundary;
+7. no autonomous external effect unless separately and explicitly authorised.
+
+Read-only interpretation may justify a lighter gate than canonical mutation. Consequential changes always remain attributable, reviewable and reversible where practical.
+
+## Odysseus
+
+Odysseus is a possible future integration or fork target, not a current dependency or promise. Project E should not be reorganised around it in advance.
+
+Serious evaluation waits until Project E is independently useful, coherently machine-readable and safely machine-writable through stable platform capabilities. If that point arrives, Project E's canonical model, local-first constraints and safety rules govern the integration—not Odysseus internals.
+
+Questions for a future evaluation include licensing/deployment fit, local model support, tool and permission boundaries, durable task state, audit integration, context privacy, failure recovery and long-term fork maintenance.
+
+## Other unnumbered directions
+
+### Relationship knowledge
+
+Confidence, source attribution, supporting evidence, richer provenance and verification state require a deliberate knowledge model. They should distinguish user assertions, evidence and derived conclusions rather than add unrelated optional columns to Relationships.
+
+Advanced graph traversal and indirect discovery should remain explainable and preserve canonical Relationship identity. They are future work unless a concrete foundational need receives explicit authorisation.
+
+### Contact methods and journals
+
+Phone, email and website remain simple direct fields. A reusable Contact Method record becomes worthwhile only when multiple values, validity periods or communication history justify its lifecycle. It must not silently create a Communications domain.
+
+Journal storage is entity-capable, but the current product exposes Person journals only. Generalisation should follow demonstrated workflows rather than a desire for symmetry.
+
+### Operational coverage
+
+Audit vocabulary grows with real capabilities. Future imports, synchronisation, plugins, model suggestions or external actions must add attributable audit records when those capabilities are implemented; placeholder event streams are not useful in advance.
+
+Persistent System Health, external notification channels, mobile workflows, multi-user permissions, distributed workers/queues and cloud dependencies remain separately authorised directions, not implied next steps.
+
+## Principles across every horizon
+
+- SQLite and local files remain the canonical private store.
+- Core operation remains local-first; optional network services are replaceable.
+- One real object has one canonical record; views and caches remain traceable projections.
+- Human users and any authorised machine consumers share validation, audit, provenance and recovery boundaries.
+- Consequential canonical mutation requires explicit user control.
+- Plans, roadmap entries and prototypes never authorise implementation by themselves.

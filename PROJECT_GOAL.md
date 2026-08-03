@@ -19,4 +19,4 @@ Phases 1 and 2 are complete development milestones. Phase 2 delivered the local 
 
 Project E currently serves one private user without authentication. Future trusted multi-user use is possible, but is not a current requirement; new design choices should avoid needlessly making it impossible.
 
-See the [roadmap](ROADMAP.md) for phased guidance and [future direction](docs/future_direction.md) for the long-term architecture and Odysseus relationship.
+See the [roadmap and future direction](ROADMAP.md) for phased guidance, long-term capability boundaries and the possible Odysseus relationship.
