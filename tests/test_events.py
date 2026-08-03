@@ -15,7 +15,6 @@ from app.db import (
     create_relationship,
     delete_entity,
     get_entity,
-    initialise_database,
     list_relationships_for_entity,
     restore_entity,
     search_entities,
@@ -49,14 +48,14 @@ from app.temporal import TemporalValueError
 from app import views
 from app.calendar_service import CalendarInput, create_calendar, get_calendar, list_calendars
 from app.reminder_service import get_override, get_policy
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import make_test_server, read_application_css
-
 
 class EventServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.database_path = Path(self.directory.name) / "events.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.connection = connect(self.database_path)
 
     def tearDown(self) -> None:

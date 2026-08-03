@@ -34,7 +34,7 @@ from app.calendar_subscription_service import (
     update_subscription_settings,
     validate_public_https_url,
 )
-from app.db import connect, initialise_database
+from app.db import connect
 from app.event_recurrence import (
     RecurrenceRule,
     get_recurrence,
@@ -67,6 +67,7 @@ from app.view_pages.calendar import (
     calendar_settings_export_page,
 )
 from app.view_pages.inbox import inbox_page
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import make_test_server
 
 
@@ -107,13 +108,12 @@ END:VEVENT\r
 END:VCALENDAR\r
 """
 
-
 class CalendarInterchangeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.database_path = Path(self.directory.name) / "calendar-interchange.sqlite3"
         self.staging_path = Path(self.directory.name) / "staging"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.connection = connect(self.database_path)
 
     def tearDown(self) -> None:
@@ -659,7 +659,7 @@ class CalendarInterchangeRouteTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.database_path = Path(self.directory.name) / "route.sqlite3"
         self.staging_path = Path(self.directory.name) / "staging"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.server = make_test_server(
             self.database_path, import_staging_dir=self.staging_path
         )

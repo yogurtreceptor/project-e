@@ -7,19 +7,19 @@ from app.db import (
     create_entity,
     create_reference_item,
     get_reference_item,
-    initialise_database,
     list_entity_reference_values,
     list_reference_items,
     replace_entity_reference_values,
 )
 from app.entities import DEFINITIONS_BY_TYPE
+from tests.database_test_support import initialise_test_database
 
 
 class ReferenceDataTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "reference.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.connection = connect(self.database_path)
 
     def tearDown(self) -> None:

@@ -17,16 +17,17 @@ from app.calendar_service import (
     unarchive_calendar,
     update_calendar,
 )
-from app.db import connect, initialise_database
+from app.db import connect
 from app.db_schema import create_schema
 from app.event_service import EventInput, EventUpdate, create_event, get_event, update_event
+from tests.database_test_support import initialise_test_database
 
 
 class CalendarServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.database_path = Path(self.directory.name) / "calendars.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.connection = connect(self.database_path)
         self.general_id = self.connection.execute(
             "SELECT id FROM calendars WHERE is_default = 1 AND kind = 'event'"

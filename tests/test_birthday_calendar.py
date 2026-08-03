@@ -2,19 +2,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.db import connect, create_entity, delete_entity, initialise_database, restore_entity
+from app.db import connect, create_entity, delete_entity, restore_entity
 from app.db_schema import create_schema
 from app.entities import DEFINITIONS_BY_TYPE
 from app.event_recurrence import get_recurrence
 from app.event_service import EventInput, create_event, get_event
 from app.reminder_service import get_policy, set_policy
+from tests.database_test_support import initialise_test_database
 
 
 class BirthdayCalendarTests(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "birthdays.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
         self.connection = connect(self.path)
 
     def tearDown(self) -> None:

@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.db import connect, create_entity, create_relationship, get_entity, get_relationship, initialise_database
+from app.db import connect, create_entity, create_relationship, get_entity, get_relationship
 from app.entities import DEFINITIONS_BY_SLUG
 from app.relationships import relationship_types_for_pair
 from app.taxonomy import (
@@ -17,13 +17,14 @@ from app.taxonomy import (
 )
 from app.view_pages.forms import taxonomy_field
 from app import views
+from tests.database_test_support import initialise_test_database
 
 
 class TaxonomyTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.path = Path(self.temp.name) / "taxonomy.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
 
     def tearDown(self):
         self.temp.cleanup()

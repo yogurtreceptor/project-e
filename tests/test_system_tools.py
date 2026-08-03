@@ -4,8 +4,9 @@ from pathlib import Path
 
 from app import views
 from app.audit import AuditFilters, list_audit_events
-from app.db import connect, create_entity, create_relationship, initialise_database
+from app.db import connect, create_entity, create_relationship
 from app.entities import DEFINITIONS_BY_TYPE
+from tests.database_test_support import initialise_test_database
 
 
 class SystemToolsViewTests(unittest.TestCase):
@@ -68,7 +69,7 @@ class SystemAuditTests(unittest.TestCase):
     def test_filters_events_by_action_and_record_kind(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "audit.sqlite3"
-            initialise_database(path)
+            initialise_test_database(path)
             with connect(path) as connection:
                 person = DEFINITIONS_BY_TYPE["person"]
                 first = create_entity(connection, person, {"display_name": "First", "given_name": "First"})

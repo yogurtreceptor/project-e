@@ -8,7 +8,6 @@ from app.db import (
     create_entity,
     get_entity,
     get_measurement,
-    initialise_database,
     list_reference_items,
     list_units,
     normalise_form_values,
@@ -16,13 +15,14 @@ from app.db import (
     validate_entity_values,
 )
 from app.entities import DEFINITIONS_BY_TYPE
+from tests.database_test_support import initialise_test_database
 
 
 class OptionalReferenceMeasurementTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "optional.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.connection = connect(self.database_path)
         self.people = DEFINITIONS_BY_TYPE["person"]
 

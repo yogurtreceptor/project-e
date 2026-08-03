@@ -4,6 +4,11 @@ Historical summary only. Current behaviour is defined by the implemented code an
 
 ## 2026-08-03
 
+### Test and documentation maintenance
+
+- Replaced repeated full migration replay in ordinary database-backed tests with isolated copies of one current-schema fixture; retained real fresh/upgrade paths in migration tests and kept all 287 behavioural tests.
+- Consolidated completed design planning/evidence into the design index, compressed the completed Phase 2 diary into its delivered contract and grouped ledger, and shortened agent instructions with task-specific documentation routing.
+
 ### Phase 2 closure and Phase 3 spatial planning
 
 - Closed Phase 2 as a completed development milestone after the owner accepted the delivered experience and authorised final status alignment; retained ordinary residual defects as maintenance rather than reopening the phase.

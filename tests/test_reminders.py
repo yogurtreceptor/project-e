@@ -3,20 +3,21 @@ import unittest
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.db import connect, create_entity, delete_entity, initialise_database
+from app.db import connect, create_entity, delete_entity
 from app.entities import DEFINITIONS_BY_TYPE, EVENT_DEFINITION
 from app.event_service import EventInput, create_event
 from app.event_recurrence import RecurrenceRule, cancel_occurrence, get_recurrence, set_recurrence, split_series
 from app.reminder_service import (act_on_inbox_item, disable_policy,
     evaluate_due_reminders, get_policy, list_inbox_items, open_inbox_item,
     set_override, set_policy)
+from tests.database_test_support import initialise_test_database
 
 
 class ReminderFoundationTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "reminders.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
         self.connection = connect(self.path)
 
     def tearDown(self):

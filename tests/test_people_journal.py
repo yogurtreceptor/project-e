@@ -11,18 +11,18 @@ from app.db import (
     delete_journal_entry,
     get_entity,
     get_journal_entry,
-    initialise_database,
     list_journal_entries,
     update_journal_entry,
 )
 from app.entities import DEFINITIONS_BY_SLUG
+from tests.database_test_support import initialise_test_database
 
 
 class PeopleJournalTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "journal.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
         with connect(self.database_path) as connection:
             self.person_id = create_entity(

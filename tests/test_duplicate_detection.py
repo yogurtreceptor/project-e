@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-from app.db import connect, create_entity, get_entity, initialise_database, list_entities
+from app.db import connect, create_entity, get_entity, list_entities
 from app.duplicate_detection import find_duplicate_entities
 from app.entities import DEFINITIONS_BY_SLUG
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import make_test_server
 
 
@@ -15,7 +16,7 @@ class DuplicateDetectionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "duplicates.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
 
     def tearDown(self) -> None:

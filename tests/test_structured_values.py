@@ -6,13 +6,13 @@ from app import views
 from app.db import (
     connect,
     create_entity,
-    initialise_database,
     normalise_form_values,
     normalise_relationship_values,
     validate_entity_values,
     validate_relationship_values,
 )
 from app.entities import DEFINITIONS_BY_SLUG
+from tests.database_test_support import initialise_test_database
 
 
 class StructuredValueTests(unittest.TestCase):
@@ -85,7 +85,7 @@ class StructuredValueTests(unittest.TestCase):
     def test_relationship_dates_use_the_same_calendar_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "relationships.sqlite3"
-            initialise_database(database_path)
+            initialise_test_database(database_path)
             person = DEFINITIONS_BY_SLUG["people"]
             with connect(database_path) as connection:
                 first_id = create_entity(connection, person, {"display_name": "First"})

@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from app.db import connect, initialise_database, create_entity
+from app.db import connect, create_entity
 from app.entities import DEFINITIONS_BY_TYPE
 from app.audit import list_audit_events, get_provenance
 from app.data_quality import registry, resolve_finding
@@ -9,9 +9,12 @@ from app.discovery_repository import search_entities
 from app.timeline import registry as timeline_registry
 from app import views
 from app.entity_merge import record_entity_edit, list_entity_history
+from tests.database_test_support import initialise_test_database
+
+
 class PlatformTests(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory(); self.path=Path(self.tmp.name)/'e.db'; initialise_database(self.path); self.c=connect(self.path)
+        self.tmp=tempfile.TemporaryDirectory(); self.path=Path(self.tmp.name)/'e.db'; initialise_test_database(self.path); self.c=connect(self.path)
     def tearDown(self): self.c.close(); self.tmp.cleanup()
     def test_platform_services(self):
         eid=create_entity(self.c,DEFINITIONS_BY_TYPE['person'],{'display_name':'Ada','given_name':'Ada','family_name':'Lovelace','birthday':'1815-12-10'})

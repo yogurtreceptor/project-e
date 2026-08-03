@@ -3,19 +3,20 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from app.db import connect, initialise_database
+from app.db import connect
 from app.event_service import EventInput, create_event
 from app.scheduler_service import (
     ensure_registered_jobs, list_job_runs, list_scheduled_jobs, recover_at_startup,
     run_due_jobs, run_job_now, set_job_enabled,
 )
+from tests.database_test_support import initialise_test_database
 
 
 class SchedulerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "scheduler.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
         self.connection = connect(self.path)
 
     def tearDown(self) -> None:

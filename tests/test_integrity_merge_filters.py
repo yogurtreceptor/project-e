@@ -2,17 +2,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.db import connect, create_entity, create_relationship, get_entity_by_id, initialise_database, search_entities
+from app.db import connect, create_entity, create_relationship, get_entity_by_id, search_entities
 from app.entities import DEFINITIONS_BY_SLUG
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
 from app.integrity import audit_relationships
+from tests.database_test_support import initialise_test_database
 
 
 class DataIntegrityMergeAndFilterTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "milestone.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.people = DEFINITIONS_BY_SLUG["people"]
         self.organisations = DEFINITIONS_BY_SLUG["organisations"]
         self.locations = DEFINITIONS_BY_SLUG["locations"]

@@ -4,7 +4,7 @@ Thanks for helping improve Project E. The project is in active development, so f
 
 ## Before starting
 
-- Read [the project goal](PROJECT_GOAL.md), the current phase documentation and [the contributor instructions](AGENTS.md). Phase 1 behaviour is recorded in the [Phase 1 specification](docs/phase_1_spec.md); current Phase 2 scope and exclusions are recorded in the [Phase 2 workspace](docs/phase_2_workspace.md).
+- Read [the project goal](PROJECT_GOAL.md), the relevant phase document and [the contributor instructions](AGENTS.md). Phase 1 and Phase 2 are delivered milestones; Phase 3 is planning only and does not authorise implementation.
 - For a substantial feature or architectural change, open an issue before investing in implementation.
 - Treat roadmap items as context, not as automatically approved work.
 - Never include personal information, local databases, uploaded documents, logs, exports, backups or other runtime data in an issue, test fixture or commit.
@@ -28,6 +28,8 @@ Open `http://127.0.0.1:8000`. Runtime data is created under the Git-ignored `ins
 5. Keep commits concise and explain what changed and why. Do not mix unrelated changes.
 
 Schema changes must be migration-safe. When applicable, test both fresh database creation and upgrading an existing schema. Consequential mutations must require explicit user confirmation, and changes must remain within the current-phase boundaries in `AGENTS.md`.
+
+Ordinary database-backed tests should copy the isolated current-schema fixture through `tests/database_test_support.py`. Tests whose subject is schema creation or migration must use the real initialisation path. Preserve behavioural coverage; a smaller test count is not itself an improvement.
 
 ## Checks
 

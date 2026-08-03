@@ -4,14 +4,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.automation_service import dispatch, list_rules
-from app.db import connect, initialise_database
+from app.db import connect
+from tests.database_test_support import initialise_test_database
 
 
 class AutomationTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.path = Path(self.temporary.name) / "automation.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
         self.connection = connect(self.path)
 
     def tearDown(self):

@@ -33,14 +33,14 @@ from app.duplicate_detection import find_duplicate_entities
 from app.geo import build_map_payload
 from app.relationships import relationship_types_for_pair
 from app.relationship_workflow import create_inline_relationship_target
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import read_application_css
-
 
 class EntityDatabaseTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "test.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
         self.definition = DEFINITIONS_BY_SLUG["people"]
 
     def tearDown(self) -> None:

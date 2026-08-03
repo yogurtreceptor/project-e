@@ -10,7 +10,6 @@ from app.db import (
     create_relationship,
     delete_entity,
     get_entity_by_id,
-    initialise_database,
     permanent_delete_entity,
     restore_entity,
 )
@@ -32,6 +31,7 @@ from app.event_service import (
 from app.portability import apply_import_bundle, create_bundle, inspect_bundle
 from app.reminder_service import get_override, get_policy, set_override, set_policy
 from app.scheduler_service import recover_at_startup
+from tests.database_test_support import initialise_test_database
 
 
 class Phase2CloseoutWalkthroughTests(unittest.TestCase):
@@ -41,7 +41,7 @@ class Phase2CloseoutWalkthroughTests(unittest.TestCase):
             source_database = root / "source" / "project-e.sqlite3"
             source_documents = source_database.parent / "documents"
             source_documents.mkdir(parents=True)
-            initialise_database(source_database)
+            initialise_test_database(source_database)
 
             with connect(source_database) as connection:
                 project = create_entity(
@@ -283,7 +283,7 @@ class Phase2CloseoutWalkthroughTests(unittest.TestCase):
             target_database = root / "target" / "project-e.sqlite3"
             target_documents = target_database.parent / "documents"
             target_documents.mkdir(parents=True)
-            initialise_database(target_database)
+            initialise_test_database(target_database)
             self.assertEqual(
                 preview,
                 apply_import_bundle(

@@ -5,10 +5,11 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-from app.db import connect, create_entity, delete_entity, get_entity, initialise_database
+from app.db import connect, create_entity, delete_entity, get_entity
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.document_storage import UploadedFile, store_document_upload, stored_document_path
 from app.entities import DEFINITIONS_BY_SLUG
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import make_test_server
 
 
@@ -19,7 +20,7 @@ class DocumentLifecycleTests(unittest.TestCase):
         self.database_path = self.root / "documents.sqlite3"
         self.storage_dir = self.root / "documents"
         self.definition = DEFINITIONS_BY_SLUG["documents"]
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()

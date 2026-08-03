@@ -12,7 +12,6 @@ from app.db import (
     entity_dependency_counts,
     get_entity,
     get_entity_by_id,
-    initialise_database,
     list_deleted_entities,
     list_entities,
     list_relationships,
@@ -27,6 +26,7 @@ from app.db import (
 from app.entities import DEFINITIONS_BY_TYPE, ENTITY_DEFINITIONS
 from app import views
 from app.timeline import registry as timeline_registry
+from tests.database_test_support import initialise_test_database
 
 
 def values_for(definition, name):
@@ -35,12 +35,11 @@ def values_for(definition, name):
         values.update({"given_name": name, "family_name": "", "sex": "Unknown"})
     return values
 
-
 class SoftDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "soft-delete.sqlite3"
-        initialise_database(self.database_path)
+        initialise_test_database(self.database_path)
 
     def tearDown(self):
         self.temp_dir.cleanup()

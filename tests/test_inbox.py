@@ -7,9 +7,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app import views
-from app.db import connect, initialise_database
+from app.db import connect
 from app.event_service import EventInput, create_event
 from app.reminder_service import InboxItem, evaluate_due_reminders, list_inbox_items
+from tests.database_test_support import initialise_test_database
 from tests.web_test_support import make_test_server
 
 
@@ -70,7 +71,7 @@ class InboxRouteTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "inbox.sqlite3"
-        initialise_database(self.path)
+        initialise_test_database(self.path)
         with connect(self.path) as connection:
             self.event_id = create_event(
                 connection,

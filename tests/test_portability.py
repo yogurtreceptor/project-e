@@ -13,7 +13,6 @@ from app.db import (
     create_relationship,
     delete_relationship,
     get_entity_by_id,
-    initialise_database,
 )
 from app.entities import DEFINITIONS_BY_TYPE
 from app.portability import (
@@ -23,6 +22,7 @@ from app.portability import (
     inspect_bundle,
     restore_recovery_bundle,
 )
+from tests.database_test_support import initialise_test_database
 
 
 class PortabilityTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class PortabilityTests(unittest.TestCase):
         self.source_db = self.root / "source" / "project.sqlite3"
         self.source_documents = self.source_db.parent / "documents"
         self.source_documents.mkdir(parents=True)
-        initialise_database(self.source_db)
+        initialise_test_database(self.source_db)
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -91,7 +91,7 @@ class PortabilityTests(unittest.TestCase):
         target_documents = target_db.parent / "documents"
         backups = target_db.parent / "backups"
         target_documents.mkdir(parents=True)
-        initialise_database(target_db)
+        initialise_test_database(target_db)
 
         imported = apply_import_bundle(
             bundle, target_db, target_documents, backups
@@ -138,7 +138,7 @@ class PortabilityTests(unittest.TestCase):
         target_db = self.root / "occupied" / "project.sqlite3"
         target_documents = target_db.parent / "documents"
         target_documents.mkdir(parents=True)
-        initialise_database(target_db)
+        initialise_test_database(target_db)
         with connect(target_db) as connection:
             occupied_id = create_entity(
                 connection,
@@ -159,7 +159,7 @@ class PortabilityTests(unittest.TestCase):
         target_documents = target_db.parent / "documents"
         target_documents.mkdir(parents=True)
         (target_documents / "keep.txt").write_text("keep")
-        initialise_database(target_db)
+        initialise_test_database(target_db)
         with connect(target_db) as connection:
             existing_id = create_entity(connection, DEFINITIONS_BY_TYPE["person"], {"display_name": "Existing", "given_name": "Existing"})
         backup_path = target_db.parent / "incoming.zip"

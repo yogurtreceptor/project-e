@@ -4,16 +4,17 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import URLError
 
-from app.db import connect, create_entity, get_entity_by_id, initialise_database
+from app.db import connect, create_entity, get_entity_by_id
 from app.entities import DEFINITIONS_BY_TYPE
 from app.geo import NominatimGeocoder, build_map_payload
+from tests.database_test_support import initialise_test_database
 
 
 class OfflineOperationTests(unittest.TestCase):
     def test_wan_failure_does_not_affect_canonical_records_or_local_map_payload(self):
         with tempfile.TemporaryDirectory() as directory:
             database_path = Path(directory) / "offline.sqlite3"
-            initialise_database(database_path)
+            initialise_test_database(database_path)
             with connect(database_path) as connection:
                 entity_id = create_entity(
                     connection,
