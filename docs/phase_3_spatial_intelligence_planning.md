@@ -14,10 +14,13 @@ The current platform already has canonical Locations with address/optional coord
 
 ### Canonical place and derived spatial context
 
-- A canonical Location is the user's durable identity for a meaningful place or area. Provider features, roads, stops and search results remain external context unless the user completes a reviewed **Save as Location** workflow with duplicate handling.
+- A canonical Location is the user's durable identity for one enduring physical place or area; it is not moved to unrelated coordinates. A Person, Organisation or designation such as current home moves by changing its Location Relationship. Provider features, roads, stops and results remain external context unless explicitly saved with duplicate review.
+- An address describes a Location rather than becoming a standalone canonical entity. A Location may retain physical, postal, delivery and historical address assertions. **Current** means applicable now; **preferred** selects the default display/use, with at most one preferred address per purpose. Provider suggestions do not overwrite accepted values.
+- A Location may hold multiple current or historical geometries. Supported concepts are point, line and area, including multi-part lines/areas, with roles such as representative point, boundary, entrance, route anchor or path. At most one geometry is preferred per role. WGS84 latitude/longitude is the portable canonical reference; exact storage encoding and engine conversions remain implementation choices.
+- Each geometry/role assertion—not the whole Location—records provenance and confidence as **User confirmed**, **Source reported**, **Approximate** or **Unknown**, plus an accuracy radius only when genuinely supplied. Confidence is normally quiet metadata and becomes prominent only when uncertainty affects an action.
+- Child Locations are explicit canonical records connected through typed parent/containment Relationships. A parent selection may reveal child pins and grouped sidebar details. A child may display a parent's address when it has none, but does not copy that address as duplicate truth. Provider data or future agent assistance may propose children, but neither creates them without an explicitly authorised, reviewable canonical operation.
 - People, Organisations, Events, Projects and Documents gain place through Relationships to Locations, not duplicate spatial fields. Existing Asset coordinates remain valid current data until deliberately migrated.
-- User-owned geometry needs a stated role—such as representative point, boundary, entrance or route anchor—and provenance. Provider geometry, centroids and snapped network points remain distinguishable from accepted geometry.
-- An entrance/access point becomes a separate Location only when independent naming, notes, Relationships, reuse or lifecycle justify it. Provider containment never silently creates canonical hierarchy.
+- An entrance/access point becomes a child Location when independent naming, notes, Relationships, reuse or lifecycle justify it; otherwise it remains a geometry of its parent. Provider containment never silently creates canonical hierarchy.
 - Maps, routes, matrices, reachable areas and nearby results are derived projections. Provider refresh may update external context but never silently overwrite canonical identity, geometry, notes, Relationships or policy.
 
 ### Providers, regional packs and partial coverage
@@ -53,24 +56,33 @@ The current platform already has canonical Locations with address/optional coord
 
 A provider-independent request contains deliberate endpoints/access points, mode or multimodal intent, depart-at/arrive-by time, mobility profile, routing policies, buffers and requested alternatives. Ambiguous venues, access points or incompatible constraints require a decision or an honest no-result state.
 
+Before accepting a request, an adapter declares its modes, coverage, time semantics, transit/live inputs, geometry output and supported policy controls. Project E refuses an unsupported requirement rather than silently weakening it.
+
 A useful result includes:
 
 - resolved endpoints and network snapping;
-- alternatives split into mode/service/wait stages with distances and scheduled or estimated durations;
+- alternatives split into mode/service/wait stages with explicitly labelled route distances and scheduled or estimated durations;
 - named buffer assumptions and resulting leave/arrival milestones;
 - applied, conflicting or unsatisfied policies;
 - engine, source and timetable versions, calculation time, coverage, freshness and warnings;
 - a textual itinerary equivalent to the essential map; and
 - a fingerprint covering every input that affects meaning.
 
+Distance/time meanings remain distinct: straight-line separation, network-route distance, scheduled duration, profile-based estimated duration and total elapsed journey time. Project E buffers are separate inputs, not disguised distance or travel duration.
+
+Typed outcomes distinguish invalid/ambiguous endpoints, partial or absent coverage, unsupported mode/policy, no physically possible route, no policy-compliant route, stale/incompatible data and provider failure. **No route** is never reported when the provider merely failed.
+
 Routes and comparison outputs remain transient/cached unless one result is materialised to Calendar. Matrices, reachability, comparison and nearby exploration come after trustworthy single-route/search contracts.
 
 ### Mobility profiles and routing policies
 
+- Project E owns stable primary modes **Walk**, **Cycle**, **Drive** and **Public transport**. Multimodal results normalise into Walk, Wait, Bus, Train, Tram, Ferry, Cycle and Drive stages. A transfer is its real walk/wait/service sequence, not a vague extra mode.
+- Mobility profiles are durable user-owned configuration translated by adapters, never provider-owned values. Pedestrian pace variants remain Walk profiles and use the Walk Calendar; future vehicle/e-bike variations likewise extend profiles or policies rather than the core mode taxonomy.
 - Walking uses recorded presets: **Regular walk** (default), **Fast walk/jog** and **Run**. A later **Sprint** preset may have a short maximum distance. Project E never recalculates a personal speed for every route or silently learns a new value.
 - During implementation the user will measure known distances several times. A reviewed preset retains stable identity, speed/unit, source, measurement/effective date and applicability such as maximum continuous distance/duration. The initial rule applies limits per contiguous leg and warns about unusually high cumulative effort; fatigue modelling is deferred.
 - If Regular walk cannot make a connection but an applicable faster preset can, the alternative is shown with a warning and requires selection. It is never chosen silently.
 - Routing policy is structured, local and inspectable: hard exclusion, soft avoidance, preference or added cost/buffer scoped by mode, time, direction or scenario. Results explain its effect. Claims such as safe, accessible or well lit require attributed evidence rather than inference.
+- Feasibility/capability limits apply first. The journey may explicitly enable/disable saved policies; remaining hard exclusions must all hold, more-specific rules beat general ones, soft costs may combine and provider defaults come last. Contradictory hard rules require attention rather than a silent winner.
 
 ### One-time Calendar materialisation
 
@@ -92,6 +104,13 @@ Routes and comparison outputs remain transient/cached unless one result is mater
 - Provider prediction is not proof of boarding, arrival or actual travel. The confirmed schedule, latest prediction, source/time and applied replacements remain distinguishable and auditable.
 - There is no background journey worker. Processing runs only while Project E is open/running. Startup catch-up reads current state only for in-progress/future journeys, never replays missed polls or updates/notifies past stages, and stops after the journey window or scoped deletion.
 
+### Durability and cache boundary
+
+- The database retains Locations, address/geometry assertions, Relationships, profiles, policies, favourites/lists and confirmed journey groups independently of every map or routing provider. Switching/removing a provider does not move or delete canonical Locations.
+- Installed packs are replaceable external resources; search indexes, routing graphs and generated map data are reproducible derived builds. Both remain outside canonical truth and can be reacquired or rebuilt without personal-data loss.
+- Route/geocoder/live caches are bounded local performance aids, not route history. A cache fingerprint covers meaningful request, profile/policy, adapter and source/timetable versions; lookup reports fresh hit, stale hit or miss, while the caller decides whether labelled stale display is acceptable.
+- Stale cached results never silently create Events. Calendar materialisation copies the minimum schedule, stages and provenance needed for durable use and never depends on the cache surviving. A provider-only favourite may be unavailable when its source is absent until it is explicitly promoted to a canonical Location.
+
 ### Privacy, accessibility and degraded operation
 
 - Network-backed work must disclose provider and transmitted inputs, exclude canonical/private labels, respect terms/attribution and avoid real endpoints in logs or fixtures.
@@ -103,11 +122,12 @@ Routes and comparison outputs remain transient/cached unless one result is mater
 
 ### Pack architecture
 
-Keep three layers separate:
+Implement the accepted durability boundary as four layers:
 
 1. **Source/capability packs:** immutable provider inputs, coverage, licence and manifest metadata.
 2. **Derived builds:** disposable map/search/routing indexes fingerprinted by source-pack set, engine/adapter version and build policy.
-3. **Personal data:** canonical spatial facts, profiles, policies and journey groups in Project E storage.
+3. **Bounded caches:** disposable result acceleration with explicit freshness and dependency fingerprints.
+4. **Personal data:** provider-independent canonical spatial facts, profiles, policies, lists and journey groups in Project E storage.
 
 The provisional component contract is:
 
@@ -142,9 +162,9 @@ Use the same Gold Coast OSM and SEQ GTFS inputs for representative walking, cycl
 
 Likely dependency order, not implementation authority:
 
-1. **Map 2.0A:** map-dominant shell, stable canonical/current-provider search, persistent selected pin, shared-place grouping, sidebar details/actions, intentional default layers and recents using current foundations.
-2. Gold Coast pack/engine evidence spike and decision record.
-3. Spatial foundations: geometry/provenance, provider envelope and pack lifecycle.
+1. Spatial foundations: Location/address/child semantics; geometry/provenance/confidence; mode/profile/policy structures; and provider-independent distance, routing and cache contracts.
+2. **Map 2.0A:** map-dominant shell, stable canonical/current-provider search, persistent selected pin, shared-place grouping, sidebar details/actions, intentional default layers and recents using current foundations.
+3. Gold Coast pack/engine evidence spike and decision record, with no production provider/engine choice before the foundation contracts exist.
 4. **Map 2.0B:** installed/online provider search, clickable features, reviewed Save as Location, external bookmarks/lists/favourites, contextual coverage manager and first local basemap/search capability.
 5. Single-mode walking journey, route overlay and explanation/cache proof.
 6. Public transport, transport layers and stable stage model.
@@ -157,8 +177,9 @@ Each authorised slice begins with its concrete workflow, current-code/data const
 
 Verification should cover:
 
-- fresh schema and representative upgrades without parallel spatial truth;
-- adapter contracts and deterministic fictional geometry/network/timetable fixtures;
+- fresh schema and representative upgrades without parallel spatial truth, including address history, explicit child Locations and provider removal without canonical coordinate loss;
+- point/line/area roles, WGS84 conversion, provenance/confidence visibility and deterministic fictional geometry/network/timetable fixtures;
+- adapter capability/error contracts and cache fresh/stale/miss, invalidation and clearing without personal-data loss;
 - pack integrity, incompatibility, overlap, interrupted update, rollback and removal;
 - offline/refused-network, stale, corrupt and partial-coverage behaviour;
 - route/profile/policy determinism, provenance and explanation;
@@ -178,12 +199,12 @@ These grouped IDs preserve the earlier register while making the working set sma
 | IDs | Remaining decision/evidence | Safe position already accepted |
 | --- | --- | --- |
 | D01, D06, D16, D18 | Pack archive/directory shape, boundary buffer, raw-input retention, prebuilt vs local build, suburb dependency closure, proximity/route-corridor recommendation metric, overlap and measured resource budgets. Prove with Gold Coast, selected pins/routes near boundaries, a bordering-suburb cut and Logan/Brisbane union. | Gold Coast first; portable source packs plus disposable derived builds; independent LGA/suburb units; route coordinates survive missing map coverage; contextual sidebar offers nearby suburb, LGA and online capability choices but never auto-installs or silently claims absent routing capability. |
-| D02–D05 | Geometry/provenance/index schema, access-point/hierarchy cardinality and provider-link reconciliation. Needs current-data audit, station/building workflows, upgrade fixtures and two provider versions. | Preserve existing valid Location data; one canonical truth; explicit roles/units/CRS; no inferred hierarchy, duplicate geometry truth or automatic provider relink. |
+| D02–D05 | Exact address/geometry/provenance schema, indexes/migration, storage encoding/validation, child-Relationship cardinality and provider-link reconciliation. Needs a current-data audit, station/building/address-history workflows, upgrade fixtures and two provider versions. | One Location is one enduring place; addresses are purpose/status assertions; current and preferred differ; point/line/area may be multi-part and role-specific in WGS84; confidence/provenance attach to geometry; child Locations and provider acceptance are explicit and never auto-created. |
 | D07, D08, D14 | Renderer/local tile/search choices; normal/satellite/terrain sources; traffic/transit/cycle/place overlays; ranking and viewport-loading details; one-shot device/IP-geolocation implementation and consent; online connection packaging; licence/cost/privacy and constrained-desktop performance. | Build incrementally; search results never rerun on pan while enabled layers load visible features; persistent accessible red selection pin/sidebar; blank clicks do not pin; clickable provider features never mutate; current location is a Phase 3 deliverable with device-first one-shot use and optional disclosed IP fallback; no tracking or hidden query logging. |
 | D19 | Recent-search/selection retention, last viewport/layer state, sidebar navigation, named-list/favourite schema, provider-reference reconciliation and portability. Needs external bookmark disappearance/refresh, shared-place grouping, list revisit and clear/export workflows. | Normal base, canonical Locations and available general-place/transit features begin visible; other canonical/specialist layers begin off and choices persist locally. Recents are bounded and clearable; external bookmarks need no canonical promotion; user membership is portable while provider facts are reacquired; no reusable saved journey. |
-| D09, D12, D17 | Final engine, transit source/update workflow, station-complex semantics and native/Java acquisition/process/upgrades. Needs the Gold Coast/SEQ comparison and repeatable Windows setup. | Provider-independent adapter; Valhalla first, MOTIS challenger; static timetable default; no custom router or network-dependent core. Runtime code is not a data pack. |
-| D10, D20 | Journey-group/baseline schema, cache/operational-history retention and cross-timezone handling. Needs one-time save, scoped lifecycle and cancellation replacement cases. | Unsaved results transient; materialised group retains minimum confirmed baseline/provenance/audit; Event/Calendar IANA timezone remains authoritative; no reusable template or incidental route history. |
-| D11, D15 | Measured preset values/aggregation, Sprint and distance applicability, policy precedence and accessibility/environmental evidence. Needs user measurements, real engine controls and worked conflicts. | Regular walk default; named faster profiles require selection; per-contiguous-leg limits initially; no silent learning or unsupported safety/accessibility claims. |
+| D09, D12, D17 | Final engine, capability mapping, transit source/update workflow, station-complex semantics and native/Java acquisition/process/upgrades. Needs the completed provider-independent contract, Gold Coast/SEQ comparison and repeatable Windows setup. | Adapters declare capability and return normalised stages, distance/time meanings, provenance and typed failures; Valhalla is first spike and MOTIS challenger, not a pre-contract production choice; static timetable remains default. |
+| D10, D20 | Exact cache store, retention/eviction thresholds, journey-group/baseline schema, operational-history retention and cross-timezone handling. Needs cache invalidation, one-time save, scoped lifecycle and cancellation replacement cases. | Personal data is durable; packs replaceable; builds/caches disposable. Cache returns fresh/stale/miss using full dependency fingerprints, creates no route history and cannot silently materialise stale results; confirmed journeys retain their minimum baseline independently. |
+| D11, D15 | Measured preset values/aggregation, Sprint and distance applicability, exact profile/policy schema, adapter translation and accessibility/environmental evidence. Needs user measurements, real engine controls and worked conflicts. | Stable Walk/Cycle/Drive/Public transport modes normalise to mode-specific stages; pace variants remain Walk profiles; journey enable/disable selects the active policies, then remaining hard, specific, soft and provider-default rules apply in order; conflicts are surfaced; no silent learning or unsupported claims. |
 | D13 | Exact group persistence, Calendar-role repair, initial colours/reminder timings, stage titles and scope mechanics. Needs multi-stage, unavailable-Calendar, deletion/replan and rollback cases. | Auto-provision editable Walk/Bus/Train/Tram/Ferry/Cycle/Drive/Wait Calendars; every generated stage inherits Calendar reminders; group membership alone locks fields; buffer becomes earlier movement/Wait, not an Event. |
 | D21 | Live provider, enable inheritance, in-process polling/window, delay-alert identity/status persistence and disruption semantics. Needs changing delay, cancellation, platform/stop change, missed connection, stale data, startup and deletion cases. | Run only while Project E runs; any delay produces one updated local alert/status without retiming; mutate future stages only for cancellation/missed connection; reconcile reminders; ignore past stages; never infer location, boarding or arrival. |
 
@@ -191,10 +212,10 @@ When resolving a gate: state the workflow/IDs, inspect current code/data, collec
 
 ## Explicit exclusions
 
-Phase 3 does not include global offline completeness, commercial-map parity, turn-by-turn navigation, continuous/personal location tracking, mobile access, a background journey worker while Project E is closed, reusable/recurring journeys, opaque AI-selected routing, silent behavioural learning, realtime data as a core/offline dependency, external push/OS notifications, public reviews, safety guarantees, arbitrary executable packs or automatic mutation outside the accepted cancellation/missed-connection journey contract.
+Phase 3 does not include global offline completeness, commercial-map parity, turn-by-turn navigation, continuous/personal location tracking, mobile access, a background journey worker while Project E is closed, reusable/recurring journeys, opaque AI-selected routing, silent behavioural learning, unreviewed automatic canonical Location/child creation, realtime data as a core/offline dependency, external push/OS notifications, public reviews, safety guarantees, arbitrary executable packs or automatic mutation outside the accepted cancellation/missed-connection journey contract.
 
 ## Completion and expansion workspace
 
-Phase 3 is complete only when one useful installed region supports a map-dominant, searchable and accessible place workspace with canonical/provider distinction, clickable inspection, reviewed saving, intentional layers and one-shot current-location centring; all four intended journey modes, explained profiles/policy and at least one useful matrix/reachability/comparison workflow work from the same spatial contracts; one-time grouped Calendar materialisation behaves safely; optional live enrichment follows its alert/mutation boundary; pack failure/partial coverage remains understandable; and user-owned map/spatial/journey state is recoverable independently of packs/caches.
+Phase 3 is complete only when durable Location/address/geometry/child semantics and provider-independent route/cache boundaries survive provider replacement; one useful installed region supports a map-dominant, searchable and accessible place workspace with canonical/provider distinction, clickable inspection, reviewed saving, intentional layers and one-shot current-location centring; all four intended journey modes, explained profiles/policy and at least one useful matrix/reachability/comparison workflow work from those spatial contracts; one-time grouped Calendar materialisation behaves safely; optional live enrichment follows its alert/mutation boundary; pack failure/partial coverage remains understandable; and user-owned map/spatial/journey state is recoverable independently of packs/caches.
 
 Add dated numbered **Complete:** entries here only after explicitly authorised implementation is delivered and verified. Each entry should name the slice, resolved decision IDs and durable contract.
