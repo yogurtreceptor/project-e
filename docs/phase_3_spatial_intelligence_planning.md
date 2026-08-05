@@ -162,6 +162,8 @@ Use the same Gold Coast OSM and SEQ GTFS inputs for representative walking, cycl
 
 Likely dependency order, not implementation authority:
 
+Treat this sequence as the current dependency hypothesis, not a fixed phase script. Authorised implementation planning may split, combine or reorder slices when current code, data or spike evidence shows a safer or smaller path, provided prerequisites remain explicit, accepted product semantics are not silently changed and the rationale/verification for the revised order is recorded.
+
 1. Spatial foundations: Location/address/child semantics; geometry/provenance/confidence; mode/profile/policy structures; and provider-independent distance, routing and cache contracts.
 2. **Map 2.0A:** map-dominant shell, stable canonical/current-provider search, persistent selected pin, shared-place grouping, sidebar details/actions, intentional default layers and recents using current foundations.
 3. Gold Coast pack/engine evidence spike and decision record, with no production provider/engine choice before the foundation contracts exist.
