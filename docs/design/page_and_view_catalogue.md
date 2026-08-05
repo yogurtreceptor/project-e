@@ -37,7 +37,7 @@ Overviews share breadcrumbs, identity, direct Edit/Delete, grouped Views, restra
 
 - Person foregrounds contact facts, related Locations and Journal.
 - Organisation foregrounds classification, aliases, contact and Location Relationships.
-- Location foregrounds address and coordinate meaning.
+- Location foregrounds preferred/inherited address, representative point, assertion history and containment meaning.
 - Project foregrounds status and lifecycle dates.
 - Document foregrounds safe local file actions and document facts.
 - Asset foregrounds identity, status, value and location meaning.

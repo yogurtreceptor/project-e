@@ -2,6 +2,13 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-05 · Phase 3 canonical place foundation
+
+- Replaced flattened Location place fields with purpose/status address assertions and role-based, validated WGS84 point/line/area geometry assertions while preserving current form, detail and Map workflows through preferred projections.
+- Added confidence, accuracy, source snapshots and removable provider-neutral references so accepted place facts survive provider removal or version change.
+- Added explicit single-active-parent, cycle-safe Location containment with display-only inherited address, forward migration, portability validation and fresh/upgrade/behavioral coverage.
+- Resolved Phase 3 gates D02–D05 without selecting N2 renderer, provider, pack or routing architecture.
+
 ## 2026-08-03 · Maintenance and direction
 
 - Replaced repeated migration replay in ordinary database-backed tests with isolated current-schema fixtures while retaining real migration coverage and all 287 behavioural tests.

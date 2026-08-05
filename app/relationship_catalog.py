@@ -161,6 +161,21 @@ ORGANISATION_LOCATION_TYPES: tuple[RelationshipType, ...] = (
 )
 
 
+LOCATION_LOCATION_TYPES: tuple[RelationshipType, ...] = (
+    rt(
+        "contains_location",
+        "location",
+        "location",
+        "Location",
+        "Contains / contained by",
+        "contains",
+        "contained by",
+        roles=("Container", "Contained place"),
+        labels=("contains", "contained by"),
+    ),
+)
+
+
 ORGANISATION_PROJECT_TYPES: tuple[RelationshipType, ...] = (
     rt("project_involves_organisation", "project", "organisation", "Project", "Involves", "involves", "involved in", roles=('Project', 'Involved organisation')),
     rt("project_sponsored_by", "project", "organisation", "Project", "Sponsored by", "sponsored by", "sponsors", roles=('Sponsored project', 'Sponsor')),
@@ -241,6 +256,7 @@ RELATIONSHIP_TYPE_GROUPS: tuple[tuple[RelationshipType, ...], ...] = (
     PERSON_LOCATION_TYPES,
     PERSON_PROJECT_TYPES,
     ORGANISATION_LOCATION_TYPES,
+    LOCATION_LOCATION_TYPES,
     ORGANISATION_PROJECT_TYPES,
     ASSET_LOCATION_TYPES,
     DOCUMENT_PERSON_TYPES,

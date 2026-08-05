@@ -47,6 +47,7 @@ from app.db import (
     delete_journal_entry,
     list_reference_items,
     list_units,
+    location_place_context,
 )
 from app.document_lifecycle import delete_unreferenced_document_file
 from app.defaults import (
@@ -1357,6 +1358,11 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             audit_events = list_audit_events(connection, "entity", entity_id) if record else []
             journal_entries = list_journal_entries(connection, "person", entity_id) if record and definition.type == "person" else []
             project_events = []
+            place_context = (
+                location_place_context(connection, entity_id)
+                if record and definition.type == "location"
+                else None
+            )
             if record and definition.type == "project":
                 from datetime import date
                 for relationship in relationships:
@@ -1371,7 +1377,16 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
 
         self.respond_page(
             record.title,
-            views.entity_detail_page(record, relationships, integrity_warnings, history, audit_events, journal_entries, project_events),
+            views.entity_detail_page(
+                record,
+                relationships,
+                integrity_warnings,
+                history,
+                audit_events,
+                journal_entries,
+                project_events,
+                place_context,
+            ),
             active_slug=definition.slug,
             show_save_toast=query.get("saved") == "1",
         )

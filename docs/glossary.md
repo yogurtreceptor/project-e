@@ -15,6 +15,10 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Recycle Bin** | The platform view for restoring deleted entities/Relationships or entering confirmed permanent entity deletion. |
 | **Alias** | A normalized repeatable alternate entity name used by retrieval and duplicate review. |
 | **Approximate date** | The closest known date plus an uncertainty marker—not a date range or partial date. |
+| **Address assertion** | A purpose-specific physical, postal or delivery description attached to a Location, with current/preferred state, confidence and source snapshot. |
+| **Geometry assertion** | A WGS84 point, line or area attached to a Location for a named role, with current/preferred state, confidence, optional supplied accuracy and source snapshot. |
+| **Representative point** | The role-specific Point used for deterministic Location text/form and Map projection; it does not replace other geometry. |
+| **Location containment** | A single-parent, cycle-safe `contains_location` Relationship between canonical Locations; inherited address display does not copy the parent's assertion. |
 
 ## Classification and structured values
 
@@ -79,4 +83,4 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Repository source of truth** | Current code and repository documentation, not prior chat handoffs. |
 | **Task** | A retired experimental entity removed by migration `20260801_31_retire_task_subsystem`; future work management requires a new design. |
 
-Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is planning only. Their detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.
+Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1's canonical place foundation delivered; later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.

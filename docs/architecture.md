@@ -49,6 +49,7 @@ Responsibilities are separated:
 
 - `app/entity_repository.py` reads and writes entity persistence.
 - `app/entity_service.py` coordinates lifecycle consequences such as Birthday Event synchronisation, reminder resolution and inference recomputation.
+- `app/place_repository.py` owns canonical Location address, geometry and provider-reference persistence; `app/place_service.py` owns the preferred physical-address and representative-point edit projection and merge behaviour.
 - Focused modules own external field stores: aliases, reference values, measurements and journal entries.
 - `app/duplicate_detection.py`, `app/entity_merge.py` and `app/integrity.py` provide reviewable maintenance instead of hidden automatic mutation.
 
@@ -56,7 +57,7 @@ Entity pages share one frame but use explicit domain compositions. The Overview 
 
 ### Relationships
 
-Relationships are first-class rows between any two canonical entities. `app/relationship_repository.py` owns persistence, `app/relationships.py` is the selection/label facade, and `app/relationship_catalog.py` seeds definitions and legacy mappings. Runtime definitions are taxonomy-backed and encode valid endpoint pairs, canonical direction and inverse labels.
+Relationships are first-class rows between any two canonical entities. `app/relationship_repository.py` owns persistence, `app/relationships.py` is the selection/label facade, and `app/relationship_catalog.py` seeds definitions and legacy mappings. Runtime definitions are taxonomy-backed and encode valid endpoint pairs, canonical direction and inverse labels. Active `contains_location` Relationships form a single-parent, cycle-safe Location hierarchy; address inheritance is a display projection and never copied truth.
 
 The UI asks for the connected entity's role from the current entity's perspective; saving normalises that choice into one canonical row. Reverse navigation is derived, never stored as a duplicate inverse Relationship.
 
@@ -100,7 +101,7 @@ Search, structured filters, timelines, maps, data quality and audit are projecti
 
 - `app/discovery_repository.py`, `app/query_engine.py` and `app/structured_filters.py` own retrieval.
 - `app/timeline.py` derives real-world chronology; operational audit events do not become Timeline events.
-- `app/geo.py` derives map markers from Locations, coordinates and Relationships. The map owns no records.
+- `app/geo.py` derives map markers from each Location's preferred current representative point and from Relationships. The map owns no records.
 - `app/data_quality.py` and `app/integrity.py` report deterministic findings.
 - `app/audit.py` reads append-only operational history.
 
@@ -118,4 +119,4 @@ Whole-platform portability is owned by `app/portability.py`. It validates a vers
 
 The application currently has no authentication, multi-user model, external worker, queue or cloud dependency. Normal operation remains local and in-process. Optional network clients must fail without damaging or blocking canonical local data.
 
-Phases 1 and 2 are complete development milestones. Phase 3 spatial work is planning only and has not altered this architecture. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.
+Phases 1 and 2 are complete development milestones. Phase 3 N1 has added the provider-independent canonical place foundation; later Phase 3 renderer, provider, pack, routing and journey work remains planned and separately authorised. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.

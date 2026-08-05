@@ -2,7 +2,7 @@
 
 This document combines phased direction and longer-term possibilities. It is context, not implementation authority or a release checklist. An implementation prompt must explicitly authorise work.
 
-Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md) and [Phase 2 record](docs/phase_2_workspace.md). Evolving Phase 3 detail belongs in its [planning workspace](docs/phase_3_spatial_intelligence_planning.md). Unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
+Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md), [Phase 2 record](docs/phase_2_workspace.md) and completed entries in the [Phase 3 delivery and planning workspace](docs/phase_3_spatial_intelligence_planning.md). Unresolved engineering risks belong in the [technical-debt register](docs/reviews/technical_debt_register.md).
 
 ## Phase status
 
@@ -10,7 +10,7 @@ Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md)
 | --- | --- | --- |
 | 1 · Information Platform | Complete | Canonical entities and Relationships; local documents; Search, Map and Timeline; taxonomies/reference data; audit/provenance; data quality, reviewed inference, merge and recovery. |
 | 2 · Operational Time | Complete | Canonical Events and Calendars; recurrence; reminder policies and durable Inbox attention; registered scheduling and deterministic automation; Calendar interchange and portability. |
-| 3 · Spatial Intelligence | Planning | Richer Location semantics, local spatial data, Map 2.0, journey planning, mobility/routing policy, travel-time and reachability tools. |
+| 3 · Spatial Intelligence | In progress · N1 complete | Canonical address/geometry/containment foundation delivered; local spatial data, Map 2.0, journey planning, mobility/routing policy, travel-time and reachability tools remain planned. |
 
 Phase closure means a representative development milestone is complete. It does not claim exhaustive verification, a stable public release or absence of ordinary maintenance defects.
 

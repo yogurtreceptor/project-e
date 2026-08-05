@@ -34,6 +34,7 @@ EXPECTED_SELECTABLE_KEYS_BY_PAIR = {
         "located_at_org", "headquartered_at", "branch_at", "operates_at",
         "organisation_location_other",
     ),
+    ("location", "location"): ("contains_location",),
     ("organisation", "project"): (
         "project_involves_organisation", "project_sponsored_by",
         "project_owned_by_organisation", "organisation_project_other",

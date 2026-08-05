@@ -111,6 +111,10 @@ def merge_entities(connection: sqlite3.Connection, survivor_id: int, duplicate_i
 def _merge_external_values(
     connection: sqlite3.Connection, survivor: EntityRecord, duplicate: EntityRecord
 ) -> None:
+    if survivor.type == "location":
+        from app.place_service import merge_location_place_data
+
+        merge_location_place_data(connection, survivor.id, duplicate.id)
     for field in survivor.definition.fields:
         if field.storage_kind == "taxonomy":
             survivor_id = survivor.metadata.get(f"{field.name}__taxonomy_entry_id", "")

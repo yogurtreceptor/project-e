@@ -24,7 +24,7 @@ Every canonical entity has a stable ID, type, display identity, timestamps and o
 | --- | --- | --- |
 | **Person** | A real person. | Display name derives from given and family names. Languages, nationalities and self-identified ethnicities reference shared catalogues; height/weight are normalized measurements. Ethnicity is never inferred. Journal entries are separate observations. |
 | **Organisation** | A company, institution, group, team or similar body. | Classification is taxonomy-backed and aliases are repeatable normalized names. Addresses belong to related Locations. |
-| **Location** | A place, address or meaningful area. | It may exist without coordinates. It owns its address and optional point coordinates; maps are views over it. |
+| **Location** | One enduring place, address or meaningful area. | It may exist without geometry. It owns address and role-based geometry assertions; maps are views over its preferred representative point. |
 | **Project** | Ongoing work or an area of responsibility. | It coordinates related peers but does not own Events, Documents, People or other related records. |
 | **Document** | A first-class record, optionally backed by a private local file. | Purpose is distinct from file format. Issuer/creator meaning is relational, not duplicate text. The Document owns its uploaded-file lifecycle. |
 | **Asset** | A physical or digital thing. | Records such as receipts, manuals and certificates are Documents, not Assets. Direct coordinates are permitted when they best describe the thing's location. |
@@ -113,15 +113,17 @@ Reference data is a selection aid, not an inference source. Presentation labels,
 
 ## Geographic meaning
 
-Location is the canonical geographic entity. People and Organisations connect to Locations through Relationships rather than own duplicate address fields. An Asset may either connect to a Location or hold direct coordinates when that is the best known fact.
+Location is the canonical geographic entity. An address describes a Location and may be physical, postal or delivery, current or historical; preferred chooses the default within a purpose. Geometry is a separate role-based assertion supporting points, lines and areas. Confidence, accuracy where genuinely known, and source identity qualify the assertion rather than the whole Location. People and Organisations connect to Locations through Relationships rather than own duplicate address fields. An Asset may either connect to a Location or hold direct coordinates when that is the best known fact.
+
+A `contains_location` Relationship connects an enduring parent place to a child Location. A child has at most one active parent and containment cannot cycle. A child with no address may display an ancestor's preferred physical address, but that inherited display is not stored on the child. An independently useful entrance can be a child Location; otherwise an entrance remains a geometry role on its parent.
 
 The Map derives markers from canonical records:
 
-- Locations with coordinates;
+- Locations with a current representative point;
 - People or Organisations connected to a coordinate-bearing Location;
 - Assets with direct coordinates or a qualifying Location Relationship.
 
-Missing coordinates affect map eligibility, not Location validity. Projects, Documents and Events are not map-marker entities in the current model. Richer geometry, regional data and routing remain Phase 3 planning questions.
+Missing representative points affect map eligibility, not Location validity. Projects, Documents and Events are not map-marker entities in the current model. Rich geometry is now canonical storage, while richer Map presentation, regional data and routing remain later Phase 3 work.
 
 ## Ontology checks for new work
 

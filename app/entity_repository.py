@@ -132,11 +132,19 @@ def create_entity(
     )
     entity_id = int(cursor.lastrowid)
     insert_typed_row(connection, definition, entity_id, values)
-    sync_external_fields(connection, definition, entity_id, values)
+    sync_external_fields(
+        connection, definition, entity_id, values, record_place_audit=False
+    )
     from app.audit import record_audit_event, set_provenance
     record_audit_event(connection, "create", [("entity", entity_id)], after=values)
+    assertion_fields = (
+        {field.name for field in definition.fields if not field.typed_column}
+        if definition.type == "location"
+        else set()
+    )
     for field, value in values.items():
-        if value: set_provenance(connection, "entity", entity_id, field, "manual")
+        if value and field not in assertion_fields:
+            set_provenance(connection, "entity", entity_id, field, "manual")
     if commit:
         connection.commit()
     return entity_id
@@ -311,6 +319,10 @@ def validate_entity_values(
     if definition.type == "document" and values.get("document_date") and values.get("expiry_date"):
         if values["expiry_date"] < values["document_date"]:
             errors.append("Expiry date must not be before Document date.")
+    if definition.type == "location":
+        from app.place_service import validate_location_form_values
+
+        errors.extend(validate_location_form_values(values))
     return errors
 
 
@@ -401,6 +413,10 @@ def hydrate_external_fields(connection: sqlite3.Connection, record: EntityRecord
                 (record.id,),
             )
             record.metadata[field.name] = "\n".join(row["value"] for row in rows)
+    if record.type == "location":
+        from app.place_repository import hydrate_location_metadata
+
+        hydrate_location_metadata(connection, record)
 
 
 def sync_external_fields(
@@ -408,6 +424,8 @@ def sync_external_fields(
     definition: EntityDefinition,
     entity_id: int,
     values: dict[str, str],
+    *,
+    record_place_audit: bool = True,
 ) -> None:
     for field in definition.fields:
         if field.storage_kind == "taxonomy":
@@ -437,6 +455,12 @@ def sync_external_fields(
                     connection, entity_id, field.name, field.measurement_category,
                     value, int(unit_id),
                 )
+    if definition.type == "location":
+        from app.place_service import sync_location_form_values
+
+        sync_location_form_values(
+            connection, entity_id, values, audit=record_place_audit
+        )
 
 
 def parse_reference_ids(value: str) -> list[int] | None:

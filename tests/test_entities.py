@@ -105,6 +105,16 @@ class EntityDatabaseTests(unittest.TestCase):
                     "notes": "",
                 }
                 values.update({field.name: f"{field.label} value" for field in definition.fields})
+                if definition.type == "location":
+                    values.update(
+                        {
+                            "address_confidence": "User confirmed",
+                            "latitude": "-27.5",
+                            "longitude": "153.0",
+                            "geometry_confidence": "User confirmed",
+                            "accuracy_radius_metres": "10",
+                        }
+                    )
 
                 entity_id = create_entity(connection, definition, values)
                 record = get_entity(connection, definition, entity_id)
@@ -972,7 +982,7 @@ class EntityDatabaseTests(unittest.TestCase):
         document = DEFINITIONS_BY_SLUG["documents"]
 
         values = normalise_form_values(location, {"display_name": "Point", "latitude": "-27.5"})
-        self.assertEqual(validate_entity_values(location, values), ["Coordinates requires both Latitude and Longitude."])
+        self.assertEqual(validate_entity_values(location, values), ["Preferred representative point requires both Latitude and Longitude."])
         values = normalise_form_values(project, {"display_name": "Work", "started_at": "2026-07-05", "ended_at": "2026-07-04"})
         self.assertEqual(validate_entity_values(project, values), ["Ended / completed must not be before Started."])
         values = normalise_form_values(document, {"display_name": "Licence", "document_date": "2026-07-05", "expiry_date": "2026-07-04"})
@@ -1141,7 +1151,7 @@ class EntityDatabaseTests(unittest.TestCase):
         self.assertEqual(location.metadata["city"], "Brisbane")
         self.assertEqual(location.metadata["state"], "Queensland")
         self.assertEqual(location.metadata["post_code"], "4000")
-        self.assertEqual(location.metadata["source"], "manual")
+        self.assertEqual(location.metadata["address_source_name"], "manual")
         self.assertEqual(asset.metadata["status"], "Owned")
         self.assertEqual(asset.metadata["acquisition_date"], "2026-06-21")
 

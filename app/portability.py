@@ -302,6 +302,11 @@ def _validate_database(connection: sqlite3.Connection) -> None:
             error = validate_structured_value(row[field_name], "date", label)
             if error:
                 raise ValueError(f"Relationship {row['id']} is invalid: {error}")
+    from app.place_repository import validate_stored_place_foundation
+
+    place_errors = validate_stored_place_foundation(connection)
+    if place_errors:
+        raise ValueError(f"Canonical place data is invalid: {'; '.join(place_errors)}")
 
 
 def _relationship_type_supports(connection, type_key, source_type, target_type):

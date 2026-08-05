@@ -29,7 +29,7 @@ Specialised views repeat enough identity for orientation, retain explicit stable
 | --- | --- |
 | Person | Identity, birthday, direct contact, related Locations and concise Relationships; Journal remains Person-specific. |
 | Organisation | Identity, aliases, classification, contact, key roles and Location Relationships. |
-| Location | Place identity, address, coordinates/source and relevant occupants/assets. |
+| Location | Place identity, preferred/display address, representative point, assertion confidence/history, hierarchy and relevant occupants/assets. |
 | Project | Identity, status, type and start/target/end milestones; related records remain peers. |
 | Document | Safe file actions, purpose, identifier, dates/expiry, issuer/creator/subject Relationships and relevant provenance. |
 | Asset | Identity, type/status, manufacturer/model/serial, value meaning and Location context. |
@@ -49,7 +49,7 @@ Required fields are the minimum valid identity and are marked in text and markup
 
 Use repeated rows when values need labels, validation, ordering or individual lifecycle. Newline-backed input is acceptable only for simple same-kind values such as aliases. Taxonomy selectors browse/search complete paths; archived choices remain readable but unavailable for new selection. Reference selectors support search and independent multi-value selection where allowed.
 
-Lookup assists entry but never becomes an invisible mutation or WAN requirement. Manual address/coordinate entry remains authoritative. Uploaded-file paths, MIME type and size are system-managed even when the Document form owns file selection.
+Lookup assists entry but never becomes an invisible mutation or WAN requirement. Location create/edit exposes only the preferred physical address and preferred representative point projection needed by the current workflow; saving a changed projection retains the prior assertion as history. Manual entry remains authoritative, and richer address/geometry history stays read-only on Overview until a separately authorised workflow needs editing. Uploaded-file paths, MIME type and size are system-managed even when the Document form owns file selection.
 
 ### Validation and navigation
 

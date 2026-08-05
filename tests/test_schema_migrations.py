@@ -47,6 +47,9 @@ class SchemaMigrationTests(unittest.TestCase):
             }
         self.assertIn("entities", tables)
         self.assertIn("relationships", tables)
+        self.assertIn("location_addresses", tables)
+        self.assertIn("location_geometries", tables)
+        self.assertIn("location_provider_references", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
         self.assertIn("event_icalendar_identities", tables)
@@ -76,6 +79,138 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertNotIn("'task_list'", reminder_policy_sql)
         self.assertNotIn("'task_deadline'", reminder_policy_sql)
         self.assertNotIn("'task'", entity_sql)
+
+        with connect(self.database_path) as connection:
+            location_columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(locations)")
+            }
+            place_indexes = {
+                row["name"]
+                for row in connection.execute(
+                    """SELECT name FROM sqlite_master
+                       WHERE type='index' AND name IN (
+                           'idx_location_address_one_preferred',
+                           'idx_location_geometry_one_preferred',
+                           'idx_location_one_active_parent'
+                       )"""
+                )
+            }
+            containment_triggers = {
+                row["name"]
+                for row in connection.execute(
+                    """SELECT name FROM sqlite_master
+                       WHERE type='trigger'
+                         AND name LIKE 'trg_location_containment_%'"""
+                )
+            }
+        self.assertEqual({"entity_id"}, location_columns)
+        self.assertEqual(
+            {
+                "idx_location_address_one_preferred",
+                "idx_location_geometry_one_preferred",
+                "idx_location_one_active_parent",
+            },
+            place_indexes,
+        )
+        self.assertEqual(
+            {
+                "trg_location_containment_insert",
+                "trg_location_containment_update",
+            },
+            containment_triggers,
+        )
+
+    def test_place_foundation_upgrade_preserves_legacy_location_values(self) -> None:
+        place_migration = "20260805_33_canonical_place_foundation"
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for migration_id, migration in SCHEMA_MIGRATIONS:
+                if migration_id == place_migration:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations VALUES (?, 'before')",
+                    (migration_id,),
+                )
+            for definition in (
+                "formatted_address TEXT NOT NULL DEFAULT ''",
+                "address_line_1 TEXT NOT NULL DEFAULT ''",
+                "address_line_2 TEXT NOT NULL DEFAULT ''",
+                "suburb TEXT NOT NULL DEFAULT ''",
+                "city TEXT NOT NULL DEFAULT ''",
+                "state TEXT NOT NULL DEFAULT ''",
+                "post_code TEXT NOT NULL DEFAULT ''",
+                "country TEXT NOT NULL DEFAULT ''",
+                "latitude TEXT NOT NULL DEFAULT ''",
+                "longitude TEXT NOT NULL DEFAULT ''",
+                "source TEXT NOT NULL DEFAULT ''",
+            ):
+                connection.execute(f"ALTER TABLE locations ADD COLUMN {definition}")
+            cursor = connection.execute(
+                """INSERT INTO entities (
+                       type, display_name, summary, notes, created_at, updated_at
+                   ) VALUES ('location', 'Fictional Hall', '', '', 'before', 'before')"""
+            )
+            location_id = int(cursor.lastrowid)
+            connection.execute(
+                """INSERT INTO locations (
+                       entity_id, formatted_address, address_line_1, city,
+                       state, post_code, country, latitude, longitude, source
+                   ) VALUES (?, '1 Example Street, Example QLD 4000',
+                             '1 Example Street', 'Example', 'Queensland',
+                             '4000', 'Australia', '-27.5', '153.0',
+                             'Fictional geocoder')""",
+                (location_id,),
+            )
+            connection.executemany(
+                """INSERT INTO provenance_metadata (
+                       record_kind, record_id, field_name, provenance, updated_at
+                   ) VALUES ('entity', ?, ?, 'manual', 'before')""",
+                (
+                    (location_id, "formatted_address"),
+                    (location_id, "latitude"),
+                    (location_id, "longitude"),
+                ),
+            )
+            connection.commit()
+
+            create_schema(connection)
+
+            address = connection.execute(
+                "SELECT * FROM location_addresses WHERE location_entity_id=?",
+                (location_id,),
+            ).fetchone()
+            geometry = connection.execute(
+                "SELECT * FROM location_geometries WHERE location_entity_id=?",
+                (location_id,),
+            ).fetchone()
+            location_columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(locations)")
+            }
+            migration = connection.execute(
+                "SELECT 1 FROM schema_migrations WHERE migration_id=?",
+                (place_migration,),
+            ).fetchone()
+            stale_provenance = connection.execute(
+                """SELECT 1 FROM provenance_metadata
+                   WHERE record_kind='entity' AND record_id=?
+                     AND field_name IN ('formatted_address','latitude','longitude')""",
+                (location_id,),
+            ).fetchone()
+
+        self.assertEqual("1 Example Street, Example QLD 4000", address["formatted_address"])
+        self.assertEqual("physical", address["purpose"])
+        self.assertEqual((1, 1), (address["is_current"], address["is_preferred"]))
+        self.assertEqual("Source reported", address["confidence"])
+        self.assertEqual("Point", geometry["geometry_type"])
+        self.assertEqual("[153.0,-27.5]", geometry["coordinates_json"])
+        self.assertEqual("representative_point", geometry["role"])
+        self.assertEqual((1, 1), (geometry["is_current"], geometry["is_preferred"]))
+        self.assertEqual({"entity_id"}, location_columns)
+        self.assertIsNotNone(migration)
+        self.assertIsNone(stale_provenance)
 
     def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:
         with connect(self.database_path) as connection:

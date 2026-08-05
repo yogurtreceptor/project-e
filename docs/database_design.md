@@ -31,6 +31,7 @@ For a schema change, update the current-schema creator/repair path, add a forwar
 | --- | --- | --- |
 | Migration | `schema_migrations` | Applied migration identifiers. |
 | Canonical identity | `entities`; `people`, `organisations`, `locations`, `projects`, `documents`, `assets`, `events` | Shared identity plus one typed row for each entity. |
+| Canonical place facts | `location_addresses`, `location_geometries`, `location_provider_references` | Address and geometry assertion history plus replaceable provider identity references. |
 | Relationships and journals | `relationships`, `journal_entries`, `entity_aliases` | First-class links, timestamped observations and alternate names. |
 | Controlled/reference data | `reference_data_types`, `reference_data_items`, `entity_reference_values`, `measurement_units`, `entity_measurements`, `taxonomies`, `taxonomy_entries`, `relationship_type_definitions` | Shared catalogue values, normalized measurements and runtime classifications. |
 | Calendar and recurrence | `calendars`, `birthday_event_links`, `calendar_edit_history`, `event_recurrences`, `event_recurrence_exceptions`, `event_recurrence_splits`, `event_icalendar_identities` | Local Calendar configuration, Birthday links, recurrence and import identity. |
@@ -49,13 +50,15 @@ Typed storage is definition-driven. Missing active columns can be added during r
 Important domain boundaries:
 
 - Person display name is derived from given and family names.
-- Locations own addresses. People and Organisations connect to them through Relationships instead of copying address columns.
+- Locations own purpose-specific current or historical address assertions and role-specific current or historical geometries. People and Organisations connect to Locations through Relationships instead of copying place facts.
 - Documents own local file metadata and use Relationships for issuer/creator meaning.
 - Events share entity identity, belong to one local Calendar and use the standard Relationship table rather than Event-specific endpoint foreign keys.
 
 Aliases, multi-value references and measurements use normalized external tables rather than repeated typed columns. Reference items are stable local catalogue records. Measurements store a canonical decimal value plus the user's display unit. Small domain-specific controlled values may remain validated text when a shared catalogue would add no value.
 
-Structured dates, coordinates and whole-number Asset values are normalized and validated before writes. Coordinates remain optional text pairs; richer spatial storage is a Phase 3 design question, not current schema.
+Structured dates, coordinates and whole-number Asset values are normalized and validated before writes. Location geometry stores a validated geometry type and compact canonical JSON coordinate array in WGS84 longitude/latitude order. Point, line, multi-line, polygon and multi-polygon nesting is supported without requiring a spatial extension; polygon rings must be closed. The projection index selects current/preferred assertions by Location, purpose or role, while partial unique indexes permit at most one preferred address per purpose and one preferred geometry per role.
+
+`locations` now carries only the typed-row identity. `location_addresses` keeps physical, postal and delivery assertions with independent current/preferred state, confidence and source snapshots. `location_geometries` keeps representative point, boundary, entrance, route-anchor and path assertions with confidence, optional positive accuracy radius and source snapshots. A representative point must be a Point. `location_provider_references` stores neutral provider/feature/version identities separately, so removing a provider reference cannot alter accepted canonical geometry.
 
 ## Relationships and taxonomies
 
@@ -113,6 +116,6 @@ Portable format version 1 is a ZIP containing:
 - a consistent SQLite snapshot made with the backup API;
 - exactly the uploaded files referenced by Document rows.
 
-Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event.
+Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event.
 
 The same recovery primitive runs before confirmed merge and permanent deletion. Recovery artifacts remain private ignored runtime data and never become application dependencies.

@@ -75,6 +75,10 @@ def entity_error_fields(definition: EntityDefinition, values: dict[str, str], er
                 (item.name for item in definition.fields if item.value_kind == "whole_number" and values.get(item.name)),
                 field,
             )
+        if error.startswith("Preferred representative point requires"):
+            field = "latitude"
+        elif error.startswith("Accuracy radius requires"):
+            field = "accuracy_radius_metres"
         if error.startswith("Ended / completed"):
             field = "ended_at"
         elif error.startswith("Expiry date"):
@@ -445,7 +449,14 @@ def address_lookup_script() -> str:
         const resultsList = document.getElementById('address_results');
         const status = document.getElementById('address_lookup_status');
         if (!search || !button || !resultsList || !status) return;
-        const fields = ['formatted_address', 'address_line_1', 'address_line_2', 'suburb', 'city', 'state', 'post_code', 'country', 'latitude', 'longitude', 'source'];
+        const fields = [
+            'formatted_address', 'address_line_1', 'address_line_2', 'suburb',
+            'city', 'state', 'post_code', 'country', 'address_confidence',
+            'address_source_name', 'address_source_reference',
+            'address_source_version', 'latitude', 'longitude',
+            'geometry_confidence', 'geometry_source_name',
+            'geometry_source_reference', 'geometry_source_version'
+        ];
         const setStatus = (message) => {
             status.textContent = message;
         };

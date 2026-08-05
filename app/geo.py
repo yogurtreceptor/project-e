@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from app.db import list_entities, list_relationships
+from app.db import list_entities, list_relationships, location_place_context
 from app.entities import DEFINITIONS_BY_SLUG, EntityRecord
 from app.relationships import RELATIONSHIP_TYPES_BY_KEY
 
@@ -33,11 +33,20 @@ def build_map_payload(connection) -> dict[str, object]:
     location_definition = DEFINITIONS_BY_SLUG["locations"]
 
     for location in list_entities(connection, location_definition):
-        coordinates = entity_coordinates(location)
-        locations_by_id[location.id] = (location, coordinates)
+        place = location_place_context(connection, location.id)
+        coordinates = (
+            place.representative_point.point
+            if place.representative_point is not None
+            else None
+        )
+        locations_by_id[location.id] = (location, coordinates, place)
         if coordinates is None:
             continue
-        markers.append(marker_payload(location, location, coordinates, "locations"))
+        markers.append(
+            marker_payload(
+                location, location, coordinates, "locations", place_context=place
+            )
+        )
 
     asset_definition = DEFINITIONS_BY_SLUG["assets"]
     for asset in list_entities(connection, asset_definition):
@@ -53,12 +62,30 @@ def build_map_payload(connection) -> dict[str, object]:
         linked_entity, location = relationship_location_pair(relationship.source, relationship.target)
         if linked_entity is None or location is None:
             continue
-        location_record, coordinates = locations_by_id.get(location.id, (location, entity_coordinates(location)))
+        stored = locations_by_id.get(location.id)
+        if stored is None:
+            place = location_place_context(connection, location.id)
+            coordinates = (
+                place.representative_point.point
+                if place.representative_point is not None
+                else None
+            )
+            location_record = location
+        else:
+            location_record, coordinates, place = stored
         if coordinates is None:
             continue
         layer_id = layer_id_for_entity_type(linked_entity.type)
         if layer_id:
-            markers.append(marker_payload(linked_entity, location_record, coordinates, layer_id))
+            markers.append(
+                marker_payload(
+                    linked_entity,
+                    location_record,
+                    coordinates,
+                    layer_id,
+                    place_context=place,
+                )
+            )
 
     return {
         "defaultCenter": DEFAULT_CENTER,
@@ -90,9 +117,13 @@ def marker_payload(
     location: EntityRecord,
     coordinates: tuple[float, float],
     layer_id: str,
+    place_context=None,
 ) -> dict[str, object]:
     latitude, longitude = coordinates
-    address = location.metadata.get("formatted_address") or ", ".join(
+    address = (
+        place_context.display_address.display_text
+        if place_context is not None and place_context.display_address is not None
+        else location.metadata.get("formatted_address") or ", ".join(
         part
         for part in (
             location.metadata.get("address_line_1", ""),
@@ -102,6 +133,10 @@ def marker_payload(
             location.metadata.get("country", ""),
         )
         if part
+        )
+    )
+    representative_point = (
+        place_context.representative_point if place_context is not None else None
     )
     return {
         "id": f"{layer_id}-{entity.id}",
@@ -114,6 +149,17 @@ def marker_payload(
         "address": address,
         "latitude": latitude,
         "longitude": longitude,
+        "geometryConfidence": (
+            representative_point.confidence if representative_point else ""
+        ),
+        "geometrySource": (
+            representative_point.source_name if representative_point else ""
+        ),
+        "addressInheritedFrom": (
+            place_context.inherited_address_location_id
+            if place_context is not None
+            else None
+        ),
         "url": f"/{entity.slug}/{entity.id}",
     }
 
@@ -196,7 +242,14 @@ def normalise_nominatim_result(result: dict[str, object]) -> dict[str, str]:
         "country": str(address.get("country", "")),
         "latitude": str(result.get("lat", "")),
         "longitude": str(result.get("lon", "")),
-        "source": "OpenStreetMap Nominatim",
+        "address_confidence": "Source reported",
+        "address_source_name": "OpenStreetMap Nominatim",
+        "address_source_reference": "",
+        "address_source_version": "",
+        "geometry_confidence": "Source reported",
+        "geometry_source_name": "OpenStreetMap Nominatim",
+        "geometry_source_reference": "",
+        "geometry_source_version": "",
     }
 
 

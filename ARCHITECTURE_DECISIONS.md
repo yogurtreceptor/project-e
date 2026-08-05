@@ -4,7 +4,7 @@ This file preserves long-term structural choices and their rationale. Search its
 
 New decisions are appended with Status, Date, Decision, Reason and Consequences. Do not record small implementation choices. If replaced, retain the old entry as Superseded and append its replacement.
 
-The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027) and the shared temporal-occurrence boundary (ADR-028).
+The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027), the shared temporal-occurrence boundary (ADR-028) and canonical place assertions (ADR-029).
 
 ## ADR-001: Map as an entity view
 
@@ -425,3 +425,18 @@ Record-derived reminders are common platform behaviour. Implementing a separate 
 
 Consequences:
 New record-derived reminder sources must register or adapt to the shared occurrence boundary instead of adding standalone source loops or delivery implementations. Event schedules, recurring Event instances, cached external occurrences and eligible record-derived dates may therefore use the same downstream reminder and Inbox machinery while retaining source-specific resolution rules; for example, an ordinary Event reminder may cease after the Event ends while a Document-expiry condition may remain actionable. Reminders without a meaningful temporal occurrence, such as a process approval or system failure, retain their own operational semantics and are not forced through this pipeline. The current hardcoded reminder-source enumeration is an implementation limitation to remove during the next authorised reminder/Inbox refactor; this decision does not claim that refactor is already complete.
+
+## ADR-029: Store canonical place facts as independent assertions
+
+Status: Accepted
+
+Date: 2026-08-05
+
+Decision:
+Keep a Location's address history, geometry history and provider identities in separate normalized records rather than typed Location columns or a provider-owned feature. Address assertions carry purpose, current/preferred state, confidence and source snapshots. Geometry assertions carry a constrained point/line/area type, role, current/preferred state, confidence, optional supplied accuracy and source snapshots. Geometry coordinates use compact canonical JSON arrays in WGS84 longitude/latitude order and are validated without a spatial extension. A `contains_location` Relationship gives a child at most one active parent and forbids cycles. Provider feature references are neutral removable links and never own accepted geometry.
+
+Reason:
+Fictional address-history, station/entrance, building/area and two-provider-version cases showed that address applicability, geometry role and provider lifecycle change independently. Normalized metadata needs ordinary SQLite uniqueness and projection indexes, while compact coordinate JSON preserves Point, LineString, MultiLineString, Polygon and MultiPolygon nesting portably under the standard-library-only runtime. Keeping type and role outside the JSON makes the current representative-point projection deterministic without selecting a renderer, provider or spatial engine.
+
+Consequences:
+The editable Location form remains a narrow projection over the preferred current physical address and representative point; replacement retains prior assertions as history. The Map reads only the preferred current representative point, and a child may display but never copy an ancestor address. Migration `20260805_33_canonical_place_foundation` removes flattened Location place columns only after preserving valid values and provenance, and refuses incomplete or invalid legacy coordinates. Whole-platform validation covers geometry and containment independently of SQLite triggers. Reconsider coordinate encoding only when an authorised spatial engine demonstrates query/index requirements JSON cannot reasonably meet, single active parent only for a concrete ambiguous real-place workflow, and provider reconciliation only with reviewed save/refresh evidence; this decision chooses no provider or N2 renderer architecture.

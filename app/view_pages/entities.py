@@ -60,6 +60,7 @@ def entity_detail_page(
     audit_events: list = None,
     journal_entries: list[JournalEntry] | None = None,
     project_events: list = None,
+    place_context=None,
 ) -> str:
     integrity_warnings = integrity_warnings or []
     history = history or []
@@ -76,7 +77,7 @@ def entity_detail_page(
         {warning_html}
         <div class="profile-grid">
             <div class="profile-main">
-                {domain_overview_section(record, relationships, project_events)}
+                {domain_overview_section(record, relationships, project_events, place_context)}
                 {entity_geography_section(record, relationships) if record.type in {'organisation', 'asset'} else ''}
                 {relationship_summary_section(record, relationships)}
 
@@ -93,14 +94,14 @@ def entity_detail_page(
     """
 
 
-def domain_overview_section(record, relationships, project_events=None):
+def domain_overview_section(record, relationships, project_events=None, place_context=None):
     if record.type == "person": return person_overview_section(record, relationships)
     if record.type == "document": return document_overview_section(record)
     if record.type == "project": return project_overview_section(record, project_events or [])
     if record.type == "organisation":
         return named_overview_section("Organisation details", record, ("organisation_type", "aliases", "website", "phone", "email"))
     if record.type == "location":
-        return entity_geography_section(record, relationships)
+        return entity_geography_section(record, relationships, place_context)
     if record.type == "asset":
         return named_overview_section("Asset details", record, ("asset_type", "status", "manufacturer", "model", "serial_number", "acquisition_date", "value"))
     return entity_overview_section(record)
@@ -206,7 +207,11 @@ def entity_overview_section(record: EntityRecord) -> str:
     """
 
 
-def entity_geography_section(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+def entity_geography_section(
+    record: EntityRecord,
+    relationships: list[RelationshipRecord],
+    place_context=None,
+) -> str:
     if record.type in {"project", "document"}:
         return ""
 
@@ -230,17 +235,36 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
         latitude = record.metadata.get("latitude", "")
         longitude = record.metadata.get("longitude", "")
         coordinates = f"{escape(latitude)}, {escape(longitude)}" if latitude and longitude else "Not recorded"
-        address = record.metadata.get("formatted_address") or ", ".join(
-            part
-            for part in (
-                record.metadata.get("address_line_1", ""),
-                record.metadata.get("suburb", ""),
-                record.metadata.get("city", ""),
-                record.metadata.get("state", ""),
-                record.metadata.get("country", ""),
+        address_assertion = place_context.display_address if place_context else None
+        address = (
+            address_assertion.display_text
+            if address_assertion
+            else record.metadata.get("formatted_address") or ", ".join(
+                part
+                for part in (
+                    record.metadata.get("address_line_1", ""),
+                    record.metadata.get("suburb", ""),
+                    record.metadata.get("city", ""),
+                    record.metadata.get("state", ""),
+                    record.metadata.get("country", ""),
+                )
+                if part
             )
-            if part
         )
+        inherited = ""
+        if place_context and place_context.inherited_address_location_id:
+            inherited = (
+                f' <span class="muted">Inherited for display from '
+                f'<a href="/locations/{place_context.inherited_address_location_id}">'
+                f'{escape(place_context.inherited_address_location_title)}</a>; not copied.</span>'
+            )
+        representative = place_context.representative_point if place_context else None
+        confidence = representative.confidence if representative else record.metadata.get("geometry_confidence", "")
+        source = representative.source_name if representative else record.metadata.get("geometry_source_name", "")
+        accuracy = representative.accuracy_radius_metres if representative else None
+        accuracy_text = f"{accuracy:g} metres" if accuracy is not None else "Not supplied"
+        assertion_history = _location_assertions(place_context)
+        hierarchy = _location_hierarchy(record, relationships)
         map_href = f"/map?entity_id={record.id}"
         return f"""
         <section class="panel profile-section geography-section">
@@ -249,10 +273,14 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
                 <a href="{map_href}">View on map</a>
             </div>
             <dl>
-                <dt>Address</dt><dd>{escape(address) if address else 'Not recorded'}</dd>
-                <dt>Coordinates</dt><dd>{coordinates}</dd>
-                <dt>Source</dt><dd>{escape(record.metadata.get('source', '')) if record.metadata.get('source') else 'Not recorded'}</dd>
+                <dt>Address</dt><dd>{escape(address) if address else 'Not recorded'}{inherited}</dd>
+                <dt>Representative point</dt><dd>{coordinates}</dd>
+                <dt>Geometry confidence</dt><dd>{escape(confidence) if confidence else 'Not recorded'}</dd>
+                <dt>Accuracy radius</dt><dd>{escape(accuracy_text)}</dd>
+                <dt>Geometry source</dt><dd>{escape(source) if source else 'Not recorded'}</dd>
             </dl>
+            {hierarchy}
+            {assertion_history}
         </section>
         """
 
@@ -299,6 +327,59 @@ def entity_geography_section(record: EntityRecord, relationships: list[Relations
         </table>
     </section>
     """
+
+
+def _location_hierarchy(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:
+    rows = []
+    for relationship in relationships:
+        if relationship.type_key != "contains_location":
+            continue
+        other = relationship.other_entity(record.id)
+        rows.append(
+            f'<li><a href="/locations/{other.id}">{escape(other.title)}</a>'
+            f'<span>{escape(relationship.label_from(record.id))}</span></li>'
+        )
+    if not rows:
+        return ""
+    return f'<h3>Place hierarchy</h3><ul class="entity-link-list">{"".join(rows)}</ul>'
+
+
+def _location_assertions(place_context) -> str:
+    if place_context is None:
+        return ""
+    address_rows = []
+    for item in place_context.addresses:
+        state = "Current" if item.is_current else "Historical"
+        preferred = " · preferred" if item.is_preferred else ""
+        address_rows.append(
+            f"<li><strong>{escape(item.display_text)}</strong>"
+            f"<span>{escape(item.purpose.title())} · {state}{preferred} · "
+            f"{escape(item.confidence)}</span></li>"
+        )
+    geometry_rows = []
+    for item in place_context.geometries:
+        state = "Current" if item.is_current else "Historical"
+        preferred = " · preferred" if item.is_preferred else ""
+        coordinates = ""
+        if item.point:
+            latitude, longitude = item.point
+            coordinates = f" · {latitude:g}, {longitude:g}"
+        geometry_rows.append(
+            f"<li><strong>{escape(item.role.replace('_', ' ').title())}</strong>"
+            f"<span>{escape(item.geometry_type)}{escape(coordinates)} · "
+            f"{state}{preferred} · {escape(item.confidence)}</span></li>"
+        )
+    addresses = (
+        f'<h3>Address assertions</h3><ul class="entity-link-list">{"".join(address_rows)}</ul>'
+        if address_rows
+        else ""
+    )
+    geometries = (
+        f'<h3>Geometry assertions</h3><ul class="entity-link-list">{"".join(geometry_rows)}</ul>'
+        if geometry_rows
+        else ""
+    )
+    return addresses + geometries
 
 
 def entity_relationships_panel(record: EntityRecord, relationships: list[RelationshipRecord]) -> str:

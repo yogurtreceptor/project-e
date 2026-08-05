@@ -259,6 +259,23 @@ def validate_relationship_values(
                 errors.append("A conflicting bloodline relationship already connects these people.")
         if type_key == "parent_child" and _parent_path_exists(connection, target_id, source_id, relationship_id):
             errors.append("This parent relationship would create a family cycle.")
+        if type_key == "contains_location":
+            existing_parent = connection.execute(
+                """SELECT 1 FROM relationships
+                   WHERE type='contains_location' AND status='active'
+                     AND deleted_at='' AND target_entity_id=?
+                     AND (? IS NULL OR id<>?)""",
+                (target_id, relationship_id, relationship_id),
+            ).fetchone()
+            if values.get("status") == "active" and existing_parent:
+                errors.append("A Location can have only one active parent Location.")
+            if (
+                values.get("status") == "active"
+                and _containment_path_exists(
+                    connection, target_id, source_id, relationship_id
+                )
+            ):
+                errors.append("This containment would create a Location cycle.")
 
     for field_name, label in (("started_at", "Started"), ("ended_at", "Ended")):
         date_error = validate_structured_value(values.get(field_name, ""), "date", label)
@@ -341,4 +358,34 @@ def _parent_path_exists(connection: sqlite3.Connection, start_id: int, goal_id: 
             return True
         if node not in seen:
             seen.add(node); stack.extend(children.get(node, ()))
+    return False
+
+
+def _containment_path_exists(
+    connection: sqlite3.Connection,
+    start_id: int,
+    goal_id: int,
+    exclude_id: int | None = None,
+) -> bool:
+    rows = connection.execute(
+        """SELECT id, source_entity_id, target_entity_id
+           FROM relationships
+           WHERE deleted_at='' AND type='contains_location'
+             AND status='active'"""
+    ).fetchall()
+    children: dict[int, set[int]] = {}
+    for row in rows:
+        if exclude_id is not None and int(row["id"]) == exclude_id:
+            continue
+        children.setdefault(int(row["source_entity_id"]), set()).add(
+            int(row["target_entity_id"])
+        )
+    stack, seen = [start_id], set()
+    while stack:
+        node = stack.pop()
+        if node == goal_id:
+            return True
+        if node not in seen:
+            seen.add(node)
+            stack.extend(children.get(node, ()))
     return False

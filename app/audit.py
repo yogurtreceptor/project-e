@@ -12,7 +12,7 @@ EVENT_TYPES = {
 }
 PROVENANCE_TYPES = {
     "manual", "inferred", "imported", "document", "contact_import",
-    "user_confirmed", "unknown", "automation",
+    "user_confirmed", "source_reported", "approximate", "unknown", "automation",
 }
 
 

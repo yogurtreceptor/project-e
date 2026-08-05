@@ -68,6 +68,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     ensure_entity_type_constraint(connection)
     create_typed_entity_tables(connection)
     create_relationship_table(connection)
+    create_place_foundation_tables(connection)
     create_inference_tables(connection)
     create_entity_history_table(connection)
     create_platform_tables(connection)
@@ -1296,6 +1297,404 @@ def ensure_relationship_columns(connection: sqlite3.Connection) -> None:
         WHERE record_origin='inferred' OR inference_suggestion_id IS NOT NULL""")
 
 
+def create_place_foundation_tables(connection: sqlite3.Connection) -> None:
+    """Create provider-independent canonical place assertion storage."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS location_addresses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location_entity_id INTEGER NOT NULL
+                REFERENCES entities(id) ON DELETE CASCADE,
+            purpose TEXT NOT NULL
+                CHECK (purpose IN ('physical', 'postal', 'delivery')),
+            formatted_address TEXT NOT NULL DEFAULT '',
+            address_line_1 TEXT NOT NULL DEFAULT '',
+            address_line_2 TEXT NOT NULL DEFAULT '',
+            suburb TEXT NOT NULL DEFAULT '',
+            city TEXT NOT NULL DEFAULT '',
+            state TEXT NOT NULL DEFAULT '',
+            post_code TEXT NOT NULL DEFAULT '',
+            country TEXT NOT NULL DEFAULT '',
+            confidence TEXT NOT NULL DEFAULT 'Unknown'
+                CHECK (confidence IN (
+                    'User confirmed', 'Source reported', 'Approximate', 'Unknown'
+                )),
+            source_name TEXT NOT NULL DEFAULT '',
+            source_reference TEXT NOT NULL DEFAULT '',
+            source_version TEXT NOT NULL DEFAULT '',
+            is_current INTEGER NOT NULL DEFAULT 1
+                CHECK (is_current IN (0, 1)),
+            is_preferred INTEGER NOT NULL DEFAULT 0
+                CHECK (is_preferred IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (is_preferred = 0 OR is_current = 1),
+            CHECK (
+                formatted_address <> '' OR address_line_1 <> ''
+                OR address_line_2 <> '' OR suburb <> '' OR city <> ''
+                OR state <> '' OR post_code <> '' OR country <> ''
+            )
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_location_address_one_preferred
+            ON location_addresses (location_entity_id, purpose)
+            WHERE is_preferred = 1;
+        CREATE INDEX IF NOT EXISTS idx_location_address_projection
+            ON location_addresses (
+                location_entity_id, purpose,
+                is_preferred DESC, is_current DESC, id DESC
+            );
+
+        CREATE TABLE IF NOT EXISTS location_geometries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location_entity_id INTEGER NOT NULL
+                REFERENCES entities(id) ON DELETE CASCADE,
+            geometry_type TEXT NOT NULL
+                CHECK (geometry_type IN (
+                    'Point', 'LineString', 'MultiLineString',
+                    'Polygon', 'MultiPolygon'
+                )),
+            coordinates_json TEXT NOT NULL,
+            role TEXT NOT NULL
+                CHECK (role IN (
+                    'representative_point', 'boundary', 'entrance',
+                    'route_anchor', 'path'
+                )),
+            confidence TEXT NOT NULL DEFAULT 'Unknown'
+                CHECK (confidence IN (
+                    'User confirmed', 'Source reported', 'Approximate', 'Unknown'
+                )),
+            accuracy_radius_metres REAL,
+            source_name TEXT NOT NULL DEFAULT '',
+            source_reference TEXT NOT NULL DEFAULT '',
+            source_version TEXT NOT NULL DEFAULT '',
+            is_current INTEGER NOT NULL DEFAULT 1
+                CHECK (is_current IN (0, 1)),
+            is_preferred INTEGER NOT NULL DEFAULT 0
+                CHECK (is_preferred IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (is_preferred = 0 OR is_current = 1),
+            CHECK (
+                role <> 'representative_point'
+                OR geometry_type = 'Point'
+            ),
+            CHECK (
+                accuracy_radius_metres IS NULL
+                OR accuracy_radius_metres > 0
+            )
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_location_geometry_one_preferred
+            ON location_geometries (location_entity_id, role)
+            WHERE is_preferred = 1;
+        CREATE INDEX IF NOT EXISTS idx_location_geometry_projection
+            ON location_geometries (
+                location_entity_id, role,
+                is_preferred DESC, is_current DESC, id DESC
+            );
+
+        CREATE TABLE IF NOT EXISTS location_provider_references (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location_entity_id INTEGER NOT NULL
+                REFERENCES entities(id) ON DELETE CASCADE,
+            provider_key TEXT NOT NULL,
+            feature_id TEXT NOT NULL,
+            feature_version TEXT NOT NULL DEFAULT '',
+            observed_at TEXT NOT NULL DEFAULT '',
+            accepted_at TEXT NOT NULL,
+            UNIQUE (
+                location_entity_id, provider_key,
+                feature_id, feature_version
+            )
+        );
+        CREATE INDEX IF NOT EXISTS idx_location_provider_feature
+            ON location_provider_references (
+                provider_key, feature_id, feature_version
+            );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_location_one_active_parent
+            ON relationships (target_entity_id)
+            WHERE type = 'contains_location'
+              AND status = 'active' AND deleted_at = '';
+
+        CREATE TRIGGER IF NOT EXISTS trg_location_containment_insert
+        BEFORE INSERT ON relationships
+        WHEN NEW.type = 'contains_location'
+          AND NEW.status = 'active' AND NEW.deleted_at = ''
+        BEGIN
+            SELECT CASE WHEN NOT EXISTS (
+                SELECT 1 FROM entities source, entities target
+                WHERE source.id = NEW.source_entity_id
+                  AND target.id = NEW.target_entity_id
+                  AND source.type = 'location' AND target.type = 'location'
+            ) THEN RAISE(ABORT, 'Location containment requires two Locations.') END;
+            SELECT CASE WHEN EXISTS (
+                WITH RECURSIVE descendants(id) AS (
+                    SELECT NEW.target_entity_id
+                    UNION
+                    SELECT relationship.target_entity_id
+                    FROM relationships relationship
+                    JOIN descendants
+                      ON relationship.source_entity_id = descendants.id
+                    WHERE relationship.type = 'contains_location'
+                      AND relationship.status = 'active'
+                      AND relationship.deleted_at = ''
+                )
+                SELECT 1 FROM descendants WHERE id = NEW.source_entity_id
+            ) THEN RAISE(ABORT, 'Location containment would create a cycle.') END;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trg_location_containment_update
+        BEFORE UPDATE OF source_entity_id, target_entity_id, type, status, deleted_at
+        ON relationships
+        WHEN NEW.type = 'contains_location'
+          AND NEW.status = 'active' AND NEW.deleted_at = ''
+        BEGIN
+            SELECT CASE WHEN NOT EXISTS (
+                SELECT 1 FROM entities source, entities target
+                WHERE source.id = NEW.source_entity_id
+                  AND target.id = NEW.target_entity_id
+                  AND source.type = 'location' AND target.type = 'location'
+            ) THEN RAISE(ABORT, 'Location containment requires two Locations.') END;
+            SELECT CASE WHEN EXISTS (
+                WITH RECURSIVE descendants(id) AS (
+                    SELECT NEW.target_entity_id
+                    UNION
+                    SELECT relationship.target_entity_id
+                    FROM relationships relationship
+                    JOIN descendants
+                      ON relationship.source_entity_id = descendants.id
+                    WHERE relationship.type = 'contains_location'
+                      AND relationship.status = 'active'
+                      AND relationship.deleted_at = ''
+                      AND relationship.id <> OLD.id
+                )
+                SELECT 1 FROM descendants WHERE id = NEW.source_entity_id
+            ) THEN RAISE(ABORT, 'Location containment would create a cycle.') END;
+        END;
+        """
+    )
+
+
+def migrate_canonical_place_foundation(connection: sqlite3.Connection) -> None:
+    """Move legacy flattened Location facts into canonical assertions."""
+    create_place_foundation_tables(connection)
+    columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(locations)")
+    }
+    address_fields = (
+        "formatted_address",
+        "address_line_1",
+        "address_line_2",
+        "suburb",
+        "city",
+        "state",
+        "post_code",
+        "country",
+    )
+    legacy_fields = (
+        *address_fields,
+        "locality",
+        "region",
+        "postal_code",
+        "latitude",
+        "longitude",
+        "source",
+        "geocoding_source",
+    )
+    if not any(field in columns for field in legacy_fields):
+        return
+
+    from app.audit import record_audit_event
+    from app.place_repository import (
+        create_location_address,
+        create_location_geometry,
+    )
+
+    for row in connection.execute("SELECT * FROM locations ORDER BY entity_id").fetchall():
+        location_id = int(row["entity_id"])
+        source_column = (
+            "source"
+            if "source" in columns
+            else "geocoding_source"
+            if "geocoding_source" in columns
+            else ""
+        )
+        source_name = row[source_column].strip() if source_column else ""
+        provenance = {
+            item["field_name"]: item["provenance"]
+            for item in connection.execute(
+                """SELECT field_name, provenance FROM provenance_metadata
+                   WHERE record_kind='entity' AND record_id=?""",
+                (location_id,),
+            )
+        }
+        legacy_address_columns = {
+            "formatted_address": ("formatted_address",),
+            "address_line_1": ("address_line_1",),
+            "address_line_2": ("address_line_2",),
+            "suburb": ("suburb",),
+            "city": ("city", "locality"),
+            "state": ("state", "region"),
+            "post_code": ("post_code", "postal_code"),
+            "country": ("country",),
+        }
+        for canonical_field, candidate_fields in legacy_address_columns.items():
+            for candidate_field in candidate_fields:
+                if provenance.get(candidate_field):
+                    provenance.setdefault(
+                        canonical_field, provenance[candidate_field]
+                    )
+                    break
+        if provenance.get("geocoding_source"):
+            provenance.setdefault("source", provenance["geocoding_source"])
+        address_values = {
+            field: next(
+                (
+                    row[column].strip()
+                    for column in legacy_address_columns[field]
+                    if column in columns and row[column].strip()
+                ),
+                "",
+            )
+            for field in address_fields
+        }
+        created_records: list[tuple[str, int]] = []
+        address_id = None
+        geometry_id = None
+        if any(address_values.values()):
+            address_confidence = _legacy_place_confidence(
+                source_name,
+                {provenance.get(field, "") for field in address_fields},
+            )
+            address_id = create_location_address(
+                connection,
+                location_id,
+                purpose="physical",
+                confidence=address_confidence,
+                source_name=source_name,
+                is_current=True,
+                is_preferred=True,
+                commit=False,
+                audit=False,
+                **address_values,
+            )
+            created_records.append(("location_address", address_id))
+
+        latitude = row["latitude"].strip() if "latitude" in columns else ""
+        longitude = row["longitude"].strip() if "longitude" in columns else ""
+        if bool(latitude) != bool(longitude):
+            raise RuntimeError(
+                f"Location {location_id} has an incomplete legacy coordinate pair."
+            )
+        if latitude and longitude:
+            geometry_confidence = _legacy_place_confidence(
+                source_name,
+                {
+                    provenance.get("latitude", ""),
+                    provenance.get("longitude", ""),
+                },
+            )
+            try:
+                geometry_id = create_location_geometry(
+                    connection,
+                    location_id,
+                    "Point",
+                    [float(longitude), float(latitude)],
+                    role="representative_point",
+                    confidence=geometry_confidence,
+                    source_name=source_name,
+                    is_current=True,
+                    is_preferred=True,
+                    commit=False,
+                    audit=False,
+                )
+            except (ValueError, TypeError) as error:
+                raise RuntimeError(
+                    f"Location {location_id} has invalid legacy WGS84 coordinates."
+                ) from error
+            created_records.append(("location_geometry", geometry_id))
+
+        _migrate_location_field_provenance(
+            connection,
+            location_id,
+            address_id,
+            geometry_id,
+            provenance,
+            address_fields,
+        )
+        if created_records:
+            record_audit_event(
+                connection,
+                "edit",
+                [("entity", location_id), *created_records],
+                after={"migrated_place_assertions": len(created_records)},
+                notes="Legacy Location address and coordinates migrated to canonical assertions",
+                actor="system",
+                provenance="unknown",
+            )
+
+    connection.executescript(
+        """
+        CREATE TABLE locations_current (
+            entity_id INTEGER PRIMARY KEY
+                REFERENCES entities(id) ON DELETE CASCADE
+        );
+        INSERT INTO locations_current (entity_id)
+            SELECT entity_id FROM locations;
+        DROP TABLE locations;
+        ALTER TABLE locations_current RENAME TO locations;
+        """
+    )
+    placeholders = ",".join("?" for _ in legacy_fields)
+    connection.execute(
+        f"""DELETE FROM provenance_metadata
+            WHERE record_kind='entity' AND field_name IN ({placeholders})
+              AND record_id IN (SELECT entity_id FROM locations)""",
+        legacy_fields,
+    )
+
+
+def _legacy_place_confidence(source_name: str, provenances: set[str]) -> str:
+    if source_name and source_name.casefold() not in {"manual", "user confirmed"}:
+        return "Source reported"
+    if provenances & {"manual", "user_confirmed"} or source_name:
+        return "User confirmed"
+    return "Unknown"
+
+
+def _migrate_location_field_provenance(
+    connection: sqlite3.Connection,
+    location_id: int,
+    address_id: int | None,
+    geometry_id: int | None,
+    provenance: dict[str, str],
+    address_fields: tuple[str, ...],
+) -> None:
+    now = utc_now()
+    rows = []
+    if address_id is not None:
+        rows.extend(
+            ("location_address", address_id, field, provenance[field], now)
+            for field in (*address_fields, "source")
+            if provenance.get(field)
+        )
+    if geometry_id is not None:
+        rows.extend(
+            ("location_geometry", geometry_id, field, provenance[field], now)
+            for field in ("latitude", "longitude", "source")
+            if provenance.get(field)
+        )
+    connection.executemany(
+        """INSERT INTO provenance_metadata (
+               record_kind, record_id, field_name, provenance, updated_at
+           ) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(record_kind, record_id, field_name)
+           DO UPDATE SET provenance=excluded.provenance,
+                         updated_at=excluded.updated_at""",
+        rows,
+    )
+
+
 def create_inference_tables(connection: sqlite3.Connection) -> None:
     connection.executescript(
         """
@@ -1483,6 +1882,7 @@ SCHEMA_MIGRATIONS = (
     ),
     ("20260801_31_retire_task_subsystem", retire_task_subsystem),
     ("20260801_32_consolidate_inbox_attention", consolidate_active_inbox_attention),
+    ("20260805_33_canonical_place_foundation", migrate_canonical_place_foundation),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)
