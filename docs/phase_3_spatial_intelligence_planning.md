@@ -1,118 +1,407 @@
 # Phase 3 Planning Workspace: Spatial Intelligence
 
-## Status and authority
+## Status, purpose and authority
 
-**Planning only.** This document defines an evolving desired boundary, candidate capabilities and open decisions. It is not implementation authority or a fixed release checklist. Delivered work may be recorded only after an explicit implementation prompt.
+**Phase 3 is planning only.** This document records the desired outcome, accepted boundaries, candidate capabilities and decisions that must be made through later authorised implementation work. It is not implementation authority, a fixed release checklist or a claim that the described capabilities exist.
 
-Phase 3 aims to make place, geometry, distance, movement, travel time and reachability useful across Project E without turning maps, providers or routing datasets into competing personal truth.
+The phase can be understood as the next layer of the same platform:
+
+```text
+Phase 1 — What exists
+Phase 2 — When it matters
+Phase 3 — Where it is and how to reach it
+```
+
+Phase 3 aims to make place, geometry, distance, movement, travel time and reachability useful across Project E without turning maps, providers or routing datasets into competing personal truth. The target is a private spatial layer for Project E's own Locations, Relationships, Events and decisions—not general mapping-product parity.
+
+The document uses four planning states:
+
+| State | Meaning |
+| --- | --- |
+| **Accepted direction** | A durable product or authority boundary that later work should preserve unless the user explicitly changes direction. |
+| **Candidate** | A potentially valuable outcome whose scope and priority remain subject to explicit implementation authorisation and evidence from use. |
+| **Deferred decision** | An intentionally unresolved choice that needs a concrete workflow, representative data, a feasibility spike or other implementation evidence. It is not permission to guess. |
+| **Complete** | Delivered and verified work recorded in the expansion workspace after an explicit implementation prompt. |
+
+A deferral is a decision about *when and how to decide*, not an omitted design. An authorised workstream should resolve only the decisions needed for its coherent slice. Material product changes or long-term conventions still require user direction; ordinary reversible engineering choices may be settled from evidence and recorded with their rationale.
+
+## Current platform foundation
+
+Project E currently has:
+
+- canonical Location entities with address fields, optional latitude/longitude, a source field and notes;
+- ordinary Relationships connecting Locations to other canonical records, including `event_at_location` for Events;
+- a derived Map view with Location, Organisation, Person and Asset markers;
+- optional OpenStreetMap tiles and Nominatim address lookup, with manual entry and textual/offline fallback;
+- canonical Events, Calendar, reminders, Inbox and deterministic scheduling services that could consume deliberately defined spatial results.
+
+It does **not** currently have rich geometry, Location hierarchy, access points, regional packs, offline spatial search, routing networks, transit data, mobility profiles, routing policies, journeys, matrices or reachability. Projects, Documents and Events are not current Map layers. Planning language below must not be read as current architecture or silently added to current reference documentation.
 
 ## Accepted direction
 
-### Canonical Locations
+### One personal truth, many spatial projections
 
-A Location is a personally meaningful canonical place: home, workplace, provider, station, entrance or named area worth storing and relating. Browsing a map, calculating a route or encountering a transport stop never creates one automatically. A future **Save as Location** workflow should preview provider facts, check likely duplicates and require confirmation.
+- A Location is a personally meaningful canonical place, address or area worth storing, relating and recovering. Most map features, roads, stops and addresses are not canonical Locations.
+- Browsing, searching, routing or encountering a provider feature never creates a Location automatically. **Save as Location** must be a reviewed canonical-creation workflow with likely-duplicate handling.
+- People, Organisations, Events, Projects and Documents gain spatial context through Relationships to Locations rather than duplicate address or geometry fields. Existing direct Asset coordinates remain a valid current fact and require deliberate migration analysis if a later model changes them.
+- A map, route, matrix, reachable area or nearby result is a projection over sources. It does not become canonical because it is useful or displayed often.
+- Provider updates may improve or challenge spatial context but never overwrite user-owned identity, notes, geometry, Relationships, policy or decisions without review.
 
-Locations remain valid without coordinates, complete geometry or installed regional data. Missing spatial enrichment limits projections, not canonical identity.
+### Local-first with explicit replaceable enrichment
 
-### Regional data and provider links
+- Canonical records and manually entered spatial facts remain usable with no WAN connection and no installed regional pack.
+- Rich local capability should be possible inside deliberately installed regions. Optional online lookup, tiles, routing or live data must remain replaceable and local in effect when unavailable.
+- Basemap, address, road, elevation, routing and timetable datasets stay outside the main entity database as provider-owned indexes or replaceable regional packs.
+- A data pack contains declarative data and metadata, not arbitrary executable code. Any parser, adapter or local engine is reviewed application/runtime code with an explicit dependency decision.
+- Project E owns provider-independent requests, result meaning, policy, provenance, cache identity, explanations, degraded states and user experience. A provider or engine supplies bounded capabilities; it does not define personal truth or silently choose product behaviour.
 
-Large basemap, address, road, routing, transport and timetable datasets belong in replaceable regional packs or provider-owned indexes—not the main entity database. Pack design must eventually define coverage, installation/update, versions/checksums, attribution/licensing, failure recovery and portability/reacquisition.
+### Deliberate authority and understandable consequences
 
-A canonical Location may retain stable links to provider features such as an OpenStreetMap object, stop or station entrance. Provider updates may improve context but never overwrite user-owned identity, notes, Relationships or decisions. Personally meaningful provider features may be deliberately promoted to Locations; most remain external features.
+- Drawing or selecting geometry first creates draft interaction state. The user must choose whether it describes a Location, an informational overlay or an active routing policy.
+- Temporary map points, route endpoints and one-time access choices remain transient unless explicitly promoted.
+- Spatial calculation may create or refresh derived cache state. It must not create, edit, archive or delete a Location, Event, reminder, Relationship, mobility profile or policy without the separately authorised workflow appropriate to that record.
+- Ambiguous endpoints, multiple Event venues, missing access points or incompatible constraints ask for a decision or report no result; they are not silently guessed away.
+- The same validated spatial query boundary should eventually support human views and any separately authorised deterministic or bounded AI consumer. No consumer receives a privileged mutation path.
 
-### Geometry, provenance and policy
+### Honest evidence, time and safety
 
-Shared point/line/polygon tooling must retain the geometry's purpose:
+- User assertions, provider facts, generic estimates, user-configured values, observed values, accepted calibration and manual overrides remain distinguishable.
+- Spatial facts and results identify source, relevant dataset/provider version, calculation time and observation/effective time where those affect meaning.
+- Results distinguish straight-line distance, network distance, scheduled travel time, estimated duration, buffers and uncertainty rather than collapsing them into one authoritative number.
+- Accessibility, lighting, traffic, environmental conditions and perceived safety are incomplete, contextual and time-sensitive. Project E may expose attributed evidence and personal preferences but never promise a route is safe or accessible.
+- Visual maps retain a meaningful textual alternative, keyboard-reachable controls, labelled/non-colour distinctions and honest loading, empty, stale, partial and unavailable states under the existing design contracts.
 
-- place geometry describes a Location, boundary or access point;
-- an interest overlay supports exploration/comparison;
-- routing-policy geometry changes route selection.
+## Planned information boundaries
 
-Drawing a shape does not silently create a Location or activate policy. Spatial facts and estimates identify provider/data version, source and relevant observation/effective time. User facts, provider values, generic estimates, calibrated values and overrides remain distinguishable.
+These classifications guide later modelling without preselecting table shapes.
 
-## Candidate capability envelope
-
-| Area | Candidate outcome | Boundary |
-| --- | --- | --- |
-| Location views | Spatial identity, aliases, address, geometry, hierarchy, access points, related records and useful nearby/travel context. | Keep ordinary Overview concise; large maps/comparisons use specialised views. |
-| Map 2.0 | Search/select/save Locations; point/line/area display; canonical and Relationship-projected layers; routes, access points, overlays and spatial-quality findings. | Map remains a projection with textual/degraded alternatives, never a second store. |
-| Journey planning | Walking, running, cycling, driving, public transport and multimodal routes; depart/arrive-by, buffers, transfers, preferences and exclusions. | Endpoints are Locations or deliberate temporary points. No continuous tracking or silent Event mutation. |
-| Event integration | Plan from an Event Location, choose a precise access point, show travel/leave-by and possible conflicts. | Access choice remains journey context unless explicitly saved. Ambiguity asks rather than guesses. |
-| Mobility profiles | User-configured pace, distance, preparation/parking/transfer buffers, slope/stair/accessibility limits and accepted calibration. | Source, effective period and override remain visible; no silent behavioural learning. |
-| Routing policies | Structured mode/time/direction-specific avoidance zones, corridors and infrastructure preferences. | Results explain applied policy, estimate source, uncertainty and unsatisfied constraints; never promise safety. |
-| Decision tools | Travel-time matrix, reachability, Location comparison and nearby exploration. | Results are derived views with scenario/data-version context, not new Location facts. |
-
-Project E should own provider-independent inputs, policy, cache identity, explanations and user experience. A proven free/open-source local routing engine may be preferable to reproducing road parsing, turn restrictions, pathfinding and timetable algorithms. Network routing, if explored, remains optional and replaceable.
-
-## Platform integration
-
-Spatial intelligence should be a shared service rather than an isolated map application. Candidate consumers include Location/entity views, Event/Calendar journey planning, deliberate Inbox travel conditions, Project/Document/Asset context and later explicitly authorised deterministic or AI assistance.
-
-Events continue to relate to ordinary Locations through Relationships; they do not gain duplicate address/geometry columns for routing. The retired Task model creates no compatibility requirement for future work/errand capability.
-
-## Persistence and lifecycle
-
-| Information | Intended ownership |
+| Concept | Intended meaning and lifecycle |
 | --- | --- |
-| Location identity and user-owned geometry/annotations | Canonical entity data. |
-| Provider feature links | Durable references with provenance/version context. |
-| Mobility profiles and routing policies | Inspectable durable configuration/policy. |
-| Basemap/routing/timetable datasets | Replaceable regional packs. |
-| Routes, matrices and reachable areas | Derived results or versioned caches unless explicitly saved as a user-owned journey. |
-| Temporary points/access choices | Transient until deliberately saved. |
+| Canonical Location | User-owned identity for a meaningful place; editable, auditable, exportable and recoverable even without geometry. |
+| Place geometry | User-owned or explicitly accepted spatial description of a Location, with role and provenance. Its exact storage model is deferred. |
+| Access point | A named or typed way to approach a Location. It may remain a Location component/provider feature or become its own Location when independently meaningful. |
+| Location hierarchy | Personally meaningful containment or part-of meaning between Locations. Provider administrative hierarchy remains external context unless deliberately asserted. |
+| Provider feature link | Durable reference from a Location or spatial component to an external feature, including provider namespace and reconciliation context. It is not ownership of the provider feature. |
+| Interest overlay | Durable user-owned spatial configuration for exploration or comparison, not necessarily a canonical entity and never routing-active by implication. |
+| Mobility profile | Inspectable configuration describing how the user intends a calculation to estimate movement and buffers. It is not a silent medical or behavioural profile. |
+| Routing policy | Inspectable configuration that constrains or prefers routes for stated modes, directions, times or contexts. |
+| Regional pack | Replaceable, verifiable external spatial data plus a manifest; reacquirable unless licensing or local derivation requires deliberate backup treatment. |
+| Journey request/result | A versioned calculation and explanation. It is derived/transient or cached unless a later saved-journey workflow proves a distinct durable lifecycle. |
+| Matrix/reachability/comparison | Scenario-bound derived decision output, reproducible where source versions remain available and visibly stale otherwise. |
 
-Cache identity should account for origin/destination/access point, mode, departure/arrival time, active profile/policies and routing/timetable versions. Staleness remains visible.
+### Location identity, address and geometry
 
-Whole-platform export should preserve user-owned Locations, geometry, overlays, profiles, policies and provider references. Large reacquirable packs and disposable caches should not automatically inflate personal recovery bundles.
+A Location may be useful with only a name, only an address, only a point, an area, or no spatial enrichment yet. Address, identity and geometry are related but not interchangeable:
+
+- a postal address can refer to a site containing several meaningful destinations;
+- one meaningful Location can have several entrances or routing anchors;
+- a boundary can describe an area while a representative point supports display;
+- a provider label or feature is evidence/context, not the canonical display identity;
+- reverse geocoding a point produces a proposal, not a user-owned address fact.
+
+Geometry must carry a purpose such as representative point, boundary, entrance, route anchor, informational overlay, avoidance area or preferred corridor. A derived centroid or snapped network point must remain distinguishable from accepted place geometry. Coordinate reference system, axis order, precision and units must be explicit at service/storage boundaries even though their exact representation is deferred.
+
+An access point should become a separate canonical Location only when independent naming, notes, Relationships, reuse, comparison or lifecycle justify that identity. Otherwise it should remain a structured component of its parent Location or an external feature selected for one journey. The first real station/building workflows must test this rule before schema is fixed.
+
+Location-to-Location hierarchy will need explicit semantics rather than coordinate containment alone. A campus may contain a building and a station complex may contain an entrance, but provider containment must not silently create canonical parent Locations or Relationships. Whether hierarchy uses ordinary Relationship types, structured Location components or both is deferred to the first hierarchy workflow.
+
+### Provider references and reconciliation
+
+A durable provider reference should be namespaced and retain enough type, identifier and dataset/version context to re-check it. A label or coordinate alone is not a stable link. On refresh:
+
+- an exact continuing feature can refresh external context without changing user facts;
+- a moved, split, merged, retired or missing feature produces reviewable status rather than automatic relinking;
+- fuzzy spatial/name matching may suggest a replacement but never asserts one;
+- one Location may reference several providers when they describe different aspects of the same place;
+- provider identifiers must never be exposed as Project E entity identity.
+
+The reconciliation state model, matching thresholds and treatment of provider history need representative pack upgrades before they can be designed responsibly.
+
+## Regional data and provider boundary
+
+### Capability separation
+
+Basemap rendering, place/address search, reverse geocoding, feature lookup, geometry operations, road/path routing, timetable routing, elevation and live enrichment are separate capabilities. One engine, provider or format need not own all of them.
+
+Every capability invocation should expose a common envelope:
+
+- requested capability and provider/engine selected;
+- local, network or unavailable execution;
+- input scope and normalised assumptions;
+- coverage and data/version identity;
+- result provenance, warnings, partiality and calculation time;
+- whether fallback is possible and whether fallback would disclose data externally.
+
+Provider selection and fallback must be deterministic and inspectable. A failed local request must not silently become a network request. A visual tile request can reveal viewport interest just as a geocoder or router can reveal a query; privacy treatment must cover all network spatial resources, not only route endpoints.
+
+### Minimum regional-pack contract
+
+Before the first production pack, its manifest and lifecycle must account for:
+
+- stable pack identity, format version and compatible adapter/application versions;
+- declared geographic coverage and available capabilities;
+- component/source versions, build time and effective dates;
+- size, checksums and integrity validation;
+- licensing, redistribution status, required attribution and source notices;
+- acquisition/reacquisition information without embedding credentials;
+- staged installation, validation, activation, rollback and interrupted-update recovery;
+- overlap/conflict behaviour when several packs cover a request;
+- health, staleness, removal and dependent-cache invalidation;
+- export/backup classification and storage cleanup.
+
+Installation should follow inspect/consent, acquire, verify, stage, validate and atomically activate. A failed update leaves the last-known-good pack usable. Removing or replacing a pack cannot delete canonical Locations or user-owned geometry; affected provider context and calculations become unavailable or stale with a clear repair path.
+
+Pack construction and distribution must use only data whose licence and attribution obligations Project E can actually satisfy. The first pack should prove the contract for one useful region and capability rather than invent a universal packaging system in advance.
+
+## Candidate experience and capability envelope
+
+### Location spatial views
+
+A Location Overview should remain concise: identity, address/geometry summary, important provenance or quality warnings and links into focused spatial views. Candidate specialised context includes boundaries, access points, parent/contained Locations, related records, nearby canonical Locations, transport features, travel-time summaries and data coverage.
+
+Opening hours, parking instructions or accessibility notes require their own ownership and freshness semantics before becoming structured fields. Until a workflow demonstrates those semantics, ordinary notes or external provider context are safer than premature schema.
+
+### Map 2.0
+
+Map 2.0 remains a projection over canonical records, Relationships, installed data and explicit overlays. Candidate behaviour includes:
+
+- search scopes that clearly distinguish canonical records, installed provider data and optional online results;
+- selection and inspection without mutation;
+- reviewed **Save as Location** from a provider feature, coordinate or drawn area;
+- points, lines and areas with purpose-specific styling and textual equivalents;
+- canonical layers and Relationship-projected Event, Project, Document, Person, Organisation and Asset context;
+- understandable handling of a record related to zero, one or several Locations;
+- routes, access points, overlays, policy geometry, reachable areas and quality findings;
+- preserved context when moving between Map and canonical pages;
+- useful canonical-coordinate and textual operation without tiles or network access.
+
+Map viewport, layer and selection state should be transient by default. A durable overlay or reusable saved view requires an explicit save action and lifecycle; the exact saved-view model is deferred until repeated use demonstrates what should persist.
+
+### Journey planning contract
+
+A journey request should be provider-independent and make its assumptions visible. Candidate inputs include:
+
+- origin, destination and optional intermediate points, each resolved from a Location, access point or deliberate temporary point;
+- travel mode or permitted multimodal combination;
+- depart-at, arrive-by or untimed planning intent;
+- chosen mobility profile and routing policies;
+- preparation, parking, access, transfer and desired-early-arrival buffers without double counting;
+- accessibility/infrastructure constraints and preference strength;
+- requested alternatives and scenario time.
+
+A useful result should contain more than a polyline and one duration:
+
+- the resolved endpoints/access points and any network snapping;
+- one or more alternatives with legs, modes, distance, scheduled/estimated duration, waits and transfers as applicable;
+- each separate buffer and the resulting departure/arrival milestones;
+- applied, ignored, conflicting or unsatisfied policies;
+- source/engine and dataset/timetable versions;
+- calculation time, coverage, freshness, uncertainty and warnings;
+- a textual itinerary or summary equivalent to the essential visual result;
+- a stable result fingerprint suitable for cache identity and later comparison.
+
+For Event planning, time components should remain legible:
+
+```text
+Event start
+  minus desired early-arrival buffer
+= arrival target
+  minus route duration (including modelled route waits/transfers)
+= leave-by time
+  minus preparation buffer
+= begin-preparing time
+```
+
+Parking or an access walk belongs either in route legs or an explicitly labelled buffer, never both. Public-transport schedule time, generic movement estimates and personal buffer values must not be presented as one equally certain number.
+
+Routes, matrices and reachability calculations are derived. Cache reuse requires equivalent normalised inputs and source versions; a visually similar request is not enough. Saving a named recurring journey, retaining route history or turning a route into canonical Events is deferred until a real workflow proves the required identity, privacy and lifecycle.
+
+### Mobility profiles and routing policies
+
+A mobility profile is user-configured calculation input. Candidate values include pace/speed by mode, comfortable distance, transfer or parking allowance, slope/stair/accessibility limits and accepted calibrations. Values need units, source, effective period and override semantics. No observation changes a profile until the user reviews and accepts it; continuous movement history is not implied.
+
+A routing policy is a structured, inspectable rule. It may express hard exclusion, soft avoidance, preference or an added cost/buffer and may be scoped by mode, direction, time, effective period or scenario. Candidate geometry includes an area, radius, segment, crossing, transfer point or preferred corridor.
+
+The result must explain which policy affected it and when no route satisfies hard constraints. Deterministic precedence and conflict rules are required before policies can be trusted, but their exact algebra should be designed against a real engine and examples rather than abstractly. Labels such as “safer,” “accessible” or “well lit” must be replaced by specific personal preference or attributed dataset claims.
+
+### Event and Calendar integration
+
+An Event continues to relate to ordinary Locations through Relationships. It does not gain routing-specific address or geometry columns. Candidate integration may:
+
+- start a planner from the relevant Event occurrence and venue;
+- ask which venue/access point applies when Relationships are ambiguous;
+- calculate arrival target, leave-by and begin-preparing milestones;
+- show a possible travel conflict as a derived warning with source/freshness;
+- recalculate when Event time, timezone, Location, profile, policy or pack version changes.
+
+Recurring Event occurrences may produce different journey results because timetable and policy context differ; they do not require copied Event rows. Cross-timezone journeys must use precise instants while presenting local context at each end.
+
+Journey calculation never creates a travel Event or reminder. A future action may offer a reviewed draft using existing Event/reminder workflows, but its identity, update behaviour, recurrence interaction and stale-result handling must be explicitly designed and authorised first. Current Event approval boundaries remain unchanged.
+
+### Spatial decision tools
+
+- **Travel-time matrix:** compare selected Locations across explicit modes, profiles, policies and times. Each cell identifies scenario and freshness rather than masquerading as a Location fact.
+- **Reachability:** show network-based areas or reachable canonical records for a stated time/mode/scenario. A geometric radius is acceptable only when clearly named as straight-line approximation.
+- **Location comparison:** combine selected, explainable criteria such as travel time, nearby canonical records and attributed provider context. Weighting is user-visible and the output is not a recommendation fact stored on Locations.
+- **Nearby exploration:** begin from a selected Location or temporary point and distinguish canonical results from provider features. It never assumes current position or promotes results automatically.
+
+Decision tools should be introduced only after their underlying single-route/search results are trustworthy. Bulk calculation needs explicit limits, progress/cancellation, cache behaviour and clear handling of partial failure.
 
 ## Privacy, safety and degraded operation
 
-Spatial records can reveal home, appointments, routines, sensitive Relationships and avoided places. Before implementation, define:
+Spatial information can reveal home, appointments, routines, health providers, relationships and deliberately avoided places. Before any network-backed spatial workflow ships, its design must state:
 
-- which calculations remain local;
-- when a provider is contacted and exactly what is disclosed;
-- provider choice/consent for sensitive queries;
-- separation of personal policy from provider requests where practical;
-- observation, cache and route-history retention/deletion;
-- offline and stale-data behaviour;
-- honest limitations for accessibility, environment and safety claims.
+- the provider contacted and exact information disclosed, including viewport/tile requests;
+- whether the request is always local, always explicitly invoked, allowed by a durable preference or confirmed per use;
+- whether personal labels, entity IDs, notes, policies or Event details can be excluded from provider input;
+- request, result, cache and diagnostic retention and deletion;
+- provider terms, rate limits and attribution;
+- the local/manual alternative and the state shown on refusal or failure.
 
-The preferred direction is rich local capability in installed regions with optional online enrichment elsewhere. Core records and manually entered spatial facts remain usable without WAN access.
+Personal routing policy should remain local where practical; a network provider should receive only the minimum geometry/constraints needed for the expressly requested calculation. Logs, diagnostics and fixtures must not capture real private endpoints. Exact route-history and cache retention defaults require a threat/lifecycle review during the first routing slice.
 
-## Delivery approach and completion signals
+Degraded behaviour is capability-specific:
 
-Likely workstreams are spatial foundations/data packs; Map 2.0; routing/journey planning; personal profiles/policies; decision tools; and integration. Their sequence depends on authorised feasibility work and real use.
+- no tiles still permits canonical coordinate lists and textual results;
+- no geocoder still permits manual Location/address/coordinate entry;
+- no routing pack/provider reports routing unavailable without weakening Location use;
+- stale packs/results remain inspectable with age/version warnings where useful;
+- partial regional coverage must not fabricate a complete route or silently switch provider;
+- corrupt or incompatible packs remain inactive while last-known-good data stays available.
 
-An integrated Phase 3 outcome should demonstrate that:
+## Persistence, cache, audit and portability
 
-- canonical Locations remain distinct from external spatial features;
-- a versioned regional pack can be installed/replaced safely;
-- a map feature can be reviewed and saved as a Location;
-- Map/Location views explain geometry, provider and degraded state;
-- at least one useful local routing mode works between deliberate endpoints;
-- a mobility profile and avoidance policy visibly affect an explained result;
-- travel-time/reachability supports a meaningful comparison;
-- Event journey planning uses a Location/access point without silent canonical mutation.
+Durable user-owned Locations, accepted geometry, overlays, profiles, policies and provider references belong in whole-platform portability. Reacquirable packs and disposable caches should be excluded by default but represented by enough manifest/configuration information to explain what must be reacquired. Locally built or non-redistributable packs need a deliberate backup story before users can rely on them.
 
-These are planning signals, not independent feature promises.
+Cache identity should include every input that can change meaning: resolved endpoints/access points, mode, depart/arrive intent, scenario time, profile/policy fingerprints, engine/provider configuration, spatial/timetable versions and relevant calculation options. Cache records need creation/access time, provenance, staleness reason and safe invalidation. A cache may accelerate a result but cannot be the sole record of a user-owned decision.
 
-## Explicit deferrals
+Canonical/configuration mutations and pack install/activate/remove actions require appropriate audit. Whether individual read-only spatial queries need a local privacy ledger is deferred to the threat model; indiscriminate query logging could create the sensitive history it is meant to explain.
 
-No present commitment exists for global offline completeness, commercial-map parity, live turn-by-turn navigation, continuous location tracking/history, mobile applications, opaque/AI-selected routing, silent learning, real-time traffic/transit as a core dependency, public reviews, safety guarantees, bulk feature promotion, automatic Event/reminder/policy mutation or a particular engine/provider/data format.
+Schema work must evolve forward through the migration ledger. Existing Location coordinates and source values require representative upgrade tests before richer provenance or geometry replaces their current shape. Development convenience does not justify maintaining two active spatial models.
 
-## Open decisions
+## Data quality and operational visibility
 
-- First installed region, useful coverage and practical pack size.
-- Boundary among Project E, a local routing engine and optional providers.
-- Minimum geometry/spatial-index model for points, access points, lines and areas.
-- Stable reconciliation with changing OSM/transit identifiers.
-- Public-transport data/update and station-complex modelling.
-- Policy precedence, effective dates, conflict handling and uncertainty presentation.
-- Offline basemap/geocoder/routing installation and cache-retention experience.
-- Exact Event Location/access-point/leave-by/reminder interaction.
+Candidate deterministic findings include incomplete coordinate pairs, invalid geometry, implausible bounds, duplicate/promotable Locations, provider-link retirement, disagreement between accepted and provider geometry, missing routing access, uncovered Locations and unavailable/outdated pack dependencies. Findings must identify the affected fact and repair path; they must not rewrite canonical data.
+
+Routine pack freshness or successful routing should not create Inbox noise. A future persistent spatial issue should use the platform's eventual deduplicated issue model rather than repeated notifications. Inbox travel attention requires a separately defined due condition and explicit authorisation.
+
+## Delivery approach
+
+### Evidence required before each implementation slice
+
+An authorised slice should begin with a compact implementation packet containing:
+
+1. the concrete user decision or workflow it improves;
+2. current-code and current-data constraints, including representative upgrade state;
+3. a small fictional or appropriately licensed representative dataset;
+4. alternatives considered, including retaining current behaviour;
+5. a time-boxed feasibility spike where performance, engine or format suitability is uncertain;
+6. privacy/disclosure, licensing, storage, failure and recovery analysis;
+7. the narrow product and service contract being committed;
+8. migration, portability, audit and cache consequences;
+9. behavioural, contract, migration, degraded-operation and accessible UI verification;
+10. the fallback or rollback if the approach proves unsuitable.
+
+The spike is evidence, not production architecture. Production work should choose the smallest reversible boundary that supports the proven workflow, remove superseded experiments and record material choices in the responsible current reference or ADR.
+
+### Candidate workstreams and dependency shape
+
+This is a likely dependency order, not a promised release sequence:
+
+1. **Spatial foundations:** first workflow/region, richer Location semantics, provider references, provenance, service envelope and pack feasibility.
+2. **Regional data and local search/map:** pack lifecycle plus one useful local capability and honest fallback.
+3. **Map 2.0/save workflow:** canonical/provider search, inspection, geometry display and reviewed Location creation.
+4. **Single-mode journey proof:** deliberate endpoints, one useful routing mode, explanation and cache/version behaviour.
+5. **Profiles and policy:** one profile and one policy visibly alter an explained result.
+6. **Event journey planning:** precise venue/access selection and derived leave-by/begin-preparing output without mutation.
+7. **Decision tools:** matrix, reachability or comparison based on trusted route/search contracts.
+8. **Transit/multimodal expansion:** only if source availability, engine fit, update burden and real use justify it.
+
+An authorised slice may reorder these when it can prove a coherent alternative, but it should not build broad schema or pack machinery with no end-to-end useful consumer.
+
+### Verification strategy
+
+Each delivered capability should be tested at the boundaries it introduces:
+
+- fresh schema and representative migration from current Location data;
+- deterministic fictional geometry/network/timetable fixtures small enough for the repository and valid to redistribute;
+- adapter contract tests independent of any one provider;
+- pack integrity, incompatibility, interrupted update, rollback, overlap and removal;
+- offline, refused-network, timeout, partial coverage, stale result and corrupt data behaviour;
+- canonical mutation authority, duplicate prevention, audit and portability;
+- route/profile/policy determinism and explanation;
+- textual equivalence, keyboard operation and supported desktop visual QA;
+- measured performance and storage against the chosen first-region workload rather than an invented global scale.
+
+The full test and compile suites remain required. Spatial UI slices should also receive a temporary-port smoke test and human visual/keyboard verification.
+
+## Deferred implementation decision register
+
+These choices are deliberately deferred because the present plan lacks the concrete workflow or evidence needed to make them responsibly. Resolving one does not authorise its implementation.
+
+| ID | Decision deferred | Evidence required to resolve it | Safe position until resolved |
+| --- | --- | --- | --- |
+| D01 | First end-to-end workflow, installed region and useful coverage/size | Real priority, sample Locations, storage budget and an acquisition/build spike | Keep candidate workstreams unsequenced; do not optimise for global coverage. |
+| D02 | Rich Location field/provenance model and migration of current address, coordinates and `source` | Current-data audit plus create/edit/save-from-map workflows and upgrade fixtures | Preserve current valid fields; do not add parallel geometry truth. |
+| D03 | Geometry representation, supported types, CRS, precision, validation and spatial index | Queries needed by the first slice, representative points/areas and measured SQLite/library options | Require explicit coordinates/units at boundaries; use current points only. |
+| D04 | Access-point and Location-hierarchy persistence/cardinality | At least one building and one station/area workflow testing independent identity and reuse | Use a Location or temporary/provider point explicitly; no inferred hierarchy. |
+| D05 | Provider-reference reconciliation across feature moves/splits/merges | Two real versions of the chosen source and reviewed mismatch cases | Store no supposedly universal external ID; never auto-relink. |
+| D06 | Regional-pack format, component granularity, build/distribution and overlap rules | First capability data, licensing, size, update and rollback prototype | Keep external data outside the entity database and adapters replaceable. |
+| D07 | Map renderer, local tile format and drawing/selection tooling | Accessibility, offline, performance, licence and maintenance spike in current server-rendered UI | Retain the current Map and textual fallback; no new broad client dependency. |
+| D08 | Local/online geocoder choice, ranking, reverse geocoding and duplicate workflow | Representative Australian queries, current Nominatim behaviour, pack feasibility and privacy review | Manual entry remains authoritative; online lookup stays explicit and optional. |
+| D09 | Routing engine/runtime/process boundary and first mode | Correctness, turn restriction, policy, resource, packaging, failure and maintenance comparison | Do not implement pathfinding casually or make network routing mandatory. |
+| D10 | Journey/result persistence, cache schema and route-history retention | Repeated-use workflow, threat model, reproducibility need and measured calculation cost | Treat results as transient; retain no personal route history by implication. |
+| D11 | Mobility-profile schema and routing-policy precedence/conflicts | Real preferences, engine controls and worked hard/soft/conflicting examples | Use explicit per-request inputs; no silent learning or unexplained rules. |
+| D12 | Public-transport sources, updates, station complexes and multimodal routing | First-region licence/coverage, static timetable samples, engine fit and update burden | Transit remains a candidate after a trustworthy simpler route slice. |
+| D13 | Event venue cardinality, occurrence-specific access choice and optional reminder/travel-Event workflow | Actual Event journeys, recurring/cross-timezone cases and explicit mutation design | Calculate only on request; ask on ambiguity; create no Event/reminder. |
+| D14 | Network consent controls, provider disclosure UI and query/privacy logging | Threat model covering tiles, search and routes plus local alternatives | No hidden network fallback; disclose minimum data; avoid query logs. |
+| D15 | Elevation, accessibility and environmental evidence model | Available first-region attributes, freshness/error analysis and user need | Present no unsupported safety/accessibility conclusion. |
+| D16 | Coverage selection and fallback across overlapping local packs/providers | Multiple-pack prototype with gaps, boundaries and version conflicts | Report unavailable/partial coverage; never silently blend incompatible results. |
+| D17 | New dependency, local engine installation and upgrade support | Standard-library feasibility, maintenance/security/licence review and repeatable setup | Add no dependency or executable pack merely for architectural neatness. |
+| D18 | Performance/storage budgets, pruning and bulk-calculation limits | Measured first-region pack and representative device/workload | Bound each authorised slice and expose progress/cancellation where needed. |
+| D19 | Durable overlays, saved views or saved journeys and their ontology | Repeated workflow proving identity, editing, sharing across views and recovery needs | Keep viewport, selection, temporary points and calculations transient. |
+| D20 | Location-derived timezone and cross-zone spatial time semantics | Cross-zone Event/journey cases and authoritative timezone-boundary source | Event/Calendar IANA timezone remains authoritative; do not infer silently. |
+
+### Decision procedure
+
+When implementation reaches one of these gates:
+
+1. state the concrete workflow and the decision ID;
+2. inspect current code/data and collect the required representative evidence;
+3. compare viable options, including doing less;
+4. test the riskiest assumption with a bounded spike if needed;
+5. choose the narrowest reversible option that meets the workflow and accepted boundaries;
+6. ask the user before a material product-direction or long-term convention change;
+7. record the decision, evidence, trade-offs, migration and reconsideration trigger in this workspace and the responsible ADR/reference documentation when implemented.
+
+“Decide during implementation” never means “leave accidental behaviour undocumented.” If evidence is still insufficient, the slice should retain the safe position, narrow scope or stop at the decision gate.
+
+## Explicit deferrals outside the current commitment
+
+Phase 3 does not presently commit to global offline completeness, commercial-map parity, live turn-by-turn navigation, continuous location tracking/history, a mobile application, background current-location collection, opaque/AI-selected routing, silent behavioural learning, real-time traffic/transit as a core dependency, public reviews, safety guarantees, automatic Event/reminder/Location/policy mutation, bulk provider-feature promotion, arbitrary executable extensions or any particular provider/engine/format before its decision gate is resolved.
+
+These items require separate product authorisation even if foundations built in Phase 3 later make them technically possible.
+
+## Integrated completion signals
+
+Phase 3 should be judged by a useful integrated spatial system, not a feature count. The current end-state signals are:
+
+- canonical Locations retain personal identity independently of providers and installed data;
+- richer Location geometry/provenance upgrades current data without duplicate truth;
+- one useful regional pack can be inspected, installed, replaced, rolled back and removed safely;
+- a provider feature or deliberate point can be reviewed and saved as a Location with duplicate handling;
+- Map/Location views explain canonical/provider geometry, coverage, provenance and degraded state accessibly;
+- at least one useful local routing mode works between deliberate endpoints and explains source, assumptions and uncertainty;
+- a mobility profile and a routing policy each visibly affect an explained result;
+- an Event occurrence can initiate unambiguous access-aware journey planning and derived time milestones without canonical mutation;
+- a matrix, reachability or comparison workflow supports a meaningful personal decision from the same route/search contracts;
+- export/recovery preserves user-owned spatial data while replaceable packs/caches retain honest reacquisition and staleness behaviour;
+- privacy disclosure, offline refusal/failure and unsupported safety/accessibility claims remain controlled and understandable.
+
+These are planning signals, not independent feature promises. Evidence may justify changing or removing a signal while preserving the phase objective and accepted boundaries.
 
 ## Phase 3 expansion workspace
 
-**Planning only:** add dated numbered **Complete:** entries here only after explicitly authorised implementation is delivered and verified.
+**Planning only:** add dated numbered **Complete:** entries here only after explicitly authorised implementation is delivered and verified. Each entry should name the implemented slice and any deferred-decision IDs it resolved, then link or summarise the resulting durable contract.
 
 > **Guiding principle:** Make location and movement first-class operational concepts without turning replaceable spatial data into competing personal truth.
