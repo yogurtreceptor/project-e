@@ -2,6 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-05 · Phase 3 Map 2.0A canonical workspace
+
+- Replaced the automatic Leaflet CDN/OSM tile page with a map-dominant browser-native canonical coordinate canvas, stable canonical-first search, accessible persistent selection, grouped shared-place details and a complete text equivalent.
+- Added deterministic canonical layer/state controls, explicit off-by-default Nominatim query disclosure, honest unavailable layer/basemap states and a bounded local viewport endpoint with stale-request abort/discard.
+- Resolved N2's D07/D08/D14 and Map-state D19 subset through dense fictional evidence, 301 behavioral tests, compilation and temporary-port wide/constrained/keyboard/visual review without choosing pack, tile, routing or later provider architecture.
+
 ## 2026-08-05 · Phase 3 canonical place foundation
 
 - Replaced flattened Location place fields with purpose/status address assertions and role-based, validated WGS84 point/line/area geometry assertions while preserving current form, detail and Map workflows through preferred projections.

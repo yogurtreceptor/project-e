@@ -33,12 +33,18 @@ class CollectionAndSpecialistDesignTests(unittest.TestCase):
         self.assertIn("Clear filters", filtered)
 
     def test_map_has_keyboard_region_text_alternative_and_remote_failure(self):
-        payload = {"defaultCenter": {"latitude": 0, "longitude": 0, "zoom": 2}, "layers": [], "markers": []}
+        payload = {
+            "defaultCenter": {"latitude": 0, "longitude": 0, "zoom": 2},
+            "baseViews": [], "layers": [], "contextLayers": [], "places": [],
+            "query": "", "searchResults": [], "selections": {},
+            "providerStatus": {"requested": False, "state": "disabled", "name": "Online search", "execution": "Online", "explanation": "No request made."},
+            "viewportUrl": "/map/viewport", "viewportLimit": 500,
+        }
         html = views.map_page(payload)
-        self.assertIn('role="region" tabindex="0" aria-label="Entity map"', html)
-        self.assertIn("Interactive map unavailable", html)
-        self.assertIn("canonical coordinates remain available", html)
-        self.assertIn("map-remote-status')?.setAttribute('hidden'", html)
+        self.assertIn('role="region" tabindex="0" aria-label="Pan and zoom canonical coordinate map"', html)
+        self.assertIn("Add a representative point", html)
+        self.assertIn("Basemap unavailable", html)
+        self.assertIn("no code or tiles were requested", html)
 
     def test_family_tree_has_keyboard_region_and_text_relationships(self):
         tree = GraphLayout((PositionedNode(1, "Parent", "/people/1", 100, 80), PositionedNode(2, "Child", "/people/2", 100, 210)), (PositionedEdge(1, 2, "parent of"),), 300, 300)

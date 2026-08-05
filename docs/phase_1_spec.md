@@ -81,7 +81,7 @@ People browse pages show name and date of birth. Person journals are intentional
 
 The Maps milestone adds a geographic view without changing the Phase 1 boundaries.
 
-Implemented scope:
+Implemented Phase 1 baseline (the current Map renderer and interaction contract is superseded by Phase 3 N2):
 
 - interactive Leaflet/OpenStreetMap map page
 - Location, Organisation, People and Asset layer controls

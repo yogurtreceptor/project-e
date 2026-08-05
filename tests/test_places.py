@@ -96,9 +96,13 @@ class CanonicalPlaceTests(unittest.TestCase):
         self.assertEqual(2, len(geometries))
         self.assertEqual(1, sum(item.is_current for item in geometries))
         self.assertEqual(1, sum(item.is_preferred for item in geometries))
-        marker = next(item for item in payload["markers"] if item["entityId"] == location_id)
-        self.assertEqual((-27.5002, 153.0002), (marker["latitude"], marker["longitude"]))
-        self.assertEqual("User confirmed", marker["geometryConfidence"])
+        place = next(
+            item
+            for item in payload["places"]
+            if any(record["entityId"] == location_id for record in item["records"])
+        )
+        self.assertEqual((-27.5002, 153.0002), (place["latitude"], place["longitude"]))
+        self.assertEqual("User confirmed", place["geometryConfidence"])
         self.assertIsNone(stale_entity_provenance)
         self.assertTrue(
             any(
@@ -290,9 +294,13 @@ class CanonicalPlaceTests(unittest.TestCase):
         self.assertEqual([], child_addresses)
         self.assertEqual(station_id, context.inherited_address_location_id)
         self.assertEqual("10 Railway Parade, Example", context.display_address.display_text)
-        marker = next(item for item in payload["markers"] if item["entityId"] == entrance_id)
-        self.assertEqual("10 Railway Parade, Example", marker["address"])
-        self.assertEqual(station_id, marker["addressInheritedFrom"])
+        place = next(
+            item
+            for item in payload["places"]
+            if any(record["entityId"] == entrance_id for record in item["records"])
+        )
+        self.assertEqual("10 Railway Parade, Example", place["address"])
+        self.assertEqual(station_id, place["addressInheritedFrom"])
 
 
 if __name__ == "__main__":

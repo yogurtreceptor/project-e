@@ -1260,17 +1260,23 @@ class EntityDatabaseTests(unittest.TestCase):
             payload = build_map_payload(connection)
 
         layers = {layer["id"] for layer in payload["layers"]}
-        marker_titles = {marker["title"] for marker in payload["markers"]}
-        marker_layers = {marker["title"]: marker["layerId"] for marker in payload["markers"]}
+        mapped_records = {
+            record["title"]: record["layerId"]
+            for place in payload["places"]
+            for record in place["records"]
+        }
         enabled_layers = {layer["id"] for layer in payload["layers"] if layer["enabled"]}
-        self.assertEqual(layers, {"locations", "organisations", "people", "assets"})
+        self.assertEqual(
+            layers,
+            {"locations", "organisations", "people", "assets", "events", "projects", "documents"},
+        )
         self.assertEqual(enabled_layers, {"locations"})
-        self.assertIn("Brisbane City Hall", marker_titles)
-        self.assertIn("City Records Office", marker_titles)
-        self.assertNotIn("Unplaced archive", marker_titles)
-        self.assertNotIn("Ada Lovelace", marker_titles)
-        self.assertEqual(marker_layers["Brisbane City Hall"], "locations")
-        self.assertEqual(marker_layers["City Records Office"], "organisations")
+        self.assertIn("Brisbane City Hall", mapped_records)
+        self.assertIn("City Records Office", mapped_records)
+        self.assertNotIn("Unplaced archive", mapped_records)
+        self.assertNotIn("Ada Lovelace", mapped_records)
+        self.assertEqual(mapped_records["Brisbane City Hall"], "locations")
+        self.assertEqual(mapped_records["City Records Office"], "organisations")
 
     def test_new_domains_share_entity_relationship_search_and_map_architecture(self) -> None:
         project_definition = DEFINITIONS_BY_SLUG["projects"]
@@ -1377,11 +1383,15 @@ class EntityDatabaseTests(unittest.TestCase):
         result_ids = {result["entity"].id for result in relationship_results}
         self.assertIn(project_id, result_ids)
         self.assertIn(document_id, result_ids)
-        marker_layers = {marker["title"]: marker["layerId"] for marker in payload["markers"]}
-        self.assertEqual(marker_layers["Field Laptop"], "assets")
-        self.assertEqual(marker_layers["Project Office"], "locations")
-        self.assertNotIn("Operation Eddy", marker_layers)
-        self.assertNotIn("Architecture Note", marker_layers)
+        mapped_records = {
+            record["title"]: record["layerId"]
+            for place in payload["places"]
+            for record in place["records"]
+        }
+        self.assertEqual(mapped_records["Field Laptop"], "assets")
+        self.assertEqual(mapped_records["Project Office"], "locations")
+        self.assertNotIn("Operation Eddy", mapped_records)
+        self.assertNotIn("Architecture Note", mapped_records)
 
     def test_entity_type_constraint_migrates_for_new_domains(self) -> None:
         legacy_path = Path(self.temp_dir.name) / "legacy.sqlite3"
@@ -1420,34 +1430,53 @@ class EntityDatabaseTests(unittest.TestCase):
 
         self.assertIsNotNone(project)
 
-    def test_map_page_contains_layer_controls_and_marker_links(self) -> None:
+    def test_map_page_contains_layer_controls_and_grouped_place_links(self) -> None:
+        place = {
+            "id": "location:1",
+            "kind": "canonical",
+            "title": "Brisbane City Hall",
+            "address": "64 Adelaide St",
+            "latitude": -27.4689,
+            "longitude": 153.0235,
+            "geometryConfidence": "User confirmed",
+            "geometrySource": "",
+            "sourceLabel": "Project E · Local",
+            "coverageState": "Canonical Location",
+            "recordCount": 1,
+            "layerIds": ["locations"],
+            "records": [
+                {
+                    "entityId": 1,
+                    "entityType": "location",
+                    "entityLabel": "Location",
+                    "title": "Brisbane City Hall",
+                    "layerId": "locations",
+                    "url": "/locations/1",
+                    "placeCount": 1,
+                }
+            ],
+        }
         payload = {
             "defaultCenter": {"latitude": -27.4698, "longitude": 153.0251, "zoom": 11},
+            "baseViews": [],
             "layers": [
                 {"id": "locations", "label": "Locations", "entity_type": "location", "enabled": True},
                 {"id": "organisations", "label": "Organisations", "entity_type": "organisation", "enabled": False},
             ],
-            "markers": [
-                {
-                    "id": "locations-1",
-                    "layerId": "locations",
-                    "entityId": 1,
-                    "entityType": "location",
-                    "title": "Brisbane City Hall",
-                    "entityLabel": "Location",
-                    "locationTitle": "Brisbane City Hall",
-                    "address": "64 Adelaide St",
-                    "latitude": -27.4689,
-                    "longitude": 153.0235,
-                    "url": "/locations/1",
-                }
-            ],
+            "contextLayers": [],
+            "places": [place],
+            "query": "",
+            "searchResults": [],
+            "selections": {"location:1": place},
+            "providerStatus": {"requested": False, "state": "disabled", "name": "OpenStreetMap Nominatim", "execution": "Online", "explanation": "Off"},
+            "viewportUrl": "/map/viewport",
+            "viewportLimit": 500,
         }
 
         html = views.map_page(payload)
 
-        self.assertIn('data-layer-toggle="locations" checked', html)
-        self.assertIn('data-layer-toggle="organisations">', html)
+        self.assertIn('data-map-layer="locations" checked', html)
+        self.assertIn('data-map-layer="organisations"', html)
         self.assertIn("Brisbane City Hall", html)
         self.assertIn("/locations/1", html)
 

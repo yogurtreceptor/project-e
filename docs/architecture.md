@@ -101,7 +101,7 @@ Search, structured filters, timelines, maps, data quality and audit are projecti
 
 - `app/discovery_repository.py`, `app/query_engine.py` and `app/structured_filters.py` own retrieval.
 - `app/timeline.py` derives real-world chronology; operational audit events do not become Timeline events.
-- `app/geo.py` derives map markers from each Location's preferred current representative point and from Relationships. The map owns no records.
+- `app/geo.py` groups canonical Map places from each Location's preferred current representative point, qualifying Relationships and current Asset coordinates; it also owns deterministic canonical-first Map search and the bounded local viewport read model. `app/static/map-workspace.js` renders those same-origin results without a remote-code or tile dependency. The Map owns no records.
 - `app/data_quality.py` and `app/integrity.py` report deterministic findings.
 - `app/audit.py` reads append-only operational history.
 

@@ -33,16 +33,6 @@ Trigger: representative data shows noticeable latency or memory use, or a large 
 
 Direction: move basic filtering into SQLite first; consider FTS5 only if indexed queries are insufficient. Preserve relationship-context matching and avoid an external search service.
 
-## Map UI uses optional external resources
-
-Severity: low
-
-Leaflet assets, map tiles and Nominatim address lookup require WAN access. Core entity data, manual coordinates and non-map workflows remain local and usable without them.
-
-Trigger: the map becomes a core offline workflow.
-
-Direction: vendor client assets and support a deliberate local/offline tile strategy. Keep geocoding behind the existing replaceable provider boundary.
-
 ## Local static-asset cache policy
 
 Severity: low

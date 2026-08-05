@@ -117,13 +117,13 @@ Location is the canonical geographic entity. An address describes a Location and
 
 A `contains_location` Relationship connects an enduring parent place to a child Location. A child has at most one active parent and containment cannot cycle. A child with no address may display an ancestor's preferred physical address, but that inherited display is not stored on the child. An independently useful entrance can be a child Location; otherwise an entrance remains a geometry role on its parent.
 
-The Map derives markers from canonical records:
+The Map derives one place pin with grouped canonical records from:
 
 - Locations with a current representative point;
-- People or Organisations connected to a coordinate-bearing Location;
+- any canonical record connected through a qualifying Location Relationship, with separate type layers controlling visibility;
 - Assets with direct coordinates or a qualifying Location Relationship.
 
-Missing representative points affect map eligibility, not Location validity. Projects, Documents and Events are not map-marker entities in the current model. Rich geometry is now canonical storage, while richer Map presentation, regional data and routing remain later Phase 3 work.
+Missing representative points affect map eligibility, not Location validity. A record related to several Locations remains one canonical record represented in each place group, and browsing or selecting never creates spatial truth. Rich geometry is canonical storage; installed regional map/provider context, richer layers and routing remain later Phase 3 work.
 
 ## Ontology checks for new work
 

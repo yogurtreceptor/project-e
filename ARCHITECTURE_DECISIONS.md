@@ -4,7 +4,7 @@ This file preserves long-term structural choices and their rationale. Search its
 
 New decisions are appended with Status, Date, Decision, Reason and Consequences. Do not record small implementation choices. If replaced, retain the old entry as Superseded and append its replacement.
 
-The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027), the shared temporal-occurrence boundary (ADR-028) and canonical place assertions (ADR-029).
+The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027), the shared temporal-occurrence boundary (ADR-028), canonical place assertions (ADR-029) and the offline-first Map workspace seam (ADR-030).
 
 ## ADR-001: Map as an entity view
 
@@ -440,3 +440,18 @@ Fictional address-history, station/entrance, building/area and two-provider-vers
 
 Consequences:
 The editable Location form remains a narrow projection over the preferred current physical address and representative point; replacement retains prior assertions as history. The Map reads only the preferred current representative point, and a child may display but never copy an ancestor address. Migration `20260805_33_canonical_place_foundation` removes flattened Location place columns only after preserving valid values and provenance, and refuses incomplete or invalid legacy coordinates. Whole-platform validation covers geometry and containment independently of SQLite triggers. Reconsider coordinate encoding only when an authorised spatial engine demonstrates query/index requirements JSON cannot reasonably meet, single active parent only for a concrete ambiguous real-place workflow, and provider reconciliation only with reviewed save/refresh evidence; this decision chooses no provider or N2 renderer architecture.
+
+## ADR-030: Keep the first Map workspace browser-native and provider-neutral
+
+Status: Accepted
+
+Date: 2026-08-05
+
+Decision:
+Render Map 2.0A with a browser-native coordinate canvas over grouped canonical place payloads and a bounded same-origin viewport endpoint. Server-render and rank canonical search separately from viewport loading. Store last viewport, canonical layer visibility and sidebar state only in failure-tolerant browser-local storage; keep selection in the URL. Remove Leaflet CDN and automatic OSM tile requests. Expose unavailable base/provider layers with explanations, and permit the existing Nominatim boundary only through an off-by-default, explicit per-search control that sends the entered query without adding canonical metadata.
+
+Reason:
+Dense N1 evidence showed that grouping 864 flat record markers into 96 canonical place payloads reduced compact JSON from 339 KB to 86 KB, while local viewport filtering remained below 0.9 ms. A temporary-port browser review proved constrained reflow, keyboard operation, non-colour selection, stable search through pan/zoom and zero cross-origin page resources. This gives N2 a useful offline workspace and an honest degraded state without prematurely fixing N4's tile/pack/search provider or a routing architecture.
+
+Consequences:
+Map browsing, selection, clustering, text alternatives and canonical layer controls work without WAN access or installed packs. Stale viewport fetches are aborted and out-of-order responses are ignored; panning never reruns ranked search. Records sharing a Location use one pin and records related to several Locations state that multiplicity. Normal/satellite/terrain and provider/workflow overlays remain visible but unavailable until their own evidence gates. Reconsider the renderer only when a selected local basemap cannot integrate safely, representative data exceeds the bounded seam, or a reviewed provider has a materially different rendering/attribution lifecycle. This decision selects no pack format, tile source, routing engine, current-location mechanism or later provider architecture, and it supersedes ADR-003's statement that Projects and Documents categorically cannot participate in Map projection when they have a qualifying Location Relationship.

@@ -41,6 +41,7 @@ class RequestSupportMixin:
             "event-form.js": "text/javascript; charset=utf-8",
             "inbox-count.js": "text/javascript; charset=utf-8",
             "mini-month-picker.js": "text/javascript; charset=utf-8",
+            "map-workspace.js": "text/javascript; charset=utf-8",
             "reminder-timings.js": "text/javascript; charset=utf-8",
             "quick-create.js": "text/javascript; charset=utf-8",
             "shell.js": "text/javascript; charset=utf-8",

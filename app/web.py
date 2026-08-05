@@ -88,7 +88,7 @@ from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_i
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
     list_scheduled_jobs, run_job_now, set_job_enabled)
 from app.automation_service import ensure_registered_rules, list_rules, list_runs, set_rule_enabled
-from app.geo import build_map_payload, geocoder
+from app.geo import build_map_payload, build_map_viewport_payload, geocoder
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
@@ -1312,13 +1312,58 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
         self.respond_page("Data Quality Centre", views.data_quality_page(findings), active_slug="system-tools")
 
     def handle_map(self, query: dict[str, str]) -> None:
+        search_query = query.get("q", "").strip()
+        provider_requested = query.get("online") == "1" and bool(search_query)
+        provider_results = []
+        provider_error = ""
+        if provider_requested:
+            try:
+                provider_results = geocoder().search(search_query, limit=5)
+            except Exception:
+                provider_error = "unavailable"
         with connect(self.database_path) as connection:
-            payload = build_map_payload(connection)
+            payload = build_map_payload(
+                connection,
+                search_query,
+                provider_results=provider_results,
+                provider_requested=provider_requested,
+                provider_error=provider_error,
+            )
         self.respond_page(
             "Map",
-            views.map_page(payload, query.get("entity_id", "")),
+            views.map_page(
+                payload,
+                query.get("entity_id", ""),
+                selected_key=query.get("selected", ""),
+            ),
             active_slug="map",
         )
+
+    def handle_map_viewport(self, query: dict[str, str]) -> None:
+        try:
+            bounds = {
+                name: float(query[name])
+                for name in ("west", "south", "east", "north")
+            }
+            raw_layers = query.get("layers", "")
+            layer_ids = (
+                set()
+                if raw_layers == "none"
+                else {item for item in raw_layers.split(",") if item}
+            )
+            with connect(self.database_path) as connection:
+                payload = build_map_viewport_payload(
+                    connection,
+                    **bounds,
+                    layer_ids=layer_ids,
+                    request_token=query.get("request", ""),
+                )
+            self.respond_json(payload)
+        except (KeyError, TypeError, ValueError):
+            self.respond_json(
+                {"error": "Valid bounded viewport coordinates are required."},
+                status=HTTPStatus.BAD_REQUEST,
+            )
 
     def handle_geocoding_search(self, query: dict[str, str]) -> None:
         if self.command != "GET":

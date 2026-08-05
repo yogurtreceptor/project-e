@@ -33,7 +33,7 @@ class OfflineOperationTests(unittest.TestCase):
                     "Offline Place", get_entity_by_id(connection, entity_id).title
                 )
                 payload = build_map_payload(connection)
-            self.assertEqual("Offline Place", payload["markers"][0]["title"])
+            self.assertEqual("Offline Place", payload["places"][0]["title"])
 
 
 if __name__ == "__main__":

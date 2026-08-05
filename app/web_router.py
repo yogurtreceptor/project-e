@@ -52,7 +52,10 @@ def route_request(handler) -> None:
     if parts[0] == "data-quality":
         handler.handle_data_quality()
         return
-    if parts[0] == "map":
+    if parts == ["map", "viewport"]:
+        handler.handle_map_viewport(query)
+        return
+    if parts == ["map"]:
         handler.handle_map(query)
         return
     if parts[0] == "geocoding" and len(parts) == 2 and parts[1] == "search":
