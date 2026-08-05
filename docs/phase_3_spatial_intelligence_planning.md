@@ -64,6 +64,7 @@ It does **not** currently have rich geometry, Location hierarchy, access points,
 - Drawing or selecting geometry first creates draft interaction state. The user must choose whether it describes a Location, an informational overlay or an active routing policy.
 - Temporary map points, route endpoints and one-time access choices remain transient unless explicitly promoted.
 - Spatial calculation may create or refresh derived cache state but remains read-only over canonical records. The accepted **Add journey to Calendar** workflow is a separate reviewed mutation: one confirmation may atomically create the fully previewed set of stage Events. Later recalculation never silently edits those Events.
+- Materialised journey-stage Events are planner-managed. Their calculated start/end/timezone and routing/service fields are not directly editable in the ordinary Event form. A user changes planner inputs such as destination, pace or buffers and applies a reviewed journey-scope replan instead.
 - Ambiguous endpoints, multiple Event venues, missing access points or incompatible constraints ask for a decision or report no result; they are not silently guessed away.
 - The same validated spatial query boundary should eventually support human views and any separately authorised deterministic or bounded AI consumer. No consumer receives a privileged mutation path.
 
@@ -91,7 +92,7 @@ These classifications guide later modelling without preselecting table shapes.
 | Routing policy | Inspectable configuration that constrains or prefers routes for stated modes, directions, times or contexts. |
 | Regional pack | Replaceable, verifiable external spatial data plus a manifest; reacquirable unless licensing or local derivation requires deliberate backup treatment. |
 | Journey request/result | A versioned calculation and explanation. It is derived/transient or cached unless a later saved-journey workflow proves a distinct durable lifecycle. |
-| Calendar journey materialisation | One user-confirmed group of separate canonical Events representing the journey's stages, with common source/provenance and a coherent group lifecycle. The grouping mechanism is deferred. |
+| Calendar journey materialisation | One user-confirmed ordered group of separate canonical Events representing the journey's stages. Planner-owned schedule fields are changed through scoped replan, not direct Event-time editing. The grouping mechanism is deferred. |
 | Matrix/reachability/comparison | Scenario-bound derived decision output, reproducible where source versions remain available and visibly stale otherwise. |
 
 ### Location identity, address and geometry
@@ -163,6 +164,69 @@ Brisbane and Gold Coast are the first user-priority areas. LGA-sized install uni
 
 Pack and online-provider management should feel plugin-like—discoverable, separately installable/enabled, updateable and removable—without making ordinary data packs executable extensions. Whether the optional online capability uses a built-in adapter, the application's future plugin mechanism or another reviewed boundary is deferred to dependency/security feasibility work. Its absence must leave the local platform coherent.
 
+### Pre-implementation pack research and recommendation
+
+**Research recommendation, not an implementation selection.** The most promising pack architecture separates portable/versioned inputs from engine-specific derived indexes. This keeps user-managed LGA packs independently meaningful while allowing the active routing graph to be rebuilt from the union of installed coverage rather than attempting to stitch incompatible prebuilt graphs at route time.
+
+The recommended logical layers are:
+
+1. **Source/capability packs:** immutable provider data, coverage, licensing and manifest metadata that can be installed independently.
+2. **Derived capability builds:** disposable map/search/routing indexes fingerprinted from the exact source-pack set, engine/adapter version and build policy.
+3. **Personal spatial data:** canonical Locations, accepted geometry, profiles, policies and materialised journeys in Project E's ordinary protected storage; never inside either external layer.
+
+A Project E pack should be an installed directory with a small `manifest.json`, not one proprietary mega-database. Download transport may later use an archive, but activation should expose independently verifiable component files. The manifest should identify pack/version, coverage and boundary source, provider snapshot/effective time, capabilities, component paths/checksums/sizes, licences/attribution, dependencies, compatible adapter/build versions and reacquisition information.
+
+| Component role | Provisional format | Reasoning |
+| --- | --- | --- |
+| Coverage/boundary | GeoPackage or build-time GeoJSON | Queensland publishes current official LGA boundaries in GeoPackage and other open formats. Preserve boundary source/version; normalise a routing copy to the engine's required CRS. |
+| Street/path source | `.osm.pbf` | Compact standard OSM input accepted by the leading routing candidates. LGA extracts can be produced from a common snapshot with a simplified buffered polygon. |
+| Transit schedule | Original GTFS Schedule `.zip` | GTFS is already a ZIP of defined text tables. Translink publishes one South East Queensland feed covering urban bus, rail, light rail and ferry, so this should be a separate SEQ transit pack rather than copied into each LGA. |
+| Offline basemap | PMTiles v3 candidate | A single-file tile archive with a public specification and demonstrated MapLibre integration; attractive for installation, integrity and removal. Renderer/accessibility feasibility remains D07. |
+| Local feature/search index | Derived SQLite/GeoPackage candidate | Fits the current SQLite boundary and can combine structured provider features, full-text search and spatial lookup without entering the canonical entity database. Exact schema/index support remains D03/D08. |
+| Routing graph | Engine-native derived cache | Graph formats are engine/version/build-policy specific. Rebuild from installed source packs; do not make an engine graph the portable pack contract or sole recoverable input. |
+| Notices | Plain licence/attribution files plus manifest entries | Keeps source obligations inspectable and export/reacquisition behaviour honest. |
+
+The proposed Gold Coast-first build path is:
+
+1. acquire and version the official Queensland Gold Coast LGA boundary;
+2. transform it to the routing CRS, simplify only within an explicit tolerance and add a measured boundary buffer;
+3. extract Gold Coast OSM data from one common Queensland/Australia snapshot using the buffered polygon—`osmium extract` supports polygon/GeoJSON inputs and explicitly recommends a small buffer when boundary completeness matters;
+4. validate references, coverage and licence/attribution, then write the Gold Coast source-pack manifest;
+5. install the Translink SEQ GTFS feed as a separate schedule pack and validate feed dates before activation;
+6. build an engine-native graph from the union of installed OSM packs plus applicable schedule packs, using content/version fingerprints for cache identity;
+7. optionally build PMTiles and a local feature/search index from the same source snapshot;
+8. smoke-test routes inside the LGA and across buffered edges, then atomically activate the pack/build while retaining last-known-good state.
+
+Later Logan and Brisbane installs should repeat the same source-snapshot contract. Activating a new combination rebuilds or acquires one compatible derived graph for the union; it does not assume separately built LGA graphs can be overlaid safely. A user-facing Brisbane–Gold Coast bundle can therefore declare Gold Coast, Logan/intervening coverage, Brisbane and the SEQ transit feed as dependencies while each remains independently installable/removable.
+
+This recommendation is based on the [Queensland LGA boundary dataset](https://www.data.qld.gov.au/dataset/local-government-area-boundaries-queensland), the [official Translink SEQ GTFS dataset](https://www.data.qld.gov.au/dataset/general-transit-feed-specification-gtfs-translink), the [GTFS specification overview](https://gtfs.org/documentation/overview/), [Osmium extract documentation](https://docs.osmcode.org/osmium/latest/osmium-extract.html), the [PMTiles v3 specification](https://github.com/protomaps/PMTiles/blob/master/spec/v3/spec.md), the [MapLibre PMTiles example](https://maplibre.org/maplibre-gl-js/docs/examples/pmtiles/) and the [OGC GeoPackage standard](https://www.ogc.org/standards/geopackage/). The exact installed directory/archive shape, buffer distance, whether reacquirable raw inputs remain after a successful build and whether any prebuilt derived asset is distributed remain D06/D17 decisions to measure rather than settle abstractly.
+
+### Routing-engine research and recommendation
+
+Project E should build the provider-independent journey request/result adapter, profile/policy translation, stage normalisation, Calendar materialisation, provenance, pack lifecycle and review workflows. It should **not** initially build its own OSM parser, street graph, turn-restriction logic, shortest-path algorithms or timetable router.
+
+| Engine | Fit for Project E | Main concern | Planning position |
+| --- | --- | --- | --- |
+| [Valhalla](https://valhalla.github.io/valhalla/api/) | OSM plus user-supplied GTFS; car, bicycle, pedestrian and multimodal transit; arrive-by, per-request `walking_speed`, matrices, isochrones, regional tiled graphs and a JSON HTTP API. Native tools can run locally and offer a one-shot mode where a server is undesirable. | Graph/transit build and Windows packaging complexity; personal polygon/cost policy and exact GTFS stage semantics still require representative tests. | **Front-runner for the first Gold Coast/SEQ spike.** Its documented walking-speed control directly matches recorded pace presets. |
+| [MOTIS](https://github.com/motis-project/motis) | One OSM PBF plus multiple GTFS feeds; walking, cycling, car and public transport; geocoding, reverse geocoding, tiles, OpenAPI and published Windows binaries in one MIT-licensed runtime. | Younger/smaller ecosystem; one-PBF import means Project E must produce the installed-pack union first; exact pace, avoidance-policy and Calendar-stage detail need testing. | **Primary challenger.** Spike if Valhalla's transit import, stages, policy controls or packaging disappoint. |
+| [GraphHopper](https://github.com/graphhopper/graphhopper) | OSM road modes, time-dependent GTFS routing, Windows support, custom models/areas, isochrones and a local HTTP service. | Java runtime and engine-native graph cache; interaction between per-request personal models and transit needs proof. | Credible fallback/comparator, not the first spike unless its custom-model fit proves materially better. |
+| [OpenTripPlanner](https://docs.opentripplanner.org/en/latest/) | Mature OSM+GTFS/NeTEx transit planning with walk speed, transfer slack, arrive-by and detailed itinerary filtering. | Larger Java service and configuration/API surface; mapping/geocoding remain separate; general road routing is less aligned with Project E's single-engine preference. | Transit-correctness benchmark if Valhalla/MOTIS produce weak connection or station results. |
+| [OSRM](https://github.com/Project-OSRM/osrm-backend) | Fast mature OSM route/table service with car, bicycle and foot profiles. | No integrated GTFS/public-transit planner; profiles are largely preprocessing-time and separate mode graphs increase orchestration/storage. | Do not use as the primary Phase 3 engine; it would force a second transit engine too early. |
+| Custom Project E router | Total semantic control. | Re-implements complex parsing, restrictions, network algorithms, timetable search, updates and safety/correctness maintenance with little personal-platform value. | Reject for initial work. Consider only a bounded engine extension/fork after measured failures of suitable open-source engines. |
+
+The engine spike should use one fixed Gold Coast OSM extract and the same current Translink SEQ GTFS feed, then run the same fictional/representative cases through Valhalla first and MOTIS when needed:
+
+- direct walk, drive and cycle routes;
+- arrive-by public-transport routes with initial/final walking legs;
+- rail, light-rail, bus and transfer cases;
+- a connection missed at Regular walk but caught at Fast walk/jog;
+- a walking preset rejected because the leg exceeds its configured range;
+- a cross-boundary route near Gold Coast pack coverage;
+- an avoidance area, stairs/surface preference and no-satisfying-route case;
+- route, matrix and reachability outputs with version/provenance detail.
+
+Record graph-build time, installed/source/derived size, peak memory, cold start, ordinary route latency, Windows/local-process packaging, leg/service identifiers, transfer semantics, walking-speed effects, policy support, malformed/stale-feed behaviour and result reproducibility. The selected engine remains behind a standard-library Python adapter using a controlled subprocess or loopback service. Engine-native files remain disposable. A custom Project E routing algorithm is justified only if this evidence shows a bounded requirement cannot be expressed through, wrapped around or contributed to the shortlisted engines.
+
 ## Candidate experience and capability envelope
 
 ### Location spatial views
@@ -229,11 +293,15 @@ Routes, matrices and reachability calculations are derived. Cache reuse requires
 
 ### Mobility profiles and routing policies
 
-A mobility profile is user-configured calculation input. Walking begins with named presets for **Regular walk**, **Fast walk/jog** and **Run** rather than a newly inferred speed for every route. Their exact initial values, units and edit workflow remain an implementation decision; values should eventually be user-editable without losing the stable preset identity used by journey results.
+A mobility profile is user-configured calculation input. Walking begins with named presets for **Regular walk**, **Fast walk/jog** and **Run** rather than a newly inferred speed for every route. A later **Sprint** preset may apply only below a configured distance. The exact values will be deliberately measured by the user during implementation rather than guessed from generic defaults.
+
+Each preset should retain stable identity, canonical speed/unit, source (`manual`, `measured` or later explicitly accepted calibration), measurement/effective date and an applicability boundary such as maximum continuous distance or duration. A minimal accepted measurement may record test distance, elapsed time and derived speed without retaining a GPS trace. Several observations may support one reviewed value, but Project E never recalculates it silently. Whether distance limits apply per contiguous leg, cumulatively across a journey or through a fatigue model must be tested rather than hidden in the first schema.
+
+A practical implementation-time calibration should use a known measured distance, several separately recorded attempts and notes for material conditions such as gradient, stops, surface and whether the result felt sustainable. Project E can calculate candidate speeds and a median/representative value, but the user chooses the accepted preset. The provisional first rule is to apply a maximum to each contiguous walking/running leg and separately warn when the journey's cumulative effort is unusually high; a cumulative fatigue model should not be invented without observed need.
 
 Regular walk is the default. If an arrive-by route or public-transport connection is infeasible at that pace but feasible under a faster existing preset, the planner may calculate and present the faster alternative with a prominent warning and the required assumption. It never silently selects that pace or invents an arbitrary speed. User confirmation selects the alternative, and any created Calendar stage Events retain the chosen pace/provenance so the plan can later be understood or reviewed.
 
-Other candidate profile values include comfortable distance, cycling/running pace, transfer or parking allowance, slope/stair/accessibility limits and accepted calibrations. Values need units, source, effective period and override semantics. No observation changes a profile until the user reviews and accepts it; continuous movement history is not implied.
+Other candidate profile values include comfortable distance, cycling pace, transfer or parking allowance, slope/stair/accessibility limits and accepted calibrations. Running/sprinting may need route-suitability rules for surface, stairs, gradient and crossings rather than only dividing distance by a higher speed. Values need units, source, effective period and override semantics. No observation changes a profile until the user reviews and accepts it; continuous movement history is not implied.
 
 A routing policy is a structured, inspectable rule. It may express hard exclusion, soft avoidance, preference or an added cost/buffer and may be scoped by mode, direction, time, effective period or scenario. Candidate geometry includes an area, radius, segment, crossing, transfer point or preferred corridor.
 
@@ -253,9 +321,21 @@ An Event continues to relate to ordinary Locations through Relationships. It doe
 
 A public-transport journey might therefore create a sequence such as walk to station, take a named train service, wait/transfer, take the connecting service, take a bus and walk to the destination. Each stage appears as its own Calendar Event. Whether preparation and passive waiting always become Events, how adjacent stages are titled, which Calendar owns them and how group edit/delete/replan interacts with individual Event edits must be resolved against the first workflow.
 
+The group is an ordered finite journey, not an Event recurrence rule. It should reuse the familiar scope vocabulary while preserving different semantics:
+
+- **This stage** replans or deletes only the selected stage while treating its neighbouring boundaries as fixed constraints;
+- **This and following** preserves completed/earlier stages and applies a reviewed replacement or deletion from the selected stage onward;
+- **All stages** applies to the whole future/unstarted materialised journey; already elapsed stages remain historical records rather than being rewritten.
+
+Edit opens the journey planner rather than the ordinary Event schedule editor. A this-stage replacement that cannot fit its fixed start/end boundaries or would invalidate a connection is refused with an explanation and an offer to use **This and following**; it never creates an overlap or silently compresses another stage. Changing destination partway through a plan uses **Replan this and following** from a deliberate stage boundary/origin and time; Project E does not infer live position. It previews the replacement sequence and atomically applies the confirmed difference while earlier stages and audit history remain intact. Deleting one middle stage is allowed only with a continuity warning and leaves the group visibly incomplete; it never shifts remaining times automatically. A later recurring commute would add a second scope dimension—journey occurrence versus stage sequence—and must not overload RRULE exceptions or make those scopes ambiguous.
+
+Buffers are planner inputs selected before materialisation, not post-copy Event-time adjustments. Preparation, parking/access, transfer-safety and arrival buffers remain separately named so they cannot be double counted. For example, a 14-minute walk to a 09:15 arrival target with a five-minute arrival buffer requires planned arrival by 09:10 and a walk start at 08:56. Changing that buffer after materialisation returns to a scoped replan/preview; direct dragging or editing of generated start/end times is unavailable.
+
+The provisional Calendar recommendation is a separate protected, clearly labelled buffer stage when the interval reserves real time. Folding five minutes into the walking stage would misstate walking duration, while metadata alone could make the Calendar display those five minutes as free. A later compact group presentation may reduce clutter. Whether every buffer type materialises, and whether a zero-activity transfer wait is a buffer or a routed timetable stage, remains a D13 workflow decision.
+
 Recurring Event occurrences may produce different journey results because timetable and policy context differ; they do not require copied Event rows. Cross-timezone journeys must use precise instants while presenting local context at each end.
 
-The calculation itself never creates Events or reminders. The confirmed Calendar action is the explicit authority to create exactly the previewed stage Events in one transaction. Provider/timetable changes, later recalculation and recurring templates produce a reviewed difference rather than silently editing committed Events. Reminder creation, recurring commute templates and automatic future materialisation remain separate decisions. Current Event approval, audit, validation and recovery boundaries remain unchanged.
+The calculation itself never creates Events or reminders. The confirmed Calendar action is the explicit authority to create exactly the previewed stage Events in one transaction. Provider/timetable changes, later recalculation and recurring templates produce a reviewed difference rather than silently editing committed Events. Planner-owned fields remain protected while any permitted user-owned notes must survive an applicable replan. Reminder creation, recurring commute templates and automatic future materialisation remain separate decisions. Current Event approval, audit, validation and recovery boundaries remain unchanged.
 
 ### Spatial decision tools
 
@@ -328,7 +408,7 @@ The spike is evidence, not production architecture. Production work should choos
 This is a likely dependency order, not a promised release sequence:
 
 1. **Spatial foundations:** first workflow/region, richer Location semantics, provider references, provenance, service envelope and pack feasibility.
-2. **Regional data and local search/map:** pack lifecycle plus one useful local capability and honest fallback.
+2. **Gold Coast pack/engine proof:** portable source-pack manifest, Gold Coast OSM extract, separate SEQ GTFS pack and Valhalla-first engine comparison with honest fallback.
 3. **Map 2.0/save workflow:** canonical/provider search, inspection, geometry display and reviewed Location creation.
 4. **Single-mode journey proof:** deliberate endpoints, walking first where practical, explanation and cache/version behaviour.
 5. **Public transport and stage model:** timetable routing, access legs, services, waits/transfers and stable stage boundaries.
@@ -349,6 +429,8 @@ Each delivered capability should be tested at the boundaries it introduces:
 - offline, refused-network, timeout, partial coverage, stale result and corrupt data behaviour;
 - canonical mutation authority, duplicate prevention, audit and portability;
 - route/profile/policy determinism and explanation;
+- journey-stage schedule protection plus this-stage/this-and-following/all-scope replan and deletion;
+- buffer/profile changes through previewed replan rather than direct generated-Event time editing;
 - textual equivalence, keyboard operation and supported desktop visual QA;
 - measured performance and storage against the chosen first-region workload rather than an invented global scale.
 
@@ -365,18 +447,18 @@ These choices are deliberately deferred because the present plan lacks the concr
 | D03 | Geometry representation, supported types, CRS, precision, validation and spatial index | Queries needed by the first slice, representative points/areas and measured SQLite/library options | Require explicit coordinates/units at boundaries; use current points only. |
 | D04 | Access-point and Location-hierarchy persistence/cardinality | At least one building and one station/area workflow testing independent identity and reuse | Use a Location or temporary/provider point explicitly; no inferred hierarchy. |
 | D05 | Provider-reference reconciliation across feature moves/splits/merges | Two real versions of the chosen source and reviewed mismatch cases | Store no supposedly universal external ID; never auto-relink. |
-| D06 | Regional-pack format, LGA/corridor granularity, dependencies/bundles, build/distribution and overlap rules | Brisbane–Gold Coast route samples plus street-network/timetable licensing, size, update and rollback prototypes | Keep all pack data outside Git and the entity database; prefer separate small-area units without forcing every capability into identical boundaries. |
+| D06 | Exact manifest/container transport, boundary buffer, retention of reacquirable raw inputs, LGA/corridor dependencies and distribution | Gold Coast build using official LGA boundary, OSM PBF and separate SEQ GTFS; then Logan/Brisbane union, size, update and rollback prototypes | Use the researched source-pack plus engine-derived-cache split; keep all pack data outside Git/entity data and do not treat engine-native graphs as the portable contract. |
 | D07 | Map renderer, local tile format and drawing/selection tooling | Accessibility, offline, performance, licence and maintenance spike in current server-rendered UI | Retain the current Map and textual fallback; no new broad client dependency. |
 | D08 | Local/online geocoder choice, ranking, reverse geocoding and duplicate workflow | Representative Australian queries, current Nominatim behaviour, pack feasibility and privacy review | Manual entry remains authoritative; the online capability remains optional and provider use visible. |
-| D09 | Routing engine/runtime/process boundary and first mode | Correctness, turn restriction, policy, resource, packaging, failure and maintenance comparison | Do not implement pathfinding casually or make network routing mandatory. |
+| D09 | Final routing engine/runtime/process boundary | Valhalla-first Gold Coast/SEQ spike with MOTIS as challenger and OTP/GraphHopper comparators where needed; measure modes, transit legs, pace, policies, resources and Windows packaging | Keep a provider-independent adapter; prefer Valhalla provisionally; do not build a custom pathfinder or make network routing mandatory. |
 | D10 | Journey/result persistence, cache schema and route-history retention | Repeated-use workflow, threat model, reproducibility need and measured calculation cost | Treat results as transient; retain no personal route history by implication. |
-| D11 | Exact preset speeds/editing plus broader mobility-profile schema and routing-policy precedence/conflicts | Real journeys, engine controls and worked regular/fast/run and hard/soft/conflicting examples | Regular walk is default; faster named presets are warned alternatives requiring selection; no silent learning or arbitrary required speed. |
+| D11 | Measured preset values, observation aggregation, distance/duration applicability, Sprint inclusion and broader policy precedence/conflicts | User measurements for regular/fast/run, candidate short sprint, engine controls and worked per-leg/cumulative/hard/soft cases | Record stable sourced presets; Regular walk is default; initially constrain each contiguous leg and warn on unusually high cumulative effort; only applicable faster presets are warned alternatives requiring selection; no silent learning or arbitrary speed. |
 | D12 | Public-transport sources, update cadence, station complexes and multimodal engine boundary | Brisbane/Gold Coast/corridor licence and coverage, static timetable samples, engine fit and update burden | Public transport is a required phase mode, but no timetable source or engine is assumed before the spike. |
-| D13 | Journey group persistence, Calendar choice, stage titles/cardinality, individual-versus-group edit/replan/delete, reminders and recurring commute templates | Actual multi-stage commute and destination-Event journeys, individual edit conflicts, recurrence and failure/rollback cases | Calculation is read-only; one confirmed preview atomically creates separate stage Events; later replan/mutation always requires review. |
+| D13 | Journey-group persistence, Calendar choice, buffer presentation, stage titles, protected/user-owned fields, scope implementation, reminders and recurring commute templates | Multi-stage commute and destination-Event journeys; constrained this-stage replacement, middle-stage deletion, change-destination this-and-following, Calendar gap/reservation, individual note preservation, recurrence and rollback cases | Generated schedule/routing fields are locked; one confirmed preview atomically creates stage Events; replan/delete uses this stage, this-and-following or all scopes; prefer a labelled protected buffer stage; a broken middle deletion warns and never retimes silently. |
 | D14 | Optional online-capability packaging, durable enable/disable consent, provider disclosure UI and query/privacy logging | Threat model covering tiles, search/routes, automatic out-of-coverage fallback and local alternatives | Online fallback is unavailable by default; once deliberately enabled it may be automatic, visible and limited to minimum provider inputs; avoid query logs. |
 | D15 | Elevation, accessibility and environmental evidence model | Available first-region attributes, freshness/error analysis and user need | Present no unsupported safety/accessibility conclusion. |
 | D16 | Coverage selection and fallback across overlapping local packs/providers | Multiple-pack prototype with gaps, boundaries and version conflicts | Report unavailable/partial coverage; never silently blend incompatible results. |
-| D17 | New dependency, local engine installation and upgrade support | Standard-library feasibility, maintenance/security/licence review and repeatable setup | Add no dependency or executable pack merely for architectural neatness. |
+| D17 | Native/Java engine acquisition, loopback-versus-one-shot execution, upgrade compatibility and optional provider-plugin support | Valhalla/MOTIS packaging spike, signature/checksum, licence/security review, startup/failure handling and repeatable Windows setup | Keep runtime code outside data packs, use the standard-library adapter boundary and add no executable dependency merely for architectural neatness. |
 | D18 | Performance/storage budgets, pruning and bulk-calculation limits | Measured first-region pack and representative device/workload | Bound each authorised slice and expose progress/cancellation where needed. |
 | D19 | Durable overlays, saved views or saved journeys and their ontology | Repeated workflow proving identity, editing, sharing across views and recovery needs | Keep viewport, selection, temporary points and calculations transient. |
 | D20 | Location-derived timezone and cross-zone spatial time semantics | Cross-zone Event/journey cases and authoritative timezone-boundary source | Event/Calendar IANA timezone remains authoritative; do not infer silently. |
@@ -412,8 +494,10 @@ Phase 3 should be judged by a useful integrated spatial system, not a feature co
 - Map/Location views explain canonical/provider geometry, coverage, provenance and degraded state accessibly;
 - walking, driving, cycling and public-transport journeys work within their declared coverage and explain source, assumptions and uncertainty;
 - Regular walk, Fast walk/jog and Run presets behave predictably, and a faster feasible alternative is warned rather than silently selected;
+- measured pace provenance and applicability limits remain inspectable, including any short-distance Sprint profile;
 - a routing policy visibly affects an explained result;
-- a standalone or Event-linked multi-stage journey can be previewed and explicitly added as separate grouped Calendar Events without later silent mutation;
+- a standalone or Event-linked multi-stage journey can be previewed and explicitly added as separate grouped Calendar Events whose calculated times are protected;
+- this-stage, this-and-following and all-stage replan/delete preserve earlier stages, preview consequences and never silently retime the remainder;
 - a matrix, reachability or comparison workflow supports a meaningful personal decision from the same route/search contracts;
 - export/recovery preserves user-owned spatial data while replaceable packs/caches retain honest reacquisition and staleness behaviour;
 - privacy disclosure, offline refusal/failure and unsupported safety/accessibility claims remain controlled and understandable.
