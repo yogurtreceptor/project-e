@@ -294,7 +294,7 @@ Event start
 
 Parking or an access walk belongs either in route legs or an explicitly named calculation allowance, never both. Public-transport schedule time, generic movement estimates and personal buffer values must not be presented as one equally certain number.
 
-Routes, matrices and reachability calculations are derived. Cache reuse requires equivalent normalised inputs and source versions; a visually similar request is not enough. The accepted Calendar action may deliberately materialise one result as separate stage Events; saving a reusable journey/template or retaining route history remains deferred until repeated commute use proves the required identity, privacy and lifecycle.
+Routes, matrices and reachability calculations are derived. Cache reuse requires equivalent normalised inputs and source versions; a visually similar request is not enough. The accepted Calendar action deliberately materialises one date-specific result as separate stage Events. Phase 3 does not save a reusable/recurring journey template; exact retention of the confirmed baseline and later operational changes remains D10 implementation work.
 
 ### Mobility profiles and routing policies
 
