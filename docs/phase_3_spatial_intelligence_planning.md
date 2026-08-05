@@ -158,41 +158,138 @@ Project E should own the provider-independent adapter, stage normalisation, prof
 
 Use the same Gold Coast OSM and SEQ GTFS inputs for representative walking, cycling, driving, arrive-by transit, transfer, faster-walk, distance-limit, avoidance, boundary and no-route cases. Record source/derived size, build time, memory, cold start, latency, result reproducibility, stage/service semantics, pace/policy support, stale/malformed feed behaviour and Windows operation. Keep the selected engine behind a standard-library Python adapter using a controlled subprocess or loopback service.
 
-## Delivery order and verification
+## Implementation order and verification
 
-Likely dependency order, not implementation authority:
+Repository evidence at baseline `b4794a6` makes the shared seam clear. Locations still store one flattened address and optional coordinate pair in the definition-driven typed table; the Relationship catalogue has no Location-to-Location containment type. `app/geo.py` derives point markers, while the current Map is a small Leaflet page that automatically requests CDN code and OSM tiles, has no Map search/sidebar state and emits separate markers for records sharing a place. Nominatim is a direct form-only network client. Packs, rich geometry, routing, spatial caches, profiles, policies and journey groups do not exist. Conversely, focused repositories, append-only migrations, `commit=False` Calendar/Event creation, Calendar reminder policy and the external-Calendar validate/stage/atomic-last-known-good pattern are reusable boundaries.
 
-Treat this sequence as the current dependency hypothesis, not a fixed phase script. Authorised implementation planning may split, combine or reorder slices when current code, data or spike evidence shows a safer or smaller path, provided prerequisites remain explicit, accepted product semantics are not silently changed and the rationale/verification for the revised order is recorded.
+The order below is a dependency graph, not a fixed script. **Map 2.0 and journey planning are parallel, equal outcomes:** after the shared starting slice, their first slices may proceed together. Build only the foundation needed safely by the next outcome. A slice may be split, combined or reordered under its stated condition, with the changed dependency and verification recorded. Exact schemas, UI mechanisms, provider mappings, speeds, cache thresholds and similar choices remain inside the slice whose evidence can resolve them.
 
-1. Spatial foundations: Location/address/child semantics; geometry/provenance/confidence; mode/profile/policy structures; and provider-independent distance, routing and cache contracts.
-2. **Map 2.0A:** map-dominant shell, stable canonical/current-provider search, persistent selected pin, shared-place grouping, sidebar details/actions, intentional default layers and recents using current foundations.
-3. Gold Coast pack/engine evidence spike and decision record, with no production provider/engine choice before the foundation contracts exist.
-4. **Map 2.0B:** installed/online provider search, clickable features, reviewed Save as Location, external bookmarks/lists/favourites, contextual coverage manager and first local basemap/search capability.
-5. Single-mode walking journey, route overlay and explanation/cache proof.
-6. Public transport, transport layers and stable stage model.
-7. One-time Calendar materialisation, mode Calendars, reminders and scoped lifecycle.
-8. Live delay alerts and cancellation/missed-connection replacement.
-9. Driving/cycling, measured profiles and one explained routing policy.
-10. Late Map 2.0 one-shot current location; satellite, terrain, traffic and cycling layers continue as each provider/data gate is proven. Matrix/reachability/comparison follows trusted route/search contracts.
+Evidence spikes produce measurements and decision records only. A provider may be explored earlier, but no new pack/search/routing provider becomes production architecture until the canonical Location/geometry and minimum profile/policy/routing/cache contracts below are complete. N2 may place the current Nominatim/OSM capability behind that neutral boundary; it does not settle the later local/online provider choice.
 
-Each authorised slice begins with its concrete workflow, current-code/data constraints, representative licensed/fictional fixtures, alternatives, evidence needed, privacy/licensing/storage/failure analysis, migration/audit/portability impact, verification and rollback. A spike is evidence, not production architecture.
+### Now
 
-Verification should cover:
+#### N1. Canonical place and endpoint foundation
 
-- fresh schema and representative upgrades without parallel spatial truth, including address history, explicit child Locations and provider removal without canonical coordinate loss;
-- point/line/area roles, WGS84 conversion, provenance/confidence visibility and deterministic fictional geometry/network/timetable fixtures;
-- adapter capability/error contracts and cache fresh/stale/miss, invalidation and clearing without personal-data loss;
-- pack integrity, incompatibility, overlap, interrupted update, rollback and removal;
-- offline/refused-network, stale, corrupt and partial-coverage behaviour;
-- route/profile/policy determinism, provenance and explanation;
-- ranked canonical/local/online Map search with source labelling, stable results during pan/zoom, viewport feature loading, selected-pin/sidebar persistence, clickable-feature non-mutation and no blank-map pin;
-- one-pin shared-place grouping, initial layer defaults, clustering/density, keyboard/non-colour equivalents, startup-centre fallback/current-location consent, layer availability/attribution, disabled-state explanation, recents clearing and external-bookmark/list portability boundaries;
-- contextual bordering-suburb/LGA/online coverage recommendations that explain scope and never auto-install or lose the selected pin/route;
-- journey locking, scoped replan/delete, buffers, mode-Calendar mapping and reminder inheritance;
-- live alert deduplication, unchanged scheduled times for delay, cancellation/missed-connection replacement, reminder reconciliation and startup/past-stage rules;
-- one-time-only materialisation, audit/recovery, accessible textual/UI behaviour, performance and storage.
+- **Outcome:** Current Locations transition without duplicate truth to address assertions, role-based WGS84 geometry with assertion-level provenance/confidence, and explicit child/containment Relationships; existing detail, edit and Map projections continue through the preferred representative point.
+- **Prerequisites:** Audit current Location values and reuse entity, Relationship, migration, audit, provenance and portability boundaries; expose only the address/representative-point/containment workflow needed next while making the storage model capable of the accepted point, line and area concepts.
+- **Decision gates:** D02–D05.
+- **Evidence/spike:** Prototype the narrowest schema/index/encoding options against fictional address-history, station/entrance, building/area and provider-version cases, plus a representative upgraded database.
+- **Complete when:** Fresh and upgraded databases preserve existing values; preferred/current and geometry-role invariants are enforced; containment is explicit and cycle-safe; provider removal cannot move or delete canonical geometry; and current Map/text projections remain deterministic.
+- **Reorder if:** Address and geometry migration risks differ enough to split them, containment can safely follow the representative-point read contract, or the migration is small enough to combine with N2 without coupling it to a renderer.
 
-The full test/compile suites remain required for implementation. UI slices also need temporary-port smoke and visual/keyboard review.
+#### N2. Map 2.0A canonical workspace
+
+- **Outcome:** A map-dominant shell provides stable unified canonical and deliberately enabled current-provider search, persistent accessible selection, one-pin shared-place grouping, results/details sidebar, canonical layer controls and a complete textual alternative without creating records on browse or blank-map click.
+- **Prerequisites:** N1's representative-point and source/provenance read contract, existing canonical search/Relationship projections, and an explicit local/online capability boundary before any remote code, tile or query request.
+- **Decision gates:** D07, D08, D14 and the Map-state subset of D19.
+- **Evidence/spike:** Prove the renderer and server-rendered interaction seam with dense fictional shared-place data, constrained desktop and keyboard/non-colour use; specifically test removal of the current automatic CDN/tile dependency, stale viewport cancellation and stable results during pan/zoom.
+- **Complete when:** Selection, sidebar/back path and query results survive pan/zoom; canonical ranking/source labels and default layers are deterministic; unavailable online resources degrade honestly; shared records remain understandable; and no interaction silently mutates or transmits canonical labels.
+- **Reorder if:** The shell can begin against N1's stable read model while its migration finishes, Map-state persistence deserves a later sub-slice, or N3 offers more value while renderer evidence is unresolved.
+
+#### N3. Provider-independent journey contract
+
+- **Outcome:** A vertical fixture-backed journey seam resolves deliberate Location endpoints and defines capability declarations, request/result/failure types, distance/time meanings, normalised stages, minimum durable mobility-profile/routing-policy identity and a bounded clearable cache with dependency fingerprints—without choosing an engine.
+- **Prerequisites:** N1 endpoint/geometry semantics, focused services behind `app/db.py`, ignored runtime storage for disposable cache data and fictional deterministic network/timetable fixtures.
+- **Decision gates:** Contract and foundation portions of D09–D11 and D15; journey-group persistence remains D20.
+- **Evidence/spike:** Exercise ambiguous endpoints, unsupported constraints, partial coverage, no-route versus provider failure, profile limits, policy conflicts and fresh/stale/miss cases through a test adapter; prototype only enough SQLite/cache structure to select the narrowest reversible contract.
+- **Complete when:** An adapter cannot silently weaken a request; every meaningful input changes the fingerprint; stages and textual explanations are provider-independent; profiles/policies remain user-owned; cache clearing loses no personal data; and fixture results are deterministic.
+- **Reorder if:** Pure request/result contracts and durable profile/policy/cache persistence need separate sub-slices; both must complete before a provider decision is adopted, while N2 may proceed independently after N1.
+
+### Next
+
+#### X1. Gold Coast pack, renderer/search and routing evidence spike
+
+- **Outcome:** One reproducible evidence package compares the Gold Coast source-pack/build route, local display/search candidates and Valhalla/MOTIS against N2/N3 contracts; it creates no production adapter, pack manager, committed regional data or provider-owned domain model.
+- **Prerequisites:** N1–N3 contracts, the accepted four-layer durability boundary, separately licensed OSM/boundary/GTFS inputs and isolated ignored staging.
+- **Decision gates:** D01, D06–D09, D11, D12 and D14–D18.
+- **Evidence/spike:** Build the buffered Gold Coast/common-snapshot union and SEQ GTFS separately; measure source/build size, build time, memory, cold start, latency, Windows operation, attribution, boundary/suburb behaviour, map/search accessibility and representative walk/cycle/drive/transit/profile/policy/failure cases.
+- **Complete when:** Results are repeatable and comparable, unsupported mappings are explicit, licences/reacquisition/rollback are recorded, front-runner and challenger have reconsideration triggers, and any proposed choice fits the existing standard-library subprocess/loopback boundary.
+- **Reorder if:** Display/search/pack and routing work are safer as parallel spikes, a candidate fails packaging early, or exploratory work starts sooner; early results remain non-authoritative until N1–N3 are complete.
+
+#### N4. First installed-region Map slice
+
+- **Outcome:** A user can inspect, install and use one verified Gold Coast capability pack for a normal local basemap/search and clickable provider context, then update/remove it without losing canonical data or the last-known-good pack.
+- **Prerequisites:** N1/N2, the applicable X1 decision evidence, declarative manifests under ignored runtime storage and inspect/verify/stage/validate/atomic-activate/rollback lifecycle services.
+- **Decision gates:** D01, D06–D08, D14, D16 and D18.
+- **Evidence/spike:** Run the selected production approach through interrupted install/update, corrupt/incompatible/overlap, offline, boundary and constrained-resource cases before fixing archive shape, buffers, retention or budgets.
+- **Complete when:** Local map/search works without WAN, capability/coverage/version/freshness/attribution remain visible, removal retains canonical Locations, failure keeps the last-known-good activation and route/feature coordinates can remain visible beyond basemap coverage.
+- **Reorder if:** Pack activation and first visible/searchable use can only be safe together, the routing graph is the strongest lifecycle driver, or N5's review flow is small enough to join without turning this into a broad pack-platform project.
+
+#### N5. Map 2.0B review, bookmarks and coverage
+
+- **Outcome:** Provider features use the shared details flow with reviewed duplicate-aware **Save as Location**, portable external favourites/lists and contextual **Improve coverage** recommendations that retain the selected feature or route.
+- **Prerequisites:** N1 provider-link/acceptance semantics, N2 sidebar/selection state, N4 source identity and coverage metadata, and measured boundary examples.
+- **Decision gates:** Provider-reconciliation portions of D02–D05, D18 and remaining Map-state/list portions of D19.
+- **Evidence/spike:** Test two provider versions, disappearance/refresh, shared-place grouping, list revisit/export/clear, duplicate review and selected pins/routes near a boundary, bordering suburb and adjoining LGA.
+- **Complete when:** Browse remains non-mutating; promotion is explicitly reviewed; user list membership survives provider removal while provider facts become honestly unavailable; recommendations explain scope/size/network/source and never install automatically or lose context.
+- **Reorder if:** Reviewed saving belongs with N4's first provider details, lists can follow independently, or coverage recommendations must wait for route-corridor measurements from N6/N7.
+
+#### N6. Trustworthy walking journey
+
+- **Outcome:** A walking journey between deliberate endpoints returns an explained textual itinerary and Map route overlay using the reviewed Regular/Fast/Run profile, supported policy controls and bounded cache, with honest alternatives and failures.
+- **Prerequisites:** N1–N3, X1's selected routing evidence, N2 route-overlay seam and an activated compatible street source/build from N4 or an explicitly enabled equivalent capability.
+- **Decision gates:** D09–D11, D15 and D17.
+- **Evidence/spike:** Map the selected engine against representative internal/boundary, faster-walk, contiguous-limit, avoidance, stale-version and failure cases; measure cache size/latency/retention and collect repeated user measurements before fixing thresholds, preset values or applicability.
+- **Complete when:** Route distance, estimated duration, elapsed time and buffers remain distinct; capability/policy/profile effects and source versions are explained; stale results cannot be materialised; cache invalidation is deterministic; and offline/refused-network behaviour is honest.
+- **Reorder if:** A useful textual journey can precede its overlay, N5 can wait while routing proves the pack boundary, or walking and drive/cycle mappings are small enough to combine without obscuring transit or profile evidence.
+
+#### N7. Static public-transport journey and transport Map
+
+- **Outcome:** Static SEQ timetable planning adds arrive-by/depart-at multimodal Walk/Wait/Bus/Train/Tram/Ferry stages, alternatives and accessible Map/itinerary transport context without depending on live data.
+- **Prerequisites:** N3's stage/error contract, X1 transit evidence, compatible timetable/street coverage and N2's layer/route presentation seam; N6 is needed only where it resolves a shared adapter/cache uncertainty.
+- **Decision gates:** D09, D12 and D17, with applicable D11/D15 translation evidence.
+- **Evidence/spike:** Prove station-complex/access-point, transfer, service-day/timezone, route-shape, stale/malformed GTFS, partial street coverage, no-connection and faster-walk alternative cases.
+- **Complete when:** Scheduled/service/wait/walk meanings and provenance are stable, unsupported constraints are refused, partial coverage is labelled, essential text equals the Map, and static results stay useful with live capability absent.
+- **Reorder if:** Transit and walking adapters can proceed in parallel after N3/X1, the transport layer follows a complete textual planner, or a common engine makes N6/N7 a smaller combined adapter slice.
+
+#### N8. One-time Calendar materialisation and lifecycle
+
+- **Outcome:** One confirmed result atomically creates a locked, ordered journey group of ordinary mode-Calendar Events with inherited reminders, durable minimum provenance and safe stage/group delete and replan scopes.
+- **Prerequisites:** At least one trustworthy N6/N7 stage model, existing `commit=False` Calendar/Event services and reminder reconciliation, plus a provider-independent journey baseline that survives cache/provider removal.
+- **Decision gates:** D13 and journey-group/baseline portions of D20; cache-to-materialisation boundary in D10.
+- **Evidence/spike:** Prototype exact group/role schema and transaction boundary using walking-only, multimodal, unavailable/renamed Calendar, rollback, middle deletion, scoped replan, timezone and stale-cache cases.
+- **Complete when:** One confirmation yields all-or-nothing Events/audit state; group membership alone locks generated fields; manual Events on the same Calendars remain editable; reminders inherit normally; buffers retain accepted semantics; and stale/cache loss cannot change the saved schedule.
+- **Reorder if:** Walking-only materialisation is a safe first sub-slice, scoped lifecycle needs a second independently safe boundary, or drive/cycle breadth has higher value first; it never precedes a trustworthy result contract.
+
+#### N9. Drive/cycle breadth and explained policy
+
+- **Outcome:** Drive and Cycle complete the four primary modes with applicable durable profile variants and at least one structured, attributed routing policy whose applied/conflicting/unsatisfied effect is explained.
+- **Prerequisites:** N3, X1, compatible street data/build and the proven adapter/explanation/cache seam from N6; Calendar materialisation is not a prerequisite.
+- **Decision gates:** D09, D11, D15 and D17.
+- **Evidence/spike:** Test engine capability mappings, vehicle/cycle constraints, hard/soft conflict precedence, evidence quality, boundary routes and unsupported accessibility/environmental claims before fixing provider mappings.
+- **Complete when:** Walk/Cycle/Drive/Public transport identities remain stable across adapters, policies never become opaque provider flags, unsupported claims are absent or attributed, and all new results meet N6's provenance/failure/cache boundary.
+- **Reorder if:** It can run beside N7/N8, one mode exposes a distinct data gate and should split, or N6 evidence shows the two mappings are a genuinely small extension.
+
+### Later
+
+#### L1. One-shot current location
+
+- **Outcome:** A deliberate local preference and normal device permission provide one transient centring estimate, with last viewport then Gold Coast fallback and a separately enabled/disclosed IP option only when device location is unavailable.
+- **Prerequisites:** N2 Map state/selection model, explicit provider enablement and a transient-context boundary that cannot become a journey origin or canonical record without deliberate user action.
+- **Decision gates:** Current-location portions of D14 and D19.
+- **Evidence/spike:** Exercise grant/deny/unavailable/stale permission, restart and offline flows in supported browsers; assess the IP provider separately for transmitted data, cost, terms and coarse accuracy.
+- **Complete when:** No tracking/history is created, denial never blocks Map, startup priority is deterministic, the estimate is visually/textually distinct from a Location and clearing the preference/state removes it.
+- **Reorder if:** Device-only centring is valuable after N2 and can ship without the IP option, or browser support forces both mechanisms later; it does not gate routing or pack work.
+
+#### L2. Live transit enrichment and disruption handling
+
+- **Outcome:** While Project E runs, attributed live delay status updates one deduplicated Inbox alert without retiming Events; only cancellation or a newly infeasible connection may atomically replace future grouped stages.
+- **Prerequisites:** N7 static baseline, N8 durable group/locking/reminder semantics and the existing registered in-process scheduler/Inbox boundaries; N9 is not required.
+- **Decision gates:** D21 and applicable operational-history portions of D20.
+- **Evidence/spike:** Test changing delay, cancellation, platform/stop change, missed connection, stale/failing data, startup catch-up, elapsed stages, deletion and reminder reconciliation before selecting provider/poll windows.
+- **Complete when:** Schedule and prediction remain distinct/auditable; one logical alert is updated rather than duplicated; ambiguous/no-route cases request attention; past stages are untouched; and polling stops with the running process/journey window.
+- **Reorder if:** A suitable live source is unavailable or its terms fail, or static all-mode journeys/Map work have higher value; live status and mutation may split only if the first slice cannot mutate Calendar.
+
+#### L3. Gated Map layers and spatial comparison
+
+- **Outcome:** Satellite, terrain, traffic, transit/cycle overlays, nearby exploration and at least one useful matrix/reachability/comparison workflow arrive independently as their data gates prove value; unavailable layers stay visible with an explanation.
+- **Prerequisites:** N2/N4 layer and coverage contracts plus trustworthy N6–N9 search/routing results for any comparison; no layer may become a core WAN dependency.
+- **Decision gates:** Remaining D07, D08, D10, D14, D18 and D19 questions, with D09/D11/D15 for route-derived analysis.
+- **Evidence/spike:** Evaluate each layer/provider separately for licence, privacy, cost, attribution, offline/stale behaviour and desktop performance; choose one concrete comparison workflow from measured user value rather than implementing a generic analysis platform.
+- **Complete when:** Every delivered layer is independently toggleable/attributed/degradable, preferences remain local, nearby/comparison results retain source/coverage/freshness and typed failures, and at least one comparison outcome is useful and accessible in text and Map form.
+- **Reorder if:** Any layer or comparison becomes valuable immediately after its prerequisite slice; split by capability, combine only when sources/lifecycles truly match, and place matrix/reachability before live enrichment if it offers more value.
+
+Every production slice retains the repository's full test/compile requirement; schema work verifies fresh and representative upgrades, and UI work adds temporary-port smoke plus visual/keyboard review. Evidence spikes instead finish at reproducible measurements and an explicit decision/reconsideration record.
 
 ## Deferred implementation decision gates
 
