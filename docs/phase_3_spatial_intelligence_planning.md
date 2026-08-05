@@ -54,6 +54,7 @@ It does **not** currently have rich geometry, Location hierarchy, access points,
 - Canonical records and manually entered spatial facts remain usable with no WAN connection and no installed regional pack.
 - Rich local capability should be possible inside deliberately installed regions. Optional online lookup, tiles, routing or live data must remain replaceable and local in effect when unavailable.
 - Basemap, address, road, elevation, routing and timetable datasets stay outside the main entity database as provider-owned indexes or replaceable regional packs.
+- Public-transport planning uses the applicable installed static timetable by default. When an installed/enabled provider also supplies current live service data, Project E uses it automatically for affected planning and materialised journeys; absent, stale or failed live data falls back visibly to the scheduled timetable rather than disabling the journey.
 - Regional packs are installed runtime data under ignored local storage, never committed source-repository content. They should be independently installable at a useful small-area granularity where source data and routing correctness permit it.
 - An optional online spatial capability may be absent/disabled by default. Deliberately installing or enabling it can grant durable consent for automatic out-of-coverage fallback; each result must still identify the online provider and disclosed/fallback state without requiring a button on every request.
 - A data pack contains declarative data and metadata, not arbitrary executable code. Any parser, adapter or local engine is reviewed application/runtime code with an explicit dependency decision.
@@ -63,8 +64,9 @@ It does **not** currently have rich geometry, Location hierarchy, access points,
 
 - Drawing or selecting geometry first creates draft interaction state. The user must choose whether it describes a Location, an informational overlay or an active routing policy.
 - Temporary map points, route endpoints and one-time access choices remain transient unless explicitly promoted.
-- Spatial calculation may create or refresh derived cache state but remains read-only over canonical records. The accepted **Add journey to Calendar** workflow is a separate reviewed mutation: one confirmation may atomically create the fully previewed set of stage Events. Later recalculation never silently edits those Events.
-- Materialised journey-stage Events are planner-managed. Their calculated start/end/timezone and routing/service fields are not directly editable in the ordinary Event form. A user changes planner inputs such as destination, pace or buffers and applies a reviewed journey-scope replan instead.
+- Spatial calculation may create or refresh derived cache state but remains read-only over canonical records. The accepted **Add journey to Calendar** workflow is a separate reviewed mutation: one confirmation may atomically create the fully previewed set of stage Events. Ordinary recalculation or static timetable refresh never silently edits those Events.
+- Materialised journey-stage Events are planner-managed. Nothing on them is directly editable in the ordinary Event form; the user may delete with a journey scope or return to the planner for a reviewed replan. Calculated start/end/timezone, routing/service fields and presentation remain under planner ownership.
+- An installed/enabled live-service provider authorises bounded deterministic updates to future planner-managed stages and reminders when attributed realtime data changes the operational plan, including replacement of an infeasible connection. Each material update remains visible, audited and announced through local Project E attention; it does not authorise destination changes, edits to elapsed stages, mutation of manually created Events or location tracking.
 - Ambiguous endpoints, multiple Event venues, missing access points or incompatible constraints ask for a decision or report no result; they are not silently guessed away.
 - The same validated spatial query boundary should eventually support human views and any separately authorised deterministic or bounded AI consumer. No consumer receives a privileged mutation path.
 
@@ -92,7 +94,7 @@ These classifications guide later modelling without preselecting table shapes.
 | Routing policy | Inspectable configuration that constrains or prefers routes for stated modes, directions, times or contexts. |
 | Regional pack | Replaceable, verifiable external spatial data plus a manifest; reacquirable unless licensing or local derivation requires deliberate backup treatment. |
 | Journey request/result | A versioned calculation and explanation. It is derived/transient or cached unless a later saved-journey workflow proves a distinct durable lifecycle. |
-| Calendar journey materialisation | One user-confirmed ordered group of separate canonical Events representing the journey's stages. Planner-owned schedule fields are changed through scoped replan, not direct Event-time editing. The grouping mechanism is deferred. |
+| Calendar journey materialisation | One user-confirmed ordered group of separate canonical Events representing the journey's stages. All fields on generated stages are planner-owned; change occurs through scoped replan, scoped delete or provider-enabled live-service updates, never ordinary Event editing. The grouping mechanism is deferred. |
 | Matrix/reachability/comparison | Scenario-bound derived decision output, reproducible where source versions remain available and visibly stale otherwise. |
 
 ### Location identity, address and geometry
@@ -259,7 +261,7 @@ A journey request should be provider-independent and make its assumptions visibl
 - walking, driving, cycling, public transport or a permitted multimodal combination;
 - depart-at, arrive-by or untimed planning intent;
 - chosen mobility profile—including an explicit walking pace preset—and routing policies;
-- preparation, parking, access, transfer and desired-early-arrival buffers without double counting;
+- preparation, parking, access, transfer and desired-early-arrival buffer values that move applicable active stages earlier without inflating their duration or becoming artificial Calendar blocks;
 - accessibility/infrastructure constraints and preference strength;
 - requested alternatives and scenario time.
 
@@ -268,14 +270,14 @@ A useful result should contain more than a polyline and one duration:
 - the resolved endpoints/access points and any network snapping;
 - one or more alternatives with legs, modes, distance, scheduled/estimated duration, waits and transfers as applicable;
 - stage boundaries suitable for Calendar preview, such as walk, vehicle/service, wait/transfer and final access legs;
-- each separate buffer and the resulting departure/arrival milestones;
+- each named buffer assumption, the slack it creates and the resulting departure/arrival milestones;
 - applied, ignored, conflicting or unsatisfied policies;
 - source/engine and dataset/timetable versions;
 - calculation time, coverage, freshness, uncertainty and warnings;
 - a textual itinerary or summary equivalent to the essential visual result;
 - a stable result fingerprint suitable for cache identity and later comparison.
 
-For Event planning, time components should remain legible:
+For Event planning, time components should remain legible. A buffer changes the calculation anchor; it is not added to the duration of the movement stage:
 
 ```text
 Event start
@@ -287,7 +289,7 @@ Event start
 = begin-preparing time
 ```
 
-Parking or an access walk belongs either in route legs or an explicitly labelled buffer, never both. Public-transport schedule time, generic movement estimates and personal buffer values must not be presented as one equally certain number.
+Parking or an access walk belongs either in route legs or an explicitly named calculation allowance, never both. Public-transport schedule time, generic movement estimates and personal buffer values must not be presented as one equally certain number.
 
 Routes, matrices and reachability calculations are derived. Cache reuse requires equivalent normalised inputs and source versions; a visually similar request is not enough. The accepted Calendar action may deliberately materialise one result as separate stage Events; saving a reusable journey/template or retaining route history remains deferred until repeated commute use proves the required identity, privacy and lifecycle.
 
@@ -317,9 +319,11 @@ An Event continues to relate to ordinary Locations through Relationships. It doe
 - preview every proposed Calendar Event, time boundary, title, mode/service and source journey before mutation;
 - atomically create a separate canonical Event for each selected stage after one explicit **Add journey to Calendar** confirmation;
 - preserve a group identity so the journey can be opened, reviewed, replanned or removed coherently without erasing each Event's ordinary lifecycle;
-- show conflicts or stale-source warnings without silently changing the committed plan.
+- show conflicts or stale-source warnings without silently changing the committed plan outside the provider-enabled live-service contract.
 
-A public-transport journey might therefore create a sequence such as walk to station, take a named train service, wait/transfer, take the connecting service, take a bus and walk to the destination. Each stage appears as its own Calendar Event. Whether preparation and passive waiting always become Events, how adjacent stages are titled, which Calendar owns them and how group edit/delete/replan interacts with individual Event edits must be resolved against the first workflow.
+A public-transport journey might therefore create a sequence such as walk to station, wait for service, take a named train, wait/transfer, take the connecting train, take a bus and walk to the destination. Each stage appears as its own Calendar Event on the matching ordinary local Calendar: **Walk**, **Bus**, **Train**, **Tram**, **Ferry**, **Cycle**, **Drive** or **Wait**. Running and other pedestrian pace presets initially remain Walk stages because pace does not change the transport network type.
+
+These Calendars are first-class user Calendars, not hidden or planner-exclusive containers. The user may manually create normal editable Events with Locations on any of them. A stable internal stage-type-to-Calendar mapping—not a mutable Calendar display name—lets the planner select the destination Calendar and offer repair/remapping if one becomes unavailable. Calendar membership alone never makes an Event planner-managed: only explicit journey-group membership does. Exact initial provisioning, renaming/archive behaviour, colours, default reminders and remapping UI remain implementation decisions against the existing Calendar lifecycle.
 
 The group is an ordered finite journey, not an Event recurrence rule. It should reuse the familiar scope vocabulary while preserving different semantics:
 
@@ -327,15 +331,25 @@ The group is an ordered finite journey, not an Event recurrence rule. It should 
 - **This and following** preserves completed/earlier stages and applies a reviewed replacement or deletion from the selected stage onward;
 - **All stages** applies to the whole future/unstarted materialised journey; already elapsed stages remain historical records rather than being rewritten.
 
-Edit opens the journey planner rather than the ordinary Event schedule editor. A this-stage replacement that cannot fit its fixed start/end boundaries or would invalidate a connection is refused with an explanation and an offer to use **This and following**; it never creates an overlap or silently compresses another stage. Changing destination partway through a plan uses **Replan this and following** from a deliberate stage boundary/origin and time; Project E does not infer live position. It previews the replacement sequence and atomically applies the confirmed difference while earlier stages and audit history remain intact. Deleting one middle stage is allowed only with a continuity warning and leaves the group visibly incomplete; it never shifts remaining times automatically. A later recurring commute would add a second scope dimension—journey occurrence versus stage sequence—and must not overload RRULE exceptions or make those scopes ambiguous.
+**Replan** opens the journey planner; generated Events have no ordinary edit action. A this-stage replacement that cannot fit its fixed start/end boundaries or would invalidate a connection is refused with an explanation and an offer to use **This and following**; it never creates an overlap or silently compresses another stage. Changing destination partway through a plan uses **Replan this and following** from a deliberate stage boundary/origin and time; Project E does not infer live position. It previews the replacement sequence and atomically applies the confirmed difference while earlier stages and audit history remain intact. Deleting one middle stage is allowed only with a continuity warning and leaves the group visibly incomplete; it never shifts remaining times automatically. A later recurring commute would add a second scope dimension—journey occurrence versus stage sequence—and must not overload RRULE exceptions or make those scopes ambiguous.
 
-Buffers are planner inputs selected before materialisation, not post-copy Event-time adjustments. Preparation, parking/access, transfer-safety and arrival buffers remain separately named so they cannot be double counted. For example, a 14-minute walk to a 09:15 arrival target with a five-minute arrival buffer requires planned arrival by 09:10 and a walk start at 08:56. Changing that buffer after materialisation returns to a scoped replan/preview; direct dragging or editing of generated start/end times is unavailable.
+Buffers are planner inputs selected before materialisation, not post-copy Event-time adjustments and never standalone buffer Events. Preparation, parking/access, transfer-safety and arrival buffers remain separately named in journey metadata so they cannot be double counted. Extra buffer shifts the relevant preceding active stage earlier while preserving its calculated duration. Where that creates real time spent awaiting a scheduled service, the existing **Wait** Event becomes longer; where it merely creates early arrival before a destination Event, the Calendar contains a gap rather than a tiny synthetic block.
 
-The provisional Calendar recommendation is a separate protected, clearly labelled buffer stage when the interval reserves real time. Folding five minutes into the walking stage would misstate walking duration, while metadata alone could make the Calendar display those five minutes as free. A later compact group presentation may reduce clutter. Whether every buffer type materialises, and whether a zero-activity transfer wait is a buffer or a routed timetable stage, remains a D13 workflow decision.
+For example, a five-minute walk feeding a 09:15 service with five minutes of chosen slack appears as Walk 09:05–09:10 and Wait 09:10–09:15. Increasing the chosen slack to ten minutes makes it Walk 09:00–09:05 and Wait 09:05–09:15; the walk never masquerades as a ten-minute movement. Changing a buffer after materialisation returns to a scoped replan/preview. Direct dragging or editing of generated start/end times is unavailable.
 
 Recurring Event occurrences may produce different journey results because timetable and policy context differ; they do not require copied Event rows. Cross-timezone journeys must use precise instants while presenting local context at each end.
 
-The calculation itself never creates Events or reminders. The confirmed Calendar action is the explicit authority to create exactly the previewed stage Events in one transaction. Provider/timetable changes, later recalculation and recurring templates produce a reviewed difference rather than silently editing committed Events. Planner-owned fields remain protected while any permitted user-owned notes must survive an applicable replan. Reminder creation, recurring commute templates and automatic future materialisation remain separate decisions. Current Event approval, audit, validation and recovery boundaries remain unchanged.
+The calculation itself never creates Events or reminders. The confirmed Calendar action is the explicit authority to create exactly the previewed stage Events in one transaction. Static provider/timetable changes, later manual recalculation and recurring templates produce a reviewed difference rather than silently editing committed Events. Generated stages have no directly user-editable fields; direct deletion is their only ordinary Event-level mutation, using the journey scopes and continuity warnings above. Replan remains a planner operation rather than direct editing. Recurring commute templates and automatic future materialisation remain separate decisions.
+
+#### Live timetable enrichment
+
+The installed static timetable is always the planning baseline. Live enrichment is a bounded, network-dependent improvement, not live turn-by-turn navigation or tracking of the user. When the configured provider supplies applicable realtime estimates, Project E consumes them automatically during the relevant journey window and updates only future/current planner-managed stages belonging to that journey. When it does not, scheduled times continue to work and are labelled as scheduled rather than live.
+
+The model must distinguish the originally confirmed plan, the latest provider-predicted operational times and actual personal travel. A provider prediction may change the Calendar projection and planner-managed schedule, but it never proves that the user boarded, arrived or completed a stage. The original plan, update source/time and every applied difference remain inspectable.
+
+When a service delay only changes a stage boundary, the affected current/future stage and dependent Wait duration may update. When the delay makes a connection infeasible, Project E may atomically replan the future suffix from the last justified stage boundary using the same destination, profiles, policies and Calendar mapping. It may replace the missed service with new stages and must create one deduplicated local Inbox notification explaining that the journey Calendar changed and why. Ambiguous alternatives, a changed destination, an earlier departure that no longer gives reasonable notice or absence of a satisfying route require attention rather than a guess.
+
+Reminder reconciliation follows the updated operational occurrence: pending reminders may be rescheduled or replaced, already delivered attention/history is never erased and a newly past due time is not replayed blindly. Updates must be idempotent and atomic, stop after the journey window or scoped deletion, retain the scheduled/last-known-good state when live data fails, expose staleness and never recreate a stage the user deliberately deleted. Exact feed/provider, polling cadence, journey-window limits, material-change threshold, reminder policy and provider-enable/disable inheritance remain D21 decisions. Implementing this direction requires a separately authorised consequential registered handler with audit/recovery behaviour; this planning acceptance does not change the current Phase 2 runtime by itself.
 
 ### Spatial decision tools
 
@@ -413,8 +427,9 @@ This is a likely dependency order, not a promised release sequence:
 4. **Single-mode journey proof:** deliberate endpoints, walking first where practical, explanation and cache/version behaviour.
 5. **Public transport and stage model:** timetable routing, access legs, services, waits/transfers and stable stage boundaries.
 6. **Calendar materialisation:** reviewed atomic creation and coherent lifecycle of separate journey-stage Events.
-7. **Driving/cycling and profiles/policy:** complete the intended modes; named walking presets and one policy visibly alter an explained result.
-8. **Decision tools:** matrix, reachability or comparison based on trusted route/search contracts.
+7. **Live timetable enrichment:** automatic attributed realtime updates when available, future-suffix replacement, reminder reconciliation and one understandable local change notification.
+8. **Driving/cycling and profiles/policy:** complete the intended modes; named walking presets and one policy visibly alter an explained result.
+9. **Decision tools:** matrix, reachability or comparison based on trusted route/search contracts.
 
 An authorised slice may reorder these when it can prove a coherent alternative, but it should not build broad schema or pack machinery with no end-to-end useful consumer.
 
@@ -430,7 +445,9 @@ Each delivered capability should be tested at the boundaries it introduces:
 - canonical mutation authority, duplicate prevention, audit and portability;
 - route/profile/policy determinism and explanation;
 - journey-stage schedule protection plus this-stage/this-and-following/all-scope replan and deletion;
-- buffer/profile changes through previewed replan rather than direct generated-Event time editing;
+- mode-Calendar mapping and proof that manually created Events on those Calendars remain ordinary and outside journey automation;
+- buffer/profile changes through previewed replan, truthful active-stage durations and expanded Wait stages rather than buffer blocks;
+- live-update idempotency, audit, stale/failure behaviour, missed-connection suffix replacement, reminder reconciliation and notification deduplication;
 - textual equivalence, keyboard operation and supported desktop visual QA;
 - measured performance and storage against the chosen first-region workload rather than an invented global scale.
 
@@ -453,8 +470,8 @@ These choices are deliberately deferred because the present plan lacks the concr
 | D09 | Final routing engine/runtime/process boundary | Valhalla-first Gold Coast/SEQ spike with MOTIS as challenger and OTP/GraphHopper comparators where needed; measure modes, transit legs, pace, policies, resources and Windows packaging | Keep a provider-independent adapter; prefer Valhalla provisionally; do not build a custom pathfinder or make network routing mandatory. |
 | D10 | Journey/result persistence, cache schema and route-history retention | Repeated-use workflow, threat model, reproducibility need and measured calculation cost | Treat results as transient; retain no personal route history by implication. |
 | D11 | Measured preset values, observation aggregation, distance/duration applicability, Sprint inclusion and broader policy precedence/conflicts | User measurements for regular/fast/run, candidate short sprint, engine controls and worked per-leg/cumulative/hard/soft cases | Record stable sourced presets; Regular walk is default; initially constrain each contiguous leg and warn on unusually high cumulative effort; only applicable faster presets are warned alternatives requiring selection; no silent learning or arbitrary speed. |
-| D12 | Public-transport sources, update cadence, station complexes and multimodal engine boundary | Brisbane/Gold Coast/corridor licence and coverage, static timetable samples, engine fit and update burden | Public transport is a required phase mode, but no timetable source or engine is assumed before the spike. |
-| D13 | Journey-group persistence, Calendar choice, buffer presentation, stage titles, protected/user-owned fields, scope implementation, reminders and recurring commute templates | Multi-stage commute and destination-Event journeys; constrained this-stage replacement, middle-stage deletion, change-destination this-and-following, Calendar gap/reservation, individual note preservation, recurrence and rollback cases | Generated schedule/routing fields are locked; one confirmed preview atomically creates stage Events; replan/delete uses this stage, this-and-following or all scopes; prefer a labelled protected buffer stage; a broken middle deletion warns and never retimes silently. |
+| D12 | Public-transport sources, static update cadence, station complexes and multimodal engine boundary | Brisbane/Gold Coast/corridor licence and coverage, static timetable samples, engine fit and update burden | Public transport is a required phase mode and uses an installed static timetable by default; exact source and engine wait for the spike. |
+| D13 | Journey-group persistence, stable mode-Calendar mapping/provisioning, stage titles, scope implementation and recurring commute templates | Multi-stage commute and destination-Event journeys; unavailable/renamed Calendar repair, constrained this-stage replacement, middle-stage deletion, change-destination this-and-following, recurrence and rollback cases | Use ordinary Walk, Bus, Train, Tram, Ferry, Cycle, Drive and Wait Calendars; only explicit group membership locks generated Events; generated Events have no direct edits; buffers shift active stages and expand real Wait stages without becoming Events. |
 | D14 | Optional online-capability packaging, durable enable/disable consent, provider disclosure UI and query/privacy logging | Threat model covering tiles, search/routes, automatic out-of-coverage fallback and local alternatives | Online fallback is unavailable by default; once deliberately enabled it may be automatic, visible and limited to minimum provider inputs; avoid query logs. |
 | D15 | Elevation, accessibility and environmental evidence model | Available first-region attributes, freshness/error analysis and user need | Present no unsupported safety/accessibility conclusion. |
 | D16 | Coverage selection and fallback across overlapping local packs/providers | Multiple-pack prototype with gaps, boundaries and version conflicts | Report unavailable/partial coverage; never silently blend incompatible results. |
@@ -462,6 +479,7 @@ These choices are deliberately deferred because the present plan lacks the concr
 | D18 | Performance/storage budgets, pruning and bulk-calculation limits | Measured first-region pack and representative device/workload | Bound each authorised slice and expose progress/cancellation where needed. |
 | D19 | Durable overlays, saved views or saved journeys and their ontology | Repeated workflow proving identity, editing, sharing across views and recovery needs | Keep viewport, selection, temporary points and calculations transient. |
 | D20 | Location-derived timezone and cross-zone spatial time semantics | Cross-zone Event/journey cases and authoritative timezone-boundary source | Event/Calendar IANA timezone remains authoritative; do not infer silently. |
+| D21 | Live-service feed/provider, provider-enable inheritance, polling/window limits, material-change threshold, predicted-time persistence and reminder/update reconciliation | Representative delay, cancellation, platform change, missed connection, unavailable/stale feed, app downtime and user-deleted-stage cases; provider licence/privacy/reliability evidence | Automatically use live data when the installed/enabled provider supplies it; otherwise retain the scheduled timetable; preserve the original plan and source/time of predictions; update only current/future grouped stages atomically; use local Inbox attention; never infer user location, boarding or actual arrival. |
 
 ### Decision procedure
 
@@ -479,7 +497,9 @@ When implementation reaches one of these gates:
 
 ## Explicit deferrals outside the current commitment
 
-Phase 3 does not presently commit to global offline completeness, commercial-map parity, live turn-by-turn navigation, continuous location tracking/history, a mobile application, background current-location collection, opaque/AI-selected routing, silent behavioural learning, real-time traffic/transit as a core dependency, public reviews, safety guarantees, automatic Event/reminder/Location/policy mutation, bulk provider-feature promotion, arbitrary executable extensions or any particular provider/engine/format before its decision gate is resolved.
+Phase 3 does not presently commit to global offline completeness, commercial-map parity, live turn-by-turn navigation, continuous location tracking/history, a mobile application, background current-location collection, opaque/AI-selected routing, silent behavioural learning, realtime data as an offline/core dependency, public reviews, safety guarantees, automatic mutation outside the provider-enabled live-journey contract, bulk provider-feature promotion, arbitrary executable extensions or any particular provider/engine/format before its decision gate is resolved.
+
+Automatic use of available live-service data is now inside the desired journey workflow, but only as attributed network enrichment over a working static timetable with deterministic limits. External push/OS notification channels, vehicle navigation and personal-position tracking remain separate future decisions.
 
 These items require separate product authorisation even if foundations built in Phase 3 later make them technically possible.
 
@@ -498,6 +518,9 @@ Phase 3 should be judged by a useful integrated spatial system, not a feature co
 - a routing policy visibly affects an explained result;
 - a standalone or Event-linked multi-stage journey can be previewed and explicitly added as separate grouped Calendar Events whose calculated times are protected;
 - this-stage, this-and-following and all-stage replan/delete preserve earlier stages, preview consequences and never silently retime the remainder;
+- Walk, Bus, Train, Tram, Ferry, Cycle, Drive and Wait are usable ordinary Calendars while explicit journey membership alone controls generated-stage locking and automation;
+- buffers move active stages earlier without changing their truthful duration or creating buffer blocks, and scheduled-service slack appears as Wait;
+- a journey uses scheduled timetable data by default and, when enabled-provider live data is available, can reflect attributed service delay, replace an infeasible future connection, reconcile pending reminders and issue one deduplicated local change notification without claiming to know the user's position;
 - a matrix, reachability or comparison workflow supports a meaningful personal decision from the same route/search contracts;
 - export/recovery preserves user-owned spatial data while replaceable packs/caches retain honest reacquisition and staleness behaviour;
 - privacy disclosure, offline refusal/failure and unsupported safety/accessibility claims remain controlled and understandable.
