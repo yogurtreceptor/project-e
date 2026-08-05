@@ -10,11 +10,16 @@ from app.audit import get_provenance, list_audit_events
 from app.db import (
     connect,
     create_entity,
+    create_mobility_profile,
     create_relationship,
+    create_routing_policy,
     delete_relationship,
     get_entity_by_id,
+    get_mobility_profile,
+    get_routing_policy,
 )
 from app.entities import DEFINITIONS_BY_TYPE
+from app.journey_contract import JourneyMode, PolicyKind
 from app.portability import (
     apply_import_bundle,
     create_bundle,
@@ -188,6 +193,67 @@ class PortabilityTests(unittest.TestCase):
         with connect(self.source_db) as connection:
             self.assertEqual("Ada Example", get_entity_by_id(connection, original_id).title)
         self.assertGreaterEqual(len(list(backup_dir.glob("*-before-import-*.zip"))), 1)
+
+    def test_user_owned_journey_configuration_round_trips_but_cache_is_excluded(self):
+        with connect(self.source_db) as connection:
+            create_mobility_profile(
+                connection,
+                "fictional-portable-walk",
+                "Fictional portable walk",
+                JourneyMode.WALK,
+                {"speed_metres_per_second": 1.2},
+            )
+            create_routing_policy(
+                connection,
+                "fictional-portable-policy",
+                "Fictional portable policy",
+                PolicyKind.SOFT_AVOIDANCE,
+                {"modes": ["walk"], "attribute": "stairs"},
+            )
+        cache_path = self.source_db.parent / "journey-cache.sqlite3"
+        cache_path.write_bytes(b"disposable fictional cache")
+
+        bundle = create_bundle(self.source_db, self.source_documents)
+        with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
+            self.assertNotIn("journey-cache.sqlite3", archive.namelist())
+        target_db = self.root / "journey-target" / "project.sqlite3"
+        target_documents = target_db.parent / "documents"
+        target_documents.mkdir(parents=True)
+        initialise_test_database(target_db)
+
+        apply_import_bundle(
+            bundle,
+            target_db,
+            target_documents,
+            target_db.parent / "backups",
+        )
+
+        with connect(target_db) as connection:
+            profile = get_mobility_profile(connection, "fictional-portable-walk")
+            policy = get_routing_policy(connection, "fictional-portable-policy")
+        self.assertEqual(JourneyMode.WALK, profile.primary_mode)
+        self.assertEqual(PolicyKind.SOFT_AVOIDANCE, policy.kind)
+        self.assertFalse((target_db.parent / "journey-cache.sqlite3").exists())
+
+    def test_invalid_journey_configuration_is_rejected_before_import(self):
+        with connect(self.source_db) as connection:
+            profile = create_mobility_profile(
+                connection,
+                "fictional-invalid-walk",
+                "Fictional invalid walk",
+                JourneyMode.WALK,
+                {},
+            )
+            connection.execute(
+                "UPDATE mobility_profiles SET definition_json='[]' WHERE id=?",
+                (profile.id,),
+            )
+            connection.commit()
+
+        bundle = create_bundle(self.source_db, self.source_documents)
+
+        with self.assertRaisesRegex(ValueError, "Journey configuration"):
+            inspect_bundle(bundle)
 
 
 if __name__ == "__main__":

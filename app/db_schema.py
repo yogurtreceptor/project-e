@@ -69,6 +69,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_typed_entity_tables(connection)
     create_relationship_table(connection)
     create_place_foundation_tables(connection)
+    create_journey_foundation_tables(connection)
     create_inference_tables(connection)
     create_entity_history_table(connection)
     create_platform_tables(connection)
@@ -1475,6 +1476,49 @@ def create_place_foundation_tables(connection: sqlite3.Connection) -> None:
     )
 
 
+def create_journey_foundation_tables(connection: sqlite3.Connection) -> None:
+    """Create user-owned mobility/profile identity outside provider data."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS mobility_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            profile_key TEXT NOT NULL UNIQUE,
+            display_name TEXT NOT NULL,
+            primary_mode TEXT NOT NULL
+                CHECK (primary_mode IN (
+                    'walk', 'cycle', 'drive', 'public_transport'
+                )),
+            revision INTEGER NOT NULL DEFAULT 1 CHECK (revision > 0),
+            definition_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS routing_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            policy_key TEXT NOT NULL UNIQUE,
+            display_name TEXT NOT NULL,
+            policy_kind TEXT NOT NULL
+                CHECK (policy_kind IN (
+                    'hard_exclusion', 'soft_avoidance', 'preference',
+                    'added_cost', 'added_buffer'
+                )),
+            revision INTEGER NOT NULL DEFAULT 1 CHECK (revision > 0),
+            definition_json TEXT NOT NULL DEFAULT '{}',
+            is_enabled INTEGER NOT NULL DEFAULT 1
+                CHECK (is_enabled IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_mobility_profiles_mode
+            ON mobility_profiles (primary_mode, display_name, id);
+        CREATE INDEX IF NOT EXISTS idx_routing_policies_enabled
+            ON routing_policies (is_enabled, policy_kind, display_name, id);
+        """
+    )
+
+
 def migrate_canonical_place_foundation(connection: sqlite3.Connection) -> None:
     """Move legacy flattened Location facts into canonical assertions."""
     create_place_foundation_tables(connection)
@@ -1883,6 +1927,7 @@ SCHEMA_MIGRATIONS = (
     ("20260801_31_retire_task_subsystem", retire_task_subsystem),
     ("20260801_32_consolidate_inbox_attention", consolidate_active_inbox_attention),
     ("20260805_33_canonical_place_foundation", migrate_canonical_place_foundation),
+    ("20260805_34_journey_contract_foundation", create_journey_foundation_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

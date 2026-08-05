@@ -32,6 +32,7 @@ For a schema change, update the current-schema creator/repair path, add a forwar
 | Migration | `schema_migrations` | Applied migration identifiers. |
 | Canonical identity | `entities`; `people`, `organisations`, `locations`, `projects`, `documents`, `assets`, `events` | Shared identity plus one typed row for each entity. |
 | Canonical place facts | `location_addresses`, `location_geometries`, `location_provider_references` | Address and geometry assertion history plus replaceable provider identity references. |
+| Journey configuration | `mobility_profiles`, `routing_policies` | Stable user-owned identity, revision and provider-independent definitions; not routes or provider settings. |
 | Relationships and journals | `relationships`, `journal_entries`, `entity_aliases` | First-class links, timestamped observations and alternate names. |
 | Controlled/reference data | `reference_data_types`, `reference_data_items`, `entity_reference_values`, `measurement_units`, `entity_measurements`, `taxonomies`, `taxonomy_entries`, `relationship_type_definitions` | Shared catalogue values, normalized measurements and runtime classifications. |
 | Calendar and recurrence | `calendars`, `birthday_event_links`, `calendar_edit_history`, `event_recurrences`, `event_recurrence_exceptions`, `event_recurrence_splits`, `event_icalendar_identities` | Local Calendar configuration, Birthday links, recurrence and import identity. |
@@ -59,6 +60,12 @@ Aliases, multi-value references and measurements use normalized external tables 
 Structured dates, coordinates and whole-number Asset values are normalized and validated before writes. Location geometry stores a validated geometry type and compact canonical JSON coordinate array in WGS84 longitude/latitude order. Point, line, multi-line, polygon and multi-polygon nesting is supported without requiring a spatial extension; polygon rings must be closed. The projection index selects current/preferred assertions by Location, purpose or role, while partial unique indexes permit at most one preferred address per purpose and one preferred geometry per role.
 
 `locations` now carries only the typed-row identity. `location_addresses` keeps physical, postal and delivery assertions with independent current/preferred state, confidence and source snapshots. `location_geometries` keeps representative point, boundary, entrance, route-anchor and path assertions with confidence, optional positive accuracy radius and source snapshots. A representative point must be a Point. `location_provider_references` stores neutral provider/feature/version identities separately, so removing a provider reference cannot alter accepted canonical geometry.
+
+## Journey configuration and cache boundary
+
+`mobility_profiles` and `routing_policies` are durable local configuration, not entities and not provider-owned records. Each has a stable lowercase key, display name, positive revision, canonical JSON definition and audit identity. Profiles retain one stable primary Walk/Cycle/Drive/Public transport mode. Policies retain one provider-independent hard-exclusion, soft-avoidance, preference, added-cost or added-buffer kind and an enabled state. Edits preserve identity and increment the revision so dependent fingerprints change. N3 deliberately installs no default profile values or policies; later measured values and adapter translations may specialize the validated JSON contract without moving ownership to a provider.
+
+Journey results are not stored in the canonical database. `app/journey_cache.py` owns a bounded SQLite result cache at ignored runtime storage. Rows contain only a semantic fingerprint, normalized result JSON, calculation/freshness times and local cache timestamps. They report fresh, stale or miss; malformed or semantically incompatible entries are discarded. The maximum entry count is supplied by the future caller rather than fixed before N6 measurements, and clearing or deleting the file cannot remove Locations, profiles, policies or Events.
 
 ## Relationships and taxonomies
 
@@ -106,7 +113,7 @@ Data-quality findings are deterministic projections. Only the user's disposition
 
 Uploaded Document bytes live under `instance/documents/`. Writes use confined generated names. A successful replacement removes the old unreferenced file only after the database points to the replacement; recycling retains it; permanent deletion removes it only when no other Document references it. Missing files are tolerated and unsafe paths are never deleted.
 
-iCalendar upload bytes are staged under ignored runtime storage and create canonical records only after preview and explicit confirmation. External Calendar cache rows are operational copies keyed by subscription and source UID. Refresh validates a complete response before atomically replacing a source's cache; failure retains the last-known-good state. Cached items never gain canonical entity identity or Relationships.
+iCalendar upload bytes are staged under ignored runtime storage and create canonical records only after preview and explicit confirmation. External Calendar cache rows are operational copies keyed by subscription and source UID. Refresh validates a complete response before atomically replacing a source's cache; failure retains the last-known-good state. Cached items never gain canonical entity identity or Relationships. The separate journey result cache is bounded and disposable rather than a route-history or recovery source.
 
 ## Portability and recovery
 
@@ -116,6 +123,6 @@ Portable format version 1 is a ZIP containing:
 - a consistent SQLite snapshot made with the backup API;
 - exactly the uploaded files referenced by Document rows.
 
-Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event.
+Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, invalid journey profile/policy configuration, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event. Durable profiles/policies travel inside the database snapshot; disposable journey cache files do not.
 
 The same recovery primitive runs before confirmed merge and permanent deletion. Recovery artifacts remain private ignored runtime data and never become application dependencies.

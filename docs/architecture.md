@@ -18,7 +18,7 @@ SQLite + private local files
 
 The runtime uses standard-library Python and embedded SQLite. Core record workflows require no WAN connection. Optional map resources, address lookup and explicitly configured public iCalendar sources sit behind replaceable network boundaries.
 
-`instance/` is the private runtime boundary. It contains the database, uploaded documents, import staging and recovery artifacts and is ignored by Git. A fresh clone creates empty local storage; tracked examples must be deliberately fictional.
+`instance/` is the private runtime boundary. It contains the database, uploaded documents, import staging, recovery artifacts and disposable journey cache and is ignored by Git. A fresh clone creates empty local storage; tracked examples must be deliberately fictional.
 
 ## Stable entry points
 
@@ -95,6 +95,12 @@ Jobs, Automation Runs, Inbox items, audit events and canonical Events retain sep
 
 `app/calendar_subscription_service.py` owns safe public-HTTPS sources. Subscription configuration and a last-known-good cache are operational local state, not canonical Calendars or Events. Calendar projection can display cached items and reminder evaluation can create local attention, but external items remain read-only and receive no Relationships or entity lifecycle.
 
+### Journey foundation
+
+`app/journey_contract.py` owns provider-independent endpoint, capability—including static/live transit input—request, normalized stage/result, provenance, explanation, failure and full-dependency fingerprint types. `app/journey_service.py` resolves deliberate current Location route-anchor/entrance/representative-point geometry, refuses unsupported requirements before an adapter call and validates every result afterward. Adapters are replaceable calculators: they cannot own mobility profiles, routing policies, canonical geometry or silently omit a requested requirement.
+
+`app/journey_repository.py` owns audited user configuration identity and revisions for mobility profiles and routing policies. Their exact production values and provider translations remain later evidence work. `app/journey_cache.py` stores only bounded disposable results in a separate ignored SQLite file; fresh, stale and miss are explicit, invalid cache payloads are discarded and clearing it loses no personal configuration. No current journey operation creates Events or chooses a routing provider.
+
 ### Derived platform services
 
 Search, structured filters, timelines, maps, data quality and audit are projections over canonical data:
@@ -113,10 +119,10 @@ Consequential writes pass through validated services and produce the applicable 
 
 Deterministic recomputation may update derived state or create contracted operational history. It does not silently create user-owned Relationships: family inference produces review suggestions, and confirmation creates an ordinary editable Relationship. Rejected evidence is remembered; changed evidence invalidates pending suggestions without deleting confirmed facts.
 
-Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, requires an empty target and explicit confirmation, and creates recovery state before replacement.
+Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, including canonical place and journey configuration, requires an empty target and explicit confirmation, and creates recovery state before replacement. Disposable journey cache data is excluded.
 
 ## Deployment and maturity boundary
 
 The application currently has no authentication, multi-user model, external worker, queue or cloud dependency. Normal operation remains local and in-process. Optional network clients must fail without damaging or blocking canonical local data.
 
-Phases 1 and 2 are complete development milestones. Phase 3 N1 has added the provider-independent canonical place foundation; later Phase 3 renderer, provider, pack, routing and journey work remains planned and separately authorised. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.
+Phases 1 and 2 are complete development milestones. Phase 3 N1–N3 have added the canonical place foundation, offline-first Map 2.0A workspace and provider-independent journey/profile/policy/cache seam. Installed regional data, a routing provider, calculated production journeys, Calendar materialisation and later spatial work remain separately gated. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.

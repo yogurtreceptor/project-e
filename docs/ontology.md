@@ -10,7 +10,7 @@ This document defines meaning. Exact fields live in `app/entities.py`, persisten
 | --- | --- | --- | --- |
 | Canonical entity | One durable record for a meaningful real-world object or occurrence. | Person, Organisation, Location, Project, Document, Asset, Event | User-owned; editable; recoverable deletion. |
 | Relationship | One asserted connection between two canonical entities. | Person works for Organisation; Event at Location | User-owned; editable; recoverable deletion. |
-| Configuration | Local organisation or behaviour without becoming a real-world entity. | Calendar, Calendar Subscription, reminder policy | Managed through its owning service. |
+| Configuration | Local organisation or behaviour without becoming a real-world entity. | Calendar, Calendar Subscription, reminder policy, mobility profile, routing policy | Managed through its owning service. |
 | Derived projection | Deterministic, reproducible interpretation of source facts. | Timeline item, map marker, recurring occurrence, Calendar projection, data-quality finding | Recalculated; not independently edited. |
 | Operational/history | Attention, execution or traceability state. | Inbox item, Job Run, Automation Run, audit event | State-specific; history generally append-only. |
 
@@ -123,7 +123,13 @@ The Map derives one place pin with grouped canonical records from:
 - any canonical record connected through a qualifying Location Relationship, with separate type layers controlling visibility;
 - Assets with direct coordinates or a qualifying Location Relationship.
 
-Missing representative points affect map eligibility, not Location validity. A record related to several Locations remains one canonical record represented in each place group, and browsing or selecting never creates spatial truth. Rich geometry is canonical storage; installed regional map/provider context, richer layers and routing remain later Phase 3 work.
+Missing representative points affect map eligibility, not Location validity. A record related to several Locations remains one canonical record represented in each place group, and browsing or selecting never creates spatial truth. Rich geometry is canonical storage; installed regional map/provider context, richer layers and production routing remain later Phase 3 work.
+
+## Journey configuration and derived results
+
+A **mobility profile** is durable user-owned configuration with stable identity, mode and revision. It describes reviewed personal movement assumptions or applicability; it is not a provider preset, route or silently learned behaviour. A **routing policy** is durable user-owned configuration for a structured hard exclusion, soft avoidance, preference, added cost or buffer. Providers translate these records but never own their identity or silently weaken them.
+
+A journey request deliberately references canonical Location/access-point geometry and configuration revisions. Its calculated route, stages, snapping, timings, explanations and Map line are derived results. They gain no Entity, Relationship or Event identity merely by being calculated or cached. The cache is a bounded performance aid rather than travel history; clearing it cannot change canonical places or durable configuration. Calendar identity remains a later explicit one-time materialisation decision.
 
 ## Ontology checks for new work
 

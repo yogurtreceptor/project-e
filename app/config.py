@@ -7,6 +7,7 @@ DATABASE_PATH = INSTANCE_DIR / "eddy.sqlite3"
 DOCUMENT_STORAGE_DIR = INSTANCE_DIR / "documents"
 BACKUP_DIR = INSTANCE_DIR / "backups"
 IMPORT_STAGING_DIR = INSTANCE_DIR / "imports"
+JOURNEY_CACHE_PATH = INSTANCE_DIR / "journey-cache.sqlite3"
 
 
 def initialise_local_storage() -> None:

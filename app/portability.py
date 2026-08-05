@@ -307,6 +307,13 @@ def _validate_database(connection: sqlite3.Connection) -> None:
     place_errors = validate_stored_place_foundation(connection)
     if place_errors:
         raise ValueError(f"Canonical place data is invalid: {'; '.join(place_errors)}")
+    from app.journey_repository import validate_stored_journey_configuration
+
+    journey_errors = validate_stored_journey_configuration(connection)
+    if journey_errors:
+        raise ValueError(
+            f"Journey configuration is invalid: {'; '.join(journey_errors)}"
+        )
 
 
 def _relationship_type_supports(connection, type_key, source_type, target_type):
@@ -350,7 +357,16 @@ def _target_is_empty(database_path: Path, document_storage_dir: Path) -> bool:
     if not database_path.exists():
         return True
     with connect(database_path) as connection:
-        user_tables = ("entities", "relationships", "journal_entries", "audit_events", "data_quality_finding_state", "entity_edit_history")
+        user_tables = (
+            "entities",
+            "relationships",
+            "journal_entries",
+            "audit_events",
+            "data_quality_finding_state",
+            "entity_edit_history",
+            "mobility_profiles",
+            "routing_policies",
+        )
         return all(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0 for table in user_tables)
 
 

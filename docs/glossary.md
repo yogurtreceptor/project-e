@@ -20,6 +20,16 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Representative point** | The role-specific Point used for deterministic Location text/form and Map projection; it does not replace other geometry. |
 | **Location containment** | A single-parent, cycle-safe `contains_location` Relationship between canonical Locations; inherited address display does not copy the parent's assertion. |
 
+## Spatial and journey terms
+
+| Term | Meaning |
+| --- | --- |
+| **Journey endpoint** | A deliberate canonical Location plus an explicit or unambiguous current route-anchor, entrance or representative Point; provider snapping is derived and does not move it. |
+| **Mobility profile** | Durable user-owned, revisioned assumptions and applicability for one stable Walk, Cycle, Drive or Public transport mode; not a provider preset or learned route history. |
+| **Routing policy** | Durable user-owned hard exclusion, soft avoidance, preference, added-cost or added-buffer configuration translated—and never silently weakened—by an adapter. |
+| **Journey fingerprint** | SHA-256 identity over every semantic request, resolved endpoint, profile/policy revision and adapter/source dependency that affects result meaning. |
+| **Journey cache** | Bounded clearable local performance storage reporting fresh, stale or miss; it is not personal route history or a Calendar materialisation source. |
+
 ## Classification and structured values
 
 | Term | Meaning |
@@ -83,4 +93,4 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Repository source of truth** | Current code and repository documentation, not prior chat handoffs. |
 | **Task** | A retired experimental entity removed by migration `20260801_31_retire_task_subsystem`; future work management requires a new design. |
 
-Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1's canonical place foundation delivered; later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.
+Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1–N3's canonical place, offline-first Map and provider-independent journey foundations delivered; later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.

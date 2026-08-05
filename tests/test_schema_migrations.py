@@ -50,6 +50,8 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("location_addresses", tables)
         self.assertIn("location_geometries", tables)
         self.assertIn("location_provider_references", tables)
+        self.assertIn("mobility_profiles", tables)
+        self.assertIn("routing_policies", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
         self.assertIn("event_icalendar_identities", tables)
@@ -211,6 +213,54 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertEqual({"entity_id"}, location_columns)
         self.assertIsNotNone(migration)
         self.assertIsNone(stale_provenance)
+
+    def test_journey_contract_upgrade_adds_configuration_without_touching_entities(self) -> None:
+        journey_migration = "20260805_34_journey_contract_foundation"
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for migration_id, migration in SCHEMA_MIGRATIONS:
+                if migration_id == journey_migration:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations VALUES (?, 'before')",
+                    (migration_id,),
+                )
+            cursor = connection.execute(
+                """INSERT INTO entities (
+                       type, display_name, summary, notes, created_at, updated_at
+                   ) VALUES ('person', 'Existing Fictional Person', '', '',
+                             'before', 'before')"""
+            )
+            person_id = int(cursor.lastrowid)
+            connection.execute(
+                "INSERT INTO people (entity_id, given_name) VALUES (?, 'Existing')",
+                (person_id,),
+            )
+            connection.commit()
+
+            create_schema(connection)
+
+            retained = connection.execute(
+                "SELECT display_name FROM entities WHERE id=?", (person_id,)
+            ).fetchone()
+            tables = {
+                row["name"]
+                for row in connection.execute(
+                    """SELECT name FROM sqlite_master
+                       WHERE type='table' AND name IN (
+                           'mobility_profiles', 'routing_policies'
+                       )"""
+                )
+            }
+            migration = connection.execute(
+                "SELECT 1 FROM schema_migrations WHERE migration_id=?",
+                (journey_migration,),
+            ).fetchone()
+
+        self.assertEqual("Existing Fictional Person", retained["display_name"])
+        self.assertEqual({"mobility_profiles", "routing_policies"}, tables)
+        self.assertIsNotNone(migration)
 
     def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:
         with connect(self.database_path) as connection:

@@ -2,6 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-05 · Phase 3 provider-independent journey contract
+
+- Added deliberate canonical Location/access-point resolution, versioned adapter capabilities, provider-independent request/stage/result/explanation types and distinct coverage, unsupported, no-route, policy/profile, stale/incompatible and provider-failure outcomes without selecting an engine.
+- Added audited revisioned user-owned mobility-profile/routing-policy identity plus full semantic fingerprints and a bounded clearable fresh/stale/miss SQLite result cache outside canonical recovery and route history.
+- Resolved N3's D09–D11/D15 foundation gates through deterministic fictional ambiguity, partial coverage, profile limit, policy conflict, cache/failure/corruption and provider-version evidence; fresh/upgrade/portability regression and all 325 tests passed with no Calendar Event creation.
+
 ## 2026-08-05 · Phase 3 Map 2.0A canonical workspace
 
 - Replaced the automatic Leaflet CDN/OSM tile page with a map-dominant browser-native canonical coordinate canvas, stable canonical-first search, accessible persistent selection, grouped shared-place details and a complete text equivalent.

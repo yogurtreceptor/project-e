@@ -4,7 +4,7 @@ This file preserves long-term structural choices and their rationale. Search its
 
 New decisions are appended with Status, Date, Decision, Reason and Consequences. Do not record small implementation choices. If replaced, retain the old entry as Superseded and append its replacement.
 
-The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027), the shared temporal-occurrence boundary (ADR-028), canonical place assertions (ADR-029) and the offline-first Map workspace seam (ADR-030).
+The current groups are foundational entity/persistence choices (ADR-001–010), Operational Time and automation (ADR-011–026), Task retirement (ADR-027), the shared temporal-occurrence boundary (ADR-028), canonical place assertions (ADR-029), the offline-first Map workspace seam (ADR-030) and the provider-independent journey seam (ADR-031).
 
 ## ADR-001: Map as an entity view
 
@@ -455,3 +455,18 @@ Dense N1 evidence showed that grouping 864 flat record markers into 96 canonical
 
 Consequences:
 Map browsing, selection, clustering, text alternatives and canonical layer controls work without WAN access or installed packs. Stale viewport fetches are aborted and out-of-order responses are ignored; panning never reruns ranked search. Records sharing a Location use one pin and records related to several Locations state that multiplicity. Normal/satellite/terrain and provider/workflow overlays remain visible but unavailable until their own evidence gates. Reconsider the renderer only when a selected local basemap cannot integrate safely, representative data exceeds the bounded seam, or a reviewed provider has a materially different rendering/attribution lifecycle. This decision selects no pack format, tile source, routing engine, current-location mechanism or later provider architecture, and it supersedes ADR-003's statement that Projects and Documents categorically cannot participate in Map projection when they have a qualifying Location Relationship.
+
+## ADR-031: Own journey meaning before selecting a routing provider
+
+Status: Accepted
+
+Date: 2026-08-05
+
+Decision:
+Keep journey endpoint resolution, capability preflight, request/fingerprint semantics, normalized stages/results, typed failures, profile/policy identity and cache status in Project E-owned standard-library contracts. Resolve only deliberate current canonical Location route anchors, entrances or representative points; refuse ambiguity and unsupported requirements before calling an adapter. Require every adapter result to retain requested profile/policy disposition, separate distance/time meanings, source versions, coverage, freshness, warnings and a textual itinerary. Store audited revisioned profile/policy configuration in the canonical database, but keep bounded route results in a clearable ignored SQLite cache that is excluded from recovery.
+
+Reason:
+Deterministic fictional adapters proved ambiguous endpoints, unsupported requirements, partial coverage, no-route versus provider failure, contiguous profile limits, policy conflicts/no-compliant-route and fresh/stale/miss/corrupt cache outcomes without engine-specific types. Every semantic request/configuration/adapter/source variation changed the fingerprint. The contract, two small additive configuration tables and disposable cache could be delivered together without choosing an engine, provider mappings, preset values or Calendar persistence; splitting them would leave either the adapter or durability boundary incomplete.
+
+Consequences:
+Routing providers remain replaceable calculators and cannot silently weaken a request, own personal configuration or turn failure into no-route. Migration `20260805_34_journey_contract_foundation` adds only mobility profiles and routing policies; calculated results create no Event or journey group. X1 must compare candidates against this seam before any provider is adopted. Reconsider contract shapes only for a measured provider semantic that cannot be represented honestly, profile/policy specialization only from N6/N7/N9 evidence, and cache storage/bounds only after representative size, latency and retention measurements.
