@@ -4,7 +4,7 @@
 
 **Phase 3 is planning only.** This document records accepted direction, current research, delivery order and decisions that require implementation evidence. It does not authorise implementation or claim that these capabilities exist.
 
-Phase 3 adds “where it is and how to reach it” to the canonical records and operational time delivered by Phases 1 and 2. Its first useful outcome is a journey planner that calculates a walking, driving, cycling or public-transport trip, explains its assumptions, previews each stage and—after one confirmation—creates separate grouped Calendar Events. A commute is the representative workflow.
+Phase 3 adds “where it is and how to reach it” to the canonical records and operational time delivered by Phases 1 and 2. It has two connected primary outcomes: a map-dominant place/search workspace and a journey planner that calculates a walking, driving, cycling or public-transport trip, explains its assumptions, previews each stage and—after one confirmation—creates separate grouped Calendar Events. A commute is the representative journey workflow.
 
 The current platform already has canonical Locations with address/optional coordinates, Relationships, a derived Map, optional OSM/Nominatim enrichment, and the Phase 2 Event/Calendar/reminder/Inbox/scheduler foundation. It does not yet have rich geometry, packs, offline search/routing, transit routing, mobility profiles, routing policies or journey groups.
 
@@ -29,6 +29,19 @@ The current platform already has canonical Locations with address/optional coord
 - Gold Coast LGA is the first pack target. Brisbane and Logan/intervening coverage follow as independent units or a declared corridor bundle. A boundary-only gap should offer either the adjoining LGA or a smaller bordering-suburb pack rather than require a whole LGA.
 - Timetable/route-shape coverage may extend beyond installed map coverage. Available route coordinates and stops still render over blank space; enabled online tiles may supply background. Missing visual, search and street-routing capability remain separately labelled, and missing street data must not be presented as a complete access route.
 - Static public-transport timetables are the default. Available live data from an enabled provider enriches them; absent or stale live data falls back visibly to the schedule.
+
+### Map 2.0 workspace and search
+
+- Map becomes a map-dominant desktop workspace inspired by familiar map applications rather than a panel followed by a long record list. A persistent search control and a results/details sidebar coexist with the map; opening a result never prevents zooming, panning or inspecting nearby context. Constrained desktop layouts may collapse the sidebar without losing selection or search state.
+- Selecting a search result or clickable feature centres/highlights it with a familiar red selected pin. The pin remains while the user drags or zooms until selection is deliberately changed or cleared. Shape, outline, label and focus state keep selection understandable without relying on red alone.
+- One search field groups and ranks canonical Project E results first, installed-pack addresses/places/stops second and enabled online results third. Every result shows type, source and coverage state. Search supports names, addresses and deliberate coordinates; no result is promoted or saved by selection.
+- The details sidebar keeps the map visible and shows available identity, address/coordinates, provider/provenance and coverage warnings. Applicable actions are **Open canonical record**, **Save as Location**, **Directions from** and **Directions to**. Directions prefill the journey planner; saving a provider feature remains a reviewed canonical-creation workflow.
+- Installed/online provider features such as roads/paths, addresses, businesses, parks, stations and stops are clickable while browsing, not search-only. Click opens the same non-mutating details flow and clearly distinguishes external context from canonical records.
+- All canonical types can appear under a **Canonical records** layer group: Locations and Relationship-projected Organisations, People, Assets, Events, Projects and Documents. Sub-layers control visibility only and never change data; records related to several Locations must remain understandable.
+- Layer architecture distinguishes one base view from combinable overlays. Desired base views are normal map, satellite and terrain; desired overlays include canonical records, traffic, public transport, cycling, journey routes and routing-policy geometry. Each layer identifies its provider, local/network status, freshness and attribution. Unavailable layers remain visible-but-disabled with an install/enable or feasibility explanation rather than disappearing.
+- Map expansion is incremental. The first slice delivers the map-dominant shell, unified canonical/current-provider search, persistent selected pin, results/details sidebar, layer architecture and reviewed Save as Location. Installed-pack search, richer clickable features, route overlays, nearby exploration and satellite/terrain/traffic/transit/cycle data follow as their data, licence, privacy, cost and performance gates are proven.
+- Current/device location is deliberately excluded. Origins and reference points come from canonical Locations, search results, selected features or explicit temporary points.
+- Map retains bounded, user-clearable recent searches/selections and supports durable favourites and named lists. Recent operational history, durable list identity, provider bookmarks and canonical Location promotion remain distinct; exact retention and portability are D19 decisions.
 
 ### Journey calculation
 
@@ -123,15 +136,16 @@ Use the same Gold Coast OSM and SEQ GTFS inputs for representative walking, cycl
 
 Likely dependency order, not implementation authority:
 
-1. Gold Coast pack/engine evidence spike and decision record.
-2. Spatial foundations: geometry/provenance, provider envelope and pack lifecycle.
-3. Map/search/save-as-Location workflow.
-4. Single-mode walking journey and explanation/cache proof.
-5. Public transport and stable stage model.
-6. One-time Calendar materialisation, mode Calendars, reminders and scoped lifecycle.
-7. Live delay alerts and cancellation/missed-connection replacement.
-8. Driving/cycling, measured profiles and one explained routing policy.
-9. Matrix/reachability/comparison after route/search trust is established.
+1. **Map 2.0A:** map-dominant shell, canonical/current-provider search, persistent selected pin, sidebar details/actions, initial layers and recents using current foundations.
+2. Gold Coast pack/engine evidence spike and decision record.
+3. Spatial foundations: geometry/provenance, provider envelope and pack lifecycle.
+4. **Map 2.0B:** installed/online provider search, clickable features, reviewed Save as Location, lists/favourites and first local basemap/search capability.
+5. Single-mode walking journey, route overlay and explanation/cache proof.
+6. Public transport, transport layers and stable stage model.
+7. One-time Calendar materialisation, mode Calendars, reminders and scoped lifecycle.
+8. Live delay alerts and cancellation/missed-connection replacement.
+9. Driving/cycling, measured profiles and one explained routing policy.
+10. Satellite, terrain, traffic and cycling layers as each provider/data gate is proven; matrix/reachability/comparison follows trusted route/search contracts.
 
 Each authorised slice begins with its concrete workflow, current-code/data constraints, representative licensed/fictional fixtures, alternatives, evidence needed, privacy/licensing/storage/failure analysis, migration/audit/portability impact, verification and rollback. A spike is evidence, not production architecture.
 
@@ -142,6 +156,8 @@ Verification should cover:
 - pack integrity, incompatibility, overlap, interrupted update, rollback and removal;
 - offline/refused-network, stale, corrupt and partial-coverage behaviour;
 - route/profile/policy determinism, provenance and explanation;
+- ranked canonical/local/online Map search with source labelling, selected-pin/sidebar persistence during pan/zoom, clickable-feature non-mutation and no device-location request;
+- layer availability/attribution, disabled-state explanation, recents clearing and favourites/list portability boundaries;
 - journey locking, scoped replan/delete, buffers, mode-Calendar mapping and reminder inheritance;
 - live alert deduplication, unchanged scheduled times for delay, cancellation/missed-connection replacement, reminder reconciliation and startup/past-stage rules;
 - one-time-only materialisation, audit/recovery, accessible textual/UI behaviour, performance and storage.
@@ -156,7 +172,8 @@ These grouped IDs preserve the earlier register while making the working set sma
 | --- | --- | --- |
 | D01, D06, D16, D18 | Pack archive/directory shape, boundary buffer, raw-input retention, prebuilt vs local build, suburb dependency closure, overlap and measured resource budgets. Prove with Gold Coast, a bordering-suburb cut and Logan/Brisbane union. | Gold Coast first; portable source packs plus disposable derived builds; independent LGA/suburb units; route coordinates survive missing map coverage; never silently claim absent routing capability. |
 | D02–D05 | Geometry/provenance/index schema, access-point/hierarchy cardinality and provider-link reconciliation. Needs current-data audit, station/building workflows, upgrade fixtures and two provider versions. | Preserve existing valid Location data; one canonical truth; explicit roles/units/CRS; no inferred hierarchy, duplicate geometry truth or automatic provider relink. |
-| D07, D08, D14, D19 | Map renderer/tile format, local/online search, provider consent/disclosure, optional plugin boundary and any durable overlay/saved-view identity. | Retain current Map/text/manual entry; online capability is optional, durably enabled and visible; avoid query logs; viewport/selection remain transient. No reusable saved journey. |
+| D07, D08, D14 | Renderer/local tile/search choices; normal/satellite/terrain sources; traffic/transit/cycle overlay sources; ranking details; provider consent, licence/cost/privacy, optional plugin boundary and constrained-desktop performance. | Build the map-dominant shell incrementally; canonical then installed then online search; persistent accessible red selection pin and sidebar; clickable provider features never mutate; online layers are optional, enabled and attributed; no device-location request or hidden query logging. |
+| D19 | Recent-search/selection retention, last viewport/layer state, named-list/favourite persistence, portability and whether an external provider feature can be bookmarked without canonical promotion. Needs real list and revisit workflows plus provider reconciliation cases. | Recents are bounded and clearable; lists/favourites are deliberate user-owned saves; external references never masquerade as canonical Locations; no reusable saved journey. |
 | D09, D12, D17 | Final engine, transit source/update workflow, station-complex semantics and native/Java acquisition/process/upgrades. Needs the Gold Coast/SEQ comparison and repeatable Windows setup. | Provider-independent adapter; Valhalla first, MOTIS challenger; static timetable default; no custom router or network-dependent core. Runtime code is not a data pack. |
 | D10, D20 | Journey-group/baseline schema, cache/operational-history retention and cross-timezone handling. Needs one-time save, scoped lifecycle and cancellation replacement cases. | Unsaved results transient; materialised group retains minimum confirmed baseline/provenance/audit; Event/Calendar IANA timezone remains authoritative; no reusable template or incidental route history. |
 | D11, D15 | Measured preset values/aggregation, Sprint and distance applicability, policy precedence and accessibility/environmental evidence. Needs user measurements, real engine controls and worked conflicts. | Regular walk default; named faster profiles require selection; per-contiguous-leg limits initially; no silent learning or unsupported safety/accessibility claims. |
@@ -171,6 +188,6 @@ Phase 3 does not include global offline completeness, commercial-map parity, tur
 
 ## Completion and expansion workspace
 
-Phase 3 is complete only when one useful installed region supports trustworthy map/search, all four intended journey modes, explained profiles/policy and at least one useful matrix/reachability/comparison workflow; one-time grouped Calendar materialisation behaves safely; optional live enrichment follows its alert/mutation boundary; pack failure/partial coverage and privacy/accessibility remain understandable; and user-owned spatial/journey state is recoverable independently of packs/caches.
+Phase 3 is complete only when one useful installed region supports a map-dominant, searchable and accessible place workspace with canonical/provider distinction, clickable inspection, reviewed saving and progressive layer support; all four intended journey modes, explained profiles/policy and at least one useful matrix/reachability/comparison workflow work from the same spatial contracts; one-time grouped Calendar materialisation behaves safely; optional live enrichment follows its alert/mutation boundary; pack failure/partial coverage remains understandable; and user-owned map/spatial/journey state is recoverable independently of packs/caches.
 
 Add dated numbered **Complete:** entries here only after explicitly authorised implementation is delivered and verified. Each entry should name the slice, resolved decision IDs and durable contract.
