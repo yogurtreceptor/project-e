@@ -93,4 +93,4 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Repository source of truth** | Current code and repository documentation, not prior chat handoffs. |
 | **Task** | A retired experimental entity removed by migration `20260801_31_retire_task_subsystem`; future work management requires a new design. |
 
-Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1–N3's canonical place, offline-first Map and provider-independent journey foundations delivered; later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.
+Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1–N3's canonical place, offline-first Map and provider-independent journey foundations delivered and X1's Gold Coast prerequisite evidence complete; installed-provider and later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.

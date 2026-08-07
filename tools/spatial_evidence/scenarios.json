@@ -1,0 +1,186 @@
+{
+  "motis": [
+    {
+      "key": "geocode_canonical_query_shape",
+      "contract_case": "Local search returns typed external candidates for Project E to rank after canonical records.",
+      "operation": "geocode",
+      "path": "/api/v1/geocode",
+      "query": {
+        "text": "Surfers Paradise",
+        "place": "-28.0027,153.4145",
+        "numResults": 5
+      }
+    },
+    {
+      "key": "walk_profile_regular",
+      "contract_case": "A user-owned walking speed is explicit and the provider search bound cannot silently become no-route.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.035761,153.431141",
+        "time": "2026-08-10T08:00:00+10:00",
+        "transitModes": "",
+        "directModes": "WALK",
+        "pedestrianSpeed": 1.4,
+        "maxDirectTime": 21600
+      }
+    },
+    {
+      "key": "walk_default_bound_empty",
+      "contract_case": "MOTIS's 30-minute default returns an empty result rather than no physical route; an adapter must name or override the search bound.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.035761,153.431141",
+        "time": "2026-08-10T08:00:00+10:00",
+        "transitModes": "",
+        "directModes": "WALK",
+        "pedestrianSpeed": 1.4
+      }
+    },
+    {
+      "key": "walk_profile_fast",
+      "contract_case": "A faster user-owned Walk profile changes the estimate without changing the stable Walk mode identity.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.035761,153.431141",
+        "time": "2026-08-10T08:00:00+10:00",
+        "transitModes": "",
+        "directModes": "WALK",
+        "pedestrianSpeed": 2.0,
+        "maxDirectTime": 21600
+      }
+    },
+    {
+      "key": "walk_profile_run",
+      "contract_case": "A running-speed Walk profile remains explicit and subject to Project E's own contiguous-distance limit.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.035761,153.431141",
+        "time": "2026-08-10T08:00:00+10:00",
+        "transitModes": "",
+        "directModes": "WALK",
+        "pedestrianSpeed": 2.8,
+        "maxDirectTime": 21600
+      }
+    },
+    {
+      "key": "static_transit",
+      "contract_case": "Static GTFS normalises into explicit walk, tram, bus and transfer walk stages.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.070986,153.377926",
+        "time": "2026-08-10T08:00:00+10:00",
+        "arriveBy": "false",
+        "transitModes": "TRANSIT",
+        "directModes": "",
+        "numItineraries": 3
+      }
+    },
+    {
+      "key": "static_transit_arrive_by",
+      "contract_case": "Arrive-by remains a distinct provider capability and must preserve the requested time direction.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-28.006114,153.429184",
+        "toPlace": "-28.070986,153.377926",
+        "time": "2026-08-10T09:00:00+10:00",
+        "arriveBy": "true",
+        "transitModes": "TRANSIT",
+        "directModes": "",
+        "numItineraries": 3
+      }
+    },
+    {
+      "key": "outside_street_coverage",
+      "contract_case": "An endpoint outside the buffered street graph stays distinct from no-route.",
+      "operation": "plan",
+      "path": "/api/v6/plan",
+      "query": {
+        "fromPlace": "-27.4698,153.0251",
+        "toPlace": "-28.006114,153.429184",
+        "time": "2026-08-10T08:00:00+10:00",
+        "transitModes": "",
+        "directModes": "CAR",
+        "maxDirectTime": 21600
+      }
+    }
+  ],
+  "valhalla": [
+    {
+      "key": "walk_inner",
+      "contract_case": "Walking returns route distance, estimated duration and geometry without provider-owned profile identity.",
+      "path": "/route",
+      "payload": {
+        "locations": [
+          {"lat": -28.006114, "lon": 153.429184},
+          {"lat": -28.035761, "lon": 153.431141}
+        ],
+        "costing": "pedestrian",
+        "costing_options": {"pedestrian": {"walking_speed": 5.04}},
+        "units": "kilometers"
+      }
+    },
+    {
+      "key": "cycle_inner",
+      "contract_case": "Cycle is a distinct primary mode with explicit route distance and duration.",
+      "path": "/route",
+      "payload": {
+        "locations": [
+          {"lat": -28.006114, "lon": 153.429184},
+          {"lat": -28.070986, "lon": 153.377926}
+        ],
+        "costing": "bicycle",
+        "units": "kilometers"
+      }
+    },
+    {
+      "key": "drive_inner",
+      "contract_case": "Drive is a distinct primary mode and never substitutes for another requested mode.",
+      "path": "/route",
+      "payload": {
+        "locations": [
+          {"lat": -28.006114, "lon": 153.429184},
+          {"lat": -28.070986, "lon": 153.377926}
+        ],
+        "costing": "auto",
+        "units": "kilometers"
+      }
+    },
+    {
+      "key": "buffer_boundary",
+      "contract_case": "A route crossing the northern Gold Coast boundary exercises the common-snapshot buffer rather than a hard LGA seam.",
+      "path": "/route",
+      "payload": {
+        "locations": [
+          {"lat": -27.717, "lon": 153.202},
+          {"lat": -28.006114, "lon": 153.429184}
+        ],
+        "costing": "auto",
+        "units": "kilometers"
+      }
+    },
+    {
+      "key": "outside_coverage_snap",
+      "contract_case": "Valhalla may snap an out-of-coverage endpoint to a distant graph edge without a warning; Project E must calculate and bound snap distance.",
+      "path": "/route",
+      "payload": {
+        "locations": [
+          {"lat": -27.4698, "lon": 153.0251},
+          {"lat": -28.006114, "lon": 153.429184}
+        ],
+        "costing": "auto",
+        "units": "kilometers"
+      }
+    }
+  ]
+}

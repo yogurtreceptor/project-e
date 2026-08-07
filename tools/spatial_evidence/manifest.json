@@ -1,0 +1,92 @@
+{
+  "snapshot_id": "x1-gold-coast-20260807",
+  "buffer_km": 15,
+  "sources": {
+    "queensland_osm": {
+      "kind": "osm",
+      "filename": "queensland-260801.osm.pbf",
+      "url": "https://download.geofabrik.de/australia-oceania/australia/queensland-260801.osm.pbf",
+      "sha256": "9bd9e05f8d514899651cf3dee0155117441c09e53a4459c606fb39a425768752",
+      "version": "Geofabrik 2026-08-01; OSM data through 2026-08-01T10:46:22Z",
+      "license": "Open Data Commons Open Database License 1.0",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "attribution": "Map data © OpenStreetMap contributors",
+      "reacquisition": "Immutable dated Geofabrik snapshot with published MD5; exact reacquisition is expected while the archive is retained."
+    },
+    "gold_coast_boundary": {
+      "kind": "boundary",
+      "filename": "gold-coast-lga-20260807.geojson",
+      "url": "https://data.gov.au/geoserver/gold-coast-local-government-authority-boundary/wfs?request=GetFeature&typeName=ckan_fdce4dc1_53d2_4c74_ab9f_33c6b206fee4&outputFormat=json",
+      "sha256": "6d61be2cf52cbf6ac9cb7355f040368ae2ad427f13ca29a4c85c09a2cfd23eac",
+      "version": "City of Gold Coast dataset metadata modified 2026-08-02; acquired 2026-08-07",
+      "license": "Creative Commons Attribution 3.0 Australia",
+      "license_url": "https://data.gov.au/data/dataset/gold-coast-local-government-authority-boundary",
+      "attribution": "City of Gold Coast",
+      "reacquisition": "The WFS URL is mutable. Retain the exact verified source with a build until a versioned archive URL is available."
+    },
+    "seq_gtfs": {
+      "kind": "gtfs",
+      "filename": "SEQ_GTFS-20260807.zip",
+      "url": "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip",
+      "sha256": "e1c63cbfded06771305bd4a1b09210d1f23964a5f100bbebd4db95787f41a87b",
+      "version": "Translink feed 2026-08-07 through 2026-10-06; acquired 2026-08-07",
+      "license": "Creative Commons Attribution 4.0 plus Translink open-data terms",
+      "license_url": "https://translink.com.au/about-translink/open-data/terms-and-conditions",
+      "attribution": "Department of Transport and Main Roads - Translink Division",
+      "reacquisition": "The current-feed URL is mutable. A production pack build must retain the verified source or an authorised immutable archive reference for rollback."
+    }
+  },
+  "tools": {
+    "osmium": {
+      "version": "1.16.0 (Ubuntu 24.04 package)",
+      "license": "GPL-3.0",
+      "url": "https://docs.osmcode.org/osmium/latest/osmium-extract.html",
+      "artifact_sha256": "724c103ee5312b1b80e6a37b21efb17e489fa110ef3bf74717932c62bbc037da"
+    },
+    "tilemaker": {
+      "version": "2.4.0 measured; 3.1.0 current upstream challenger",
+      "license": "FTWPL with separately licensed bundled components",
+      "url": "https://github.com/systemed/tilemaker",
+      "artifact_sha256": "cc217d20dee485bbcb74671598d0073d71610039187744be95d4f523da343c4b"
+    },
+    "maplibre_gl_js": {
+      "version": "6.2.0",
+      "license": "BSD-3-Clause",
+      "url": "https://registry.npmjs.org/maplibre-gl/-/maplibre-gl-6.2.0.tgz",
+      "artifact_sha256": "28f4e9b3e6f2b47c228b7c4a19397c713294f4d4b3b75d8da97e3230ffc4604e"
+    },
+    "valhalla": {
+      "version": "3.8.3 pyvalhalla manylinux wheel",
+      "license": "MIT",
+      "url": "https://pypi.org/project/pyvalhalla/3.8.3/",
+      "artifact_sha256": "7dd3277502451df842f7e13f123b607e9a8380352e80c0cdff2bc4411b5c9fea"
+    },
+    "motis": {
+      "version": "2.11.0 native Linux and Windows releases",
+      "license": "MIT",
+      "url": "https://github.com/motis-project/motis/releases/tag/v2.11.0",
+      "linux_artifact_sha256": "508505d3f9cd2e872c763743c459cae4e0539fad14bf490e23251e013d3a6dfa",
+      "windows_artifact_sha256": "29b53df131a49db90002aa8d69e703ae0225a42a0542adf32d8f8b6092a600a4"
+    }
+  },
+  "builds": {
+    "buffered_osm": {
+      "kind": "osm",
+      "path": "gold-coast-buffer15km-260801.osm.pbf",
+      "sha256": "74330500d35e8201f4014bed7d40a0191248e8783b4cd437acdf696305f643b9"
+    },
+    "tilemaker_mbtiles": {
+      "kind": "mbtiles",
+      "path": "gold-coast-buffer15km-tilemaker-v2.4.0.mbtiles",
+      "sha256": "1c871a1b19d5725d30abcdc7c4334ddc4566d0ca0934904d60cbd60b0cbf667a"
+    },
+    "valhalla_graph": {
+      "kind": "directory",
+      "path": "valhalla-v3.8.3/tiles"
+    },
+    "motis_build": {
+      "kind": "directory",
+      "path": "motis-v2.11.0/data"
+    }
+  }
+}

@@ -2,6 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-07 · Phase 3 Gold Coast spatial evidence
+
+- Verified fixed official Gold Coast boundary, dated Queensland OSM and current SEQ GTFS sources and reproduced a buffered extract, local vector tiles, Valhalla street graph and MOTIS search/street/static-transit build entirely under ignored staging.
+- Measured build size/time/memory, cold start, loopback latency, street modes, explicit walking-speed variants, depart/arrive transit, boundary and failure semantics, and native Windows MOTIS startup; recorded licences, attribution, reacquisition and rollback requirements.
+- Selected reversible capability-specific starting points for N4/N6/N7 with explicit challengers and triggers, plus a standard-library evidence harness and five focused tests, without installing a production provider/pack or changing canonical data, runtime schema or Event behaviour.
+
 ## 2026-08-05 · Phase 3 provider-independent journey contract
 
 - Added deliberate canonical Location/access-point resolution, versioned adapter capabilities, provider-independent request/stage/result/explanation types and distinct coverage, unsupported, no-route, policy/profile, stale/incompatible and provider-failure outcomes without selecting an engine.
