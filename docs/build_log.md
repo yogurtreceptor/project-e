@@ -2,6 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-07 · Phase 3 first installed-region Map
+
+- Added a strict bounded spatial-pack manifest/archive and ignored immutable-version lifecycle with inspect-only preview, checksum/schema/coverage/disk validation, atomic activation, failed-update retention, two-way rollback, one-region refusal, audit and confirmed canonical-independent removal.
+- Built and activated the verified Gold Coast pack with 1,431 vector tiles and 38,180 derived OSM-label/GTFS-stop search features; adopted the X1 SQLite capability-separation challenger rather than coupling ordinary Map search to MOTIS import/runtime resources.
+- Composed vendored MapLibre GL JS 6.2.0 with Map 2.0's canonical DOM/text overlay, local normal map/search/general-place/transit inspection, persistent controls and visible coverage/version/freshness/attribution. Lifecycle/regression tests, all 340 tests, compilation, JavaScript syntax and same-origin temporary-port Edge visual/keyboard/click review passed without canonical or Event mutation.
+
 ## 2026-08-07 · Phase 3 Gold Coast spatial evidence
 
 - Verified fixed official Gold Coast boundary, dated Queensland OSM and current SEQ GTFS sources and reproduced a buffered extract, local vector tiles, Valhalla street graph and MOTIS search/street/static-transit build entirely under ignored staging.

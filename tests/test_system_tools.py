@@ -19,6 +19,7 @@ class SystemToolsViewTests(unittest.TestCase):
             ("/recycle-bin", "Recycle Bin"),
             ("/system-tools/audit", "Audit"),
             ("/system-tools/portability", "Import and Export"),
+            ("/map/packs", "Spatial Packs"),
         ):
             self.assertIn(f'href="{href}"', html)
             self.assertIn(f"<h2>{label}</h2>", html)

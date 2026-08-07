@@ -11,7 +11,7 @@ The stable rendering facade is `app/views.py`. `app/view_pages/` owns focused pa
 | `/` | Restrained Home/start page with domain shortcuts, recent records and favourites. | `dashboard.py` |
 | `/search` | Global canonical entity/Relationship search with type, favourite and structured filters. | `search.py` |
 | `/timeline` | Universal real-world chronology derived from canonical records. | `timeline.py` |
-| `/map` | Entity/Relationship-derived map with layer controls and textual alternative. | `map.py` |
+| `/map` | Canonical Entity/Relationship overlay and text alternative over an optional verified local normal map/search/context pack. | `map.py` |
 | `/calendar` | Month, Week and Day projections; Event preview and Calendar-local creation. | `calendar.py` |
 | `/inbox` | Active reminder attention plus retained Archive/deep history. | `inbox.py` |
 | `/relationships` | Global Relationship browse/audit surface, inference review and Family Tree access. | `relationships.py` |
@@ -86,6 +86,7 @@ Calendar Settings uses a stripped-back shell and preserves the originating Calen
 | `/system-tools/portability` and import/export children | Whole-platform bundle creation, inspection and confirmed apply. |
 | `/system-tools/scheduled-jobs` | Registered Job state, Runs, manual execution and controls. |
 | `/system-tools/automation` | Registered deterministic rules and Automation Runs. |
+| `/map/packs` | Inspect-only spatial-pack preview plus active source/coverage/version/attribution, atomic install/update/rollback and confirmed removal. |
 
 Audit, Timeline, Inbox, Job Runs and Automation Runs have different meaning and remain separate destinations/projections.
 
@@ -94,7 +95,7 @@ Audit, Timeline, Inbox, Job Runs and Automation Runs have different meaning and 
 - Create/edit forms are one readable column with a top error summary, linked field errors, retained values, progressive optional details and dirty-form protection.
 - Tables and wide specialist views use labelled keyboard-scrollable regions and honest empty/no-match/error states.
 - Consequential actions use review/confirmation appropriate to their reversibility. Merge and import include a preview; soft deletion is recoverable; permanent deletion is recovery-protected.
-- Map and Family Tree retain textual alternatives. Optional map/address network failure never blocks canonical local records.
+- Map and Family Tree retain textual alternatives. Installed map/search/renderer or optional address-network failure never blocks canonical local records. Provider clicks only inspect; pack install/removal is a separate explicit workflow.
 - Both system-selected themes use shared semantic tokens. Icon-only actions require accessible names and usable targets.
 - The current product is desktop-first. Human visual/keyboard verification remains necessary at the supported desktop dimensions.
 

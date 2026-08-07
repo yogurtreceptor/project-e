@@ -15,12 +15,14 @@ class HttpServerConfigurationTests(unittest.TestCase):
                 root / "first-documents",
                 root / "first-backups",
                 root / "first-staging",
+                root / "first-spatial-packs",
             )
             second = HttpServerConfig(
                 root / "second.sqlite3",
                 root / "second-documents",
                 root / "second-backups",
                 root / "second-staging",
+                root / "second-spatial-packs",
             )
             original_database_path = EddyRequestHandler.database_path
 
@@ -30,6 +32,7 @@ class HttpServerConfigurationTests(unittest.TestCase):
         self.assertEqual(first.database_path, first_handler.database_path)
         self.assertEqual(second.database_path, second_handler.database_path)
         self.assertNotEqual(first_handler.database_path, second_handler.database_path)
+        self.assertEqual(first.spatial_pack_dir, first_handler.spatial_pack_dir)
         self.assertEqual(original_database_path, EddyRequestHandler.database_path)
 
 

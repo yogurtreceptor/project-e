@@ -58,7 +58,7 @@ from app.defaults import (
 )
 from app.duplicate_detection import find_duplicate_entities
 from app.entity_merge import list_entity_history, merge_entities, preview_entity_merge
-from app.audit import AuditFilters, list_audit_events
+from app.audit import AuditFilters, list_audit_events, record_audit_event
 from app.integrity import audit_relationships, warnings_for_entity
 from app.entities import DEFINITIONS_BY_SLUG, DEFINITIONS_BY_TYPE, EVENT_DEFINITION, EntityDefinition
 from app.calendar_service import (
@@ -89,6 +89,18 @@ from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, lis
     list_scheduled_jobs, run_job_now, set_job_enabled)
 from app.automation_service import ensure_registered_rules, list_rules, list_runs, set_rule_enabled
 from app.geo import build_map_payload, build_map_viewport_payload, geocoder
+from app.spatial_pack import (
+    MAX_ARCHIVE_BYTES,
+    activate_staged_spatial_pack,
+    inspect_and_stage_spatial_pack,
+    read_active_coverage,
+    read_active_public_transport,
+    read_active_tile,
+    read_staged_spatial_pack,
+    remove_spatial_pack,
+    rollback_spatial_pack,
+    spatial_pack_status,
+)
 from app.relationship_graph import connected_family_components, extract_family_graph, full_family_component
 from app.relationship_inference import list_review_batches, recompute_inferences, review_suggestion, undo_suggestion_review
 from app.graph_layout import layered_layout
@@ -114,6 +126,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
     document_storage_dir = DEFAULT_HTTP_CONFIG.document_storage_dir
     backup_dir = DEFAULT_HTTP_CONFIG.backup_dir
     import_staging_dir = DEFAULT_HTTP_CONFIG.import_staging_dir
+    spatial_pack_dir = DEFAULT_HTTP_CONFIG.spatial_pack_dir
 
     def do_GET(self) -> None:
         self.route_request()
@@ -1328,6 +1341,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
                 provider_results=provider_results,
                 provider_requested=provider_requested,
                 provider_error=provider_error,
+                spatial_pack_root=self.spatial_pack_dir,
             )
         self.respond_page(
             "Map",
@@ -1364,6 +1378,199 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
                 {"error": "Valid bounded viewport coordinates are required."},
                 status=HTTPStatus.BAD_REQUEST,
             )
+
+    def handle_spatial_pack_manager(self, query: dict[str, str]) -> None:
+        status = spatial_pack_status(self.spatial_pack_dir)
+        saved = query.get("saved", "")
+        self.respond_page(
+            "Spatial Packs",
+            views.spatial_pack_page(status, saved=saved),
+            active_slug="map",
+            show_save_toast=bool(saved),
+        )
+
+    def handle_spatial_pack_preview(self) -> None:
+        status = spatial_pack_status(self.spatial_pack_dir)
+        try:
+            _values, upload = self.read_multipart_form(
+                max_bytes=MAX_ARCHIVE_BYTES + 1024 * 1024
+            )
+            if upload is None:
+                raise ValueError("Choose a spatial-pack ZIP file to inspect.")
+            preview = inspect_and_stage_spatial_pack(
+                upload.data, self.spatial_pack_dir
+            )
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Spatial Packs",
+                views.spatial_pack_page(status, errors=[str(error)]),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.respond_page(
+            "Inspect Spatial Pack",
+            views.spatial_pack_page(status, preview=preview),
+            active_slug="map",
+        )
+
+    def handle_spatial_pack_activate(self) -> None:
+        values = self.read_form()
+        try:
+            preview = read_staged_spatial_pack(
+                values.get("token", ""), self.spatial_pack_dir
+            )
+            before = spatial_pack_status(self.spatial_pack_dir).active
+            active = activate_staged_spatial_pack(
+                values.get("token", ""), self.spatial_pack_dir
+            )
+            with connect(self.database_path) as connection:
+                record_audit_event(
+                    connection,
+                    "import",
+                    [("spatial_pack", 0)],
+                    before=(
+                        {
+                            "pack_id": before.manifest.pack_id,
+                            "version": before.manifest.pack_version,
+                        }
+                        if before
+                        else None
+                    ),
+                    after={
+                        "pack_id": active.manifest.pack_id,
+                        "version": active.manifest.pack_version,
+                        "coverage": active.manifest.coverage_label,
+                    },
+                    notes="Verified local spatial pack activated",
+                    provenance="imported",
+                )
+                connection.commit()
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Spatial Packs",
+                views.spatial_pack_page(
+                    spatial_pack_status(self.spatial_pack_dir),
+                    preview=preview if "preview" in locals() else None,
+                    errors=[str(error)],
+                ),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.redirect("/map/packs?saved=installed")
+
+    def handle_spatial_pack_rollback(self) -> None:
+        before = spatial_pack_status(self.spatial_pack_dir).active
+        try:
+            active = rollback_spatial_pack(self.spatial_pack_dir)
+            with connect(self.database_path) as connection:
+                record_audit_event(
+                    connection,
+                    "edit",
+                    [("spatial_pack", 0)],
+                    before={"version": before.manifest.pack_version} if before else None,
+                    after={"version": active.manifest.pack_version},
+                    notes="Local spatial pack rolled back to a validated version",
+                )
+                connection.commit()
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Spatial Packs",
+                views.spatial_pack_page(
+                    spatial_pack_status(self.spatial_pack_dir), errors=[str(error)]
+                ),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.redirect("/map/packs?saved=rolled-back")
+
+    def handle_spatial_pack_remove(self) -> None:
+        values = self.read_form()
+        if values.get("confirm") != "REMOVE":
+            self.respond_page(
+                "Spatial Packs",
+                views.spatial_pack_page(
+                    spatial_pack_status(self.spatial_pack_dir),
+                    errors=["Type REMOVE to confirm spatial-pack removal."],
+                ),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        try:
+            removed = remove_spatial_pack(self.spatial_pack_dir)
+            with connect(self.database_path) as connection:
+                record_audit_event(
+                    connection,
+                    "delete",
+                    [("spatial_pack", 0)],
+                    before=removed,
+                    notes="Replaceable local spatial pack removed; canonical data retained",
+                )
+                connection.commit()
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Spatial Packs",
+                views.spatial_pack_page(
+                    spatial_pack_status(self.spatial_pack_dir), errors=[str(error)]
+                ),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.redirect("/map/packs?saved=removed")
+
+    def handle_spatial_pack_tile(
+        self, activation_id: str, raw_zoom: str, raw_x: str, raw_y: str
+    ) -> None:
+        if not (raw_zoom.isdigit() and raw_x.isdigit() and raw_y.isdigit()):
+            self.respond_not_found()
+            return
+        tile = read_active_tile(
+            self.spatial_pack_dir,
+            activation_id,
+            int(raw_zoom),
+            int(raw_x),
+            int(raw_y),
+        )
+        if tile is None:
+            self.respond_not_found()
+            return
+        content, gzipped = tile
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/vnd.mapbox-vector-tile")
+        if gzipped:
+            self.send_header("Content-Encoding", "gzip")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def handle_spatial_pack_coverage(self, activation_id: str) -> None:
+        content = read_active_coverage(self.spatial_pack_dir, activation_id)
+        if content is None:
+            self.respond_not_found()
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/geo+json; charset=utf-8")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def handle_spatial_pack_public_transport(self, activation_id: str) -> None:
+        content = read_active_public_transport(self.spatial_pack_dir, activation_id)
+        if content is None:
+            self.respond_not_found()
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/geo+json; charset=utf-8")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
 
     def handle_geocoding_search(self, query: dict[str, str]) -> None:
         if self.command != "GET":

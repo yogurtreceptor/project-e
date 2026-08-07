@@ -52,6 +52,47 @@ def route_request(handler) -> None:
     if parts[0] == "data-quality":
         handler.handle_data_quality()
         return
+    if parts == ["map", "packs"] and handler.command == "GET":
+        handler.handle_spatial_pack_manager(query)
+        return
+    if parts == ["map", "packs", "preview"] and handler.command == "POST":
+        handler.handle_spatial_pack_preview()
+        return
+    if parts == ["map", "packs", "activate"] and handler.command == "POST":
+        handler.handle_spatial_pack_activate()
+        return
+    if parts == ["map", "packs", "rollback"] and handler.command == "POST":
+        handler.handle_spatial_pack_rollback()
+        return
+    if parts == ["map", "packs", "remove"] and handler.command == "POST":
+        handler.handle_spatial_pack_remove()
+        return
+    if (
+        len(parts) == 6
+        and parts[:2] == ["map", "tiles"]
+        and parts[5].endswith(".pbf")
+        and handler.command == "GET"
+    ):
+        handler.handle_spatial_pack_tile(
+            parts[2], parts[3], parts[4], parts[5].removesuffix(".pbf")
+        )
+        return
+    if (
+        len(parts) == 4
+        and parts[:2] == ["map", "packs"]
+        and parts[3] == "coverage.geojson"
+        and handler.command == "GET"
+    ):
+        handler.handle_spatial_pack_coverage(parts[2])
+        return
+    if (
+        len(parts) == 4
+        and parts[:2] == ["map", "packs"]
+        and parts[3] == "public-transport.geojson"
+        and handler.command == "GET"
+    ):
+        handler.handle_spatial_pack_public_transport(parts[2])
+        return
     if parts == ["map", "viewport"]:
         handler.handle_map_viewport(query)
         return

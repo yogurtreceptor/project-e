@@ -37,6 +37,7 @@ def make_test_server(
     document_storage_dir: Path | None = None,
     backup_dir: Path | None = None,
     import_staging_dir: Path | None = None,
+    spatial_pack_dir: Path | None = None,
 ):
     if database_path is None:
         config = DEFAULT_HTTP_CONFIG
@@ -47,5 +48,6 @@ def make_test_server(
             document_storage_dir=document_storage_dir or root / "documents",
             backup_dir=backup_dir or root / "backups",
             import_staging_dir=import_staging_dir or root / "import-staging",
+            spatial_pack_dir=spatial_pack_dir or root / "spatial-packs",
         )
     return create_http_server(("127.0.0.1", 0), EddyRequestHandler, config)

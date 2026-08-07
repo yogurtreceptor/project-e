@@ -109,11 +109,13 @@ Family inference stores batches and suggestions only. A suggestion becomes a nor
 
 Data-quality findings are deterministic projections. Only the user's disposition and notes persist in `data_quality_finding_state`; the finding itself is recalculated.
 
-## External files and network caches
+## External files, packs and network caches
 
 Uploaded Document bytes live under `instance/documents/`. Writes use confined generated names. A successful replacement removes the old unreferenced file only after the database points to the replacement; recycling retains it; permanent deletion removes it only when no other Document references it. Missing files are tolerated and unsafe paths are never deleted.
 
 iCalendar upload bytes are staged under ignored runtime storage and create canonical records only after preview and explicit confirmation. External Calendar cache rows are operational copies keyed by subscription and source UID. Refresh validates a complete response before atomically replacing a source's cache; failure retains the last-known-good state. Cached items never gain canonical entity identity or Relationships. The separate journey result cache is bounded and disposable rather than a route-history or recovery source.
+
+Spatial packs also live outside the canonical database under `instance/spatial-packs/`. Each immutable installed version contains a strict manifest, vector MBTiles, fixed read-only search SQLite and coverage GeoJSON; `active.json` is an atomic operational pointer, not a database foreign key. Pack search rows and static-transit features are replaceable provider context and cannot receive entity identity or Relationships. Audit records describe activation, rollback and removal, but do not make the removed bytes recoverable personal data. Whole-platform export excludes packs; source/version/coverage/attribution in the visible manager supplies reacquisition context.
 
 ## Portability and recovery
 
@@ -123,6 +125,6 @@ Portable format version 1 is a ZIP containing:
 - a consistent SQLite snapshot made with the backup API;
 - exactly the uploaded files referenced by Document rows.
 
-Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, invalid journey profile/policy configuration, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event. Durable profiles/policies travel inside the database snapshot; disposable journey cache files do not.
+Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, invalid journey profile/policy configuration, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event. Durable profiles/policies travel inside the database snapshot; disposable journey cache files and replaceable spatial packs do not.
 
 The same recovery primitive runs before confirmed merge and permanent deletion. Recovery artifacts remain private ignored runtime data and never become application dependencies.

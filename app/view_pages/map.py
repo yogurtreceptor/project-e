@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 SEARCH_GROUPS = (
     ("canonical", "Canonical records"),
+    ("installed", "Installed map results"),
     ("coordinates", "Entered coordinates"),
     ("online", "Online provider results"),
 )
@@ -28,21 +29,38 @@ def map_page(
     online_checked = " checked" if payload["providerStatus"]["requested"] else ""
     provider_status = payload["providerStatus"]
     provider_class = " map-capability-error" if provider_status["state"] == "error" else ""
+    pack_status = payload.get(
+        "packStatus", {"state": "unavailable", "manageUrl": "/map/packs"}
+    )
+    pack_available = pack_status.get("state") == "available"
     selected = payload["selections"].get(selected_key)
+    map_title = "Normal local map" if pack_available else "Canonical coordinate map"
+    map_description = (
+        f'{escape(str(pack_status["title"]))} {escape(str(pack_status["version"]))} · '
+        f'{escape(str(pack_status["coverageLabel"]))} · Local'
+        if pack_available
+        else "No basemap is installed; canonical positions remain usable offline."
+    )
+    map_assets = (
+        '<link rel="stylesheet" href="/static/vendor/maplibre-6.2.0/maplibre-gl.css">'
+        if pack_available
+        else ""
+    )
 
     return f"""
+    {map_assets}
     <section class="map-page-heading">
         <div>
             <p class="eyebrow">Spatial workspace</p>
             <h1>Map</h1>
             <p>{place_count} canonical place{"s" if place_count != 1 else ""} represent {record_count} mapped record{"s" if record_count != 1 else ""} without requiring network access.</p>
         </div>
-        <a class="button secondary" href="/locations/new">Create Location</a>
+        <div class="actions"><a class="button secondary" href="/map/packs">Manage Spatial Packs</a><a class="button secondary" href="/locations/new">Create Location</a></div>
     </section>
     <section class="map-workspace" data-map-workspace>
         <header class="map-search-region">
             <form method="get" action="/map" class="map-search-form" role="search">
-                <label for="map-search-input">Search places and canonical records</label>
+                <label for="map-search-input">Search installed places and canonical records</label>
                 <div class="map-search-row">
                     <input id="map-search-input" type="search" name="q" value="{escape(query)}" placeholder="Name, address, or latitude, longitude" autocomplete="off">
                     <button class="button" type="submit">Search</button>
@@ -51,10 +69,13 @@ def map_page(
                 <label class="inline-check map-online-choice"><input type="checkbox" name="online" value="1"{online_checked}> Include optional online place results for this search</label>
                 <p class="form-help">Off by default. When selected, only the entered search text is sent to OpenStreetMap Nominatim; Project E does not add canonical names, notes or Relationships.</p>
             </form>
-            <div class="map-capability-status{provider_class}" role="status">
-                <strong>{escape(provider_status["name"])} · {escape(provider_status["execution"])}</strong>
-                <span>{escape(provider_status["explanation"])}</span>
-                {f'<span>{escape(provider_status["attribution"])}</span>' if provider_status["requested"] else ''}
+            <div class="map-capability-stack">
+                {pack_capability_status(pack_status)}
+                <div class="map-capability-status{provider_class}" role="status">
+                    <strong>{escape(provider_status["name"])} · {escape(provider_status["execution"])}</strong>
+                    <span>{escape(provider_status["explanation"])}</span>
+                    {f'<span>{escape(provider_status["attribution"])}</span>' if provider_status["requested"] else ''}
+                </div>
             </div>
         </header>
 
@@ -73,8 +94,8 @@ def map_page(
             <section class="map-canvas-panel" aria-labelledby="map-canvas-heading">
                 <header class="map-command-bar">
                     <div>
-                        <h2 id="map-canvas-heading">Canonical coordinate map</h2>
-                        <p>No basemap is installed; canonical positions remain usable offline.</p>
+                        <h2 id="map-canvas-heading">{map_title}</h2>
+                        <p>{map_description}</p>
                     </div>
                     <div class="map-command-actions" aria-label="Map controls">
                         <button type="button" class="button secondary map-icon-button" data-map-zoom-in aria-label="Zoom in" title="Zoom in">+</button>
@@ -103,7 +124,8 @@ def map_page(
                     </div>
                 </details>
 
-                <div class="eddy-map" role="region" tabindex="0" aria-label="Pan and zoom canonical coordinate map" aria-describedby="map-keyboard-help map-map-status" data-map-stage>
+                <div class="eddy-map{' has-local-basemap' if pack_available else ''}" role="region" tabindex="0" aria-label="Pan and zoom {'normal local map with canonical places' if pack_available else 'canonical coordinate map'}" aria-describedby="map-keyboard-help map-map-status" data-map-stage>
+                    <div class="map-basemap" data-map-basemap aria-hidden="true"></div>
                     <div class="map-coordinate-grid" aria-hidden="true"></div>
                     <div class="map-pin-layer" data-map-pin-layer></div>
                     <p class="map-loading-state" data-map-loading role="status">Loading canonical places for this viewport…</p>
@@ -118,7 +140,7 @@ def map_page(
                 <footer id="map-map-status" class="map-attribution-status">
                     <strong>Local canonical overlay.</strong>
                     <span data-map-viewport-status>Viewport data loads only from this Project E server.</span>
-                    <span>Basemap unavailable—no code or tiles were requested from a third party.</span>
+                    {map_pack_footer(pack_status)}
                 </footer>
             </section>
         </div>
@@ -153,7 +175,7 @@ def search_results_html(payload: dict[str, object]) -> str:
     if not results:
         return f"""
         <header class="map-sidebar-heading"><p class="eyebrow">Results</p><h2>Search results</h2></header>
-        <div class="empty-state"><h3>No matches</h3><p>No canonical record, entered coordinate or enabled online result matched <strong>{escape(query)}</strong>.</p></div>
+        <div class="empty-state"><h3>No matches</h3><p>No canonical record, installed map feature, entered coordinate or enabled online result matched <strong>{escape(query)}</strong>.</p></div>
         """
     sections = []
     for group_id, label in SEARCH_GROUPS:
@@ -251,6 +273,18 @@ def map_details_html(selection: dict[str, object] | None) -> str:
         )
         if value
     )
+    provider_feature = selection.get("providerFeature")
+    if isinstance(provider_feature, dict):
+        provider_metadata = (
+            ("Pack version", provider_feature.get("packVersion", "")),
+            ("Source layer", provider_feature.get("sourceLayer", "")),
+            ("Provider feature", provider_feature.get("featureId", "")),
+        )
+        metadata += "".join(
+            f'<li><strong>{escape(label)}</strong><span>{escape(str(value))}</span></li>'
+            for label, value in provider_metadata
+            if value
+        )
     records = selection.get("records", [])
     if records:
         record_items = "".join(map_detail_record_html(record) for record in records)
@@ -283,10 +317,15 @@ def format_coordinates(item: dict[str, object]) -> str:
 
 
 def base_view_controls(payload: dict[str, object]) -> str:
-    return "".join(
-        f'<label class="map-unavailable-option"><input type="radio" name="map-base-view" value="{escape(str(view["id"]))}" disabled> <span><strong>{escape(str(view["label"]))}</strong><small>Unavailable · {escape(str(view["explanation"]))}</small></span></label>'
-        for view in payload["baseViews"]
-    )
+    controls = []
+    for view in payload["baseViews"]:
+        available = bool(view["available"])
+        controls.append(
+            f'<label class="{"" if available else "map-unavailable-option"}"><input type="radio" name="map-base-view" value="{escape(str(view["id"]))}"'
+            f'{" checked" if view.get("enabled", False) else ""}{"" if available else " disabled"}> '
+            f'<span><strong>{escape(str(view["label"]))}</strong><small>{"Local · " if available else "Unavailable · "}{escape(str(view["explanation"]))}</small></span></label>'
+        )
+    return "".join(controls)
 
 
 def canonical_layer_controls(payload: dict[str, object]) -> str:
@@ -297,7 +336,55 @@ def canonical_layer_controls(payload: dict[str, object]) -> str:
 
 
 def context_layer_controls(payload: dict[str, object]) -> str:
-    return "".join(
-        f'<label class="map-unavailable-option"><input type="checkbox" disabled> <span><strong>{escape(str(layer["label"]))}</strong><small>Unavailable · {escape(str(layer["explanation"]))}</small></span></label>'
-        for layer in payload["contextLayers"]
+    controls = []
+    for layer in payload["contextLayers"]:
+        available = bool(layer["available"])
+        controls.append(
+            f'<label class="{"" if available else "map-unavailable-option"}"><input type="checkbox" data-map-context-layer="{escape(str(layer["id"]))}"'
+            f'{" checked" if layer.get("enabled", False) else ""}{"" if available else " disabled"}> '
+            f'<span><strong>{escape(str(layer["label"]))}</strong><small>{"Local · " if available else "Unavailable · "}{escape(str(layer["explanation"]))}</small></span></label>'
+        )
+    return "".join(controls)
+
+
+def pack_capability_status(pack: dict[str, object]) -> str:
+    state = str(pack.get("state", "unavailable"))
+    if state == "available":
+        search_note = (
+            "Installed search ready"
+            if pack.get("searchState") == "available"
+            else "Installed search unavailable; canonical search still works"
+        )
+        return f"""
+        <div class="map-capability-status map-capability-local" role="status">
+            <strong>{escape(str(pack["title"]))} {escape(str(pack["version"]))} · Local</strong>
+            <span>{escape(str(pack["coverageLabel"]))} · {search_note}</span>
+            <a href="{escape(str(pack["manageUrl"]))}">Inspect coverage, sources and versions</a>
+        </div>
+        """
+    if state == "error":
+        return f"""
+        <div class="map-capability-status map-capability-error" role="alert">
+            <strong>Installed map unavailable</strong><span>{escape(str(pack.get("error", "Installed pack state is invalid.")))}</span>
+            <a href="{escape(str(pack["manageUrl"]))}">Inspect Spatial Packs</a>
+        </div>
+        """
+    return f"""
+    <div class="map-capability-status" role="status">
+        <strong>Normal map · Not installed</strong>
+        <span>Canonical coordinates remain available without tiles.</span>
+        <a href="{escape(str(pack["manageUrl"]))}">Install or inspect a Spatial Pack</a>
+    </div>
+    """
+
+
+def map_pack_footer(pack: dict[str, object]) -> str:
+    if pack.get("state") != "available":
+        return "<span>Basemap unavailable—no code or tiles were requested from a third party.</span>"
+    return (
+        f'<strong>{escape(str(pack["title"]))} {escape(str(pack["version"]))} · Local.</strong>'
+        f'<span>{escape(str(pack["coverageLabel"]))} · Produced {escape(str(pack["producedAt"]))}.</span>'
+        f'<span>{escape(str(pack["attribution"]))}.</span>'
+        '<span data-map-render-status>Starting the local basemap renderer…</span>'
+        '<span>Coordinates outside pack coverage remain visible over the coordinate grid.</span>'
     )

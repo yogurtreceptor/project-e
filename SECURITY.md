@@ -30,3 +30,9 @@ General bugs and feature requests belong in the public issue templates, provided
 iCalendar uploads and URL-subscription responses are untrusted input. The application bounds their size and Event count, validates supported Calendar semantics before writes, and stages previews only under ignored local runtime storage. Public subscriptions accept HTTPS only, reject credentials and non-public destinations, revalidate redirects, limit redirect count and response time, and retain the last validated cache if refresh fails.
 
 Calendar subscription query values may contain sensitive tokens. Vulnerability reports, logs and screenshots should redact complete subscription URLs; routine audit notes identify only the source host.
+
+## Spatial packs
+
+Spatial-pack ZIPs and every embedded SQLite/GeoJSON member are untrusted input. Inspection is bounded to a 512 MB archive, 2 GiB declared extracted bytes and 256 KB manifest, accepts exactly four root members, rejects duplicate/absolute/traversal/backslash/link paths, checks available staging space plus reserve, and verifies declared byte counts and SHA-256 digests before opening derived files read-only. MBTiles, search schema/application identity/integrity, zoom/bounds and coverage coordinates are validated before activation.
+
+Validated versions remain in ignored private runtime storage. Activation atomically replaces a small pointer only after validation; a failed update retains the last-known-good pointer and a previous version remains available for rollback. The current first slice refuses a second region until the active pack is explicitly removed. Tile, coverage, transit, renderer and worker resources are allowlisted same-origin paths; the browser style contains no remote resource URL. Pack removal requires typed confirmation, leaves canonical records untouched and does not make public source data part of a recovery export.

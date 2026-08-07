@@ -104,3 +104,27 @@ Run the package regression checks with:
 ```sh
 python3 -m unittest tests.test_spatial_evidence
 ```
+
+## N4 pack promotion
+
+N4 retains the X1 source/build evidence and promotes only verified derived
+members into the bounded `project-e-spatial-pack` format. The deterministic
+standard-library builder extracts visible OSM label features from the measured
+MBTiles archive, adds static GTFS stops to a fixed read-only SQLite index, and
+packages that index with MBTiles, official coverage and complete manifest
+metadata:
+
+```sh
+python3 tools/spatial_pack_builder.py \
+  --mbtiles instance/spatial-evidence/builds/gold-coast-buffer15km-tilemaker-v2.4.0.mbtiles \
+  --boundary instance/spatial-evidence/sources/gold-coast-lga-20260807.geojson \
+  --gtfs instance/spatial-evidence/sources/SEQ_GTFS-20260807.zip \
+  --output instance/spatial-packs/acquisition/gold-coast-2026.08.01.zip
+```
+
+The builder validates its finished bytes through the same staging service used
+by the application and prints the archive digest, byte size, tile count and
+search-feature count. Source files, produced archives and installed versions
+remain ignored private/runtime resources. Install/update/remove them through
+**Map → Manage Spatial Packs**; never commit them or substitute them for the
+canonical database.

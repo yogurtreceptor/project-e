@@ -48,6 +48,10 @@ class RequestSupportMixin:
             "super-key.js": "text/javascript; charset=utf-8",
             "taxonomy.js": "text/javascript; charset=utf-8",
             "timezone-picker.js": "text/javascript; charset=utf-8",
+            "vendor/maplibre-6.2.0/maplibre-gl.mjs": "text/javascript; charset=utf-8",
+            "vendor/maplibre-6.2.0/maplibre-gl-shared.mjs": "text/javascript; charset=utf-8",
+            "vendor/maplibre-6.2.0/maplibre-gl-worker.mjs": "text/javascript; charset=utf-8",
+            "vendor/maplibre-6.2.0/maplibre-gl.css": "text/css; charset=utf-8",
         }
         if relative_path.startswith("icons/") and relative_path.endswith(".svg"):
             icon_name = relative_path.removeprefix("icons/").removesuffix(".svg")
@@ -71,6 +75,9 @@ class RequestSupportMixin:
             content_type = "text/css; charset=utf-8"
         elif relative_path in content_types:
             path = STATIC_DIR / relative_path
+            if not path.is_file():
+                self.respond_not_found()
+                return
             content_type = content_types[relative_path]
         else:
             self.respond_not_found()
@@ -110,8 +117,12 @@ class RequestSupportMixin:
                 values["display_name"] = Path(upload.file_name).stem or upload.file_name
         return values, upload
 
-    def read_multipart_form(self) -> tuple[dict[str, str], UploadedFile | None]:
+    def read_multipart_form(
+        self, *, max_bytes: int | None = None
+    ) -> tuple[dict[str, str], UploadedFile | None]:
         length = int(self.headers.get("Content-Length", "0"))
+        if max_bytes is not None and (length < 0 or length > max_bytes):
+            raise ValueError("Uploaded file exceeds the permitted inspection size.")
         body = self.rfile.read(length)
         content_type = self.headers.get("Content-Type", "")
         message = BytesParser(policy=default).parsebytes(

@@ -11,20 +11,24 @@
   }
 
   const stage = root.querySelector("[data-map-stage]");
+  const basemapElement = root.querySelector("[data-map-basemap]");
   const pinLayer = root.querySelector("[data-map-pin-layer]");
   const loading = root.querySelector("[data-map-loading]");
   const viewportStatus = root.querySelector("[data-map-viewport-status]");
+  const renderStatus = root.querySelector("[data-map-render-status]");
   const resultsPane = root.querySelector('[data-map-pane="results"]');
   const detailsPane = root.querySelector('[data-map-pane="details"]');
   const details = root.querySelector("[data-map-details]");
   const clearSelectionButton = root.querySelector("[data-map-clear-selection]");
   const sidebarToggle = root.querySelector("[data-map-toggle-sidebar]");
   const layerControls = [...root.querySelectorAll("[data-map-layer]")];
+  const contextLayerControls = [...root.querySelectorAll("[data-map-context-layer]")];
   if (!stage || !pinLayer || !loading || !viewportStatus || !resultsPane || !detailsPane || !details) return;
 
   const viewportStorageKey = "project-e.map.viewport.v1";
   const layersStorageKey = "project-e.map.layers.v1";
   const sidebarStorageKey = "project-e.map.sidebar.v1";
+  const contextLayersStorageKey = "project-e.map.context-layers.v1";
   const validLayers = new Set(payload.layers.map((layer) => layer.id));
   const selectionIndex = new Map(Object.entries(payload.selections || {}));
   let viewport = readViewport() || {
@@ -33,13 +37,17 @@
     zoom: Number(payload.defaultCenter.zoom)
   };
   let enabledLayers = readLayers();
+  let enabledContextLayers = readContextLayers();
   let selectedKey = payload.selectedKey || "";
   let viewportPlaces = [];
   let requestSequence = 0;
   let viewportController = null;
   let viewportTimer = null;
   let dragState = null;
+  let pointerMoved = false;
   let lastSelectionTrigger = null;
+  let basemapMap = null;
+  let basemapReady = false;
 
   if (selectedKey && selectionIndex.has(selectedKey)) {
     const selected = selectionIndex.get(selectedKey);
@@ -56,6 +64,16 @@
       else enabledLayers.delete(control.dataset.mapLayer);
       storeLayers();
       scheduleViewportLoad(0);
+    });
+  });
+
+  contextLayerControls.forEach((control) => {
+    control.checked = enabledContextLayers.has(control.dataset.mapContextLayer);
+    control.addEventListener("change", () => {
+      if (control.checked) enabledContextLayers.add(control.dataset.mapContextLayer);
+      else enabledContextLayers.delete(control.dataset.mapContextLayer);
+      storageSet(contextLayersStorageKey, JSON.stringify([...enabledContextLayers].sort()));
+      applyContextLayerVisibility();
     });
   });
 
@@ -112,6 +130,7 @@
       latitude: viewport.latitude,
       longitude: viewport.longitude
     };
+    pointerMoved = false;
     stage.setPointerCapture(event.pointerId);
     stage.classList.add("is-panning");
   });
@@ -124,16 +143,20 @@
     const latSpan = lonSpan * height / width;
     viewport.longitude = dragState.longitude - (event.clientX - dragState.x) / width * lonSpan;
     viewport.latitude = dragState.latitude + (event.clientY - dragState.y) / height * latSpan;
+    if (Math.hypot(event.clientX - dragState.x, event.clientY - dragState.y) > 5) pointerMoved = true;
     clampViewport();
+    syncBasemap();
     renderPins();
   });
 
   const finishPan = (event) => {
     if (!dragState || dragState.pointerId !== event.pointerId) return;
+    const inspectProviderFeature = !pointerMoved && event.type === "pointerup";
     dragState = null;
     stage.classList.remove("is-panning");
     storeViewport();
     scheduleViewportLoad(0);
+    if (inspectProviderFeature) selectRenderedProviderFeature(event);
   };
   stage.addEventListener("pointerup", finishPan);
   stage.addEventListener("pointercancel", finishPan);
@@ -141,7 +164,10 @@
   let resizeTimer = null;
   window.addEventListener("resize", () => {
     window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(() => scheduleViewportLoad(0), 120);
+    resizeTimer = window.setTimeout(() => {
+      basemapMap?.resize();
+      scheduleViewportLoad(0);
+    }, 120);
   });
 
   function readViewport() {
@@ -165,6 +191,21 @@
     return new Set(payload.layers.filter((layer) => layer.enabled).map((layer) => layer.id));
   }
 
+  function readContextLayers() {
+    const available = new Set(
+      (payload.contextLayers || []).filter((layer) => layer.available).map((layer) => layer.id)
+    );
+    try {
+      const stored = JSON.parse(storageGet(contextLayersStorageKey) || "null");
+      if (Array.isArray(stored)) return new Set(stored.filter((id) => available.has(id)));
+    } catch (_error) {
+      // The deterministic pack defaults below recover from malformed local state.
+    }
+    return new Set(
+      (payload.contextLayers || []).filter((layer) => layer.available && layer.enabled).map((layer) => layer.id)
+    );
+  }
+
   function storeViewport() {
     storageSet(viewportStorageKey, JSON.stringify(viewport));
   }
@@ -178,6 +219,10 @@
     sidebarToggle?.setAttribute("aria-expanded", String(open));
     if (sidebarToggle) sidebarToggle.textContent = open ? "Hide sidebar" : "Show sidebar";
     storageSet(sidebarStorageKey, open ? "open" : "closed");
+    window.requestAnimationFrame(() => {
+      basemapMap?.resize();
+      renderPins();
+    });
   }
 
   function storageGet(key) {
@@ -200,6 +245,7 @@
     viewport.zoom = Math.max(2, Math.min(18, viewport.zoom + amount));
     clampViewport();
     storeViewport();
+    syncBasemap();
     renderPins();
     scheduleViewportLoad(80);
   }
@@ -209,6 +255,7 @@
     viewport.latitude += latitudeDelta;
     clampViewport();
     storeViewport();
+    syncBasemap();
     renderPins();
     scheduleViewportLoad(80);
   }
@@ -220,6 +267,7 @@
       zoom: Number(payload.defaultCenter.zoom)
     };
     storeViewport();
+    syncBasemap();
     renderPins();
     scheduleViewportLoad(0);
     stage.focus();
@@ -230,6 +278,15 @@
   }
 
   function currentBounds() {
+    if (basemapReady && basemapMap) {
+      const bounds = basemapMap.getBounds();
+      return {
+        west: bounds.getWest(),
+        east: bounds.getEast(),
+        south: bounds.getSouth(),
+        north: bounds.getNorth()
+      };
+    }
     const width = Math.max(stage.clientWidth, 1);
     const height = Math.max(stage.clientHeight, 1);
     const lonSpan = longitudeSpan();
@@ -324,6 +381,10 @@
   }
 
   function project(place, bounds, width, height) {
+    if (basemapReady && basemapMap) {
+      const point = basemapMap.project([Number(place.longitude), Number(place.latitude)]);
+      return { x: point.x, y: point.y };
+    }
     return {
       x: (Number(place.longitude) - bounds.west) / (bounds.east - bounds.west) * width,
       y: (bounds.north - Number(place.latitude)) / (bounds.north - bounds.south) * height
@@ -352,7 +413,10 @@
     button.style.left = `${candidate.x}px`;
     button.style.top = `${candidate.y}px`;
     const count = Number(candidate.place.recordCount || 0);
-    button.setAttribute("aria-label", `${selected ? "Selected: " : ""}${candidate.place.title}; ${count} grouped canonical record${count === 1 ? "" : "s"}`);
+    const description = candidate.place.kind === "canonical"
+      ? `${count} grouped canonical record${count === 1 ? "" : "s"}`
+      : "installed provider context; not saved";
+    button.setAttribute("aria-label", `${selected ? "Selected: " : ""}${candidate.place.title}; ${description}`);
     button.title = candidate.place.title;
     const symbol = document.createElement("span");
     symbol.className = "map-pin-symbol";
@@ -382,6 +446,7 @@
       viewport.latitude = cluster.items.reduce((sum, item) => sum + Number(item.place.latitude), 0) / cluster.items.length;
       viewport.zoom = Math.min(18, viewport.zoom + 2);
       storeViewport();
+      syncBasemap();
       scheduleViewportLoad(0);
     });
     return button;
@@ -395,6 +460,7 @@
       viewport.latitude = Number(selection.latitude);
       viewport.longitude = Number(selection.longitude);
       storeViewport();
+      syncBasemap();
       scheduleViewportLoad(0);
     }
     updateSelectionUrl(key);
@@ -466,7 +532,10 @@
       ["Source", selection.sourceLabel],
       ["Coverage", selection.coverageState],
       ["Geometry confidence", selection.geometryConfidence],
-      ["Geometry source", selection.geometrySource]
+      ["Geometry source", selection.geometrySource],
+      ["Pack version", selection.providerFeature?.packVersion],
+      ["Source layer", selection.providerFeature?.sourceLayer],
+      ["Provider feature", selection.providerFeature?.featureId]
     ].forEach(([label, value]) => {
       if (!value) return;
       const item = document.createElement("li");
@@ -529,7 +598,170 @@
     return item && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
   }
 
+  function syncBasemap() {
+    if (!basemapReady || !basemapMap) return;
+    basemapMap.jumpTo({
+      center: [viewport.longitude, viewport.latitude],
+      zoom: viewport.zoom
+    });
+  }
+
+  function applyContextLayerVisibility() {
+    if (!basemapReady || !basemapMap) return;
+    const groups = {
+      "general-places": [
+        "pack-place-points", "pack-place-label", "pack-poi-points",
+        "pack-poi-label", "pack-road-label", "pack-water-label", "pack-peak"
+      ],
+      "public-transport": ["pack-transit-points", "pack-transit-label"]
+    };
+    Object.entries(groups).forEach(([group, layerIds]) => {
+      const visibility = enabledContextLayers.has(group) ? "visible" : "none";
+      layerIds.forEach((layerId) => {
+        if (basemapMap.getLayer(layerId)) basemapMap.setLayoutProperty(layerId, "visibility", visibility);
+      });
+    });
+  }
+
+  function selectRenderedProviderFeature(event) {
+    if (!basemapReady || !basemapMap || !payload.packStatus || payload.packStatus.state !== "available") return;
+    const rect = stage.getBoundingClientRect();
+    const point = [event.clientX - rect.left, event.clientY - rect.top];
+    const clickableLayers = [
+      "pack-place-points", "pack-place-label", "pack-poi-points", "pack-poi-label",
+      "pack-road-label", "pack-water-label", "pack-peak", "pack-transit-points", "pack-transit-label"
+    ].filter((layerId) => basemapMap.getLayer(layerId));
+    const feature = basemapMap.queryRenderedFeatures(point, { layers: clickableLayers })[0];
+    if (!feature) return;
+    const title = String(feature.properties["name:latin"] || feature.properties.name || feature.properties.ref || "").trim();
+    if (!title) return;
+    const sourceLayer = feature.sourceLayer || feature.properties.source_layer || "provider";
+    const featureId = String(feature.properties.feature_id || feature.id || `${sourceLayer}:${title}`);
+    const key = `provider:${payload.packStatus.packId}:rendered:${sourceLayer}:${featureId}`;
+    const clickedCoordinates = basemapMap.unproject(point);
+    const featureCoordinates = feature.geometry?.type === "Point" ? feature.geometry.coordinates : null;
+    const longitude = Array.isArray(featureCoordinates) ? Number(featureCoordinates[0]) : clickedCoordinates.lng;
+    const latitude = Array.isArray(featureCoordinates) ? Number(featureCoordinates[1]) : clickedCoordinates.lat;
+    const typeLabel = String(
+      feature.properties.feature_type || feature.properties.subclass || feature.properties.class || sourceLayer
+    ).replaceAll("_", " ");
+    const selection = {
+      id: key,
+      kind: "provider",
+      title,
+      address: feature.properties.subtitle || typeLabel,
+      latitude,
+      longitude,
+      geometryConfidence: "Rendered source feature",
+      geometrySource: `${payload.packStatus.title} ${payload.packStatus.version} · Local`,
+      sourceLabel: `${payload.packStatus.title} ${payload.packStatus.version} · Local`,
+      coverageState: `Installed coverage · ${payload.packStatus.coverageLabel}; inspected only and not saved`,
+      records: [],
+      recordCount: 0,
+      layerIds: [],
+      providerFeature: {
+        packId: payload.packStatus.packId,
+        packVersion: payload.packStatus.version,
+        featureId,
+        sourceLayer
+      }
+    };
+    selectionIndex.set(key, selection);
+    selectItem(key, false);
+  }
+
+  function localMapStyle(pack) {
+    const roadWidth = ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1.4, 14, 4.5];
+    const roadCasingWidth = ["interpolate", ["linear"], ["zoom"], 5, 2.1, 10, 3, 14, 6.1];
+    const roadColor = [
+      "match", ["get", "class"],
+      ["motorway", "trunk"], "#d98262",
+      ["primary", "secondary", "tertiary"], "#d7a95c",
+      "#ffffff"
+    ];
+    return {
+      version: 8,
+      name: `${pack.title} ${pack.version}`,
+      sources: {
+        "pack-vector": {
+          type: "vector",
+          tiles: [pack.tileUrl],
+          minzoom: pack.minimumZoom,
+          maxzoom: pack.maximumZoom
+        },
+        "pack-coverage": { type: "geojson", data: pack.coverageUrl },
+        "pack-transit": { type: "geojson", data: pack.publicTransportUrl }
+      },
+      layers: [
+        { id: "pack-landcover", type: "fill", source: "pack-vector", "source-layer": "landcover", paint: { "fill-color": "#dce8d2", "fill-opacity": 0.78 } },
+        { id: "pack-landuse", type: "fill", source: "pack-vector", "source-layer": "landuse", paint: { "fill-color": ["match", ["get", "class"], "residential", "#eee9df", "industrial", "#e8e1dc", "cemetery", "#d9e3d5", "#e8eadc"], "fill-opacity": 0.72 } },
+        { id: "pack-park", type: "fill", source: "pack-vector", "source-layer": "park", paint: { "fill-color": "#bcdcae", "fill-opacity": 0.76 } },
+        { id: "pack-water", type: "fill", source: "pack-vector", "source-layer": "water", paint: { "fill-color": "#9dcfe3" } },
+        { id: "pack-waterway", type: "line", source: "pack-vector", "source-layer": "waterway", paint: { "line-color": "#79b9d7", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 14, 2] } },
+        { id: "pack-boundary", type: "line", source: "pack-vector", "source-layer": "boundary", paint: { "line-color": "#84908e", "line-dasharray": [3, 2], "line-width": 0.8 } },
+        { id: "pack-road-casing", type: "line", source: "pack-vector", "source-layer": "transportation", paint: { "line-color": "#b8afa4", "line-width": roadCasingWidth } },
+        { id: "pack-roads", type: "line", source: "pack-vector", "source-layer": "transportation", paint: { "line-color": roadColor, "line-width": roadWidth } },
+        { id: "pack-building", type: "fill", source: "pack-vector", "source-layer": "building", minzoom: 13, paint: { "fill-color": "#d1c6bb", "fill-outline-color": "#b8aca1" } },
+        { id: "pack-coverage-fill", type: "fill", source: "pack-coverage", paint: { "fill-color": "#2f7c80", "fill-opacity": 0.025 } },
+        { id: "pack-coverage-outline", type: "line", source: "pack-coverage", paint: { "line-color": "#2f7c80", "line-width": 1.4, "line-opacity": 0.8 } },
+        { id: "pack-place-points", type: "circle", source: "pack-vector", "source-layer": "place", paint: { "circle-color": "#40575e", "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 1.5, 12, 4], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1 } },
+        { id: "pack-place-label", type: "symbol", source: "pack-vector", "source-layer": "place", layout: { "text-field": ["get", "name:latin"], "text-font": ["sans-serif"], "text-size": ["interpolate", ["linear"], ["zoom"], 5, 10, 12, 15], "text-offset": [0, 0.8], "text-anchor": "top" }, paint: { "text-color": "#26363a", "text-halo-color": "#ffffff", "text-halo-width": 1.3 } },
+        { id: "pack-poi-points", type: "circle", source: "pack-vector", "source-layer": "poi", minzoom: 12, paint: { "circle-color": "#7b628c", "circle-radius": 3.2, "circle-stroke-color": "#ffffff", "circle-stroke-width": 1 } },
+        { id: "pack-poi-label", type: "symbol", source: "pack-vector", "source-layer": "poi", minzoom: 13, layout: { "text-field": ["get", "name:latin"], "text-font": ["sans-serif"], "text-size": 10.5, "text-offset": [0, 0.8], "text-anchor": "top" }, paint: { "text-color": "#473b50", "text-halo-color": "#ffffff", "text-halo-width": 1.2 } },
+        { id: "pack-road-label", type: "symbol", source: "pack-vector", "source-layer": "transportation_name", minzoom: 11, layout: { "symbol-placement": "line", "text-field": ["coalesce", ["get", "name:latin"], ["get", "ref"]], "text-font": ["sans-serif"], "text-size": 10 }, paint: { "text-color": "#5b5147", "text-halo-color": "#ffffff", "text-halo-width": 1.2 } },
+        { id: "pack-water-label", type: "symbol", source: "pack-vector", "source-layer": "water_name", layout: { "text-field": ["get", "name:latin"], "text-font": ["sans-serif"], "text-size": 11 }, paint: { "text-color": "#377b9a", "text-halo-color": "#ffffff", "text-halo-width": 1.2 } },
+        { id: "pack-peak", type: "circle", source: "pack-vector", "source-layer": "mountain_peak", minzoom: 11, paint: { "circle-color": "#755f4c", "circle-radius": 3 } },
+        { id: "pack-transit-points", type: "circle", source: "pack-transit", minzoom: 11, paint: { "circle-color": "#1768ac", "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 15, 5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1.2 } },
+        { id: "pack-transit-label", type: "symbol", source: "pack-transit", minzoom: 14, layout: { "text-field": ["get", "name"], "text-font": ["sans-serif"], "text-size": 10, "text-offset": [0, 0.9], "text-anchor": "top" }, paint: { "text-color": "#174d79", "text-halo-color": "#ffffff", "text-halo-width": 1.2 } }
+      ]
+    };
+  }
+
+  async function initialiseLocalBasemap() {
+    const pack = payload.packStatus;
+    if (!basemapElement || !pack || pack.state !== "available") return;
+    try {
+      const maplibregl = await import("/static/vendor/maplibre-6.2.0/maplibre-gl.mjs");
+      basemapMap = new maplibregl.Map({
+        container: basemapElement,
+        style: localMapStyle(pack),
+        center: [viewport.longitude, viewport.latitude],
+        zoom: viewport.zoom,
+        minZoom: 2,
+        maxZoom: 18,
+        interactive: false,
+        attributionControl: false,
+        fadeDuration: 0,
+        transformRequest: (url) => {
+          const resolved = new URL(url, window.location.href);
+          if (resolved.origin !== window.location.origin) throw new Error("Spatial pack attempted a non-local request.");
+          return { url: resolved.href };
+        }
+      });
+      basemapMap.on("load", () => {
+        basemapReady = true;
+        basemapElement.dataset.mapReady = "true";
+        if (renderStatus) renderStatus.textContent = "Normal map rendered from same-origin installed resources.";
+        applyContextLayerVisibility();
+        renderPins();
+        scheduleViewportLoad(0);
+      });
+      basemapMap.on("error", (event) => {
+        basemapElement.dataset.mapError = event.error?.message || "unknown local error";
+        if (renderStatus) renderStatus.textContent = "Local basemap renderer reported an error; canonical coordinates remain available.";
+        loading.hidden = false;
+        loading.textContent = `Local basemap could not render: ${event.error?.message || "unknown local error"} Canonical coordinates remain available.`;
+      });
+    } catch (error) {
+      basemapElement.dataset.mapError = error.message;
+      if (renderStatus) renderStatus.textContent = "Local basemap runtime could not start; canonical coordinates remain available.";
+      loading.hidden = false;
+      loading.textContent = `Local basemap runtime could not start: ${error.message}. Canonical coordinates remain available.`;
+    }
+  }
+
   clampViewport();
   renderPins();
   scheduleViewportLoad(0);
+  initialiseLocalBasemap();
 })();

@@ -18,7 +18,7 @@ SQLite + private local files
 
 The runtime uses standard-library Python and embedded SQLite. Core record workflows require no WAN connection. Optional map resources, address lookup and explicitly configured public iCalendar sources sit behind replaceable network boundaries.
 
-`instance/` is the private runtime boundary. It contains the database, uploaded documents, import staging, recovery artifacts and disposable journey cache and is ignored by Git. A fresh clone creates empty local storage; tracked examples must be deliberately fictional.
+`instance/` is the private runtime boundary. It contains the database, uploaded documents, import staging, recovery artifacts, disposable journey cache and replaceable spatial packs and is ignored by Git. A fresh clone creates empty local storage; tracked examples must be deliberately fictional.
 
 ## Stable entry points
 
@@ -101,13 +101,19 @@ Jobs, Automation Runs, Inbox items, audit events and canonical Events retain sep
 
 `app/journey_repository.py` owns audited user configuration identity and revisions for mobility profiles and routing policies. Their exact production values and provider translations remain later implementation evidence work. `app/journey_cache.py` stores only bounded disposable results in a separate ignored SQLite file; fresh, stale and miss are explicit, invalid cache payloads are discarded and clearing it loses no personal configuration. X1 identified capability-specific routing front-runners, but no current journey operation calls one, creates Events or adopts a production provider.
 
+### Installed spatial packs
+
+`app/spatial_pack.py` owns the non-canonical regional resource boundary. Spatial-pack schema version 1 is an exact bounded ZIP containing `manifest.json`, vector `basemap.mbtiles`, read-only `search.sqlite3` and `coverage.geojson`. Inspection validates safe paths and membership, sizes and SHA-256 digests, disk reserve, SQLite identities/integrity/schema, declared zoom/bounds and coverage geometry before anything can activate. Validated immutable versions live under ignored `instance/spatial-packs/`; a small atomically replaced `active.json` selects one active region and names one previous validated version for rollback. Activation, rollback and confirmed removal are audited, but no pack row or byte is canonical or portable.
+
+MapLibre GL JS 6.2.0 is vendored under `app/static/vendor/` with its licence and exact X1 artifact identity. It reads only same-origin immutable tile, coverage and static-transit endpoints. The Gold Coast pack's fixed SQLite index is derived from visible OSM vector labels and static GTFS stops; it is not full geocoding, provider identity or canonical place storage. Pack search failure leaves canonical search available, renderer/tile failure leaves the N2 coordinate grid/DOM overlay available, and coordinates outside declared coverage remain renderable. This first lifecycle deliberately allows one active region; N5/N6 evidence must justify adjoining-region or routing-source generalisation.
+
 ### Derived platform services
 
 Search, structured filters, timelines, maps, data quality and audit are projections over canonical data:
 
 - `app/discovery_repository.py`, `app/query_engine.py` and `app/structured_filters.py` own retrieval.
 - `app/timeline.py` derives real-world chronology; operational audit events do not become Timeline events.
-- `app/geo.py` groups canonical Map places from each Location's preferred current representative point, qualifying Relationships and current Asset coordinates; it also owns deterministic canonical-first Map search and the bounded local viewport read model. `app/static/map-workspace.js` renders those same-origin results without a remote-code or tile dependency. The Map owns no records.
+- `app/geo.py` groups canonical Map places from each Location's preferred current representative point, qualifying Relationships and current Asset coordinates; it also owns deterministic canonical-first Map search, installed-pack result composition and the bounded local viewport read model. `app/static/map-workspace.js` composes the accessible canonical DOM overlay/text alternative with the optional vendored same-origin normal map. No page resource requires a CDN or automatic WAN request, and the Map owns no records.
 - `app/data_quality.py` and `app/integrity.py` report deterministic findings.
 - `app/audit.py` reads append-only operational history.
 
@@ -119,10 +125,10 @@ Consequential writes pass through validated services and produce the applicable 
 
 Deterministic recomputation may update derived state or create contracted operational history. It does not silently create user-owned Relationships: family inference produces review suggestions, and confirmation creates an ordinary editable Relationship. Rejected evidence is remembered; changed evidence invalidates pending suggestions without deleting confirmed facts.
 
-Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, including canonical place and journey configuration, requires an empty target and explicit confirmation, and creates recovery state before replacement. Disposable journey cache data is excluded.
+Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, including canonical place and journey configuration, requires an empty target and explicit confirmation, and creates recovery state before replacement. Disposable journey cache and replaceable spatial-pack data are excluded.
 
 ## Deployment and maturity boundary
 
 The application currently has no authentication, multi-user model, external worker, queue or cloud dependency. Normal operation remains local and in-process. Optional network clients must fail without damaging or blocking canonical local data.
 
-Phases 1 and 2 are complete development milestones. Phase 3 N1–N3 have added the canonical place foundation, offline-first Map 2.0A workspace and provider-independent journey/profile/policy/cache seam; X1 has added reproducible Gold Coast evidence without changing runtime architecture. Installed regional data, a production routing provider, calculated journeys, Calendar materialisation and later spatial work remain separately gated. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.
+Phases 1 and 2 are complete development milestones. Phase 3 N1–N4 have added the canonical place foundation, offline-first Map 2.0 workspace, provider-independent journey/profile/policy/cache seam and one verified installed Gold Coast normal map/search/context pack. Reviewed provider saving, a production routing provider, calculated journeys, Calendar materialisation and later spatial work remain separately gated. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.

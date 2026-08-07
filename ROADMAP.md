@@ -10,7 +10,7 @@ Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md)
 | --- | --- | --- |
 | 1 · Information Platform | Complete | Canonical entities and Relationships; local documents; Search, Map and Timeline; taxonomies/reference data; audit/provenance; data quality, reviewed inference, merge and recovery. |
 | 2 · Operational Time | Complete | Canonical Events and Calendars; recurrence; reminder policies and durable Inbox attention; registered scheduling and deterministic automation; Calendar interchange and portability. |
-| 3 · Spatial Intelligence | In progress · N1–N3 + X1 evidence complete | Canonical place, offline-first Map 2.0A and provider-independent journey/profile/policy/cache foundations are delivered; Gold Coast pack/search/routing evidence now supplies reversible N4/N6/N7 candidates, while installed regional data, routing-engine-backed journeys, Calendar materialisation, travel-time and reachability tools remain planned. |
+| 3 · Spatial Intelligence | In progress · N1–N4 + X1 complete | Canonical place, offline-first Map 2.0, provider-independent journey/profile/policy/cache foundations and one verified installed Gold Coast normal map/search/context pack are delivered; reviewed provider saving/lists, routing-engine-backed journeys, Calendar materialisation, travel-time and reachability tools remain planned. |
 
 Phase closure means a representative development milestone is complete. It does not claim exhaustive verification, a stable public release or absence of ordinary maintenance defects.
 
@@ -23,7 +23,7 @@ Phase 3 aims to make place, geometry, distance, movement, travel time and reacha
 Candidate outcomes include:
 
 - stronger canonical Location and address semantics;
-- optional regional spatial data packs;
+- verified replaceable regional spatial data packs, with the first Gold Coast pack delivered;
 - richer map layers and spatial record views;
 - journey planning linked to Events and destinations;
 - personal mobility profiles and explainable routing policies;

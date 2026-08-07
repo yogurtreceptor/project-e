@@ -13,6 +13,7 @@ def system_tools_page() -> str:
         ("/system-tools/jobs", "Scheduled Jobs", "Inspect and control registered local maintenance and delivery work."),
         ("/system-tools/automation", "Deterministic Automation", "Inspect registered local reminder rules and their execution history."),
         ("/system-tools/portability", "Import and Export", "Create portable exports and preview validated imports with recovery backups."),
+        ("/map/packs", "Spatial Packs", "Inspect, install, update, roll back or remove verified local map and search resources."),
     )
     cards = "".join(
         f'<a class="panel system-tool-card" href="{href}"><h2>{title}</h2><p>{description}</p><span>Open tool →</span></a>'

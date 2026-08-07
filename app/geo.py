@@ -1,7 +1,9 @@
 import json
 import hashlib
 import re
+import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -13,6 +15,7 @@ from app.db import (
 )
 from app.entities import DEFINITIONS_BY_SLUG, EntityRecord
 from app.relationships import RELATIONSHIP_TYPES_BY_KEY
+from app.spatial_pack import map_pack_payload, search_active_spatial_pack
 
 
 DEFAULT_CENTER = {"latitude": -28.0167, "longitude": 153.4000, "zoom": 9}
@@ -92,10 +95,34 @@ def build_map_payload(
     provider_results: list[dict[str, str]] | None = None,
     provider_requested: bool = False,
     provider_error: str = "",
+    spatial_pack_root: Path | None = None,
 ) -> dict[str, object]:
+    pack = (
+        map_pack_payload(spatial_pack_root)
+        if spatial_pack_root is not None
+        else {"state": "unavailable", "manageUrl": "/map/packs"}
+    )
+    installed_results = []
+    pack["searchState"] = "unavailable"
+    if spatial_pack_root is not None and pack["state"] == "available":
+        try:
+            installed_results = search_active_spatial_pack(
+                spatial_pack_root, query, limit=10
+            )
+            pack["searchState"] = "available"
+        except (OSError, sqlite3.Error, ValueError):
+            pack["searchState"] = "error"
+            pack["searchError"] = (
+                "Installed search is invalid or unavailable; canonical search and the "
+                "local basemap remain available."
+            )
     places = canonical_map_places(connection)
     search_results, selections = map_search_results(
-        connection, query, places, provider_results or []
+        connection,
+        query,
+        places,
+        installed_results,
+        provider_results or [],
     )
     provider_state = "disabled"
     provider_explanation = (
@@ -113,9 +140,9 @@ def build_map_payload(
         )
     return {
         "defaultCenter": DEFAULT_CENTER,
-        "baseViews": list(MAP_BASE_VIEWS),
+        "baseViews": map_base_views(pack),
         "layers": [layer.__dict__ for layer in MAP_LAYERS],
-        "contextLayers": list(MAP_CONTEXT_LAYERS),
+        "contextLayers": map_context_layers(pack),
         "places": places,
         "query": query.strip(),
         "searchResults": search_results,
@@ -128,6 +155,7 @@ def build_map_payload(
             "attribution": "© OpenStreetMap contributors",
             "explanation": provider_explanation,
         },
+        "packStatus": pack,
         "viewportUrl": "/map/viewport",
         "viewportLimit": MAX_VIEWPORT_PLACES,
     }
@@ -285,6 +313,7 @@ def map_search_results(
     connection,
     query: str,
     places: list[dict[str, object]],
+    installed_results: list[dict[str, object]],
     provider_results: list[dict[str, str]],
 ) -> tuple[list[dict[str, object]], dict[str, dict[str, object]]]:
     query = query.strip()
@@ -390,6 +419,59 @@ def map_search_results(
             }
         )
 
+    local_provider_results: list[dict[str, object]] = []
+    for index, provider_result in enumerate(installed_results[:10]):
+        latitude = parse_coordinate(provider_result.get("latitude", ""))
+        longitude = parse_coordinate(provider_result.get("longitude", ""))
+        if latitude is None or longitude is None:
+            continue
+        identity = str(provider_result["feature_id"])
+        digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+        pack_id = str(provider_result["pack_id"])
+        selection_key = f"provider:{pack_id}:{digest}"
+        title = str(provider_result["title"])
+        subtitle = str(provider_result["subtitle"])
+        source_label = str(provider_result["source_label"])
+        coverage_label = str(provider_result["coverage_label"])
+        selection = {
+            "id": selection_key,
+            "kind": "provider",
+            "title": title,
+            "address": subtitle,
+            "latitude": latitude,
+            "longitude": longitude,
+            "geometryConfidence": "Source reported",
+            "geometrySource": source_label,
+            "sourceLabel": source_label,
+            "coverageState": f"Installed coverage · {coverage_label}; inspected only and not saved",
+            "records": [],
+            "recordCount": 0,
+            "layerIds": [],
+            "providerFeature": {
+                "packId": pack_id,
+                "packVersion": str(provider_result["pack_version"]),
+                "featureId": identity,
+                "sourceLayer": str(provider_result["source_layer"]),
+            },
+        }
+        selections[selection_key] = selection
+        local_provider_results.append(
+            {
+                "id": f"installed:{index}:{digest}",
+                "group": "installed",
+                "kind": "provider",
+                "title": title,
+                "typeLabel": str(provider_result["feature_type"]),
+                "sourceLabel": source_label,
+                "coverageState": f"Installed · {coverage_label}; not saved",
+                "selectionKey": selection_key,
+                "latitude": latitude,
+                "longitude": longitude,
+                "url": "",
+                "rank": index,
+            }
+        )
+
     online_results: list[dict[str, object]] = []
     for index, provider_result in enumerate(provider_results[:5]):
         latitude = parse_coordinate(provider_result.get("latitude", ""))
@@ -435,7 +517,49 @@ def map_search_results(
             }
         )
 
-    return canonical_results + coordinate_results + online_results, selections
+    return (
+        canonical_results + local_provider_results + coordinate_results + online_results,
+        selections,
+    )
+
+
+def map_base_views(pack: dict[str, object]) -> list[dict[str, object]]:
+    if pack.get("state") != "available":
+        return list(MAP_BASE_VIEWS)
+    return [
+        {
+            "id": "normal",
+            "label": "Normal map",
+            "available": True,
+            "enabled": True,
+            "explanation": (
+                f"{pack['title']} {pack['version']} · Local · "
+                f"{pack['coverageLabel']}"
+            ),
+        },
+        *[dict(item) for item in MAP_BASE_VIEWS if item["id"] != "normal"],
+    ]
+
+
+def map_context_layers(pack: dict[str, object]) -> list[dict[str, object]]:
+    available = set(pack.get("contextLayers", []))
+    result = []
+    for layer in MAP_CONTEXT_LAYERS:
+        if layer["id"] not in available:
+            result.append(dict(layer))
+            continue
+        result.append(
+            {
+                "id": layer["id"],
+                "label": layer["label"],
+                "available": True,
+                "enabled": True,
+                "explanation": (
+                    f"{pack['title']} {pack['version']} · Local installed coverage"
+                ),
+            }
+        )
+    return result
 
 
 def parse_coordinate_query(query: str) -> tuple[float, float] | None:
