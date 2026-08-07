@@ -2,7 +2,7 @@
 
 ## Scope
 
-Project E is a local-first Personal Information Platform for one private user. It stores canonical People, Organisations, Locations, Projects, Documents, Assets and Events; first-class Relationships; and local operational records such as Calendars, reminders and Inbox deliveries. Phases 1 and 2 are complete. Phase 3 spatial-intelligence delivery has begun with the canonical place foundation; its later slices remain planned. Personal operational intelligence remains a longer-term direction.
+Project E is a local-first Personal Information Platform for one private user. It stores canonical People, Organisations, Locations, Projects, Documents, Assets and Events; first-class Relationships; and local operational records such as Calendars, reminders and Inbox deliveries. Phases 1 and 2 are complete. Phase 3 spatial-intelligence delivery is in progress with N1–N3 complete: the canonical place foundation, offline-first Map 2.0A workspace and provider-independent journey/profile/policy/cache foundation are current architecture. X1 and N4 onward remain planned. Personal operational intelligence remains a longer-term direction.
 
 ## Commands
 
@@ -24,7 +24,7 @@ Project E is a local-first Personal Information Platform for one private user. I
 - Keep core records and workflows useful without WAN access. Optional map resources may use replaceable network services.
 - Prefer simple, maintainable, free/open-source architecture. Add a dependency only when the standard library and current code cannot reasonably meet the need, and document why.
 - The implementation prompt authorises work. Plans and roadmap items provide context, not permission.
-- Phase 2's Calendar, Event, reminder, Inbox, scheduling and registered-automation behaviour remains current architecture. Phase 3 N1's canonical address/geometry/containment foundation is current architecture; later Phase 3 planning is evolving desired state, not an implementation checklist.
+- Phase 2's Calendar, Event, reminder, Inbox, scheduling and registered-automation behaviour remains current architecture. Phase 3 N1–N3's canonical address/geometry/containment, offline-first Map 2.0A and provider-independent journey/profile/policy/cache foundations are current architecture; X1 and N4 onward are evolving desired state, not an implementation checklist.
 - Deterministic maintenance may recalculate derived state and create contracted operational or audit records. Creating, editing, archiving or deleting a canonical Event requires explicit user approval.
 - Do not introduce AI/agent workflows, autonomous external effects, arbitrary executable code, external notification or calendar channels, distributed workers or queues, login, multi-user accounts, WAN-dependent core operation, mobile access or cloud dependencies without separate explicit authorisation. A specifically authorised bounded AI capability must remain within canonical-data, validation, privacy, audit and user-control boundaries.
 
