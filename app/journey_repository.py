@@ -30,6 +30,9 @@ def create_mobility_profile(
     definition: Mapping[str, Any],
     *,
     commit: bool = True,
+    audit_actor: str = "local_user",
+    audit_provenance: str = "manual",
+    audit_notes: str = "Mobility profile created",
 ) -> MobilityProfile:
     profile_key = _normalise_key(profile_key, "Profile")
     display_name = _normalise_name(display_name, "Profile")
@@ -56,7 +59,9 @@ def create_mobility_profile(
         "create",
         [("mobility_profile", profile.id)],
         after=_profile_snapshot(profile),
-        notes="Mobility profile created",
+        notes=audit_notes,
+        actor=audit_actor,
+        provenance=audit_provenance,
     )
     if commit:
         connection.commit()

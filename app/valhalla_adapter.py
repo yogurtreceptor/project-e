@@ -43,11 +43,7 @@ _RUNTIME_LOCK = threading.Lock()
 _SUPPORTED_BUFFER_KEYS = {"preparation", "arrival"}
 _SUPPORTED_STEP_STRENGTH = "strong"
 _STRONG_STEP_PENALTY_SECONDS = 43_200
-_REVIEWED_PROFILE_PRESETS = {
-    "regular-walk": "regular",
-    "fast-walk": "fast",
-    "run": "run",
-}
+_SUPPORTED_PROFILE_KEY = "regular-walk"
 
 
 class ValhallaWalkingAdapter:
@@ -198,27 +194,25 @@ class ValhallaWalkingAdapter:
         if len(prepared.profiles) != 1:
             return None, JourneyFailure(
                 FailureCode.UNSUPPORTED_PROFILE,
-                "Choose exactly one reviewed walking profile.",
+                "Choose the one currently supported Regular walk profile.",
                 related_keys=tuple(profile.profile_key for profile in prepared.profiles),
             )
         profile = prepared.profiles[0]
         definition = profile.definition
         speed = definition.get("speed_metres_per_second")
         preset = definition.get("preset_kind")
-        measurements = definition.get("measurement_trials")
         if (
             profile.primary_mode != JourneyMode.WALK
-            or _REVIEWED_PROFILE_PRESETS.get(profile.profile_key) != preset
+            or profile.profile_key != _SUPPORTED_PROFILE_KEY
+            or preset != "regular"
             or isinstance(speed, bool)
             or not isinstance(speed, (int, float))
             or not math.isfinite(float(speed))
             or not 0.5 / 3.6 <= float(speed) <= 25 / 3.6
-            or not isinstance(measurements, list)
-            or len(measurements) < 3
         ):
             return None, JourneyFailure(
                 FailureCode.UNSUPPORTED_PROFILE,
-                "The selected Walk profile has not been reviewed from repeated measurements.",
+                "Only the provisional Regular walk profile is supported for now.",
                 related_keys=(profile.profile_key,),
             )
         return profile, None

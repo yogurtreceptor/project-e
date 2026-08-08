@@ -121,9 +121,8 @@ from app.walking_journeys import (
     AVOID_STEPS_POLICY_KEY,
     configure_avoid_steps_policy,
     default_walking_form_values,
+    ensure_default_walk_profile,
     list_journey_endpoint_options,
-    review_walk_profile_measurements,
-    save_reviewed_walk_profile,
     walking_request_from_form,
 )
 from app.spatial_pack import (
@@ -1420,6 +1419,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
                 maximum_entries=capability.maximum_cache_entries,
             )
             with connect(self.database_path) as connection:
+                ensure_default_walk_profile(connection)
                 execution = plan_journey(
                     connection, request, adapter, cache=cache
                 )
@@ -1444,6 +1444,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             self.routing_dir, self.spatial_pack_dir
         )
         with connect(self.database_path) as connection:
+            ensure_default_walk_profile(connection)
             endpoints = list_journey_endpoint_options(connection)
             profiles = list_mobility_profiles(connection)
             policies = list_routing_policies(connection)
@@ -1499,6 +1500,7 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
         saved: str = "",
     ) -> None:
         with connect(self.database_path) as connection:
+            ensure_default_walk_profile(connection)
             profiles = list_mobility_profiles(connection)
             policies = list_routing_policies(connection)
         avoid_steps = next(
@@ -1516,37 +1518,6 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             ),
             status,
             active_slug="map",
-        )
-
-    def handle_walking_profile_review(self) -> None:
-        values = self.read_form()
-        try:
-            review = review_walk_profile_measurements(values)
-        except ValueError as error:
-            self._respond_walking_settings(
-                errors=[str(error)], status=HTTPStatus.BAD_REQUEST
-            )
-            return
-        self.respond_page(
-            "Review walking profile",
-            views.walking_profile_review_page(review),
-            active_slug="map",
-        )
-
-    def handle_walking_profile_save(self) -> None:
-        values = self.read_form()
-        try:
-            review = review_walk_profile_measurements(values)
-            with connect(self.database_path) as connection:
-                profile = save_reviewed_walk_profile(connection, review)
-        except (sqlite3.Error, ValueError) as error:
-            self._respond_walking_settings(
-                errors=[str(error)], status=HTTPStatus.BAD_REQUEST
-            )
-            return
-        self.redirect(
-            "/journeys/walk/settings?"
-            + urlencode({"saved": f"{profile.display_name} revision {profile.revision} saved."})
         )
 
     def handle_walking_avoid_steps(self) -> None:

@@ -25,7 +25,7 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | Term | Meaning |
 | --- | --- |
 | **Journey endpoint** | A deliberate canonical Location plus an explicit or unambiguous current route-anchor, entrance or representative Point; provider snapping is derived and does not move it. |
-| **Mobility profile** | Durable user-owned, revisioned assumptions and applicability for one stable Walk, Cycle, Drive or Public transport mode; not a provider preset or learned route history. |
+| **Mobility profile** | Durable local, revisioned assumptions and applicability for one stable Walk, Cycle, Drive or Public transport mode; it may be an explicitly sourced provisional default or user-owned configuration, but is not a provider preset or learned route history. |
 | **Routing policy** | Durable user-owned hard exclusion, soft avoidance, preference, added-cost or added-buffer configuration translated—and never silently weakened—by an adapter. |
 | **Journey fingerprint** | SHA-256 identity over every semantic request, resolved endpoint, profile/policy revision and adapter/source dependency that affects result meaning. |
 | **Journey cache** | Bounded clearable local performance storage reporting fresh, stale or miss; it is not personal route history or a Calendar materialisation source. |

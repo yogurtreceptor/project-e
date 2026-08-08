@@ -1,13 +1,11 @@
-"""Walking-journey form, endpoint and reviewed profile behaviour."""
+"""Walking-journey form, endpoint and provisional profile behaviour."""
 
 from __future__ import annotations
 
 import json
 import sqlite3
-import statistics
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.defaults import PLATFORM_TIMEZONE
@@ -27,7 +25,6 @@ from app.journey_repository import (
     create_routing_policy,
     get_mobility_profile,
     get_routing_policy,
-    update_mobility_profile,
     update_routing_policy,
 )
 
@@ -37,7 +34,25 @@ WALK_PRESETS = {
     "fast-walk": ("Fast walk / jog", "fast"),
     "run": ("Run", "run"),
 }
-WALK_PRESET_ORDER = tuple(WALK_PRESETS)
+REGULAR_WALK_PROFILE_KEY = "regular-walk"
+GENERIC_WALK_SPEED_KILOMETRES_PER_HOUR = 5.0
+GENERIC_WALK_SPEED_METRES_PER_SECOND = round(
+    GENERIC_WALK_SPEED_KILOMETRES_PER_HOUR / 3.6, 6
+)
+GENERIC_WALK_PROFILE_DEFINITION = {
+    "preset_kind": "regular",
+    "speed_metres_per_second": GENERIC_WALK_SPEED_METRES_PER_SECOND,
+    "speed_unit": "metres_per_second",
+    "source": "provisional_generic_reference",
+    "source_label": "Google Maps Community Product Expert estimate",
+    "source_url": (
+        "https://support.google.com/maps/thread/246904678/"
+        "qual-crit%C3%A9rio-o-google-maps-usa-para-trajetos-%C3%A0-p%C3%A9"
+    ),
+    "source_checked_on": "2026-08-08",
+    "source_speed_kilometres_per_hour": GENERIC_WALK_SPEED_KILOMETRES_PER_HOUR,
+    "provisional": True,
+}
 AVOID_STEPS_POLICY_KEY = "avoid-steps"
 AVOID_STEPS_POLICY_DEFINITION = {
     "modes": ["walk"],
@@ -54,16 +69,6 @@ class JourneyEndpointOption:
     label: str
     longitude: float
     latitude: float
-
-
-@dataclass(frozen=True)
-class WalkProfileReview:
-    profile_key: str
-    display_name: str
-    definition: dict[str, object]
-    speed_metres_per_second: float
-    pace_seconds_per_kilometre: int
-    form_values: dict[str, str]
 
 
 def list_journey_endpoint_options(
@@ -130,8 +135,10 @@ def walking_request_from_form(values: dict[str, str]) -> JourneyRequest:
     if local_time.tzinfo is None:
         local_time = local_time.replace(tzinfo=ZoneInfo(PLATFORM_TIMEZONE))
     profile_key = values.get("profile_key", "").strip()
-    if profile_key not in WALK_PRESETS:
-        raise ValueError("Choose one reviewed Regular, Fast or Run profile.")
+    if profile_key != REGULAR_WALK_PROFILE_KEY:
+        raise ValueError(
+            "Only Regular walk is available for now; Jog and Run are not enabled."
+        )
     policy_keys = tuple(
         key.strip()
         for key in values.get("policy_keys", "").split(",")
@@ -193,113 +200,22 @@ def default_walking_form_values(now: datetime | None = None) -> dict[str, str]:
     }
 
 
-def review_walk_profile_measurements(values: dict[str, str]) -> WalkProfileReview:
-    profile_key = values.get("profile_key", "").strip()
-    if profile_key not in WALK_PRESETS:
-        raise ValueError("Choose a recognised walking preset.")
-    display_name, preset_kind = WALK_PRESETS[profile_key]
-    distance = _bounded_decimal(
-        values.get("distance_metres", ""),
-        "Measured distance",
-        Decimal("10"),
-        Decimal("100000"),
-    )
-    trial_seconds = tuple(
-        _measurement_duration(values.get(f"trial_{index}", ""), f"Trial {index}")
-        for index in range(1, 4)
-    )
-    measured_on = values.get("measured_on", "").strip()
-    try:
-        effective_date = date.fromisoformat(measured_on)
-    except ValueError as error:
-        raise ValueError("Measurement date must be a valid date.") from error
-    if effective_date > datetime.now(ZoneInfo(PLATFORM_TIMEZONE)).date():
-        raise ValueError("Measurement date cannot be in the future.")
-    course_note = values.get("course_note", "").strip()
-    if len(course_note) > 200:
-        raise ValueError("Measurement note must be 200 characters or fewer.")
-    speeds = [float(distance) / seconds for seconds in trial_seconds]
-    speed = round(statistics.median(speeds), 6)
-    if not 0.5 / 3.6 <= speed <= 25 / 3.6:
-        raise ValueError(
-            "Measured speed falls outside the reviewed Valhalla walking range of 0.5–25 km/h."
-        )
-    maximum_distance = _optional_positive_decimal(
-        values.get("maximum_distance_metres", ""), "Maximum contiguous distance"
-    )
-    maximum_duration = _optional_positive_decimal(
-        values.get("maximum_duration_minutes", ""), "Maximum contiguous duration"
-    )
-    definition: dict[str, object] = {
-        "preset_kind": preset_kind,
-        "speed_metres_per_second": speed,
-        "speed_unit": "metres_per_second",
-        "source": "repeated_user_measurement",
-        "measurement_effective_date": effective_date.isoformat(),
-        "measurement_trials": [
-            {
-                "distance_metres": float(distance),
-                "duration_seconds": seconds,
-            }
-            for seconds in trial_seconds
-        ],
-    }
-    if course_note:
-        definition["measurement_note"] = course_note
-    if maximum_distance is not None:
-        definition["maximum_contiguous_distance_metres"] = float(maximum_distance)
-    if maximum_duration is not None:
-        definition["maximum_contiguous_duration_seconds"] = int(
-            maximum_duration * 60
-        )
-    normalised_values = dict(values)
-    normalised_values.update(
-        {
-            "profile_key": profile_key,
-            "distance_metres": _decimal_text(distance),
-            "measured_on": effective_date.isoformat(),
-            "trial_1": str(trial_seconds[0]),
-            "trial_2": str(trial_seconds[1]),
-            "trial_3": str(trial_seconds[2]),
-            "maximum_distance_metres": (
-                _decimal_text(maximum_distance) if maximum_distance is not None else ""
-            ),
-            "maximum_duration_minutes": (
-                _decimal_text(maximum_duration) if maximum_duration is not None else ""
-            ),
-            "course_note": course_note,
-        }
-    )
-    return WalkProfileReview(
-        profile_key=profile_key,
-        display_name=display_name,
-        definition=definition,
-        speed_metres_per_second=speed,
-        pace_seconds_per_kilometre=int(round(1000 / speed)),
-        form_values=normalised_values,
-    )
-
-
-def save_reviewed_walk_profile(
+def ensure_default_walk_profile(
     connection: sqlite3.Connection,
-    review: WalkProfileReview,
 ) -> MobilityProfile:
-    _validate_profile_order(connection, review)
-    existing = get_mobility_profile(connection, review.profile_key)
-    if existing is None:
-        return create_mobility_profile(
-            connection,
-            review.profile_key,
-            review.display_name,
-            JourneyMode.WALK,
-            review.definition,
-        )
-    return update_mobility_profile(
+    """Create the provisional generic Regular walk profile once, without overwrite."""
+    existing = get_mobility_profile(connection, REGULAR_WALK_PROFILE_KEY)
+    if existing is not None:
+        return existing
+    return create_mobility_profile(
         connection,
-        review.profile_key,
-        display_name=review.display_name,
-        primary_mode=JourneyMode.WALK,
-        definition=review.definition,
+        REGULAR_WALK_PROFILE_KEY,
+        WALK_PRESETS[REGULAR_WALK_PROFILE_KEY][0],
+        JourneyMode.WALK,
+        GENERIC_WALK_PROFILE_DEFINITION,
+        audit_actor="system",
+        audit_provenance="source_reported",
+        audit_notes="Provisional generic Regular walk profile initialised",
     )
 
 
@@ -335,32 +251,6 @@ def configure_avoid_steps_policy(
     )
 
 
-def _validate_profile_order(
-    connection: sqlite3.Connection,
-    review: WalkProfileReview,
-) -> None:
-    proposed: dict[str, float] = {review.profile_key: review.speed_metres_per_second}
-    for profile_key in WALK_PRESET_ORDER:
-        if profile_key == review.profile_key:
-            continue
-        existing = get_mobility_profile(connection, profile_key)
-        if existing is None:
-            continue
-        speed = existing.definition.get("speed_metres_per_second")
-        if isinstance(speed, (int, float)) and not isinstance(speed, bool):
-            proposed[profile_key] = float(speed)
-    previous = None
-    for profile_key in WALK_PRESET_ORDER:
-        speed = proposed.get(profile_key)
-        if speed is None:
-            continue
-        if previous is not None and speed <= previous:
-            raise ValueError(
-                "Measured preset speeds must increase from Regular walk to Fast walk / jog to Run."
-            )
-        previous = speed
-
-
 def _endpoint_reference(value: str, label: str) -> EndpointReference:
     parts = value.split(":")
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
@@ -379,54 +269,3 @@ def _bounded_minutes(value: str, label: str) -> int:
     if not 0 <= minutes <= 240:
         raise ValueError(f"{label} must be whole minutes from 0 to 240.")
     return minutes
-
-
-def _measurement_duration(value: str, label: str) -> int:
-    text = value.strip()
-    try:
-        if ":" in text:
-            minutes_text, seconds_text = text.split(":", 1)
-            minutes = int(minutes_text)
-            seconds = int(seconds_text)
-            if minutes < 0 or not 0 <= seconds < 60:
-                raise ValueError
-            total = minutes * 60 + seconds
-        else:
-            total = int(text)
-    except ValueError as error:
-        raise ValueError(f"{label} must use seconds or minutes:seconds.") from error
-    if not 1 <= total <= 86_400:
-        raise ValueError(f"{label} must be between 1 second and 24 hours.")
-    return total
-
-
-def _bounded_decimal(
-    value: str,
-    label: str,
-    minimum: Decimal,
-    maximum: Decimal,
-) -> Decimal:
-    try:
-        number = Decimal(value.strip())
-    except InvalidOperation as error:
-        raise ValueError(f"{label} must be a number.") from error
-    if not number.is_finite() or not minimum <= number <= maximum:
-        raise ValueError(f"{label} must be between {minimum} and {maximum}.")
-    return number
-
-
-def _optional_positive_decimal(value: str, label: str) -> Decimal | None:
-    text = value.strip()
-    if not text:
-        return None
-    try:
-        number = Decimal(text)
-    except InvalidOperation as error:
-        raise ValueError(f"{label} must be a positive number when supplied.") from error
-    if not number.is_finite() or number <= 0:
-        raise ValueError(f"{label} must be a positive number when supplied.")
-    return number
-
-
-def _decimal_text(value: Decimal) -> str:
-    return format(value.normalize(), "f")

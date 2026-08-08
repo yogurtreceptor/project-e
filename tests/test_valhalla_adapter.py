@@ -127,14 +127,9 @@ class ValhallaWalkingAdapterTests(unittest.TestCase):
                 JourneyMode.WALK,
                 {
                     "preset_kind": "regular",
-                    "speed_metres_per_second": 1.25,
-                    "source": "repeated_user_measurement",
-                    "measurement_effective_date": "2026-08-08",
-                    "measurement_trials": [
-                        {"distance_metres": 1000, "duration_seconds": 800},
-                        {"distance_metres": 1000, "duration_seconds": 790},
-                        {"distance_metres": 1000, "duration_seconds": 810},
-                    ],
+                    "speed_metres_per_second": 1.388889,
+                    "source": "provisional_generic_reference",
+                    "provisional": True,
                 },
             )
             create_routing_policy(
@@ -255,7 +250,7 @@ class ValhallaWalkingAdapterTests(unittest.TestCase):
         self.assertEqual(("regular-walk",), result.applied_profile_keys)
         self.assertEqual(("avoid-steps",), result.applied_policy_keys)
         route_payload = next(payload for path, payload in transport.calls if path == "/route")
-        self.assertEqual(4.5, route_payload["costing_options"]["pedestrian"]["walking_speed"])
+        self.assertEqual(5.0, route_payload["costing_options"]["pedestrian"]["walking_speed"])
         self.assertEqual(43200, route_payload["costing_options"]["pedestrian"]["step_penalty"])
         self.assertNotIn("date_time", route_payload)
         self.assertIn("Static local street estimate only", result.textual_itinerary)
@@ -344,7 +339,7 @@ class ValhallaWalkingAdapterTests(unittest.TestCase):
         self.assertEqual("partial", execution.result.coverage.state.value)
         self.assertIn("outside the declared", execution.result.warnings[-1])
 
-    def test_faster_reviewed_profile_translates_its_measured_speed(self):
+    def test_faster_profile_is_refused_while_jogging_is_disabled(self):
         with connect(self.database_path) as connection:
             create_mobility_profile(
                 connection,
@@ -368,13 +363,8 @@ class ValhallaWalkingAdapterTests(unittest.TestCase):
             transport, request=replace(self.request(), profile_keys=("fast-walk",))
         )
 
-        self.assertIsNone(execution.failure)
-        route_payload = next(
-            payload for path, payload in transport.calls if path == "/route"
-        )
-        self.assertEqual(
-            9.0, route_payload["costing_options"]["pedestrian"]["walking_speed"]
-        )
+        self.assertEqual(FailureCode.UNSUPPORTED_PROFILE, execution.failure.code)
+        self.assertNotIn("/route", [path for path, _payload in transport.calls])
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import tempfile
 import threading
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -13,9 +14,8 @@ from app.journey_contract import JourneySource
 from app.routing_resources import LocalValhallaCapability, RoutingCapabilityStatus
 from app.valhalla_adapter import ValhallaWalkingAdapter
 from app.walking_journeys import (
+    ensure_default_walk_profile,
     list_journey_endpoint_options,
-    review_walk_profile_measurements,
-    save_reviewed_walk_profile,
 )
 from tests.database_test_support import initialise_test_database
 from tests.test_valhalla_adapter import FakeValhallaTransport
@@ -44,20 +44,7 @@ class WalkingJourneyHttpTests(unittest.TestCase):
                         "address_confidence": "User confirmed",
                     },
                 )
-            review = review_walk_profile_measurements(
-                {
-                    "profile_key": "regular-walk",
-                    "distance_metres": "1000",
-                    "trial_1": "800",
-                    "trial_2": "790",
-                    "trial_3": "810",
-                    "measured_on": "2026-08-08",
-                    "course_note": "Fictional HTTP course",
-                    "maximum_distance_metres": "",
-                    "maximum_duration_minutes": "",
-                }
-            )
-            save_reviewed_walk_profile(connection, review)
+            ensure_default_walk_profile(connection)
             self.endpoints = list_journey_endpoint_options(connection)
         self.server = make_test_server(self.database_path)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -101,6 +88,9 @@ class WalkingJourneyHttpTests(unittest.TestCase):
 
         self.assertIn("No local walking-routing capability is activated", html)
         self.assertIn("Fictional Route Origin", html)
+        self.assertIn("Regular walk · 5.00 km/h · provisional estimate", html)
+        self.assertIn("Fast walk / jog · not available yet", html)
+        self.assertIn("Run · not available yet", html)
         self.assertIn("Calculate walking journey", html)
         self.assertIn("disabled", html)
 
@@ -158,19 +148,33 @@ class WalkingJourneyHttpTests(unittest.TestCase):
         self.assertEqual(1, [path for path, _payload in transport.calls].count("/route"))
         self.assertEqual(0, event_count)
 
-    def test_profile_review_save_and_policy_enable_are_explicit_http_steps(self) -> None:
-        values = {
-            "profile_key": "fast-walk",
-            "distance_metres": "1000",
-            "trial_1": "400",
-            "trial_2": "395",
-            "trial_3": "405",
-            "measured_on": "2026-08-08",
-            "course_note": "Fictional faster HTTP course",
-            "maximum_distance_metres": "5000",
-            "maximum_duration_minutes": "45",
-        }
+    def test_jog_and_run_are_rejected_by_the_http_contract(self) -> None:
+        for profile_key in ("fast-walk", "run"):
+            body = urlencode(
+                {
+                    "origin": self.endpoints[0].value,
+                    "destination": self.endpoints[1].value,
+                    "time_kind": "depart_at",
+                    "journey_time": "2026-08-10T09:00",
+                    "profile_key": profile_key,
+                    "preparation_minutes": "0",
+                    "arrival_minutes": "0",
+                    "alternatives": "1",
+                }
+            ).encode("utf-8")
+            with self.subTest(profile_key=profile_key):
+                request = Request(
+                    f"{self.base_url}/journeys/walk/plan",
+                    data=body,
+                    method="POST",
+                )
+                with self.assertRaises(HTTPError) as caught:
+                    urlopen(request)
+                html = caught.exception.read().decode("utf-8")
+                self.assertEqual(400, caught.exception.code)
+                self.assertIn("Jog and Run are not enabled", html)
 
+    def test_settings_explain_generic_speed_and_policy_enable_is_explicit(self) -> None:
         def post(path: str, data: dict[str, str]) -> str:
             request = Request(
                 self.base_url + path,
@@ -180,20 +184,21 @@ class WalkingJourneyHttpTests(unittest.TestCase):
             with urlopen(request) as response:
                 return response.read().decode("utf-8")
 
-        review_html = post("/journeys/walk/settings/review", values)
-        saved_html = post("/journeys/walk/settings/save", values)
+        with urlopen(f"{self.base_url}/journeys/walk/settings") as response:
+            settings_html = response.read().decode("utf-8")
         policy_html = post(
             "/journeys/walk/settings/avoid-steps", {"enabled": "1"}
         )
 
         with connect(self.database_path) as connection:
-            profile = get_mobility_profile(connection, "fast-walk")
+            profile = get_mobility_profile(connection, "regular-walk")
             policy = get_routing_policy(connection, "avoid-steps")
-        self.assertIn("Review walking profile", review_html)
-        self.assertIn("Fast walk / jog", review_html)
-        self.assertIn("Fast walk / jog revision 1 saved", saved_html)
+        self.assertIn("Why 5 km/h?", settings_html)
+        self.assertIn("Provisional generic estimate", settings_html)
+        self.assertIn('aria-disabled="true"', settings_html)
         self.assertIn("Avoid-steps preference enabled", policy_html)
         self.assertEqual(1, profile.revision)
+        self.assertAlmostEqual(1.388889, profile.definition["speed_metres_per_second"])
         self.assertTrue(policy.is_enabled)
 
 

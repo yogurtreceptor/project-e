@@ -630,7 +630,6 @@
 
 .walking-time-grid,
 .walking-buffer-grid,
-.walking-measurement-grid,
 .journey-metrics {
     display: grid;
     gap: .75rem;
@@ -663,6 +662,12 @@
 
 .walking-profile-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.walking-profile-unavailable {
+    background: var(--color-surface-inset);
+    color: var(--muted);
+    opacity: .7;
 }
 
 .map-pin,
@@ -962,7 +967,6 @@
 
     .walking-time-grid,
     .walking-buffer-grid,
-    .walking-measurement-grid,
     .journey-metrics,
     .walking-profile-grid {
         grid-template-columns: 1fr;

@@ -8,9 +8,8 @@ from app.db import connect, create_entity, get_mobility_profile, get_routing_pol
 from app.entities import DEFINITIONS_BY_TYPE
 from app.walking_journeys import (
     configure_avoid_steps_policy,
+    ensure_default_walk_profile,
     list_journey_endpoint_options,
-    review_walk_profile_measurements,
-    save_reviewed_walk_profile,
     walking_request_from_form,
 )
 from tests.database_test_support import initialise_test_database
@@ -25,51 +24,40 @@ class WalkingJourneyConfigurationTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def measurement_values(self, profile_key="regular-walk", **changes):
-        values = {
-            "profile_key": profile_key,
-            "distance_metres": "1000",
-            "trial_1": "10:00",
-            "trial_2": "10:20",
-            "trial_3": "9:40",
-            "measured_on": "2026-08-08",
-            "course_note": "Fictional level test course",
-            "maximum_distance_metres": "",
-            "maximum_duration_minutes": "",
-        }
-        values.update(changes)
-        return values
-
-    def test_repeated_measurements_are_reviewed_before_stable_profile_save(self):
-        review = review_walk_profile_measurements(self.measurement_values())
+    def test_provisional_regular_walk_profile_is_created_once_at_five_kmh(self):
         with connect(self.database_path) as connection:
-            saved = save_reviewed_walk_profile(connection, review)
+            created = ensure_default_walk_profile(connection)
+            repeated = ensure_default_walk_profile(connection)
             stored = get_mobility_profile(connection, "regular-walk")
+            audit = connection.execute(
+                """SELECT actor, provenance FROM audit_events
+                   WHERE notes='Provisional generic Regular walk profile initialised'"""
+            ).fetchone()
 
-        self.assertEqual("regular", saved.definition["preset_kind"])
-        self.assertEqual(3, len(stored.definition["measurement_trials"]))
-        self.assertAlmostEqual(1.666667, stored.definition["speed_metres_per_second"])
-        self.assertEqual(600, review.pace_seconds_per_kilometre)
-        self.assertEqual("repeated_user_measurement", stored.definition["source"])
+        self.assertEqual(created.id, repeated.id)
+        self.assertEqual("regular", stored.definition["preset_kind"])
+        self.assertAlmostEqual(1.388889, stored.definition["speed_metres_per_second"])
+        self.assertEqual(5.0, stored.definition["source_speed_kilometres_per_hour"])
+        self.assertEqual("provisional_generic_reference", stored.definition["source"])
+        self.assertTrue(stored.definition["provisional"])
+        self.assertEqual(("system", "source_reported"), tuple(audit))
 
-    def test_profile_order_and_invalid_or_future_measurements_are_refused(self):
-        with self.assertRaisesRegex(ValueError, "three|Trial 3"):
-            review_walk_profile_measurements(self.measurement_values(trial_3=""))
-        with self.assertRaisesRegex(ValueError, "future"):
-            review_walk_profile_measurements(
-                self.measurement_values(measured_on="2099-01-01")
-            )
-
-        with connect(self.database_path) as connection:
-            regular = review_walk_profile_measurements(self.measurement_values())
-            save_reviewed_walk_profile(connection, regular)
-            slower_fast = review_walk_profile_measurements(
-                self.measurement_values(
-                    "fast-walk", trial_1="12:00", trial_2="12:10", trial_3="11:50"
-                )
-            )
-            with self.assertRaisesRegex(ValueError, "must increase"):
-                save_reviewed_walk_profile(connection, slower_fast)
+    def test_jog_and_run_form_profiles_are_refused(self):
+        base = {
+            "origin": "1:1",
+            "destination": "2:2",
+            "time_kind": "depart_at",
+            "journey_time": "2026-08-10T09:00",
+            "preparation_minutes": "0",
+            "arrival_minutes": "0",
+            "alternatives": "1",
+        }
+        for profile_key in ("fast-walk", "run"):
+            with self.subTest(profile_key=profile_key):
+                with self.assertRaisesRegex(ValueError, "not enabled"):
+                    walking_request_from_form(
+                        {**base, "profile_key": profile_key}
+                    )
 
     def test_supported_avoid_steps_policy_is_user_enabled_and_revisioned(self):
         with connect(self.database_path) as connection:
