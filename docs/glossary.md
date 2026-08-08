@@ -29,6 +29,8 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Routing policy** | Durable user-owned hard exclusion, soft avoidance, preference, added-cost or added-buffer configuration translated—and never silently weakened—by an adapter. |
 | **Journey fingerprint** | SHA-256 identity over every semantic request, resolved endpoint, profile/policy revision and adapter/source dependency that affects result meaning. |
 | **Journey cache** | Bounded clearable local performance storage reporting fresh, stale or miss; it is not personal route history or a Calendar materialisation source. |
+| **Provider feature** | Replaceable installed or explicitly requested external place context identified by its provider; browsing it is non-mutating. |
+| **Map-list membership** | Portable user-owned membership identified by list, provider and feature plus a user label; current provider facts are resolved separately and may be unavailable. |
 
 ## Classification and structured values
 

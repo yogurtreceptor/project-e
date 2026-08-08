@@ -52,6 +52,48 @@ def route_request(handler) -> None:
     if parts[0] == "data-quality":
         handler.handle_data_quality()
         return
+    if parts == ["map", "provider-location", "review"] and handler.command == "POST":
+        handler.handle_map_provider_location_review()
+        return
+    if parts == ["map", "provider-location", "save"] and handler.command == "POST":
+        handler.handle_map_provider_location_save()
+        return
+    if parts == ["map", "lists"] and handler.command == "GET":
+        handler.handle_map_feature_lists()
+        return
+    if parts == ["map", "lists", "create"] and handler.command == "POST":
+        handler.handle_map_feature_list_create()
+        return
+    if parts == ["map", "lists", "add"] and handler.command == "POST":
+        handler.handle_map_feature_list_add()
+        return
+    if len(parts) == 3 and parts[:2] == ["map", "lists"] and handler.command == "GET":
+        handler.handle_map_feature_list(parts[2])
+        return
+    if (
+        len(parts) == 4
+        and parts[:2] == ["map", "lists"]
+        and parts[3] == "export.json"
+        and handler.command == "GET"
+    ):
+        handler.handle_map_feature_list_export(parts[2])
+        return
+    if (
+        len(parts) == 4
+        and parts[:2] == ["map", "lists"]
+        and parts[3] == "clear"
+        and handler.command == "POST"
+    ):
+        handler.handle_map_feature_list_clear(parts[2])
+        return
+    if (
+        len(parts) == 4
+        and parts[:2] == ["map", "lists"]
+        and parts[3] == "remove"
+        and handler.command == "POST"
+    ):
+        handler.handle_map_feature_list_remove(parts[2])
+        return
     if parts == ["map", "packs"] and handler.command == "GET":
         handler.handle_spatial_pack_manager(query)
         return

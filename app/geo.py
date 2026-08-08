@@ -14,6 +14,7 @@ from app.db import (
     search_entities,
 )
 from app.entities import DEFINITIONS_BY_SLUG, EntityRecord
+from app.map_feature_service import list_map_feature_lists
 from app.relationships import RELATIONSHIP_TYPES_BY_KEY
 from app.spatial_pack import map_pack_payload, search_active_spatial_pack
 
@@ -124,6 +125,7 @@ def build_map_payload(
         installed_results,
         provider_results or [],
     )
+    map_lists = list_map_feature_lists(connection)
     provider_state = "disabled"
     provider_explanation = (
         "Online place search is off. No search text was transmitted."
@@ -147,6 +149,15 @@ def build_map_payload(
         "query": query.strip(),
         "searchResults": search_results,
         "selections": selections,
+        "mapLists": [
+            {
+                "id": item.id,
+                "name": item.name,
+                "kind": item.kind,
+                "memberCount": item.member_count,
+            }
+            for item in map_lists
+        ],
         "providerStatus": {
             "requested": provider_requested,
             "state": provider_state,
@@ -426,9 +437,9 @@ def map_search_results(
         if latitude is None or longitude is None:
             continue
         identity = str(provider_result["feature_id"])
-        digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
         pack_id = str(provider_result["pack_id"])
-        selection_key = f"provider:{pack_id}:{digest}"
+        selection_key = installed_provider_selection_key(pack_id, identity)
+        digest = selection_key.rsplit(":", 1)[-1]
         title = str(provider_result["title"])
         subtitle = str(provider_result["subtitle"])
         source_label = str(provider_result["source_label"])
@@ -450,8 +461,14 @@ def map_search_results(
             "providerFeature": {
                 "packId": pack_id,
                 "packVersion": str(provider_result["pack_version"]),
+                "providerKey": f"spatial-pack:{pack_id}",
                 "featureId": identity,
                 "sourceLayer": str(provider_result["source_layer"]),
+                "featureType": str(provider_result["feature_type"]),
+                "sourceName": source_label,
+                "description": subtitle,
+                "formattedAddress": "",
+                "geometryConfidence": "Source reported",
             },
         }
         selections[selection_key] = selection
@@ -498,6 +515,24 @@ def map_search_results(
             "records": [],
             "recordCount": 0,
             "layerIds": [],
+            "providerFeature": {
+                "providerKey": "nominatim-osm",
+                "featureId": identity,
+                "packVersion": "",
+                "sourceLayer": "nominatim",
+                "featureType": provider_result.get("feature_type", "Place") or "Place",
+                "sourceName": "OpenStreetMap Nominatim",
+                "description": provider_result.get("formatted_address", label),
+                "formattedAddress": provider_result.get("formatted_address", label),
+                "addressLine1": provider_result.get("address_line_1", ""),
+                "addressLine2": provider_result.get("address_line_2", ""),
+                "suburb": provider_result.get("suburb", ""),
+                "city": provider_result.get("city", ""),
+                "state": provider_result.get("state", ""),
+                "postCode": provider_result.get("post_code", ""),
+                "country": provider_result.get("country", ""),
+                "geometryConfidence": "Source reported",
+            },
         }
         selections[selection_key] = selection
         online_results.append(
@@ -521,6 +556,11 @@ def map_search_results(
         canonical_results + local_provider_results + coordinate_results + online_results,
         selections,
     )
+
+
+def installed_provider_selection_key(pack_id: str, feature_id: str) -> str:
+    digest = hashlib.sha256(feature_id.encode("utf-8")).hexdigest()[:16]
+    return f"provider:{pack_id}:{digest}"
 
 
 def map_base_views(pack: dict[str, object]) -> list[dict[str, object]]:

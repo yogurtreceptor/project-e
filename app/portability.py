@@ -314,6 +314,11 @@ def _validate_database(connection: sqlite3.Connection) -> None:
         raise ValueError(
             f"Journey configuration is invalid: {'; '.join(journey_errors)}"
         )
+    from app.map_feature_service import validate_stored_map_feature_lists
+
+    map_list_errors = validate_stored_map_feature_lists(connection)
+    if map_list_errors:
+        raise ValueError(f"Map-list data is invalid: {'; '.join(map_list_errors)}")
 
 
 def _relationship_type_supports(connection, type_key, source_type, target_type):
@@ -367,7 +372,21 @@ def _target_is_empty(database_path: Path, document_storage_dir: Path) -> bool:
             "mobility_profiles",
             "routing_policies",
         )
-        return all(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0 for table in user_tables)
+        ordinary_state_empty = all(
+            connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
+            for table in user_tables
+        )
+        map_state_empty = (
+            connection.execute(
+                "SELECT COUNT(*) FROM map_feature_list_memberships"
+            ).fetchone()[0]
+            == 0
+            and connection.execute(
+                "SELECT COUNT(*) FROM map_feature_lists WHERE kind='named'"
+            ).fetchone()[0]
+            == 0
+        )
+        return ordinary_state_empty and map_state_empty
 
 
 def _counts(connection: sqlite3.Connection) -> dict[str, int]:

@@ -2,6 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-08 · Phase 3 reviewed provider features and portable Map lists
+
+- Added a non-mutating provider review that combines exact provider, name/address and 100-metre point duplicate evidence before one explicit create-new or use-existing decision.
+- Kept accepted canonical assertions independent: new promotion creates audited source-qualified Location assertions and a neutral reference, while existing reconciliation adds only the versioned provider reference and never moves the Location.
+- Added portable external Favourites/named lists with current-provider resolution, honest disappearance, explicit online revisit, JSON export/removal/confirmed clear and whole-platform recovery. Migration, two-version reconciliation/disappearance, 346 tests, compilation, bundled-Node syntax and same-origin temporary-port Edge workflow/keyboard/reflow checks passed; contextual coverage recommendations remain pending N5 work.
+
 ## 2026-08-07 · Phase 3 first installed-region Map
 
 - Added a strict bounded spatial-pack manifest/archive and ignored immutable-version lifecycle with inspect-only preview, checksum/schema/coverage/disk validation, atomic activation, failed-update retention, two-way rollback, one-region refusal, audit and confirmed canonical-independent removal.

@@ -125,6 +125,8 @@ The Map derives one place pin with grouped canonical records from:
 
 Missing representative points affect map eligibility, not Location validity. A record related to several Locations remains one canonical record represented in each place group, and browsing or selecting never creates spatial truth. Rich geometry is canonical storage; installed regional map/provider context, richer layers and production routing remain later Phase 3 work.
 
+An external **Map-list membership** is durable user-owned organisation of a provider feature, not a Location and not a copy of provider facts. It retains a provider/feature identity and user-owned label through provider or pack absence. Current title, description, address and position remain replaceable external context. Promotion to a canonical Location is a separate reviewed operation: creating new accepts qualified assertions, while choosing an existing duplicate accepts only the provider reference and cannot overwrite canonical place facts.
+
 ## Journey configuration and derived results
 
 A **mobility profile** is durable user-owned configuration with stable identity, mode and revision. It describes reviewed personal movement assumptions or applicability; it is not a provider preset, route or silently learned behaviour. A **routing policy** is durable user-owned configuration for a structured hard exclusion, soft avoidance, preference, added cost or buffer. Providers translate these records but never own their identity or silently weaken them.

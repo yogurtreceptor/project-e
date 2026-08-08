@@ -575,6 +575,43 @@
     const actions = document.createElement("div");
     actions.className = "map-detail-actions";
     actions.setAttribute("aria-label", "Selection actions");
+    if (selection.providerFeature) {
+      const reviewForm = providerFeatureForm(selection, "/map/provider-location/review");
+      const reviewButton = document.createElement("button");
+      reviewButton.type = "submit";
+      reviewButton.className = "button";
+      reviewButton.textContent = "Review Save as Location";
+      reviewForm.append(reviewButton);
+      actions.append(reviewForm);
+
+      if (Array.isArray(payload.mapLists) && payload.mapLists.length) {
+        const listForm = providerFeatureForm(selection, "/map/lists/add");
+        listForm.classList.add("map-list-add-form");
+        const label = document.createElement("label");
+        const text = document.createElement("span");
+        text.textContent = "Add external feature to";
+        const select = document.createElement("select");
+        select.name = "list_id";
+        payload.mapLists.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = String(item.id);
+          option.textContent = `${item.name} (${item.memberCount})`;
+          select.append(option);
+        });
+        label.append(text, select);
+        const addButton = document.createElement("button");
+        addButton.type = "submit";
+        addButton.className = "button secondary";
+        addButton.textContent = "Add";
+        listForm.append(label, addButton);
+        actions.append(listForm);
+      }
+      const listsLink = document.createElement("a");
+      listsLink.href = "/map/lists";
+      listsLink.className = "button secondary";
+      listsLink.textContent = "Map lists";
+      actions.append(listsLink);
+    }
     ["Directions from", "Directions to"].forEach((label) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -585,6 +622,44 @@
       actions.append(button);
     });
     details.append(actions);
+  }
+
+  function providerFeatureForm(selection, action) {
+    const form = document.createElement("form");
+    form.method = "post";
+    form.action = action;
+    form.className = "map-detail-action-form";
+    const provider = selection.providerFeature || {};
+    const values = {
+      provider_key: provider.providerKey || "",
+      feature_id: provider.featureId || "",
+      feature_version: provider.packVersion || "",
+      title: selection.title || "",
+      description: provider.description || selection.address || "",
+      feature_type: provider.featureType || "Place",
+      source_name: provider.sourceName || selection.sourceLabel || "",
+      source_layer: provider.sourceLayer || "",
+      latitude: selection.latitude ?? "",
+      longitude: selection.longitude ?? "",
+      geometry_confidence: provider.geometryConfidence || "",
+      formatted_address: provider.formattedAddress || "",
+      address_line_1: provider.addressLine1 || "",
+      address_line_2: provider.addressLine2 || "",
+      suburb: provider.suburb || "",
+      city: provider.city || "",
+      state: provider.state || "",
+      post_code: provider.postCode || "",
+      country: provider.country || "",
+      return_to: `${window.location.pathname}${window.location.search}`
+    };
+    Object.entries(values).forEach(([name, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = String(value);
+      form.append(input);
+    });
+    return form;
   }
 
   function paragraph(text, className) {
@@ -636,12 +711,16 @@
     const title = String(feature.properties["name:latin"] || feature.properties.name || feature.properties.ref || "").trim();
     if (!title) return;
     const sourceLayer = feature.sourceLayer || feature.properties.source_layer || "provider";
-    const featureId = String(feature.properties.feature_id || feature.id || `${sourceLayer}:${title}`);
-    const key = `provider:${payload.packStatus.packId}:rendered:${sourceLayer}:${featureId}`;
     const clickedCoordinates = basemapMap.unproject(point);
     const featureCoordinates = feature.geometry?.type === "Point" ? feature.geometry.coordinates : null;
     const longitude = Array.isArray(featureCoordinates) ? Number(featureCoordinates[0]) : clickedCoordinates.lng;
     const latitude = Array.isArray(featureCoordinates) ? Number(featureCoordinates[1]) : clickedCoordinates.lat;
+    const providerFeatureId = feature.properties.feature_id || feature.id;
+    const rawFeatureId = providerFeatureId
+      ? String(providerFeatureId)
+      : `at:${latitude.toFixed(6)},${longitude.toFixed(6)}:${title}`;
+    const featureId = `rendered:${sourceLayer}:${rawFeatureId}`;
+    const key = `provider:${payload.packStatus.packId}:${featureId}`;
     const typeLabel = String(
       feature.properties.feature_type || feature.properties.subclass || feature.properties.class || sourceLayer
     ).replaceAll("_", " ");
@@ -662,8 +741,14 @@
       providerFeature: {
         packId: payload.packStatus.packId,
         packVersion: payload.packStatus.version,
+        providerKey: `spatial-pack:${payload.packStatus.packId}`,
         featureId,
-        sourceLayer
+        sourceLayer,
+        featureType: typeLabel,
+        sourceName: `${payload.packStatus.title} ${payload.packStatus.version} · Local`,
+        description: feature.properties.subtitle || typeLabel,
+        formattedAddress: "",
+        geometryConfidence: "Approximate"
       }
     };
     selectionIndex.set(key, selection);

@@ -100,6 +100,12 @@ from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
 )
+from app.view_pages.map_features import (
+    map_provider_review_page,
+    map_provider_feature_error_page,
+    map_feature_lists_page,
+    map_feature_list_page,
+)
 from app.view_pages.spatial_packs import spatial_pack_page
 from app.view_pages.merge import merge_select_page, merge_preview_page
 from app.view_pages.recycle_bin import recycle_bin_page, permanent_delete_confirmation_page
@@ -199,6 +205,10 @@ __all__ = [
     "address_lookup_field",
     "address_lookup_script",
     "map_page",
+    "map_provider_review_page",
+    "map_provider_feature_error_page",
+    "map_feature_lists_page",
+    "map_feature_list_page",
     "spatial_pack_page",
     "merge_select_page",
     "merge_preview_page",

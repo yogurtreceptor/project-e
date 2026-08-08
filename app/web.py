@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import date
 from http import HTTPStatus
@@ -88,13 +89,32 @@ from app.reminder_service import (DEFAULT_TIMINGS, act_on_inbox_item, archived_i
 from app.scheduler_service import (SchedulerRuntime, ensure_registered_jobs, list_job_runs,
     list_scheduled_jobs, run_job_now, set_job_enabled)
 from app.automation_service import ensure_registered_rules, list_rules, list_runs, set_rule_enabled
-from app.geo import build_map_payload, build_map_viewport_payload, geocoder
+from app.geo import (
+    build_map_payload,
+    build_map_viewport_payload,
+    geocoder,
+    installed_provider_selection_key,
+)
+from app.map_feature_service import (
+    add_map_feature_membership,
+    clear_map_feature_list,
+    create_map_feature_list,
+    find_provider_promotion_matches,
+    get_map_feature_list,
+    list_map_feature_lists,
+    list_map_feature_memberships,
+    map_feature_membership_export,
+    promote_provider_feature,
+    provider_feature_from_form,
+    remove_map_feature_membership,
+)
 from app.spatial_pack import (
     MAX_ARCHIVE_BYTES,
     activate_staged_spatial_pack,
     inspect_and_stage_spatial_pack,
     read_active_coverage,
     read_active_public_transport,
+    read_active_search_feature,
     read_active_tile,
     read_staged_spatial_pack,
     remove_spatial_pack,
@@ -1351,7 +1371,290 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
                 selected_key=query.get("selected", ""),
             ),
             active_slug="map",
+            show_save_toast=bool(query.get("saved")),
         )
+
+    def handle_map_provider_location_review(self) -> None:
+        values = self.read_form()
+        return_to = self.map_return_to(values.get("return_to", ""))
+        try:
+            feature = provider_feature_from_form(values, self.spatial_pack_dir)
+            with connect(self.database_path) as connection:
+                matches = find_provider_promotion_matches(connection, feature)
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Provider feature unavailable",
+                views.map_provider_feature_error_page(str(error), return_to),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.respond_page(
+            "Review Save as Location",
+            views.map_provider_review_page(feature, matches, return_to),
+            active_slug="map",
+        )
+
+    def handle_map_provider_location_save(self) -> None:
+        values = self.read_form()
+        return_to = self.map_return_to(values.get("return_to", ""))
+        try:
+            feature = provider_feature_from_form(values, self.spatial_pack_dir)
+        except (OSError, ValueError) as error:
+            self.respond_page(
+                "Provider feature unavailable",
+                views.map_provider_feature_error_page(str(error), return_to),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        try:
+            with connect(self.database_path) as connection:
+                location_id, _created = promote_provider_feature(
+                    connection,
+                    feature,
+                    choice=values.get("choice", ""),
+                    display_name=values.get("display_name", ""),
+                )
+        except (sqlite3.Error, ValueError) as error:
+            with connect(self.database_path) as connection:
+                matches = find_provider_promotion_matches(connection, feature)
+            self.respond_page(
+                "Review Save as Location",
+                views.map_provider_review_page(
+                    feature, matches, return_to, errors=[str(error)]
+                ),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.redirect(f"/locations/{location_id}?saved=1")
+
+    def handle_map_feature_lists(self) -> None:
+        with connect(self.database_path) as connection:
+            feature_lists = list_map_feature_lists(connection)
+        self.respond_page(
+            "Map lists",
+            views.map_feature_lists_page(feature_lists),
+            active_slug="map",
+        )
+
+    def handle_map_feature_list_create(self) -> None:
+        values = self.read_form()
+        try:
+            with connect(self.database_path) as connection:
+                list_id = create_map_feature_list(connection, values.get("name", ""))
+        except ValueError as error:
+            with connect(self.database_path) as connection:
+                feature_lists = list_map_feature_lists(connection)
+            self.respond_page(
+                "Map lists",
+                views.map_feature_lists_page(feature_lists, errors=[str(error)]),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.redirect(f"/map/lists/{list_id}?saved=1")
+
+    def handle_map_feature_list_add(self) -> None:
+        values = self.read_form()
+        return_to = self.map_return_to(values.get("return_to", ""))
+        try:
+            list_id = int(values.get("list_id", ""))
+            feature = provider_feature_from_form(values, self.spatial_pack_dir)
+            with connect(self.database_path) as connection:
+                add_map_feature_membership(connection, list_id, feature)
+        except (OSError, sqlite3.Error, TypeError, ValueError) as error:
+            self.respond_page(
+                "Map feature not saved",
+                views.map_provider_feature_error_page(str(error), return_to),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        delimiter = "&" if "?" in return_to else "?"
+        self.redirect(f"{return_to}{delimiter}saved=1")
+
+    def handle_map_feature_list(self, raw_id: str) -> None:
+        list_id = self.parse_entity_id(raw_id)
+        if list_id is None:
+            self.respond_not_found()
+            return
+        with connect(self.database_path) as connection:
+            feature_list = get_map_feature_list(connection, list_id)
+            memberships = (
+                list_map_feature_memberships(connection, list_id)
+                if feature_list is not None
+                else []
+            )
+        if feature_list is None:
+            self.respond_not_found()
+            return
+        membership_views = self.map_feature_membership_views(memberships)
+        parsed = urlparse(self.path)
+        saved = parse_qs(parsed.query).get("saved", [""])[0]
+        self.respond_page(
+            feature_list.name,
+            views.map_feature_list_page(feature_list, membership_views),
+            active_slug="map",
+            show_save_toast=bool(saved),
+        )
+
+    def handle_map_feature_list_export(self, raw_id: str) -> None:
+        list_id = self.parse_entity_id(raw_id)
+        if list_id is None:
+            self.respond_not_found()
+            return
+        with connect(self.database_path) as connection:
+            feature_list = get_map_feature_list(connection, list_id)
+            memberships = (
+                list_map_feature_memberships(connection, list_id)
+                if feature_list is not None
+                else []
+            )
+        if feature_list is None:
+            self.respond_not_found()
+            return
+        content = json.dumps(
+            map_feature_membership_export(feature_list, memberships),
+            indent=2,
+            sort_keys=True,
+        ).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header(
+            "Content-Disposition", f'attachment; filename="map-list-{list_id}.json"'
+        )
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def handle_map_feature_list_clear(self, raw_id: str) -> None:
+        list_id = self.parse_entity_id(raw_id)
+        if list_id is None:
+            self.respond_not_found()
+            return
+        values = self.read_form()
+        if values.get("confirm") != "CLEAR":
+            self.respond_map_feature_list_error(
+                list_id, "Type CLEAR to confirm removing every membership."
+            )
+            return
+        try:
+            with connect(self.database_path) as connection:
+                clear_map_feature_list(connection, list_id)
+        except ValueError as error:
+            self.respond_map_feature_list_error(list_id, str(error))
+            return
+        self.redirect(f"/map/lists/{list_id}?saved=1")
+
+    def handle_map_feature_list_remove(self, raw_id: str) -> None:
+        list_id = self.parse_entity_id(raw_id)
+        if list_id is None:
+            self.respond_not_found()
+            return
+        values = self.read_form()
+        membership_id = self.parse_entity_id(values.get("membership_id", ""))
+        if membership_id is None:
+            self.respond_map_feature_list_error(list_id, "The Map-list membership is invalid.")
+            return
+        with connect(self.database_path) as connection:
+            removed = remove_map_feature_membership(
+                connection, list_id, membership_id
+            )
+        if not removed:
+            self.respond_map_feature_list_error(
+                list_id, "The Map-list membership no longer exists."
+            )
+            return
+        self.redirect(f"/map/lists/{list_id}?saved=1")
+
+    def respond_map_feature_list_error(self, list_id: int, message: str) -> None:
+        with connect(self.database_path) as connection:
+            feature_list = get_map_feature_list(connection, list_id)
+            memberships = (
+                list_map_feature_memberships(connection, list_id)
+                if feature_list is not None
+                else []
+            )
+        if feature_list is None:
+            self.respond_not_found()
+            return
+        self.respond_page(
+            feature_list.name,
+            views.map_feature_list_page(
+                feature_list,
+                self.map_feature_membership_views(memberships),
+                errors=[message],
+            ),
+            HTTPStatus.BAD_REQUEST,
+            active_slug="map",
+        )
+
+    def map_feature_membership_views(self, memberships) -> list[dict[str, object]]:
+        status = spatial_pack_status(self.spatial_pack_dir)
+        result = []
+        for membership in memberships:
+            current = read_active_search_feature(
+                self.spatial_pack_dir,
+                membership.provider_key,
+                membership.feature_id,
+            )
+            revisit_url = ""
+            if current is not None:
+                selected = installed_provider_selection_key(
+                    str(current["pack_id"]), membership.feature_id
+                )
+                revisit_url = "/map?" + urlencode(
+                    {"q": str(current["title"]), "selected": selected}
+                )
+                explanation = ""
+            elif membership.provider_key == "nominatim-osm":
+                revisit_url = "/map?" + urlencode(
+                    {"q": membership.user_label, "online": "1"}
+                )
+                explanation = (
+                    "Online provider data is never loaded from a saved list automatically."
+                )
+            elif membership.provider_key.startswith("spatial-pack:"):
+                expected_pack = membership.provider_key.removeprefix("spatial-pack:")
+                if status.active is None:
+                    explanation = (
+                        "The required spatial pack is not active; portable membership remains."
+                    )
+                elif status.active.manifest.pack_id != expected_pack:
+                    explanation = (
+                        "A different region pack is active; portable membership remains."
+                    )
+                else:
+                    explanation = (
+                        "The active provider version no longer exposes this feature identity; "
+                        "the membership was not silently reassigned."
+                    )
+            else:
+                explanation = "The saved provider is not currently available."
+            result.append(
+                {
+                    "membership": membership,
+                    "current": current,
+                    "revisitUrl": revisit_url,
+                    "explanation": explanation,
+                }
+            )
+        return result
+
+    @staticmethod
+    def map_return_to(value: str) -> str:
+        if not value or len(value) > 2000:
+            return "/map"
+        parsed = urlparse(value)
+        if (
+            parsed.scheme
+            or parsed.netloc
+            or not (parsed.path == "/map" or parsed.path.startswith("/map/"))
+        ):
+            return "/map"
+        return parsed.path + (f"?{parsed.query}" if parsed.query else "")
 
     def handle_map_viewport(self, query: dict[str, str]) -> None:
         try:

@@ -69,6 +69,7 @@ def ensure_current_schema(connection: sqlite3.Connection) -> None:
     create_typed_entity_tables(connection)
     create_relationship_table(connection)
     create_place_foundation_tables(connection)
+    create_map_feature_list_tables(connection)
     create_journey_foundation_tables(connection)
     create_inference_tables(connection)
     create_entity_history_table(connection)
@@ -1519,6 +1520,44 @@ def create_journey_foundation_tables(connection: sqlite3.Connection) -> None:
     )
 
 
+def create_map_feature_list_tables(connection: sqlite3.Connection) -> None:
+    """Create portable user-owned lists of replaceable provider features."""
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS map_feature_lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            list_key TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            kind TEXT NOT NULL DEFAULT 'named'
+                CHECK (kind IN ('favourites', 'named')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS map_feature_list_memberships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            list_id INTEGER NOT NULL
+                REFERENCES map_feature_lists(id) ON DELETE CASCADE,
+            provider_key TEXT NOT NULL,
+            feature_id TEXT NOT NULL,
+            user_label TEXT NOT NULL,
+            added_at TEXT NOT NULL,
+            UNIQUE (list_id, provider_key, feature_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_map_feature_membership_identity
+            ON map_feature_list_memberships (provider_key, feature_id, list_id);
+        """
+    )
+    now = utc_now()
+    connection.execute(
+        """INSERT OR IGNORE INTO map_feature_lists (
+               list_key, name, kind, created_at, updated_at
+           ) VALUES ('favourites', 'Favourites', 'favourites', ?, ?)""",
+        (now, now),
+    )
+
+
 def migrate_canonical_place_foundation(connection: sqlite3.Connection) -> None:
     """Move legacy flattened Location facts into canonical assertions."""
     create_place_foundation_tables(connection)
@@ -1928,6 +1967,7 @@ SCHEMA_MIGRATIONS = (
     ("20260801_32_consolidate_inbox_attention", consolidate_active_inbox_attention),
     ("20260805_33_canonical_place_foundation", migrate_canonical_place_foundation),
     ("20260805_34_journey_contract_foundation", create_journey_foundation_tables),
+    ("20260808_35_map_feature_lists", create_map_feature_list_tables),
 )
 
 SCHEMA_MIGRATION_IDS = tuple(migration_id for migration_id, _ in SCHEMA_MIGRATIONS)

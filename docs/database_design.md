@@ -32,6 +32,7 @@ For a schema change, update the current-schema creator/repair path, add a forwar
 | Migration | `schema_migrations` | Applied migration identifiers. |
 | Canonical identity | `entities`; `people`, `organisations`, `locations`, `projects`, `documents`, `assets`, `events` | Shared identity plus one typed row for each entity. |
 | Canonical place facts | `location_addresses`, `location_geometries`, `location_provider_references` | Address and geometry assertion history plus replaceable provider identity references. |
+| User-owned Map state | `map_feature_lists`, `map_feature_list_memberships` | Portable favourites/named-list identity and external provider-feature membership; not provider facts or canonical Locations. |
 | Journey configuration | `mobility_profiles`, `routing_policies` | Stable user-owned identity, revision and provider-independent definitions; not routes or provider settings. |
 | Relationships and journals | `relationships`, `journal_entries`, `entity_aliases` | First-class links, timestamped observations and alternate names. |
 | Controlled/reference data | `reference_data_types`, `reference_data_items`, `entity_reference_values`, `measurement_units`, `entity_measurements`, `taxonomies`, `taxonomy_entries`, `relationship_type_definitions` | Shared catalogue values, normalized measurements and runtime classifications. |
@@ -60,6 +61,12 @@ Aliases, multi-value references and measurements use normalized external tables 
 Structured dates, coordinates and whole-number Asset values are normalized and validated before writes. Location geometry stores a validated geometry type and compact canonical JSON coordinate array in WGS84 longitude/latitude order. Point, line, multi-line, polygon and multi-polygon nesting is supported without requiring a spatial extension; polygon rings must be closed. The projection index selects current/preferred assertions by Location, purpose or role, while partial unique indexes permit at most one preferred address per purpose and one preferred geometry per role.
 
 `locations` now carries only the typed-row identity. `location_addresses` keeps physical, postal and delivery assertions with independent current/preferred state, confidence and source snapshots. `location_geometries` keeps representative point, boundary, entrance, route-anchor and path assertions with confidence, optional positive accuracy radius and source snapshots. A representative point must be a Point. `location_provider_references` stores neutral provider/feature/version identities separately, so removing a provider reference cannot alter accepted canonical geometry.
+
+## Reviewed provider promotion and Map lists
+
+Migration `20260808_35_map_feature_lists` adds one seeded `Favourites` list plus user-created named lists. `map_feature_list_memberships` has one row per list/provider/feature tuple and stores a user-owned label for intelligible offline display. It does not store feature version, address, coordinates, source snapshot or availability. Those external facts resolve from the current provider when available and may disappear without deleting or repointing membership.
+
+Provider-to-canonical promotion uses the existing canonical tables rather than a staging entity. The review is read-only. Confirmation of a new Location atomically creates the entity, applicable source-reported address/representative-point assertions and one versioned `location_provider_references` row. Confirmation against an existing reviewed duplicate inserts only that provider reference. Pack/browser payloads therefore cannot overwrite already accepted canonical assertions.
 
 ## Journey configuration and cache boundary
 
@@ -125,6 +132,6 @@ Portable format version 1 is a ZIP containing:
 - a consistent SQLite snapshot made with the backup API;
 - exactly the uploaded files referenced by Document rows.
 
-Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, invalid journey profile/policy configuration, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event. Durable profiles/policies travel inside the database snapshot; disposable journey cache files and replaceable spatial packs do not.
+Import rejects unsafe paths, bad checksums, invalid SQLite/foreign keys, a mismatched migration set, invalid typed entities or Relationships, invalid canonical geometry/containment, invalid journey profile/policy configuration, invalid portable Map-list state, and document-membership mismatches before apply. Apply requires an empty target and explicit confirmation, stages replacement, creates a recovery bundle and appends an import audit event. Durable profiles/policies and Map-list membership travel inside the database snapshot; disposable journey cache files, current provider facts and replaceable spatial packs do not.
 
 The same recovery primitive runs before confirmed merge and permanent deletion. Recovery artifacts remain private ignored runtime data and never become application dependencies.

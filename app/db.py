@@ -23,6 +23,7 @@ from app.db_schema import (
     create_relationship_table,
     ensure_relationship_columns,
     create_place_foundation_tables,
+    create_map_feature_list_tables,
     create_journey_foundation_tables,
     create_entity_history_table,
     create_journal_table,
@@ -120,6 +121,7 @@ from app.journey_repository import (
     validate_stored_journey_configuration,
 )
 from app.journey_service import plan_journey, resolve_journey_endpoint
+from app.map_feature_service import validate_stored_map_feature_lists
 from app.discovery_repository import (
     list_recent_entities,
     mark_entity_viewed,
@@ -183,6 +185,7 @@ __all__ = [
     "create_relationship_table",
     "ensure_relationship_columns",
     "create_place_foundation_tables",
+    "create_map_feature_list_tables",
     "create_journey_foundation_tables",
     "create_entity_history_table",
     "create_journal_table",
@@ -270,6 +273,7 @@ __all__ = [
     "validate_stored_journey_configuration",
     "plan_journey",
     "resolve_journey_endpoint",
+    "validate_stored_map_feature_lists",
     "EventInput",
     "EventRecord",
     "EventSchedule",

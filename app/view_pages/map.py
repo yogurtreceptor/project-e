@@ -55,7 +55,7 @@ def map_page(
             <h1>Map</h1>
             <p>{place_count} canonical place{"s" if place_count != 1 else ""} represent {record_count} mapped record{"s" if record_count != 1 else ""} without requiring network access.</p>
         </div>
-        <div class="actions"><a class="button secondary" href="/map/packs">Manage Spatial Packs</a><a class="button secondary" href="/locations/new">Create Location</a></div>
+        <div class="actions"><a class="button secondary" href="/map/lists">Map lists</a><a class="button secondary" href="/map/packs">Manage Spatial Packs</a><a class="button secondary" href="/locations/new">Create Location</a></div>
     </section>
     <section class="map-workspace" data-map-workspace>
         <header class="map-search-region">
@@ -87,7 +87,7 @@ def map_page(
                 </section>
                 <section data-map-pane="details" aria-labelledby="map-details-heading"{'' if selected is not None else ' hidden'}>
                     <button class="button secondary map-back-button" type="button" data-map-back>Back to {"results" if query else "places"}</button>
-                    <div data-map-details>{map_details_html(selected) if selected is not None else ''}</div>
+                    <div data-map-details>{map_details_html(selected, payload.get("mapLists", []), map_selection_href(payload, selected_key)) if selected is not None else ''}</div>
                 </section>
             </aside>
 
@@ -254,7 +254,11 @@ def textual_record_group_html(
     return f'<li><strong>{escape(label)}</strong><ul>{"".join(items)}</ul></li>'
 
 
-def map_details_html(selection: dict[str, object] | None) -> str:
+def map_details_html(
+    selection: dict[str, object] | None,
+    map_lists: list[dict[str, object]] | None = None,
+    return_to: str = "/map",
+) -> str:
     if selection is None:
         return ""
     address = f'<p class="map-detail-address">{escape(str(selection["address"]))}</p>' if selection.get("address") else ""
@@ -291,16 +295,81 @@ def map_details_html(selection: dict[str, object] | None) -> str:
         records_html = f'<section class="map-detail-records"><h3>Canonical records at this place</h3><ul>{record_items}</ul></section>'
     else:
         records_html = '<p class="map-detail-warning">Selection only. Browsing does not create or change a canonical Location.</p>'
+    actions = provider_feature_actions(selection, map_lists or [], return_to)
     return f"""
     <header class="map-details-header"><p class="eyebrow">Selected</p><h2 id="map-details-heading">{escape(str(selection["title"]))}</h2>{address}</header>
     {coordinates}
     <ul class="map-detail-metadata">{metadata}</ul>
     {records_html}
     <div class="map-detail-actions" aria-label="Selection actions">
+        {actions}
         <button class="button secondary" type="button" disabled title="Journey planning is not yet available">Directions from</button>
         <button class="button secondary" type="button" disabled title="Journey planning is not yet available">Directions to</button>
     </div>
     """
+
+
+def provider_feature_actions(
+    selection: dict[str, object],
+    map_lists: list[dict[str, object]],
+    return_to: str,
+) -> str:
+    if not isinstance(selection.get("providerFeature"), dict):
+        return ""
+    hidden = provider_feature_hidden_fields(selection)
+    review = f"""
+    <form method="post" action="/map/provider-location/review" class="map-detail-action-form">
+        {hidden}<input type="hidden" name="return_to" value="{escape(return_to)}">
+        <button class="button" type="submit">Review Save as Location</button>
+    </form>
+    """
+    options = "".join(
+        f'<option value="{int(item["id"])}">{escape(str(item["name"]))} ({int(item["memberCount"])})</option>'
+        for item in map_lists
+    )
+    bookmark = (
+        f"""
+        <form method="post" action="/map/lists/add" class="map-detail-action-form map-list-add-form">
+            {hidden}<input type="hidden" name="return_to" value="{escape(return_to)}">
+            <label><span>Add external feature to</span><select name="list_id">{options}</select></label>
+            <button class="button secondary" type="submit">Add</button>
+        </form>
+        """
+        if options
+        else ""
+    )
+    return review + bookmark + '<a class="button secondary" href="/map/lists">Map lists</a>'
+
+
+def provider_feature_hidden_fields(selection: dict[str, object]) -> str:
+    provider = selection.get("providerFeature")
+    if not isinstance(provider, dict):
+        return ""
+    values = {
+        "provider_key": provider.get("providerKey", ""),
+        "feature_id": provider.get("featureId", ""),
+        "feature_version": provider.get("packVersion", ""),
+        "title": selection.get("title", ""),
+        "description": provider.get("description", selection.get("address", "")),
+        "feature_type": provider.get("featureType", "Place"),
+        "source_name": provider.get("sourceName", selection.get("sourceLabel", "")),
+        "source_layer": provider.get("sourceLayer", ""),
+        "latitude": selection.get("latitude", ""),
+        "longitude": selection.get("longitude", ""),
+        "geometry_confidence": provider.get("geometryConfidence", ""),
+        "formatted_address": provider.get("formattedAddress", ""),
+        "address_line_1": provider.get("addressLine1", ""),
+        "address_line_2": provider.get("addressLine2", ""),
+        "suburb": provider.get("suburb", ""),
+        "city": provider.get("city", ""),
+        "state": provider.get("state", ""),
+        "post_code": provider.get("postCode", ""),
+        "country": provider.get("country", ""),
+    }
+    return "".join(
+        f'<input type="hidden" name="{name}" value="{escape(str(value))}">'
+        for name, value in values.items()
+    )
 
 
 def map_detail_record_html(record: dict[str, object]) -> str:

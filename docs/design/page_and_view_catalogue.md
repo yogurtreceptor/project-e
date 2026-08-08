@@ -86,7 +86,14 @@ Calendar Settings uses a stripped-back shell and preserves the originating Calen
 | `/system-tools/portability` and import/export children | Whole-platform bundle creation, inspection and confirmed apply. |
 | `/system-tools/scheduled-jobs` | Registered Job state, Runs, manual execution and controls. |
 | `/system-tools/automation` | Registered deterministic rules and Automation Runs. |
-| `/map/packs` | Inspect-only spatial-pack preview plus active source/coverage/version/attribution, atomic install/update/rollback and confirmed removal. |
+## Map workflow routes
+
+| Route family | Purpose |
+| --- | --- |
+| `/map` and `/map/viewport` | Canonical/provider search, accessible selection/details and bounded local viewport projection. |
+| `/map/provider-location/review` and `/save` | Non-mutating provider snapshot/duplicate review followed by one explicit canonical promotion or provider-reference link. |
+| `/map/lists` and `/map/lists/{id}` | Portable external favourites/named-list creation, revisit, JSON export, item removal and confirmed clear. |
+| `/map/packs` and resource children | Inspect/activate/manage replaceable local map/search/context resources and serve same-origin immutable data. |
 
 Audit, Timeline, Inbox, Job Runs and Automation Runs have different meaning and remain separate destinations/projections.
 
@@ -95,7 +102,7 @@ Audit, Timeline, Inbox, Job Runs and Automation Runs have different meaning and 
 - Create/edit forms are one readable column with a top error summary, linked field errors, retained values, progressive optional details and dirty-form protection.
 - Tables and wide specialist views use labelled keyboard-scrollable regions and honest empty/no-match/error states.
 - Consequential actions use review/confirmation appropriate to their reversibility. Merge and import include a preview; soft deletion is recoverable; permanent deletion is recovery-protected.
-- Map and Family Tree retain textual alternatives. Installed map/search/renderer or optional address-network failure never blocks canonical local records. Provider clicks only inspect; pack install/removal is a separate explicit workflow.
+- Map and Family Tree retain textual alternatives. Installed map/search/renderer or optional address-network failure never blocks canonical local records. Provider clicks only inspect; reviewed promotion and list actions are visibly separate explicit forms, and pack install/removal remains a separate workflow.
 - Both system-selected themes use shared semantic tokens. Icon-only actions require accessible names and usable targets.
 - The current product is desktop-first. Human visual/keyboard verification remains necessary at the supported desktop dimensions.
 

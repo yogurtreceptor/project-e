@@ -381,6 +381,48 @@ def search_active_spatial_pack(
     return results
 
 
+def read_active_search_feature(
+    root: Path, provider_key: str, feature_id: str
+) -> dict[str, object] | None:
+    """Resolve one portable membership against the current replaceable index."""
+    status = spatial_pack_status(root)
+    if status.active is None:
+        return None
+    manifest = status.active.manifest
+    if provider_key != f"spatial-pack:{manifest.pack_id}":
+        return None
+    database = status.active.directory / "search.sqlite3"
+    uri = f"file:{database.resolve()}?mode=ro"
+    try:
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only=ON")
+            connection.execute("PRAGMA trusted_schema=OFF")
+            row = connection.execute(
+                """SELECT feature_id, title, subtitle, feature_type, source_layer,
+                          latitude, longitude
+                     FROM search_features WHERE feature_id=?""",
+                (feature_id,),
+            ).fetchone()
+    except sqlite3.Error:
+        return None
+    if row is None:
+        return None
+    return {
+        "feature_id": row["feature_id"],
+        "title": row["title"],
+        "subtitle": row["subtitle"],
+        "feature_type": row["feature_type"],
+        "source_layer": row["source_layer"],
+        "latitude": float(row["latitude"]),
+        "longitude": float(row["longitude"]),
+        "pack_id": manifest.pack_id,
+        "pack_version": manifest.pack_version,
+        "source_label": f"{manifest.title} {manifest.pack_version} · Local",
+        "coverage_label": manifest.coverage_label,
+    }
+
+
 def read_active_tile(
     root: Path, activation_id: str, zoom: int, x: int, y: int
 ) -> tuple[bytes, bool] | None:

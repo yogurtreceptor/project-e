@@ -52,6 +52,8 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("location_provider_references", tables)
         self.assertIn("mobility_profiles", tables)
         self.assertIn("routing_policies", tables)
+        self.assertIn("map_feature_lists", tables)
+        self.assertIn("map_feature_list_memberships", tables)
         self.assertIn("schema_migrations", tables)
         self.assertIn("journal_entries", tables)
         self.assertIn("event_icalendar_identities", tables)
@@ -59,6 +61,14 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertIn("external_calendar_events", tables)
         self.assertTrue({"task_lists", "tasks", "task_deadlines", "task_sessions"}.isdisjoint(tables))
         self.assertNotIn("automation_review_items", tables)
+        with connect(self.database_path) as connection:
+            favourites = connection.execute(
+                "SELECT list_key, name, kind FROM map_feature_lists"
+            ).fetchall()
+        self.assertEqual(
+            [("favourites", "Favourites", "favourites")],
+            [tuple(row) for row in favourites],
+        )
         with connect(self.database_path) as connection:
             entity_columns = {row["name"] for row in connection.execute("PRAGMA table_info(entities)")}
             project_columns = {row["name"] for row in connection.execute("PRAGMA table_info(projects)")}
@@ -260,6 +270,49 @@ class SchemaMigrationTests(unittest.TestCase):
 
         self.assertEqual("Existing Fictional Person", retained["display_name"])
         self.assertEqual({"mobility_profiles", "routing_policies"}, tables)
+        self.assertIsNotNone(migration)
+
+    def test_map_feature_list_upgrade_adds_portable_state_without_touching_entities(self) -> None:
+        migration_id = "20260808_35_map_feature_lists"
+        with connect(self.database_path) as connection:
+            create_schema_migration_table(connection)
+            for current_id, migration in SCHEMA_MIGRATIONS:
+                if current_id == migration_id:
+                    break
+                migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations VALUES (?, 'before')",
+                    (current_id,),
+                )
+            cursor = connection.execute(
+                """INSERT INTO entities (
+                       type, display_name, summary, notes, created_at, updated_at
+                   ) VALUES ('location', 'Existing Fictional Place', '', '',
+                             'before', 'before')"""
+            )
+            location_id = int(cursor.lastrowid)
+            connection.execute(
+                "INSERT INTO locations (entity_id) VALUES (?)", (location_id,)
+            )
+            connection.commit()
+
+            create_schema(connection)
+
+            retained = connection.execute(
+                "SELECT display_name FROM entities WHERE id=?", (location_id,)
+            ).fetchone()
+            favourites = connection.execute(
+                "SELECT list_key, name, kind FROM map_feature_lists"
+            ).fetchone()
+            migration = connection.execute(
+                "SELECT 1 FROM schema_migrations WHERE migration_id=?",
+                (migration_id,),
+            ).fetchone()
+
+        self.assertEqual("Existing Fictional Place", retained["display_name"])
+        self.assertEqual(
+            ("favourites", "Favourites", "favourites"), tuple(favourites)
+        )
         self.assertIsNotNone(migration)
 
     def test_task_retirement_refuses_to_remove_existing_task_data(self) -> None:

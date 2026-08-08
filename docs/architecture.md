@@ -50,6 +50,7 @@ Responsibilities are separated:
 - `app/entity_repository.py` reads and writes entity persistence.
 - `app/entity_service.py` coordinates lifecycle consequences such as Birthday Event synchronisation, reminder resolution and inference recomputation.
 - `app/place_repository.py` owns canonical Location address, geometry and provider-reference persistence; `app/place_service.py` owns the preferred physical-address and representative-point edit projection and merge behaviour.
+- `app/map_feature_service.py` owns reviewed external-feature promotion, duplicate evidence, portable Map-list membership and its recovery validation. Browsing remains a read projection; only the dedicated review/list actions mutate durable state.
 - Focused modules own external field stores: aliases, reference values, measurements and journal entries.
 - `app/duplicate_detection.py`, `app/entity_merge.py` and `app/integrity.py` provide reviewable maintenance instead of hidden automatic mutation.
 
@@ -107,13 +108,19 @@ Jobs, Automation Runs, Inbox items, audit events and canonical Events retain sep
 
 MapLibre GL JS 6.2.0 is vendored under `app/static/vendor/` with its licence and exact X1 artifact identity. It reads only same-origin immutable tile, coverage and static-transit endpoints. The Gold Coast pack's fixed SQLite index is derived from visible OSM vector labels and static GTFS stops; it is not full geocoding, provider identity or canonical place storage. Pack search failure leaves canonical search available, renderer/tile failure leaves the N2 coordinate grid/DOM overlay available, and coordinates outside declared coverage remain renderable. This first lifecycle deliberately allows one active region; N5/N6 evidence must justify adjoining-region or routing-source generalisation.
 
+### Reviewed provider features and Map lists
+
+Installed search, rendered pack context and explicitly requested Nominatim results share one selection-details contract. **Save as Location** first revalidates the provider/active-pack boundary, then presents exact provider-reference, normalized name/address and 100-metre representative-point matches. Confirmation either creates one canonical Location with source-qualified assertions and a neutral provider reference or attaches only the reference to a reviewed existing Location. It never updates an existing canonical name, address or geometry.
+
+`map_feature_lists` and `map_feature_list_memberships` are durable user-owned spatial state rather than entities or provider cache. A membership stores its list, provider key, feature identity and user-owned label; it deliberately omits provider version, coordinates and pack facts. `app/spatial_pack.py` may resolve current facts from the active replaceable index for display. Missing packs and changed/disappeared feature identities leave membership intact and visibly unavailable; they are never silently reassigned. Online membership revisit requires an explicit provider search. Named-list JSON export and whole-platform recovery carry membership independently of pack bytes.
+
 ### Derived platform services
 
 Search, structured filters, timelines, maps, data quality and audit are projections over canonical data:
 
 - `app/discovery_repository.py`, `app/query_engine.py` and `app/structured_filters.py` own retrieval.
 - `app/timeline.py` derives real-world chronology; operational audit events do not become Timeline events.
-- `app/geo.py` groups canonical Map places from each Location's preferred current representative point, qualifying Relationships and current Asset coordinates; it also owns deterministic canonical-first Map search, installed-pack result composition and the bounded local viewport read model. `app/static/map-workspace.js` composes the accessible canonical DOM overlay/text alternative with the optional vendored same-origin normal map. No page resource requires a CDN or automatic WAN request, and the Map owns no records.
+- `app/geo.py` groups canonical Map places from each Location's preferred current representative point, qualifying Relationships and current Asset coordinates; it also owns deterministic canonical-first Map search, installed-pack result composition and the bounded local viewport read model. `app/static/map-workspace.js` composes the accessible canonical DOM overlay/text alternative with the optional vendored same-origin normal map. No page resource requires a CDN or automatic WAN request. Browsing owns no records; explicit reviewed promotion and list commands cross into `app/map_feature_service.py`.
 - `app/data_quality.py` and `app/integrity.py` report deterministic findings.
 - `app/audit.py` reads append-only operational history.
 
@@ -125,10 +132,10 @@ Consequential writes pass through validated services and produce the applicable 
 
 Deterministic recomputation may update derived state or create contracted operational history. It does not silently create user-owned Relationships: family inference produces review suggestions, and confirmation creates an ordinary editable Relationship. Rejected evidence is remembered; changed evidence invalidates pending suggestions without deleting confirmed facts.
 
-Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, including canonical place and journey configuration, requires an empty target and explicit confirmation, and creates recovery state before replacement. Disposable journey cache and replaceable spatial-pack data are excluded.
+Whole-platform portability is owned by `app/portability.py`. It validates a versioned SQLite-and-document bundle, including canonical place, journey configuration and portable Map-list state, requires an empty target and explicit confirmation, and creates recovery state before replacement. Disposable journey cache and replaceable spatial-pack data are excluded.
 
 ## Deployment and maturity boundary
 
 The application currently has no authentication, multi-user model, external worker, queue or cloud dependency. Normal operation remains local and in-process. Optional network clients must fail without damaging or blocking canonical local data.
 
-Phases 1 and 2 are complete development milestones. Phase 3 N1–N4 have added the canonical place foundation, offline-first Map 2.0 workspace, provider-independent journey/profile/policy/cache seam and one verified installed Gold Coast normal map/search/context pack. Reviewed provider saving, a production routing provider, calculated journeys, Calendar materialisation and later spatial work remain separately gated. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.
+Phases 1 and 2 are complete development milestones. Phase 3 N1–N4 and N5A have added the canonical place foundation, offline-first Map 2.0 workspace, provider-independent journey/profile/policy/cache seam, one verified installed Gold Coast normal map/search/context pack, reviewed provider promotion and portable external Map lists. N5 coverage recommendations, a production routing provider, calculated journeys, Calendar materialisation and later spatial work remain separately gated. Mobile access, multi-user permissions, autonomous external effects and AI/agent layers require separate authorisation. Any future consumer—human interface, deterministic integration or bounded AI capability—must use the same canonical data, validation, audit, provenance and recovery boundaries.
