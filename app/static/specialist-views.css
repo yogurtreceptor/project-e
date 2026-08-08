@@ -371,6 +371,64 @@
     overflow-wrap: anywhere;
 }
 
+.coverage-recommendation-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 16px 0;
+}
+
+.coverage-selection {
+    border-left: 4px solid var(--color-series-1);
+}
+
+.coverage-state-context {
+    border-left-color: var(--color-status-warning-border);
+}
+
+.coverage-state-outside,
+.coverage-state-error {
+    border-left-color: var(--color-status-danger);
+}
+
+.coverage-facts {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.coverage-facts div {
+    background: var(--color-surface-inset);
+    padding: 10px;
+}
+
+.coverage-facts dt,
+.coverage-source-list span {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.coverage-facts dd {
+    font-weight: 700;
+    margin: 3px 0 0;
+}
+
+.coverage-source-list,
+.coverage-limitations {
+    display: grid;
+    gap: 8px;
+    padding-left: 20px;
+}
+
+.coverage-source-list span {
+    display: block;
+    margin-top: 2px;
+}
+
+.coverage-guardrail {
+    border-left: 4px solid var(--color-status-success);
+}
+
 .map-canvas-panel {
     min-width: 0;
     padding: 16px;
@@ -797,6 +855,10 @@
 
     .eddy-map {
         height: 460px;
+    }
+
+    .coverage-recommendation-grid {
+        grid-template-columns: 1fr;
     }
 }
 

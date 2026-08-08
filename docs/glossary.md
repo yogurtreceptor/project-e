@@ -31,6 +31,7 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Journey cache** | Bounded clearable local performance storage reporting fresh, stale or miss; it is not personal route history or a Calendar materialisation source. |
 | **Provider feature** | Replaceable installed or explicitly requested external place context identified by its provider; browsing it is non-mutating. |
 | **Map-list membership** | Portable user-owned membership identified by list, provider and feature plus a user label; current provider facts are resolved separately and may be unavailable. |
+| **Coverage recommendation** | A display-only comparison of one selected Map point with active reviewed core geometry and declared context bounds; it explains candidate scope, size, network and source evidence but cannot acquire or install a pack. |
 
 ## Classification and structured values
 
@@ -95,4 +96,4 @@ Use this document for Project E terms whose meanings are easy to confuse. Canoni
 | **Repository source of truth** | Current code and repository documentation, not prior chat handoffs. |
 | **Task** | A retired experimental entity removed by migration `20260801_31_retire_task_subsystem`; future work management requires a new design. |
 
-Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1–N3's canonical place, offline-first Map and provider-independent journey foundations delivered and X1's Gold Coast prerequisite evidence complete; installed-provider and later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.
+Phase 1 and Phase 2 are completed development milestones. Phase 3 Spatial Intelligence is in progress with N1–N5's canonical place, offline-first Map, provider-independent journey foundation, installed-region lifecycle, reviewed provider/list workflows and contextual coverage recommendations delivered, together with X1's Gold Coast prerequisite evidence; production journeys and later slices remain planned. Detailed boundaries belong in the phase documents and [Roadmap](../ROADMAP.md), not glossary definitions.

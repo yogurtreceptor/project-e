@@ -612,6 +612,19 @@
       listsLink.textContent = "Map lists";
       actions.append(listsLink);
     }
+    if (hasCoordinates(selection)) {
+      const coverageParameters = new URLSearchParams({
+        title: selection.title || "Selected map point",
+        latitude: String(selection.latitude),
+        longitude: String(selection.longitude),
+        return_to: `${window.location.pathname}${window.location.search}`
+      });
+      const coverageLink = document.createElement("a");
+      coverageLink.href = `/map/coverage?${coverageParameters}`;
+      coverageLink.className = "button secondary";
+      coverageLink.textContent = "Improve coverage";
+      actions.append(coverageLink);
+    }
     ["Directions from", "Directions to"].forEach((label) => {
       const button = document.createElement("button");
       button.type = "button";

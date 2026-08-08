@@ -10,7 +10,7 @@ Delivered behaviour belongs in the [Phase 1 specification](docs/phase_1_spec.md)
 | --- | --- | --- |
 | 1 · Information Platform | Complete | Canonical entities and Relationships; local documents; Search, Map and Timeline; taxonomies/reference data; audit/provenance; data quality, reviewed inference, merge and recovery. |
 | 2 · Operational Time | Complete | Canonical Events and Calendars; recurrence; reminder policies and durable Inbox attention; registered scheduling and deterministic automation; Calendar interchange and portability. |
-| 3 · Spatial Intelligence | In progress · N1–N4 + X1 + N5A complete | Canonical place, offline-first Map 2.0, provider-independent journey/profile/policy/cache foundations, one verified installed Gold Coast normal map/search/context pack, reviewed provider promotion and portable external Map lists are delivered; N5 coverage recommendations, routing-engine-backed journeys, Calendar materialisation, travel-time and reachability tools remain planned. |
+| 3 · Spatial Intelligence | In progress · N1–N5 + X1 complete | Canonical place, offline-first Map 2.0, provider-independent journey/profile/policy/cache foundations, one verified installed Gold Coast normal map/search/context pack, reviewed provider promotion, portable external Map lists and contextual non-installing coverage recommendations are delivered; routing-engine-backed journeys, Calendar materialisation, travel-time and reachability tools remain planned. |
 
 Phase closure means a representative development milestone is complete. It does not claim exhaustive verification, a stable public release or absence of ordinary maintenance defects.
 

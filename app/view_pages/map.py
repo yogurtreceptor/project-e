@@ -296,6 +296,7 @@ def map_details_html(
     else:
         records_html = '<p class="map-detail-warning">Selection only. Browsing does not create or change a canonical Location.</p>'
     actions = provider_feature_actions(selection, map_lists or [], return_to)
+    actions += map_coverage_action(selection, return_to)
     return f"""
     <header class="map-details-header"><p class="eyebrow">Selected</p><h2 id="map-details-heading">{escape(str(selection["title"]))}</h2>{address}</header>
     {coordinates}
@@ -339,6 +340,20 @@ def provider_feature_actions(
         else ""
     )
     return review + bookmark + '<a class="button secondary" href="/map/lists">Map lists</a>'
+
+
+def map_coverage_action(selection: dict[str, object], return_to: str) -> str:
+    if selection.get("latitude") is None or selection.get("longitude") is None:
+        return ""
+    href = "/map/coverage?" + urlencode(
+        {
+            "title": str(selection.get("title", "Selected map point")),
+            "latitude": str(selection["latitude"]),
+            "longitude": str(selection["longitude"]),
+            "return_to": return_to,
+        }
+    )
+    return f'<a class="button secondary" href="{escape(href)}">Improve coverage</a>'
 
 
 def provider_feature_hidden_fields(selection: dict[str, object]) -> str:

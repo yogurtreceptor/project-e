@@ -2,11 +2,12 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
-## 2026-08-08 · Phase 3 reviewed provider features and portable Map lists
+## 2026-08-08 · Phase 3 Map review, lists and contextual coverage
 
 - Added a non-mutating provider review that combines exact provider, name/address and 100-metre point duplicate evidence before one explicit create-new or use-existing decision.
 - Kept accepted canonical assertions independent: new promotion creates audited source-qualified Location assertions and a neutral reference, while existing reconciliation adds only the versioned provider reference and never moves the Location.
-- Added portable external Favourites/named lists with current-provider resolution, honest disappearance, explicit online revisit, JSON export/removal/confirmed clear and whole-platform recovery. Migration, two-version reconciliation/disappearance, 346 tests, compilation, bundled-Node syntax and same-origin temporary-port Edge workflow/keyboard/reflow checks passed; contextual coverage recommendations remain pending N5 work.
+- Added portable external Favourites/named lists with current-provider resolution, honest disappearance, explicit online revisit, JSON export/removal/confirmed clear and whole-platform recovery. Migration and two-version reconciliation/disappearance fixtures passed without provider facts becoming portable state.
+- Completed N5 with display-only **Improve coverage** review for every mapped point. Validated core geometry versus context bounds drives same-region/adjoining-area/separate-region guidance; current size/bounds remain a non-linear baseline, source scope and explicit network acquisition stay visible, and selection returns intact. Real Gold Coast boundary examples plus core/context/outside/no-pack/HTTP fixtures, all 352 tests, compilation, bundled-Node syntax and same-origin temporary-port Edge workflow/keyboard/reflow checks passed without network, install or mutation.
 
 ## 2026-08-07 · Phase 3 first installed-region Map
 

@@ -108,6 +108,7 @@ from app.map_feature_service import (
     provider_feature_from_form,
     remove_map_feature_membership,
 )
+from app.map_coverage_service import assess_map_coverage
 from app.spatial_pack import (
     MAX_ARCHIVE_BYTES,
     activate_staged_spatial_pack,
@@ -1372,6 +1373,29 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             ),
             active_slug="map",
             show_save_toast=bool(query.get("saved")),
+        )
+
+    def handle_map_coverage_recommendation(self, query: dict[str, str]) -> None:
+        return_to = self.map_return_to(query.get("return_to", ""))
+        try:
+            recommendation = assess_map_coverage(
+                self.spatial_pack_dir,
+                selection_title=query.get("title", ""),
+                latitude=query.get("latitude", ""),
+                longitude=query.get("longitude", ""),
+            )
+        except ValueError as error:
+            self.respond_page(
+                "Coverage context unavailable",
+                views.map_coverage_error_page(str(error), return_to),
+                HTTPStatus.BAD_REQUEST,
+                active_slug="map",
+            )
+            return
+        self.respond_page(
+            "Improve coverage",
+            views.map_coverage_recommendation_page(recommendation, return_to),
+            active_slug="map",
         )
 
     def handle_map_provider_location_review(self) -> None:

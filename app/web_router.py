@@ -52,6 +52,9 @@ def route_request(handler) -> None:
     if parts[0] == "data-quality":
         handler.handle_data_quality()
         return
+    if parts == ["map", "coverage"] and handler.command == "GET":
+        handler.handle_map_coverage_recommendation(query)
+        return
     if parts == ["map", "provider-location", "review"] and handler.command == "POST":
         handler.handle_map_provider_location_review()
         return

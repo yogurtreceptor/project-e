@@ -218,6 +218,9 @@ class MapWorkspaceTests(unittest.TestCase):
             )
             payload = build_map_payload(connection)
         html = views.map_page(payload)
+        selected_html = views.map_page(
+            payload, selected_key=str(payload["places"][0]["id"])
+        )
         script = (Path(__file__).parents[1] / "app" / "static" / "map-workspace.js").read_text()
         css = read_application_css()
 
@@ -234,6 +237,8 @@ class MapWorkspaceTests(unittest.TestCase):
         self.assertIn("Blank map space never creates a pin", html)
         self.assertNotIn("Search this area", html)
         self.assertNotIn("Save as Location", html)
+        self.assertIn("Improve coverage", selected_html)
+        self.assertIn("/map/coverage?", selected_html)
         self.assertIn("new AbortController()", script)
         self.assertIn("viewportController.abort()", script)
         self.assertIn("sequence !== requestSequence", script)
@@ -242,6 +247,7 @@ class MapWorkspaceTests(unittest.TestCase):
         self.assertNotIn("payload.query", script)
         self.assertIn("providerFeatureForm", script)
         self.assertIn("/map/provider-location/review", script)
+        self.assertIn("/map/coverage?", script)
         self.assertIn("geometryConfidence: \"Approximate\"", script)
         self.assertIn("`at:${latitude.toFixed(6)},${longitude.toFixed(6)}:${title}`", script)
         self.assertIn(".map-pin.is-selected", css)
