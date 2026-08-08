@@ -52,6 +52,24 @@ def route_request(handler) -> None:
     if parts[0] == "data-quality":
         handler.handle_data_quality()
         return
+    if parts == ["journeys", "walk"] and handler.command == "GET":
+        handler.handle_walking_journey(query)
+        return
+    if parts == ["journeys", "walk", "plan"] and handler.command == "POST":
+        handler.handle_walking_journey_plan()
+        return
+    if parts == ["journeys", "walk", "settings"] and handler.command == "GET":
+        handler.handle_walking_settings(query)
+        return
+    if parts == ["journeys", "walk", "settings", "review"] and handler.command == "POST":
+        handler.handle_walking_profile_review()
+        return
+    if parts == ["journeys", "walk", "settings", "save"] and handler.command == "POST":
+        handler.handle_walking_profile_save()
+        return
+    if parts == ["journeys", "walk", "settings", "avoid-steps"] and handler.command == "POST":
+        handler.handle_walking_avoid_steps()
+        return
     if parts == ["map", "coverage"] and handler.command == "GET":
         handler.handle_map_coverage_recommendation(query)
         return

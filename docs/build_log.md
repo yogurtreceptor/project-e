@@ -2,6 +2,14 @@
 
 Concise milestone history only. Current behaviour belongs in code and reference documents; detailed implementation archaeology belongs in Git history.
 
+## 2026-08-08 · Phase 3 trustworthy local walking journeys
+
+- Activated the exact X1-reviewed Valhalla 3.8.3 executable/configuration and 46.0 MB Gold Coast graph behind a digest-verified, loopback-only, matching-Spatial-Pack capability boundary with 100-metre independent snap refusal and route-extent validation.
+- Added walking planning between deliberate canonical access points with explained text and temporary Map route geometry; distinct network/straight-line distance, estimated/elapsed time and preparation/arrival buffers; typed coverage/no-route/provider failures; up to three alternatives; and source/profile/policy provenance. No journey action creates an Event, route history or reusable journey.
+- Added review-first repeated measurements for stable Regular walk, Fast walk/jog and Run identities plus optional contiguous limits, and one explicitly enabled strong soft avoid-steps preference. Live graph evidence changed the representative stair crossing from 184 m to a 1,402 m step-free route without claiming accessibility, safety or live conditions.
+- Fixed the disposable cache at 128 entries and 24-hour static-source freshness after a 3,774-byte representative result and 3.9 ms cached lookup; full dependency fingerprints retain deterministic source/profile/policy invalidation and stale candidates never become current results.
+- Adapter/resource/profile/Map/HTTP/no-Event regressions, all 370 tests, compilation, bundled-Node syntax, exact-resource reactivation and a real temporary-port planner/settings/Map smoke passed. Windows visual automation could not attach from the WSL workspace, so no visual-browser claim is made.
+
 ## 2026-08-08 · Phase 3 Map review, lists and contextual coverage
 
 - Added a non-mutating provider review that combines exact provider, name/address and 100-metre point duplicate evidence before one explicit create-new or use-existing decision.

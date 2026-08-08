@@ -15,6 +15,11 @@ def map_page(
     payload: dict[str, object],
     focused_entity_id: str = "",
     selected_key: str = "",
+    *,
+    sidebar_html: str = "",
+    workspace_title: str = "Map",
+    workspace_eyebrow: str = "Spatial workspace",
+    workspace_description: str = "",
 ) -> str:
     selected_key = selected_key if selected_key in payload["selections"] else ""
     if not selected_key and str(focused_entity_id).isdigit():
@@ -33,8 +38,17 @@ def map_page(
         "packStatus", {"state": "unavailable", "manageUrl": "/map/packs"}
     )
     pack_available = pack_status.get("state") == "available"
-    selected = payload["selections"].get(selected_key)
-    map_title = "Normal local map" if pack_available else "Canonical coordinate map"
+    selected = None if sidebar_html else payload["selections"].get(selected_key)
+    journey_overlay = payload.get("journeyOverlay")
+    map_title = (
+        "Walking route on normal local map"
+        if journey_overlay and pack_available
+        else "Walking route on canonical coordinate map"
+        if journey_overlay
+        else "Normal local map"
+        if pack_available
+        else "Canonical coordinate map"
+    )
     map_description = (
         f'{escape(str(pack_status["title"]))} {escape(str(pack_status["version"]))} · '
         f'{escape(str(pack_status["coverageLabel"]))} · Local'
@@ -46,18 +60,11 @@ def map_page(
         if pack_available
         else ""
     )
-
-    return f"""
-    {map_assets}
-    <section class="map-page-heading">
-        <div>
-            <p class="eyebrow">Spatial workspace</p>
-            <h1>Map</h1>
-            <p>{place_count} canonical place{"s" if place_count != 1 else ""} represent {record_count} mapped record{"s" if record_count != 1 else ""} without requiring network access.</p>
-        </div>
-        <div class="actions"><a class="button secondary" href="/map/lists">Map lists</a><a class="button secondary" href="/map/packs">Manage Spatial Packs</a><a class="button secondary" href="/locations/new">Create Location</a></div>
-    </section>
-    <section class="map-workspace" data-map-workspace>
+    heading_description = workspace_description or (
+        f'{place_count} canonical place{"s" if place_count != 1 else ""} represent '
+        f'{record_count} mapped record{"s" if record_count != 1 else ""} without requiring network access.'
+    )
+    search_region = "" if sidebar_html else f'''
         <header class="map-search-region">
             <form method="get" action="/map" class="map-search-form" role="search">
                 <label for="map-search-input">Search installed places and canonical records</label>
@@ -77,13 +84,25 @@ def map_page(
                     {f'<span>{escape(provider_status["attribution"])}</span>' if provider_status["requested"] else ''}
                 </div>
             </div>
-        </header>
+        </header>'''
+
+    return f"""
+    {map_assets}
+    <section class="map-page-heading">
+        <div>
+            <p class="eyebrow">{escape(workspace_eyebrow)}</p>
+            <h1>{escape(workspace_title)}</h1>
+            <p>{escape(heading_description)}</p>
+        </div>
+        <div class="actions"><a class="button" href="/journeys/walk">Plan walking journey</a><a class="button secondary" href="/map/lists">Map lists</a><a class="button secondary" href="/map/packs">Manage Spatial Packs</a><a class="button secondary" href="/locations/new">Create Location</a></div>
+    </section>
+    <section class="map-workspace" data-map-workspace>
+        {search_region}
 
         <div class="map-workspace-body">
             <aside class="map-sidebar" aria-label="Map results and details" data-map-sidebar>
                 <section data-map-pane="results"{'' if selected is None else ' hidden'}>
-                    {search_results_html(payload)}
-                    {textual_places_html(payload)}
+                    {sidebar_html or search_results_html(payload) + textual_places_html(payload)}
                 </section>
                 <section data-map-pane="details" aria-labelledby="map-details-heading"{'' if selected is not None else ' hidden'}>
                     <button class="button secondary map-back-button" type="button" data-map-back>Back to {"results" if query else "places"}</button>
@@ -127,6 +146,7 @@ def map_page(
                 <div class="eddy-map{' has-local-basemap' if pack_available else ''}" role="region" tabindex="0" aria-label="Pan and zoom {'normal local map with canonical places' if pack_available else 'canonical coordinate map'}" aria-describedby="map-keyboard-help map-map-status" data-map-stage>
                     <div class="map-basemap" data-map-basemap aria-hidden="true"></div>
                     <div class="map-coordinate-grid" aria-hidden="true"></div>
+                    <svg class="map-route-layer" data-map-route-layer aria-hidden="true"></svg>
                     <div class="map-pin-layer" data-map-pin-layer></div>
                     <p class="map-loading-state" data-map-loading role="status">Loading canonical places for this viewport…</p>
                     <div class="map-compass" aria-hidden="true"><span>N</span><i></i></div>
@@ -136,6 +156,7 @@ def map_page(
                     <span><i class="map-legend-symbol map-legend-place">◆</i> Canonical place</span>
                     <span><i class="map-legend-symbol map-legend-selected">★</i> Selected place</span>
                     <span><i class="map-legend-symbol map-legend-cluster">3</i> Multiple nearby places</span>
+                    {f'<span><i class="map-legend-symbol map-legend-route"></i> Walking route</span>' if journey_overlay else ''}
                 </div>
                 <footer id="map-map-status" class="map-attribution-status">
                     <strong>Local canonical overlay.</strong>
@@ -297,6 +318,7 @@ def map_details_html(
         records_html = '<p class="map-detail-warning">Selection only. Browsing does not create or change a canonical Location.</p>'
     actions = provider_feature_actions(selection, map_lists or [], return_to)
     actions += map_coverage_action(selection, return_to)
+    actions += journey_direction_actions(selection)
     return f"""
     <header class="map-details-header"><p class="eyebrow">Selected</p><h2 id="map-details-heading">{escape(str(selection["title"]))}</h2>{address}</header>
     {coordinates}
@@ -304,10 +326,25 @@ def map_details_html(
     {records_html}
     <div class="map-detail-actions" aria-label="Selection actions">
         {actions}
-        <button class="button secondary" type="button" disabled title="Journey planning is not yet available">Directions from</button>
-        <button class="button secondary" type="button" disabled title="Journey planning is not yet available">Directions to</button>
     </div>
     """
+
+
+def journey_direction_actions(selection: dict[str, object]) -> str:
+    location_id = selection.get("locationId")
+    geometry_id = selection.get("geometryId")
+    if isinstance(location_id, int) and isinstance(geometry_id, int):
+        endpoint = f"{location_id}:{geometry_id}"
+        return (
+            f'<a class="button secondary" href="/journeys/walk?{urlencode({"origin": endpoint})}">Directions from</a>'
+            f'<a class="button secondary" href="/journeys/walk?{urlencode({"destination": endpoint})}">Directions to</a>'
+        )
+    return (
+        '<button class="button secondary" type="button" disabled '
+        'title="Choose or save a canonical Location access point first">Directions from</button>'
+        '<button class="button secondary" type="button" disabled '
+        'title="Choose or save a canonical Location access point first">Directions to</button>'
+    )
 
 
 def provider_feature_actions(

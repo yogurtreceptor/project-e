@@ -109,6 +109,23 @@ from app.map_feature_service import (
     remove_map_feature_membership,
 )
 from app.map_coverage_service import assess_map_coverage
+from app.journey_cache import JourneyCache
+from app.journey_repository import list_mobility_profiles, list_routing_policies
+from app.journey_service import plan_journey
+from app.routing_resources import (
+    load_active_valhalla_capability,
+    routing_capability_status,
+)
+from app.valhalla_adapter import ValhallaWalkingAdapter
+from app.walking_journeys import (
+    AVOID_STEPS_POLICY_KEY,
+    configure_avoid_steps_policy,
+    default_walking_form_values,
+    list_journey_endpoint_options,
+    review_walk_profile_measurements,
+    save_reviewed_walk_profile,
+    walking_request_from_form,
+)
 from app.spatial_pack import (
     MAX_ARCHIVE_BYTES,
     activate_staged_spatial_pack,
@@ -148,6 +165,8 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
     backup_dir = DEFAULT_HTTP_CONFIG.backup_dir
     import_staging_dir = DEFAULT_HTTP_CONFIG.import_staging_dir
     spatial_pack_dir = DEFAULT_HTTP_CONFIG.spatial_pack_dir
+    routing_dir = DEFAULT_HTTP_CONFIG.routing_dir
+    journey_cache_path = DEFAULT_HTTP_CONFIG.journey_cache_path
 
     def do_GET(self) -> None:
         self.route_request()
@@ -1373,6 +1392,180 @@ class EddyRequestHandler(RequestSupportMixin, BaseHTTPRequestHandler):
             ),
             active_slug="map",
             show_save_toast=bool(query.get("saved")),
+        )
+
+    def handle_walking_journey(self, query: dict[str, str]) -> None:
+        values = default_walking_form_values()
+        values.update(
+            {
+                key: query[key]
+                for key in ("origin", "destination")
+                if query.get(key)
+            }
+        )
+        self._respond_walking_journey(values)
+
+    def handle_walking_journey_plan(self) -> None:
+        values = self.read_form()
+        execution = None
+        errors: list[str] = []
+        try:
+            request = walking_request_from_form(values)
+            capability = load_active_valhalla_capability(
+                self.routing_dir, self.spatial_pack_dir
+            )
+            adapter = ValhallaWalkingAdapter(capability)
+            cache = JourneyCache(
+                self.journey_cache_path,
+                maximum_entries=capability.maximum_cache_entries,
+            )
+            with connect(self.database_path) as connection:
+                execution = plan_journey(
+                    connection, request, adapter, cache=cache
+                )
+        except (OSError, sqlite3.Error, ValueError) as error:
+            errors.append(str(error))
+        self._respond_walking_journey(
+            values,
+            execution=execution,
+            errors=errors,
+            status=HTTPStatus.BAD_REQUEST if errors else HTTPStatus.OK,
+        )
+
+    def _respond_walking_journey(
+        self,
+        values: dict[str, str],
+        *,
+        execution=None,
+        errors: list[str] | None = None,
+        status: HTTPStatus = HTTPStatus.OK,
+    ) -> None:
+        routing_status = routing_capability_status(
+            self.routing_dir, self.spatial_pack_dir
+        )
+        with connect(self.database_path) as connection:
+            endpoints = list_journey_endpoint_options(connection)
+            profiles = list_mobility_profiles(connection)
+            policies = list_routing_policies(connection)
+            payload = build_map_payload(
+                connection,
+                spatial_pack_root=self.spatial_pack_dir,
+            )
+        overlay = views.journey_overlay_payload(
+            execution.result if execution is not None else None
+        )
+        if overlay is not None:
+            payload["journeyOverlay"] = overlay
+            for layer in payload["contextLayers"]:
+                if layer["id"] == "journey-routes":
+                    layer.update(
+                        available=True,
+                        enabled=True,
+                        explanation="The current calculated route is shown as a temporary Map overlay.",
+                    )
+        sidebar = views.walking_journey_panel(
+            endpoints,
+            profiles,
+            policies,
+            routing_status,
+            values,
+            execution=execution,
+            errors=errors,
+        )
+        self.respond_page(
+            "Walking journey",
+            views.map_page(
+                payload,
+                sidebar_html=sidebar,
+                workspace_title="Walking journey",
+                workspace_eyebrow="N6 · local walking",
+                workspace_description=(
+                    "Calculate between deliberate canonical access points without "
+                    "creating an Event or sending private records online."
+                ),
+            ),
+            status,
+            active_slug="map",
+        )
+
+    def handle_walking_settings(self, query: dict[str, str]) -> None:
+        self._respond_walking_settings(saved=query.get("saved", ""))
+
+    def _respond_walking_settings(
+        self,
+        *,
+        errors: list[str] | None = None,
+        status: HTTPStatus = HTTPStatus.OK,
+        saved: str = "",
+    ) -> None:
+        with connect(self.database_path) as connection:
+            profiles = list_mobility_profiles(connection)
+            policies = list_routing_policies(connection)
+        avoid_steps = next(
+            (
+                policy
+                for policy in policies
+                if policy.policy_key == AVOID_STEPS_POLICY_KEY
+            ),
+            None,
+        )
+        self.respond_page(
+            "Walking settings",
+            views.walking_settings_page(
+                profiles, avoid_steps, errors=errors, saved=saved
+            ),
+            status,
+            active_slug="map",
+        )
+
+    def handle_walking_profile_review(self) -> None:
+        values = self.read_form()
+        try:
+            review = review_walk_profile_measurements(values)
+        except ValueError as error:
+            self._respond_walking_settings(
+                errors=[str(error)], status=HTTPStatus.BAD_REQUEST
+            )
+            return
+        self.respond_page(
+            "Review walking profile",
+            views.walking_profile_review_page(review),
+            active_slug="map",
+        )
+
+    def handle_walking_profile_save(self) -> None:
+        values = self.read_form()
+        try:
+            review = review_walk_profile_measurements(values)
+            with connect(self.database_path) as connection:
+                profile = save_reviewed_walk_profile(connection, review)
+        except (sqlite3.Error, ValueError) as error:
+            self._respond_walking_settings(
+                errors=[str(error)], status=HTTPStatus.BAD_REQUEST
+            )
+            return
+        self.redirect(
+            "/journeys/walk/settings?"
+            + urlencode({"saved": f"{profile.display_name} revision {profile.revision} saved."})
+        )
+
+    def handle_walking_avoid_steps(self) -> None:
+        values = self.read_form()
+        try:
+            enabled = values.get("enabled") == "1"
+            with connect(self.database_path) as connection:
+                policy = configure_avoid_steps_policy(
+                    connection, enabled=enabled
+                )
+        except (sqlite3.Error, ValueError) as error:
+            self._respond_walking_settings(
+                errors=[str(error)], status=HTTPStatus.BAD_REQUEST
+            )
+            return
+        state = "enabled" if policy.is_enabled else "disabled"
+        self.redirect(
+            "/journeys/walk/settings?"
+            + urlencode({"saved": f"Avoid-steps preference {state}."})
         )
 
     def handle_map_coverage_recommendation(self, query: dict[str, str]) -> None:

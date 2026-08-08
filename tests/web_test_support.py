@@ -38,6 +38,8 @@ def make_test_server(
     backup_dir: Path | None = None,
     import_staging_dir: Path | None = None,
     spatial_pack_dir: Path | None = None,
+    routing_dir: Path | None = None,
+    journey_cache_path: Path | None = None,
 ):
     if database_path is None:
         config = DEFAULT_HTTP_CONFIG
@@ -49,5 +51,7 @@ def make_test_server(
             backup_dir=backup_dir or root / "backups",
             import_staging_dir=import_staging_dir or root / "import-staging",
             spatial_pack_dir=spatial_pack_dir or root / "spatial-packs",
+            routing_dir=routing_dir or root / "routing",
+            journey_cache_path=journey_cache_path or root / "journey-cache.sqlite3",
         )
     return create_http_server(("127.0.0.1", 0), EddyRequestHandler, config)

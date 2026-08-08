@@ -9,6 +9,7 @@ BACKUP_DIR = INSTANCE_DIR / "backups"
 IMPORT_STAGING_DIR = INSTANCE_DIR / "imports"
 JOURNEY_CACHE_PATH = INSTANCE_DIR / "journey-cache.sqlite3"
 SPATIAL_PACK_DIR = INSTANCE_DIR / "spatial-packs"
+ROUTING_DIR = INSTANCE_DIR / "routing"
 
 
 def initialise_local_storage() -> None:
@@ -17,3 +18,4 @@ def initialise_local_storage() -> None:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     IMPORT_STAGING_DIR.mkdir(parents=True, exist_ok=True)
     SPATIAL_PACK_DIR.mkdir(parents=True, exist_ok=True)
+    ROUTING_DIR.mkdir(parents=True, exist_ok=True)

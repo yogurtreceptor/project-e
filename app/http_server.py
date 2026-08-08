@@ -10,6 +10,8 @@ from app.config import (
     DATABASE_PATH,
     DOCUMENT_STORAGE_DIR,
     IMPORT_STAGING_DIR,
+    JOURNEY_CACHE_PATH,
+    ROUTING_DIR,
     SPATIAL_PACK_DIR,
 )
 
@@ -21,6 +23,8 @@ class HttpServerConfig:
     backup_dir: Path
     import_staging_dir: Path
     spatial_pack_dir: Path
+    routing_dir: Path | None = None
+    journey_cache_path: Path | None = None
 
 
 DEFAULT_HTTP_CONFIG = HttpServerConfig(
@@ -29,6 +33,8 @@ DEFAULT_HTTP_CONFIG = HttpServerConfig(
     backup_dir=BACKUP_DIR,
     import_staging_dir=IMPORT_STAGING_DIR,
     spatial_pack_dir=SPATIAL_PACK_DIR,
+    routing_dir=ROUTING_DIR,
+    journey_cache_path=JOURNEY_CACHE_PATH,
 )
 
 
@@ -46,6 +52,11 @@ def configured_handler(
         backup_dir = config.backup_dir
         import_staging_dir = config.import_staging_dir
         spatial_pack_dir = config.spatial_pack_dir
+        routing_dir = config.routing_dir or config.database_path.parent / "routing"
+        journey_cache_path = (
+            config.journey_cache_path
+            or config.database_path.parent / "journey-cache.sqlite3"
+        )
 
     ConfiguredHandler.__name__ = f"Configured{handler_type.__name__}"
     ConfiguredHandler.__qualname__ = ConfiguredHandler.__name__

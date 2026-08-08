@@ -100,6 +100,12 @@ from app.view_pages.data_quality import data_quality_page
 from app.view_pages.map import (
     map_page,
 )
+from app.view_pages.journeys import (
+    journey_overlay_payload,
+    walking_journey_panel,
+    walking_profile_review_page,
+    walking_settings_page,
+)
 from app.view_pages.map_features import (
     map_provider_review_page,
     map_provider_feature_error_page,
@@ -209,6 +215,10 @@ __all__ = [
     "address_lookup_field",
     "address_lookup_script",
     "map_page",
+    "journey_overlay_payload",
+    "walking_journey_panel",
+    "walking_profile_review_page",
+    "walking_settings_page",
     "map_provider_review_page",
     "map_provider_feature_error_page",
     "map_feature_lists_page",

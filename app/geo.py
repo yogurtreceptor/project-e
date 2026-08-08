@@ -296,6 +296,7 @@ def canonical_place_payload(
         "id": f"location:{location.id}",
         "kind": "canonical",
         "locationId": location.id,
+        "geometryId": representative_point.id if representative_point else None,
         "title": location.title,
         "address": address,
         "latitude": latitude,

@@ -12,6 +12,7 @@
 
   const stage = root.querySelector("[data-map-stage]");
   const basemapElement = root.querySelector("[data-map-basemap]");
+  const routeLayer = root.querySelector("[data-map-route-layer]");
   const pinLayer = root.querySelector("[data-map-pin-layer]");
   const loading = root.querySelector("[data-map-loading]");
   const viewportStatus = root.querySelector("[data-map-viewport-status]");
@@ -48,6 +49,10 @@
   let lastSelectionTrigger = null;
   let basemapMap = null;
   let basemapReady = false;
+
+  if (payload.journeyOverlay?.geometry?.type === "LineString") {
+    viewport = journeyViewport(payload.journeyOverlay.geometry.coordinates) || viewport;
+  }
 
   if (selectedKey && selectionIndex.has(selectedKey)) {
     const selected = selectionIndex.get(selectedKey);
@@ -167,6 +172,7 @@
     resizeTimer = window.setTimeout(() => {
       basemapMap?.resize();
       scheduleViewportLoad(0);
+      renderRoute();
     }, 120);
   });
 
@@ -247,6 +253,7 @@
     storeViewport();
     syncBasemap();
     renderPins();
+    renderRoute();
     scheduleViewportLoad(80);
   }
 
@@ -257,6 +264,7 @@
     storeViewport();
     syncBasemap();
     renderPins();
+    renderRoute();
     scheduleViewportLoad(80);
   }
 
@@ -269,6 +277,7 @@
     storeViewport();
     syncBasemap();
     renderPins();
+    renderRoute();
     scheduleViewportLoad(0);
     stage.focus();
   }
@@ -378,6 +387,52 @@
       }
     });
     if (selectedVisible) pinLayer.append(createPin(selectedCandidate, true));
+    renderRoute();
+  }
+
+  function renderRoute() {
+    if (!routeLayer) return;
+    const coordinates = payload.journeyOverlay?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 2) {
+      routeLayer.replaceChildren();
+      return;
+    }
+    const bounds = currentBounds();
+    const width = Math.max(stage.clientWidth, 1);
+    const height = Math.max(stage.clientHeight, 1);
+    const points = coordinates
+      .map((point) => project({ longitude: Number(point[0]), latitude: Number(point[1]) }, bounds, width, height))
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+    routeLayer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    routeLayer.replaceChildren();
+    if (points.length < 2) return;
+    const casing = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    const pointText = points.map((point) => `${point.x},${point.y}`).join(" ");
+    casing.setAttribute("points", pointText);
+    casing.setAttribute("class", "map-route-casing");
+    line.setAttribute("points", pointText);
+    line.setAttribute("class", "map-route-line");
+    routeLayer.append(casing, line);
+  }
+
+  function journeyViewport(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+    const longitudes = coordinates.map((point) => Number(point[0])).filter(Number.isFinite);
+    const latitudes = coordinates.map((point) => Number(point[1])).filter(Number.isFinite);
+    if (longitudes.length < 2 || latitudes.length < 2) return null;
+    const west = Math.min(...longitudes);
+    const east = Math.max(...longitudes);
+    const south = Math.min(...latitudes);
+    const north = Math.max(...latitudes);
+    const width = Math.max(stage.clientWidth, 800);
+    const height = Math.max(stage.clientHeight, 560);
+    const longitudeNeed = Math.max(east - west, (north - south) * width / height, 0.002) * 1.35;
+    return {
+      longitude: (west + east) / 2,
+      latitude: (south + north) / 2,
+      zoom: Math.max(2, Math.min(18, Math.log2(360 / longitudeNeed)))
+    };
   }
 
   function project(place, bounds, width, height) {
@@ -625,14 +680,23 @@
       coverageLink.textContent = "Improve coverage";
       actions.append(coverageLink);
     }
-    ["Directions from", "Directions to"].forEach((label) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "button secondary";
-      button.disabled = true;
-      button.title = "Journey planning is not yet available";
-      button.textContent = label;
-      actions.append(button);
+    [["Directions from", "origin"], ["Directions to", "destination"]].forEach(([label, parameter]) => {
+      if (Number.isInteger(selection.locationId) && Number.isInteger(selection.geometryId)) {
+        const link = document.createElement("a");
+        const query = new URLSearchParams({ [parameter]: `${selection.locationId}:${selection.geometryId}` });
+        link.href = `/journeys/walk?${query}`;
+        link.className = "button secondary";
+        link.textContent = label;
+        actions.append(link);
+      } else {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button secondary";
+        button.disabled = true;
+        button.title = "Choose or save a canonical Location access point first";
+        button.textContent = label;
+        actions.append(button);
+      }
     });
     details.append(actions);
   }
@@ -788,7 +852,8 @@
           maxzoom: pack.maximumZoom
         },
         "pack-coverage": { type: "geojson", data: pack.coverageUrl },
-        "pack-transit": { type: "geojson", data: pack.publicTransportUrl }
+        "pack-transit": { type: "geojson", data: pack.publicTransportUrl },
+        ...(payload.journeyOverlay ? { "journey-route": { type: "geojson", data: payload.journeyOverlay } } : {})
       },
       layers: [
         { id: "pack-landcover", type: "fill", source: "pack-vector", "source-layer": "landcover", paint: { "fill-color": "#dce8d2", "fill-opacity": 0.78 } },
@@ -800,6 +865,10 @@
         { id: "pack-road-casing", type: "line", source: "pack-vector", "source-layer": "transportation", paint: { "line-color": "#b8afa4", "line-width": roadCasingWidth } },
         { id: "pack-roads", type: "line", source: "pack-vector", "source-layer": "transportation", paint: { "line-color": roadColor, "line-width": roadWidth } },
         { id: "pack-building", type: "fill", source: "pack-vector", "source-layer": "building", minzoom: 13, paint: { "fill-color": "#d1c6bb", "fill-outline-color": "#b8aca1" } },
+        ...(payload.journeyOverlay ? [
+          { id: "journey-route-casing", type: "line", source: "journey-route", paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.92 } },
+          { id: "journey-route", type: "line", source: "journey-route", paint: { "line-color": "#8b2f68", "line-width": 4.5, "line-opacity": 0.96 } }
+        ] : []),
         { id: "pack-coverage-fill", type: "fill", source: "pack-coverage", paint: { "fill-color": "#2f7c80", "fill-opacity": 0.025 } },
         { id: "pack-coverage-outline", type: "line", source: "pack-coverage", paint: { "line-color": "#2f7c80", "line-width": 1.4, "line-opacity": 0.8 } },
         { id: "pack-place-points", type: "circle", source: "pack-vector", "source-layer": "place", paint: { "circle-color": "#40575e", "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 1.5, 12, 4], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1 } },
